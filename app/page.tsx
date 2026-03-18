@@ -76,9 +76,11 @@ export default function HomePage() {
           </a>
           <Link
             href="/register"
-            className="flex items-center gap-2 px-5 py-2.5 bg-gold-500 text-navy-900 text-sm font-semibold rounded-full hover:bg-gold-300 transition-all duration-200 hover:scale-105"
+            className="flex items-center gap-1.5 px-3.5 py-2 sm:px-5 sm:py-2.5 bg-gold-500 text-navy-900 text-xs sm:text-sm font-semibold rounded-full hover:bg-gold-300 transition-all duration-200 hover:scale-105 whitespace-nowrap"
           >
-            Register Now <ArrowRight size={14} />
+            <span className="sm:hidden">Register</span>
+            <span className="hidden sm:inline">Register Now</span>
+            <ArrowRight size={13} className="hidden sm:block" />
           </Link>
         </motion.div>
       </nav>

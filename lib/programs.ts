@@ -12,7 +12,7 @@ export const PROGRAMS: Program[] = [
     level: 'Beginner → Advanced',
     priceXAF: 320000,
     monthlyXAF: 55000,
-    registrationFee: 10000,
+    registrationFee: 5000,
     badge: 'Most Popular',
     description:
       'The complete journey from zero to full-stack developer. Master both frontend and backend to build complete, deployable web applications.',
@@ -37,7 +37,7 @@ export const PROGRAMS: Program[] = [
     level: 'Intermediate',
     priceXAF: 240000,
     monthlyXAF: 60000,
-    registrationFee: 10000,
+    registrationFee: 5000,
     description:
       'Master the most in-demand JavaScript full-stack combination: MongoDB, Express, React, and Node.js. Build modern, scalable apps.',
     technologies: ['React', 'Node.js', 'Express.js', 'MongoDB', 'Mongoose', 'JWT Auth', 'Redux/Context', 'REST APIs', 'Deployment'],
@@ -61,7 +61,7 @@ export const PROGRAMS: Program[] = [
     level: 'Intermediate',
     priceXAF: 240000,
     monthlyXAF: 60000,
-    registrationFee: 10000,
+    registrationFee: 5000,
     description:
       'Build data-driven, enterprise-grade applications with PostgreSQL, Express, React, and Node.js. Master relational databases.',
     technologies: ['React', 'Node.js', 'Express.js', 'PostgreSQL', 'Prisma / Sequelize', 'JWT Auth', 'SQL', 'REST APIs', 'Deployment'],
@@ -85,7 +85,7 @@ export const PROGRAMS: Program[] = [
     level: 'Beginner → Intermediate',
     priceXAF: 280000,
     monthlyXAF: 58000,
-    registrationFee: 10000,
+    registrationFee: 5000,
     badge: 'In Demand',
     description:
       'Turn raw data into powerful insights. Master Python analytics, SQL querying, and interactive dashboards used by top companies worldwide.',
@@ -110,7 +110,7 @@ export const PROGRAMS: Program[] = [
     level: 'Intermediate',
     priceXAF: 180000,
     monthlyXAF: 60000,
-    registrationFee: 10000,
+    registrationFee: 5000,
     description:
       "Build robust, secure web applications with Python's most powerful framework. Perfect for APIs, admin systems, and scalable backends.",
     technologies: ['Python', 'Django', 'Django REST Framework', 'PostgreSQL', 'HTML/CSS templates', 'Auth & Permissions', 'Celery basics', 'Deployment'],
@@ -134,7 +134,7 @@ export const PROGRAMS: Program[] = [
     level: 'Beginner → Intermediate',
     priceXAF: 150000,
     monthlyXAF: 50000,
-    registrationFee: 10000,
+    registrationFee: 5000,
     description:
       "Master Python from the very beginning to advanced concepts. The most beginner-friendly language — and a gateway to web dev, automation, and AI.",
     technologies: ['Python syntax', 'OOP', 'File I/O', 'APIs & Requests', 'Standard library', 'Data structures', 'Algorithms', 'Scripting & Automation'],
@@ -158,7 +158,7 @@ export const PROGRAMS: Program[] = [
     level: 'Beginner → Advanced',
     priceXAF: 150000,
     monthlyXAF: 50000,
-    registrationFee: 10000,
+    registrationFee: 5000,
     description:
       'Deep-dive into the language that powers the entire web. From fundamentals to advanced async patterns, closures, and modern ES6+.',
     technologies: ['ES6+', 'DOM manipulation', 'Async / Await', 'Promises', 'Closures', 'Modules', 'Fetch API', 'Node.js intro', 'Browser APIs'],
@@ -182,7 +182,7 @@ export const PROGRAMS: Program[] = [
     level: 'Beginner → Intermediate',
     priceXAF: 220000,
     monthlyXAF: 55000,
-    registrationFee: 10000,
+    registrationFee: 5000,
     badge: 'Mobile Focus',
     description:
       'Design and build polished cross-platform mobile interfaces with Flutter. Learn UI architecture, responsive layouts, and production-ready design systems.',
@@ -207,7 +207,7 @@ export const PROGRAMS: Program[] = [
     level: 'Intermediate',
     priceXAF: 240000,
     monthlyXAF: 60000,
-    registrationFee: 10000,
+    registrationFee: 5000,
     badge: 'App Builder',
     description:
       'Build modern mobile apps with React Native while mastering UX patterns, navigation systems, and scalable UI code for high-performance products.',
@@ -233,7 +233,7 @@ export const PROGRAMS: Program[] = [
     level: 'Beginner → Intermediate',
     priceXAF: 200000,
     monthlyXAF: 50000,
-    registrationFee: 10000,
+    registrationFee: 5000,
     description:
       'Master ethical hacking, network security, and digital defense. Learn to think like an attacker so you can defend like a pro. Aligned with EC-Council standards.',
     technologies: ['Network Security', 'Linux', 'Kali Linux', 'Wireshark', 'OWASP Top 10', 'Cryptography', 'Firewalls & VPNs', 'Social Engineering', 'Penetration Testing basics'],
@@ -257,7 +257,7 @@ export const PROGRAMS: Program[] = [
     level: 'Intermediate',
     priceXAF: 380000,
     monthlyXAF: 75000,
-    registrationFee: 15000,
+    registrationFee: 5000,
     badge: 'EC-Council',
     description:
       'Full cybersecurity training + structured preparation for the EC-Council Certified Ethical Hacker (CEH) exam. Covers all 20 CEH knowledge domains. EC-Council exam voucher purchased separately through ec-council.org.',

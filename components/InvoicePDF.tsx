@@ -371,7 +371,7 @@ export const InvoiceDocument = ({ data }: InvoicePDFProps) => {
   const due = addDays(today, 7);
   const invoiceNumber = genInvoiceNumber();
   const program = getProgramById(data.program);
-  const fee = program ? program.registrationFee : 10000;
+  const fee = program ? program.registrationFee : 5000;
   const programLabel = program ? program.title : data.program;
   const learningModeLabel = data.learningMode
     ? data.learningMode.charAt(0).toUpperCase() + data.learningMode.slice(1)
