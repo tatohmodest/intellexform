@@ -103,7 +103,7 @@ export default function HomePage() {
           animate="visible"
           variants={fadeUp}
           custom={1}
-          className="font-display text-5xl md:text-7xl font-bold leading-[1.08] tracking-tight mb-6"
+          className="font-display text-3xl sm:text-5xl md:text-7xl font-bold leading-[1.08] tracking-tight mb-6"
         >
           The future of{' '}
           <span className="gradient-text">tech education</span>
@@ -116,7 +116,7 @@ export default function HomePage() {
           animate="visible"
           variants={fadeUp}
           custom={2}
-          className="text-intellex-muted text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
+          className="text-intellex-muted text-sm sm:text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
         >
           Intellex is a multi-mode digital learning platform - self-paced courses, live
           tutoring, mentorship, and AI assistance - built to turn you from curious to capable.
@@ -131,14 +131,14 @@ export default function HomePage() {
         >
           <Link
             href="/register"
-            className="flex items-center gap-3 px-8 py-4 bg-gold-500 text-navy-900 font-semibold text-base rounded-full hover:bg-gold-300 transition-all duration-200 hover:scale-105 gold-glow w-full sm:w-auto justify-center"
+            className="flex items-center gap-2 px-6 py-3 sm:px-8 sm:py-4 bg-gold-500 text-navy-900 font-semibold text-sm sm:text-base rounded-full hover:bg-gold-300 transition-all duration-200 hover:scale-105 gold-glow w-full sm:w-auto justify-center"
           >
             Get Early Access
             <ArrowRight size={18} />
           </Link>
           <a
             href="#programs"
-            className="flex items-center gap-2 px-8 py-4 border border-gold-500/25 text-intellex-text rounded-full hover:border-gold-500/50 hover:bg-gold-500/5 transition-all duration-200 text-base w-full sm:w-auto justify-center"
+            className="flex items-center gap-2 px-6 py-3 sm:px-8 sm:py-4 border border-gold-500/25 text-intellex-text rounded-full hover:border-gold-500/50 hover:bg-gold-500/5 transition-all duration-200 text-sm sm:text-base w-full sm:w-auto justify-center"
           >
             Explore Programs
           </a>
@@ -176,10 +176,10 @@ export default function HomePage() {
           variants={fadeUp}
           className="text-center mb-14"
         >
-          <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">
+          <h2 className="font-display text-2xl sm:text-4xl md:text-5xl font-bold mb-4">
             Programs that <span className="gradient-text">build careers</span>
           </h2>
-          <p className="text-intellex-muted text-lg max-w-xl mx-auto">
+          <p className="text-intellex-muted text-sm sm:text-lg max-w-xl mx-auto">
             From absolute beginner to production-ready developer. Full programs or focused
             modules - you choose your pace and path.
           </p>
@@ -288,12 +288,12 @@ export default function HomePage() {
           className="glass-card p-8 md:p-12 text-center"
         >
           <Star size={28} className="text-gold-400 mx-auto mb-6" />
-          <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="font-display text-xl sm:text-3xl md:text-4xl font-bold mb-4">
             Started with a WhatsApp group.
             <br />
             <span className="gradient-text">Growing into a movement.</span>
           </h2>
-          <p className="text-intellex-muted text-lg max-w-2xl mx-auto mb-8 leading-relaxed">
+          <p className="text-intellex-muted text-sm sm:text-lg max-w-2xl mx-auto mb-8 leading-relaxed">
             Intellex was born in October 2023 with one mission: make real tech education
             accessible in Cameroon. Within a year, over 600 learners joined through a simple
             WhatsApp community. Now we&apos;re building the platform that community deserves -
@@ -301,7 +301,7 @@ export default function HomePage() {
           </p>
           <Link
             href="/register"
-            className="inline-flex items-center gap-3 px-8 py-4 bg-gold-500 text-navy-900 font-semibold rounded-full hover:bg-gold-300 transition-all duration-200 hover:scale-105"
+            className="inline-flex items-center gap-2 px-6 py-3 sm:px-8 sm:py-4 bg-gold-500 text-navy-900 font-semibold text-sm sm:text-base rounded-full hover:bg-gold-300 transition-all duration-200 hover:scale-105"
           >
             Be part of what&apos;s next <ArrowRight size={16} />
           </Link>
