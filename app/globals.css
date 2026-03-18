@@ -1,0 +1,121 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-syne: 'Syne', sans-serif;
+  --font-jakarta: 'Plus Jakarta Sans', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #060D1A;
+  color: #F0EDE8;
+  font-family: var(--font-jakarta);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #060D1A;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(13, 188, 102, 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(13, 188, 102, 0.5);
+}
+
+/* Selection */
+::selection {
+  background: rgba(13, 188, 102, 0.25);
+  color: #F0EDE8;
+}
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid rgba(13, 188, 102, 0.6);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Form input base */
+.form-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(13, 188, 102, 0.15);
+  border-radius: 10px;
+  padding: 14px 16px;
+  color: #F0EDE8;
+  font-family: var(--font-jakarta);
+  font-size: 15px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.form-input::placeholder {
+  color: #4A5568;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: rgba(13, 188, 102, 0.5);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.form-input:hover {
+  border-color: rgba(13, 188, 102, 0.3);
+}
+
+select.form-input option {
+  background: #0D1B2E;
+  color: #F0EDE8;
+}
+
+textarea.form-input {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Green glow utility */
+.gold-glow {
+  box-shadow: 0 0 40px rgba(13, 188, 102, 0.12), 0 0 80px rgba(13, 188, 102, 0.06);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #57efa5 0%, #0dbc66 50%, #0a9a52 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card glass effect */
+.glass-card {
+  background: rgba(17, 34, 64, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(13, 188, 102, 0.12);
+  border-radius: 16px;
+}
+
+/* Animate delay utilities */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
