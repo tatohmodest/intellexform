@@ -4,7 +4,7 @@ import RegistrationForm from '@/components/RegistrationForm';
 import { Loader2, ArrowLeft } from 'lucide-react';
 
 export const metadata = {
-  title: 'Register — Intellex Early Access',
+  title: 'Register , Intellex Early Access',
   description: 'Join Intellex. Fill the form, download your invoice, and start your tech journey.',
 };
 
@@ -50,12 +50,12 @@ export default function RegisterPage() {
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold-500/30 bg-gold-500/10 text-gold-400 text-xs font-semibold tracking-wider uppercase mb-5">
           Early Access Registration
         </div>
-        <h1 className="font-display text-4xl md:text-5xl font-bold leading-tight mb-3">
+        <h1 className="font-display text-2xl sm:text-4xl md:text-5xl font-bold leading-tight mb-3">
           Your journey starts <span className="gradient-text">here.</span>
         </h1>
-        <p className="text-intellex-muted text-base max-w-lg mx-auto leading-relaxed">
+        <p className="text-intellex-muted text-sm sm:text-base max-w-lg mx-auto leading-relaxed">
           Fill the form below. At the end, your personalized invoice will be generated
-          automatically — download it, pay, and you&apos;re in.
+          automatically , download it, pay, and you&apos;re in.
         </p>
       </div>
 

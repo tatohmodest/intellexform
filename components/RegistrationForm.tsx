@@ -151,10 +151,10 @@ export default function RegistrationForm() {
           >
             <CheckCircle size={32} className="text-gold-400" />
           </motion.div>
-          <h2 className="font-display text-3xl font-bold mb-3 gradient-text">
+          <h2 className="font-display text-2xl sm:text-3xl font-bold mb-3 gradient-text">
             You&apos;re registered!
           </h2>
-          <p className="text-intellex-muted text-base leading-relaxed mb-1">
+          <p className="text-intellex-muted text-sm sm:text-base leading-relaxed mb-1">
             Welcome, <span className="text-intellex-text font-semibold">{formData.fullName}</span>.
           </p>
           <p className="text-intellex-muted text-sm leading-relaxed">
