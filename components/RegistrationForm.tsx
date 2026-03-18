@@ -113,7 +113,17 @@ export default function RegistrationForm() {
   }, [watchedMode]);
 
   const onSubmit = async (data: RegistrationFormData) => {
-    await new Promise((r) => setTimeout(r, 600));
+    try {
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Registration failed');
+    } catch (err) {
+      console.error('Registration error:', err);
+      // Still show success view so user can download invoice
+    }
     setFormData(data);
     setSubmitted(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -176,7 +186,7 @@ export default function RegistrationForm() {
             </div>
             <div>
               <h3 className="font-semibold text-intellex-text text-sm">Program Guide & Curriculum</h3>
-              <p className="text-xs text-intellex-muted">8-page guide: all programs, pricing, learning modes, and how to enroll.</p>
+              <p className="text-xs text-intellex-muted">Landscape guide: all programs, pricing, learning modes, and enrollment steps in a compact format.</p>
             </div>
           </div>
           <CurriculumPDFDownload variant="primary" />
@@ -560,7 +570,7 @@ export default function RegistrationForm() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <p className="font-medium text-sm text-intellex-text">Want to review everything first?</p>
-            <p className="text-xs text-intellex-muted mt-0.5">Download our full 8-page Program Guide - all programs, pricing, and learning modes.</p>
+            <p className="text-xs text-intellex-muted mt-0.5">Download our landscape Program Guide - all programs, pricing, and learning modes in a compact layout.</p>
           </div>
           <CurriculumPDFDownload />
         </div>

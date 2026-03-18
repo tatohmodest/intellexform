@@ -16,12 +16,25 @@ const fadeUp = {
 
 const STATS = [
   { icon: Users, label: 'Learners since 2023', value: '600+' },
-  { icon: BookOpen, label: 'Programs available', value: '13' },
+  { icon: BookOpen, label: 'Programs available', value: '15' },
   { icon: Globe, label: 'Online - Cameroon', value: '100%' },
   { icon: Calendar, label: 'Founded', value: 'Oct 2023' },
 ];
 
-const FEATURED_PROGRAMS = PROGRAMS.filter((p) => p.type === 'full').slice(0, 8);
+const FEATURED_PROGRAM_IDS = [
+  'fullstack',
+  'mern',
+  'pern',
+  'data-analysis',
+  'django',
+  'flutter-mobile-design',
+  'react-native-mobile-design',
+  'cybersecurity',
+];
+
+const FEATURED_PROGRAMS = FEATURED_PROGRAM_IDS
+  .map((id) => PROGRAMS.find((p) => p.id === id))
+  .filter((p): p is (typeof PROGRAMS)[number] => Boolean(p));
 
 export default function HomePage() {
   return (

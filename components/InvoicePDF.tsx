@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     backgroundColor: c.navyDark,
-    padding: '28 32 24 32',
+    padding: '24 44 20 44',
   },
   brandName: {
     fontSize: 26,
@@ -120,8 +120,8 @@ const styles = StyleSheet.create({
   // Dates row
   datesRow: {
     flexDirection: 'row',
-    paddingHorizontal: 32,
-    paddingVertical: 16,
+    paddingHorizontal: 44,
+    paddingVertical: 14,
     backgroundColor: c.bgAlt,
     borderBottomWidth: 0.5,
     borderBottomColor: c.border,
@@ -149,8 +149,8 @@ const styles = StyleSheet.create({
   // Parties
   parties: {
     flexDirection: 'row',
-    paddingHorizontal: 32,
-    paddingVertical: 20,
+    paddingHorizontal: 44,
+    paddingVertical: 16,
     borderBottomWidth: 0.5,
     borderBottomColor: c.border,
   },
@@ -177,8 +177,8 @@ const styles = StyleSheet.create({
 
   // Line items table
   tableSection: {
-    paddingHorizontal: 32,
-    paddingTop: 20,
+    paddingHorizontal: 44,
+    paddingTop: 16,
     paddingBottom: 0,
   },
   tableHeader: {
@@ -227,10 +227,10 @@ const styles = StyleSheet.create({
 
   // Totals
   totalsSection: {
-    paddingHorizontal: 32,
+    paddingHorizontal: 44,
     paddingTop: 0,
     alignItems: 'flex-end',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   totalsBox: {
     width: 220,
@@ -269,11 +269,11 @@ const styles = StyleSheet.create({
 
   // Payment section
   paySection: {
-    marginHorizontal: 32,
-    marginBottom: 16,
+    marginHorizontal: 44,
+    marginBottom: 14,
     backgroundColor: c.bgAlt,
     borderRadius: 8,
-    padding: 16,
+    padding: 14,
     borderWidth: 0.5,
     borderColor: c.border,
   },
@@ -323,8 +323,8 @@ const styles = StyleSheet.create({
 
   // Notes
   notesSection: {
-    marginHorizontal: 32,
-    marginBottom: 16,
+    marginHorizontal: 44,
+    marginBottom: 14,
   },
   notesLabel: {
     fontSize: 8,
@@ -344,8 +344,8 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
     borderTopWidth: 0.5,
     borderTopColor: c.border,
-    paddingHorizontal: 32,
-    paddingVertical: 12,
+    paddingHorizontal: 44,
+    paddingVertical: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -383,7 +383,7 @@ export const InvoiceDocument = ({ data }: InvoicePDFProps) => {
       author="Intellex"
       subject="Tutor/Student Registration Invoice"
     >
-      <Page size="A4" style={styles.page}>
+      <Page size="A4" orientation="landscape" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
