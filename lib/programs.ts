@@ -173,6 +173,56 @@ export const PROGRAMS: Program[] = [
     logoUrl: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg',
   },
 
+  {
+    id: 'cybersecurity',
+    title: 'Cybersecurity Fundamentals',
+    shortTitle: 'Cybersecurity',
+    type: 'full',
+    emoji: '🛡️',
+    duration: '4 months',
+    level: 'Beginner → Intermediate',
+    priceXAF: 200000,
+    monthlyXAF: 50000,
+    registrationFee: 10000,
+    description:
+      'Master ethical hacking, network security, and digital defense. Learn to think like an attacker so you can defend like a pro. Aligned with EC-Council standards.',
+    technologies: ['Network Security', 'Linux', 'Kali Linux', 'Wireshark', 'OWASP Top 10', 'Cryptography', 'Firewalls & VPNs', 'Social Engineering', 'Penetration Testing basics'],
+    highlights: [
+      'Ethical hacking & penetration testing fundamentals',
+      'Network security, firewalls, and intrusion detection',
+      'OWASP Top 10 web application vulnerabilities',
+      'Hands-on labs using Kali Linux',
+      'Intellex Certificate of Completion',
+    ],
+    accentColor: '#6D28D9',
+    logoUrl: 'https://www.globaledulink.co.uk/wp-content/uploads/2020/03/2EC-Council-logo.png',
+  },
+  {
+    id: 'cybersecurity-ceh',
+    title: 'Cybersecurity + CEH Certification Prep',
+    shortTitle: 'CEH Prep',
+    type: 'full',
+    emoji: '🏆',
+    duration: '5 months',
+    level: 'Intermediate',
+    priceXAF: 380000,
+    monthlyXAF: 75000,
+    registrationFee: 15000,
+    badge: 'EC-Council',
+    description:
+      'Full cybersecurity training + structured preparation for the EC-Council Certified Ethical Hacker (CEH) exam. Covers all 20 CEH knowledge domains. EC-Council exam voucher purchased separately through ec-council.org.',
+    technologies: ['CEH Syllabus', 'Ethical Hacking', 'Network Security', 'Kali Linux', 'Metasploit', 'Web App Hacking', 'Cryptography', 'IDS & Firewalls', 'Cloud Security', 'Social Engineering'],
+    highlights: [
+      'Full EC-Council CEH exam preparation (all 20 domains)',
+      'Practice exams, mock tests & exam strategy',
+      'Official EC-Council courseware alignment',
+      'Real-world attack simulation labs',
+      'Exam voucher guidance & registration support',
+    ],
+    accentColor: '#DC2626',
+    logoUrl: 'https://www.globaledulink.co.uk/wp-content/uploads/2020/03/2EC-Council-logo.png',
+  },
+
   // ── PARTIAL / MODULE PROGRAMS ───────────────────────────────────
   {
     id: 'webfundamentals',

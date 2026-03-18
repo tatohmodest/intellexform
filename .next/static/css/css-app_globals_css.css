@@ -729,6 +729,9 @@ video {
 .cursor-wait{
   cursor: wait;
 }
+.cursor-not-allowed{
+  cursor: not-allowed;
+}
 .grid-cols-1{
   grid-template-columns: repeat(1, minmax(0, 1fr));
 }
@@ -843,6 +846,9 @@ video {
 }
 .border-white\/5{
   border-color: rgb(255 255 255 / 0.05);
+}
+.border-red-500\/40{
+  border-color: rgb(239 68 68 / 0.4);
 }
 .bg-blue-500\/15{
   background-color: rgb(59 130 246 / 0.15);
@@ -1079,6 +1085,9 @@ video {
 .uppercase{
   text-transform: uppercase;
 }
+.italic{
+  font-style: italic;
+}
 .leading-\[1\.08\]{
   line-height: 1.08;
 }
@@ -1143,6 +1152,9 @@ video {
 }
 .opacity-100{
   opacity: 1;
+}
+.opacity-70{
+  opacity: 0.7;
 }
 .blur-\[100px\]{
   --tw-blur: blur(100px);
@@ -1350,6 +1362,12 @@ textarea.form-input {
   --tw-scale-x: 0.99;
   --tw-scale-y: 0.99;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
+.disabled\:cursor-not-allowed:disabled{
+  cursor: not-allowed;
+}
+.disabled\:opacity-60:disabled{
+  opacity: 0.6;
 }
 .group:hover .group-hover\:gap-2\.5{
   gap: 0.625rem;

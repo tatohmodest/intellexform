@@ -16,12 +16,12 @@ const fadeUp = {
 
 const STATS = [
   { icon: Users, label: 'Learners since 2023', value: '600+' },
-  { icon: BookOpen, label: 'Programs available', value: '11' },
+  { icon: BookOpen, label: 'Programs available', value: '13' },
   { icon: Globe, label: 'Online - Cameroon', value: '100%' },
   { icon: Calendar, label: 'Founded', value: 'Oct 2023' },
 ];
 
-const FEATURED_PROGRAMS = PROGRAMS.filter((p) => p.type === 'full').slice(0, 6);
+const FEATURED_PROGRAMS = PROGRAMS.filter((p) => p.type === 'full').slice(0, 8);
 
 export default function HomePage() {
   return (
@@ -258,7 +258,7 @@ export default function HomePage() {
             href="/register"
             className="inline-flex items-center gap-2 text-intellex-muted hover:text-gold-400 transition-colors text-sm"
           >
-            + 5 more module programs available → Register to see all
+            + 5 module programs available → Register to see all
           </Link>
         </motion.div>
       </section>
