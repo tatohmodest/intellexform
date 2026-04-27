@@ -21,21 +21,21 @@ interface Registration {
 }
 
 const PROGRAM_LABELS: Record<string, string> = {
-  fullstack: 'Full Stack',
-  mern: 'MERN Stack',
-  pern: 'PERN Stack',
+  fullstack: 'Web Development',
+  mern: 'MERN + Next.js',
+  pern: 'PERN + Next.js',
   'data-analysis': 'Data Analysis',
   django: 'Django',
   python: 'Python',
   javascript: 'JavaScript',
-  'flutter-mobile-design': 'Flutter Mobile',
-  'react-native-mobile-design': 'React Native Mobile',
+  'flutter-mobile-design': 'Mobile Dev (Flutter)',
+  'react-native-mobile-design': 'Mobile Dev (React Native)',
   cybersecurity: 'Cybersecurity',
   'cybersecurity-ceh': 'CEH Prep',
   webfundamentals: 'Web Fundamentals',
   htmlcss: 'HTML & CSS',
   jsessentials: 'JS Essentials',
-  'react-basics': 'React Basics',
+  'react-basics': 'React + Next.js',
   'python-basics': 'Python Basics',
 };
 

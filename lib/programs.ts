@@ -5,7 +5,7 @@ export const PROGRAMS: Program[] = [
   {
     id: 'fullstack',
     title: 'Full Stack Web Development',
-    shortTitle: 'Full Stack',
+    shortTitle: 'Web Development',
     type: 'full',
     emoji: '🌐',
     duration: '6 months',
@@ -15,8 +15,8 @@ export const PROGRAMS: Program[] = [
     registrationFee: 5000,
     badge: 'Most Popular',
     description:
-      'The complete journey from zero to full-stack developer. Master both frontend and backend to build complete, deployable web applications.',
-    technologies: ['HTML5', 'CSS3', 'JavaScript', 'React', 'Node.js', 'Express', 'MongoDB', 'PostgreSQL', 'REST APIs', 'Git & GitHub', 'Deployment'],
+      'The complete journey from zero to full-stack web developer. Master frontend and backend to build complete, deployable web applications.',
+    technologies: ['HTML5', 'CSS3', 'JavaScript', 'React', 'Next.js', 'Node.js', 'Express', 'MongoDB', 'PostgreSQL', 'REST APIs', 'Git & GitHub', 'Deployment'],
     highlights: [
       'Build 5+ real-world projects for your portfolio',
       'Frontend design + backend logic + databases',
@@ -29,8 +29,8 @@ export const PROGRAMS: Program[] = [
   },
   {
     id: 'mern',
-    title: 'MERN Stack Development',
-    shortTitle: 'MERN Stack',
+    title: 'MERN with Next.js Development',
+    shortTitle: 'MERN + Next.js',
     type: 'full',
     emoji: '⚛️',
     duration: '4 months',
@@ -39,22 +39,22 @@ export const PROGRAMS: Program[] = [
     monthlyXAF: 60000,
     registrationFee: 5000,
     description:
-      'Master the most in-demand JavaScript full-stack combination: MongoDB, Express, React, and Node.js. Build modern, scalable apps.',
-    technologies: ['React', 'Node.js', 'Express.js', 'MongoDB', 'Mongoose', 'JWT Auth', 'Redux/Context', 'REST APIs', 'Deployment'],
+      'Master the most in-demand JavaScript full-stack combination: MongoDB, Express, React, Next.js, and Node.js. Build modern, scalable apps.',
+    technologies: ['React', 'Next.js', 'Node.js', 'Express.js', 'MongoDB', 'Mongoose', 'JWT Auth', 'Redux/Context', 'REST APIs', 'Deployment'],
     highlights: [
-      'Industry-standard JavaScript stack',
+      'Industry-standard MERN with Next.js stack',
       'Real-time & interactive applications',
       'Full authentication systems (JWT)',
       'State management with Redux',
       '3+ production-quality projects',
     ],
     accentColor: '#61DAFB',
-    logoUrl: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg',
+    logoUrl: '/icons/nextjs.png',
   },
   {
     id: 'pern',
-    title: 'PERN Stack Development',
-    shortTitle: 'PERN Stack',
+    title: 'PERN with Next.js Development',
+    shortTitle: 'PERN + Next.js',
     type: 'full',
     emoji: '🐘',
     duration: '4 months',
@@ -63,8 +63,8 @@ export const PROGRAMS: Program[] = [
     monthlyXAF: 60000,
     registrationFee: 5000,
     description:
-      'Build data-driven, enterprise-grade applications with PostgreSQL, Express, React, and Node.js. Master relational databases.',
-    technologies: ['React', 'Node.js', 'Express.js', 'PostgreSQL', 'Prisma / Sequelize', 'JWT Auth', 'SQL', 'REST APIs', 'Deployment'],
+      'Build data-driven, enterprise-grade applications with PostgreSQL, Express, React, Next.js, and Node.js. Master relational databases.',
+    technologies: ['React', 'Next.js', 'Node.js', 'Express.js', 'PostgreSQL', 'Prisma / Sequelize', 'JWT Auth', 'SQL', 'REST APIs', 'Deployment'],
     highlights: [
       'Relational database design & mastery',
       'Advanced SQL queries & optimization',
@@ -174,8 +174,8 @@ export const PROGRAMS: Program[] = [
   },
   {
     id: 'flutter-mobile-design',
-    title: 'Flutter Mobile Design',
-    shortTitle: 'Flutter Design',
+    title: 'Full Stack Mobile Development (Flutter)',
+    shortTitle: 'Mobile Dev (Flutter)',
     type: 'full',
     emoji: '📱',
     duration: '4 months',
@@ -185,8 +185,8 @@ export const PROGRAMS: Program[] = [
     registrationFee: 5000,
     badge: 'Mobile Focus',
     description:
-      'Design and build polished cross-platform mobile interfaces with Flutter. Learn UI architecture, responsive layouts, and production-ready design systems.',
-    technologies: ['Flutter', 'Dart', 'Material 3', 'Adaptive Layouts', 'Animations', 'State Management', 'Firebase basics', 'Figma handoff'],
+      'Build full-stack cross-platform mobile apps with Flutter. Learn UI architecture, backend API integration, responsive layouts, and production-ready design systems.',
+    technologies: ['Flutter', 'Dart', 'Material 3', 'Adaptive Layouts', 'Animations', 'State Management', 'REST APIs', 'Firebase basics', 'Figma handoff'],
     highlights: [
       'Cross-platform UI workflows for Android and iOS',
       'Design systems and reusable component architecture',
@@ -199,8 +199,8 @@ export const PROGRAMS: Program[] = [
   },
   {
     id: 'react-native-mobile-design',
-    title: 'React Native Mobile Design',
-    shortTitle: 'React Native Design',
+    title: 'Full Stack Mobile Development (React Native)',
+    shortTitle: 'Mobile Dev (React Native)',
     type: 'full',
     emoji: '🧩',
     duration: '4 months',
@@ -210,7 +210,7 @@ export const PROGRAMS: Program[] = [
     registrationFee: 5000,
     badge: 'App Builder',
     description:
-      'Build modern mobile apps with React Native while mastering UX patterns, navigation systems, and scalable UI code for high-performance products.',
+      'Build full-stack mobile apps with React Native while mastering UX patterns, navigation systems, backend API integration, and scalable UI code for high-performance products.',
     technologies: ['React Native', 'TypeScript', 'Expo', 'Navigation', 'UI Libraries', 'Animations', 'REST APIs', 'Testing basics'],
     highlights: [
       'Reusable mobile components and scalable architecture',
@@ -342,8 +342,8 @@ export const PROGRAMS: Program[] = [
   },
   {
     id: 'react-basics',
-    title: 'React Fundamentals',
-    shortTitle: 'React Basics',
+    title: 'React & Next.js Fundamentals',
+    shortTitle: 'React + Next.js',
     type: 'partial',
     emoji: '⚛',
     duration: '6 weeks',
@@ -351,16 +351,16 @@ export const PROGRAMS: Program[] = [
     priceXAF: 50000,
     registrationFee: 5000,
     description:
-      'Get started with the world\'s most popular frontend library. Build dynamic, component-based user interfaces with React.',
-    technologies: ['React', 'JSX', 'Components', 'Props & State', 'React Hooks', 'React Router', 'Fetching APIs'],
+      'Get started with modern React and Next.js. Build dynamic, component-based user interfaces and full web apps with App Router.',
+    technologies: ['React', 'Next.js', 'JSX', 'Components', 'Props & State', 'React Hooks', 'App Router', 'Fetching APIs'],
     highlights: [
       'Component-based architecture',
       'React Hooks in depth',
-      'Routing and navigation',
-      'Building single-page apps (SPAs)',
+      'Next.js routing and navigation',
+      'Building modern web apps',
     ],
     accentColor: '#61DAFB',
-    logoUrl: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg',
+    logoUrl: '/icons/nextjs.png',
   },
   {
     id: 'python-basics',

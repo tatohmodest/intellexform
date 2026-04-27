@@ -37,6 +37,7 @@ const ICON: Record<string, string> = {
   css: `${BASE}/icons/css3.png`,
   js: `${BASE}/icons/js.png`,
   react: `${BASE}/icons/react.png`,
+  nextjs: `${BASE}/icons/nextjs.png`,
   node: `${BASE}/icons/nodejs.png`,
   express: `${BASE}/icons/express.png`,
   mongodb: `${BASE}/icons/mongodb.png`,
@@ -60,6 +61,7 @@ const TECH_ICON: Record<string, string> = {
   'Basic JavaScript': ICON.js,
   'ES6+': ICON.js,
   'React': ICON.react,
+  'Next.js': ICON.nextjs,
   'React Native': ICON.reactNative,
   'Node.js': ICON.node,
   'Express': ICON.express,
@@ -508,7 +510,7 @@ export const CurriculumDocument = () => (
       <PageHeader
         eyebrow="INTELLEX PROGRAM GUIDE 2026"
         title="Your Path to Tech Mastery"
-        subtitle="Practical, project-first training built for Cameroon — from zero to job-ready across web development, data, mobile, and cybersecurity."
+        subtitle="Practical, project-first training built for Cameroon — from zero to job-ready across web development, full stack mobile development, data, and cybersecurity."
       />
 
       {/* Metrics */}
@@ -578,7 +580,7 @@ export const CurriculumDocument = () => (
           ))}
         </View>
         <Text style={[s.secHead, { marginTop: 4 }]}>TECHNOLOGIES COVERED ACROSS ALL PROGRAMS</Text>
-        <TechPills techs={['HTML5','CSS3','JavaScript','React','Node.js','Express','MongoDB','PostgreSQL','Python','Django','Pandas','NumPy','Git & GitHub','Redux/Context','Flutter','React Native','Kali Linux','Linux']} />
+        <TechPills techs={['HTML5','CSS3','JavaScript','React','Next.js','Node.js','Express','MongoDB','PostgreSQL','Python','Django','Pandas','NumPy','Git & GitHub','Redux/Context','Flutter','React Native','Kali Linux','Linux']} />
       </View>
 
       <Footer page={1} total={TOTAL_PAGES} />
@@ -610,7 +612,7 @@ export const CurriculumDocument = () => (
       <PageHeader
         eyebrow="FULL PROGRAMS — PAGE 2 OF 3"
         title="Specialized & Advanced Programs"
-        subtitle="Deep-dive programs for learners who want to go further — Python, JavaScript mastery, mobile development, and data careers."
+        subtitle="Deep-dive programs for learners who want to go further — Python, JavaScript mastery, web development, and data careers."
       />
 
       <View style={[s.progCardGrid3, { flex: 1 }]}>
@@ -629,7 +631,7 @@ export const CurriculumDocument = () => (
       <PageHeader
         eyebrow="FULL PROGRAMS — PAGE 3 OF 3"
         title="Security, Mobile & Certification Tracks"
-        subtitle="Cybersecurity fundamentals, CEH exam preparation, Flutter mobile design, and React Native app development."
+        subtitle="Cybersecurity fundamentals, CEH exam preparation, and full stack mobile development with Flutter and React Native."
       />
 
       <View style={[s.progCardGrid3, { flex: 1 }]}>
