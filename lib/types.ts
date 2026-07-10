@@ -38,3 +38,79 @@ export type LearningMode = {
   description: string;
   icon: string;
 };
+
+/**
+ * A course in the Intellex catalogue. Featured Intellex programs and imported
+ * external courses share this shape; `featured` + `courseOrigin: 'Intellex'`
+ * marks the platform's own highlighted programs.
+ */
+export interface Course {
+  id: number | string;
+  slug: string;
+  name: string;
+  instructor: string;
+  courseDetails: string;
+  prerequisites: string;
+  whatYouWillLearn: string[];
+  type: string;
+  originalPrice: number;
+  currentPrice: number;
+  aboutInstructor: string;
+  courseRating: number;
+  courseNumberOfVotes: number;
+  courseOrigin: string;
+  courseDuration: string;
+  language: string;
+  bestSeller: boolean;
+  shortDescription: string;
+  courseImage: string;
+  certificateOfCompletion: boolean;
+  accessOnMobileAndTV: boolean;
+  downloadable: boolean;
+  articleType: string;
+  instructorRating: number | null;
+  courseLink: string | null;
+  featured?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Testimonial {
+  id: string;
+  name: string;
+  testimonial: string;
+  fieldOfInterest: string;
+  rating: number;
+  photo: string;
+  video: string;
+}
+
+/**
+ * A contact / enrollment request created from the register form. Stored in the
+ * `requests` collection and surfaced in the admin dashboard. The user is also
+ * redirected to WhatsApp with a pre-written message of these choices.
+ */
+export interface ContactRequest {
+  fullName: string;
+  whatsapp: string;
+  field: string;
+  plan: string;
+  message?: string;
+  createdAt: Date;
+}
+
+/**
+ * A course purchase order created from the checkout flow. Stored in the
+ * `orders` collection and surfaced in the admin dashboard.
+ */
+export interface Order {
+  fullName: string;
+  whatsapp: string;
+  email?: string;
+  courseId: string | number;
+  courseName: string;
+  amountXAF: number;
+  paymentMethod: string;
+  status: string;
+  createdAt: Date;
+}

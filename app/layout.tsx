@@ -2,13 +2,24 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Intellex - Early Access Registration',
+  title: 'Intellex — Learn at your pace, on your terms',
   description:
-    'Join Intellex, the future of tech education in Cameroon. Get early access to our web development and full stack mobile development programs, live tutoring, mentorship, and AI-assisted learning.',
-  keywords: ['Intellex', 'tech education', 'Cameroon', 'coding', 'web development', 'full stack mobile development', 'nextjs', 'early access'],
+    'Intellex is where you actually finish what you start — self-paced courses, live mentors, and an AI tutor that studies a book so it can teach it to you, one level at a time. Built in Cameroon.',
+  keywords: [
+    'Intellex',
+    'tech education',
+    'Cameroon',
+    'coding courses',
+    'web development',
+    'data science',
+    'cybersecurity',
+    'AI tutor',
+    'live tutoring',
+  ],
   openGraph: {
-    title: 'Intellex - Early Access',
-    description: 'The future of tech education in Cameroon is here. Register for early access.',
+    title: 'Intellex — Learn at your pace, on your terms',
+    description:
+      'Self-paced courses, live mentors, and an AI tutor. Skills to income, one level at a time.',
     type: 'website',
   },
 };
@@ -20,9 +31,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className="bg-navy-900 text-intellex-text font-body antialiased">
-        {children}
-      </body>
+      <body className="bg-paper text-ink font-body antialiased">{children}</body>
     </html>
   );
 }

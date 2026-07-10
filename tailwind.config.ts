@@ -9,38 +9,37 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        navy: {
-          950: '#040A14',
-          900: '#060D1A',
-          800: '#0A1628',
-          700: '#0D1B2E',
-          600: '#112240',
-          500: '#162B52',
+        ink: {
+          DEFAULT: '#132019',
+          soft: '#2b3b32',
         },
-        gold: {
-          300: '#57efa5',
-          400: '#2bdb84',
-          500: '#0dbc66',
-          600: '#0a9a52',
-          DEFAULT: '#0dbc66',
+        paper: {
+          DEFAULT: '#FBF8F0',
+          dim: '#F1EEE1',
         },
-        intellex: {
-          text: '#F0EDE8',
-          muted: '#8B9BAD',
-          border: 'rgba(13, 188, 102, 0.2)',
-        }
+        green: {
+          DEFAULT: '#2F8F63',
+          deep: '#1F6B48',
+        },
+        amber: {
+          DEFAULT: '#E3A23A',
+          soft: '#F6E3C0',
+        },
       },
       fontFamily: {
-        display: ['var(--font-syne)', 'sans-serif'],
-        body: ['var(--font-jakarta)', 'sans-serif'],
+        display: ['var(--font-fraunces)', 'Fraunces', 'serif'],
+        body: ['var(--font-public-sans)', 'Public Sans', 'sans-serif'],
+        mono: ['var(--font-plex-mono)', 'IBM Plex Mono', 'monospace'],
       },
-      backgroundImage: {
-        'grid-pattern': "url(\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230dbc66' fill-opacity='0.04'%3E%3Cpath d='M0 0h40v1H0zM0 0v40h1V0z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
+      boxShadow: {
+        book: '0 30px 60px -20px rgba(19,32,25,0.4)',
+        card: '0 20px 40px -24px rgba(19,32,25,0.35)',
       },
       animation: {
         'fade-up': 'fadeUp 0.6s ease-out forwards',
         'fade-in': 'fadeIn 0.5s ease-out forwards',
-        'glow-pulse': 'glowPulse 3s ease-in-out infinite',
+        float: 'float 6s ease-in-out infinite',
+        marquee: 'marquee 40s linear infinite',
       },
       keyframes: {
         fadeUp: {
@@ -51,11 +50,15 @@ const config: Config = {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
         },
-        glowPulse: {
-          '0%, 100%': { opacity: '0.4' },
-          '50%': { opacity: '0.8' },
-        }
-      }
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
+        marquee: {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
+      },
     },
   },
   plugins: [],

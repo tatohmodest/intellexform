@@ -1,335 +1,487 @@
-'use client';
-
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { ArrowRight, Users, BookOpen, Zap, Globe, Star, Calendar } from 'lucide-react';
-import { PROGRAMS } from '@/lib/programs';
+import { getFeaturedCourses } from '@/lib/repo';
+import { formatXAF } from '@/lib/format';
+import TopNav from '@/components/landing/TopNav';
+import Rail from '@/components/landing/Rail';
+import Footer from '@/components/landing/Footer';
+import ContactForm from '@/components/landing/ContactForm';
+import Testimonials from '@/components/landing/Testimonials';
+import CourseCard from '@/components/CourseCard';
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 32 },
-  visible: (i: number = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.1, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] },
-  }),
-};
+export const dynamic = 'force-dynamic';
 
-const STATS = [
-  { icon: Users, label: 'Learners since 2023', value: '600+' },
-  { icon: BookOpen, label: 'Programs available', value: '15' },
-  { icon: Globe, label: 'Online - Cameroon', value: '100%' },
-  { icon: Calendar, label: 'Founded', value: 'Oct 2023' },
+const FIELDS = [
+  { label: 'Full-Stack Web Development', core: true },
+  { label: 'MERN Stack', core: true },
+  { label: 'PERN Stack', core: true },
+  { label: 'Web Dev Fundamentals', core: false },
+  { label: 'Python', core: false },
+  { label: 'JavaScript', core: false },
+  { label: 'Java', core: false },
+  { label: 'Data Analysis & Data Science', core: false },
+  { label: 'Machine Learning', core: false },
+  { label: 'Cybersecurity', core: false },
+  { label: 'Digital Marketing', core: false },
+  { label: 'Branding', core: false },
 ];
 
-const FEATURED_PROGRAM_IDS = [
-  'fullstack',
-  'mern',
-  'pern',
-  'data-analysis',
-  'django',
-  'flutter-mobile-design',
-  'react-native-mobile-design',
-  'cybersecurity',
+const WAYS = [
+  {
+    letter: 'A',
+    title: 'Self-paced courses',
+    body: 'Recorded courses you work through on your own time, in any field we cover. Finish a course and you get a certificate — it just proves you did the work.',
+    tag: 'Included in every subscription',
+  },
+  {
+    letter: 'B',
+    title: 'Live tutoring',
+    body: 'A mentor teaches you directly — online from anywhere, or onsite at a location you choose. Best for people who need a real person keeping them accountable.',
+    tag: 'Priced per mentor & format',
+  },
+  {
+    letter: 'C',
+    title: 'AI Tutor',
+    body: 'We take a real book — say, Python Crash Course — and train an AI on it that teaches like the author would, step by step, level by level. Unlock levels as you go, or all at once.',
+    tag: 'Pay per level, or pay once',
+  },
 ];
 
-const FEATURED_PROGRAMS = FEATURED_PROGRAM_IDS
-  .map((id) => PROGRAMS.find((p) => p.id === id))
-  .filter((p): p is (typeof PROGRAMS)[number] => Boolean(p));
+export default async function HomePage() {
+  const featured = await getFeaturedCourses();
+  const bySlug = (s: string) => featured.find((c) => c.slug === s);
+  const topCourses = [
+    bySlug('fullstack-web-development'),
+    bySlug('python-from-zero'),
+    bySlug('data-analysis-data-science'),
+  ].filter(Boolean) as typeof featured;
+  const moreCourses = featured
+    .filter((c) => c.slug !== 'fullstack-3-weeks-ai' && !topCourses.includes(c))
+    .slice(0, 6);
+  const special = bySlug('fullstack-3-weeks-ai');
 
-export default function HomePage() {
   return (
-    <main className="min-h-screen bg-navy-900 relative overflow-x-hidden">
-      {/* Background grid */}
-      <div className="fixed inset-0 bg-grid-pattern opacity-100 pointer-events-none" />
+    <>
+      <Rail />
+      <TopNav />
 
-      {/* Ambient glow */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full bg-gold-500/5 blur-[120px] pointer-events-none" />
-
-      {/* ── NAV ─────────────────────────────────────────────── */}
-      <nav className="relative z-50 flex items-center justify-between px-6 md:px-12 py-6 border-b border-gold-500/10">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex items-center gap-2"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Intellex" className="h-8 w-auto object-contain" />
-          <span className="text-xs text-intellex-muted font-body tracking-widest uppercase">
-            Early Access
-          </span>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="flex items-center gap-4"
-        >
-          <a
-            href="https://wa.me/237650318856"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden md:flex items-center gap-2 text-sm text-intellex-muted hover:text-gold-400 transition-colors"
-          >
-            <span>WhatsApp Support</span>
-          </a>
-          <Link
-            href="/register"
-            className="flex items-center gap-1.5 px-3.5 py-2 sm:px-5 sm:py-2.5 bg-gold-500 text-navy-900 text-xs sm:text-sm font-semibold rounded-full hover:bg-gold-300 transition-all duration-200 hover:scale-105 whitespace-nowrap"
-          >
-            <span className="sm:hidden">Register</span>
-            <span className="hidden sm:inline">Register Now</span>
-            <ArrowRight size={13} className="hidden sm:block" />
-          </Link>
-        </motion.div>
-      </nav>
-
-      {/* ── HERO ────────────────────────────────────────────── */}
-      <section className="relative z-10 pt-20 pb-16 px-6 text-center max-w-5xl mx-auto">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={fadeUp}
-          custom={0}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold-500/30 bg-gold-500/10 text-gold-400 text-xs font-semibold tracking-wider uppercase mb-8"
-        >
-          <Zap size={12} className="fill-gold-400" />
-          Early Access Now Open
-        </motion.div>
-
-        <motion.h1
-          initial="hidden"
-          animate="visible"
-          variants={fadeUp}
-          custom={1}
-          className="font-display text-3xl sm:text-5xl md:text-7xl font-bold leading-[1.08] tracking-tight mb-6"
-        >
-          The future of{' '}
-          <span className="gradient-text">tech education</span>
-          <br />
-          in Cameroon.
-        </motion.h1>
-
-        <motion.p
-          initial="hidden"
-          animate="visible"
-          variants={fadeUp}
-          custom={2}
-          className="text-intellex-muted text-sm sm:text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
-        >
-          Intellex is a multi-mode digital learning platform - self-paced courses, live
-          tutoring, mentorship, and AI assistance - built to turn you from curious to capable.
-        </motion.p>
-
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={fadeUp}
-          custom={3}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4"
-        >
-          <Link
-            href="/register"
-            className="flex items-center gap-2 px-6 py-3 sm:px-8 sm:py-4 bg-gold-500 text-navy-900 font-semibold text-sm sm:text-base rounded-full hover:bg-gold-300 transition-all duration-200 hover:scale-105 gold-glow w-full sm:w-auto justify-center"
-          >
-            Get Early Access
-            <ArrowRight size={18} />
-          </Link>
-          <a
-            href="#programs"
-            className="flex items-center gap-2 px-6 py-3 sm:px-8 sm:py-4 border border-gold-500/25 text-intellex-text rounded-full hover:border-gold-500/50 hover:bg-gold-500/5 transition-all duration-200 text-sm sm:text-base w-full sm:w-auto justify-center"
-          >
-            Explore Programs
-          </a>
-        </motion.div>
-      </section>
-
-      {/* ── STATS ───────────────────────────────────────────── */}
-      <section className="relative z-10 max-w-4xl mx-auto px-6 pb-20">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {STATS.map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              initial="hidden"
-              animate="visible"
-              variants={fadeUp}
-              custom={i + 4}
-              className="glass-card p-5 text-center"
-            >
-              <stat.icon size={20} className="text-gold-400 mx-auto mb-2" />
-              <div className="font-display text-2xl font-bold text-intellex-text mb-1">
-                {stat.value}
-              </div>
-              <div className="text-xs text-intellex-muted">{stat.label}</div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── PROGRAMS ────────────────────────────────────────── */}
-      <section id="programs" className="relative z-10 max-w-6xl mx-auto px-6 pb-24">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={fadeUp}
-          className="text-center mb-14"
-        >
-          <h2 className="font-display text-2xl sm:text-4xl md:text-5xl font-bold mb-4">
-            Programs that <span className="gradient-text">build careers</span>
-          </h2>
-          <p className="text-intellex-muted text-sm sm:text-lg max-w-xl mx-auto">
-            From absolute beginner to production-ready developer. Full programs or focused
-            modules - you choose your pace and path.
-          </p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {FEATURED_PROGRAMS.map((prog, i) => (
-            <motion.div
-              key={prog.id}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={fadeUp}
-              custom={i}
-              className="glass-card p-6 hover:border-gold-500/25 transition-all duration-300 hover:scale-[1.02] group relative overflow-hidden"
-            >
-              {prog.badge && (
-                <span className="absolute top-4 right-4 text-xs bg-gold-500/20 text-gold-400 px-3 py-1 rounded-full font-semibold border border-gold-500/20">
-                  {prog.badge}
-                </span>
-              )}
-
-              <div className="flex items-center gap-3 mb-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={prog.logoUrl}
-                  alt={prog.shortTitle}
-                  width={36}
-                  height={36}
-                  className="rounded-lg"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-                <div>
-                  <div className="font-display font-semibold text-intellex-text text-base leading-tight">
-                    {prog.shortTitle}
-                  </div>
-                  <div className="text-xs text-intellex-muted">{prog.duration}</div>
+      {/* HERO */}
+      <header className="pb-10 pt-16">
+        <div className="wrap grid items-center gap-14 lg:grid-cols-[1.1fr_0.9fr]">
+          <div>
+            <div className="mb-4 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.1em]" style={{ color: 'var(--green-deep)' }}>
+              <span style={{ width: 18, height: 1, background: 'var(--green-deep)' }} /> Skills to income, at your own pace
+            </div>
+            <h1 className="mb-5 font-display text-[40px] leading-[1.04] sm:text-[52px]">
+              A course is only the <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>first chapter.</em>
+              <br />
+              Learning is the rest of the book.
+            </h1>
+            <p className="mb-7 max-w-[480px] text-[18px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+              Intellex is where you actually finish what you start — self-paced courses, live mentors, and
+              an AI tutor that studies a book so it can teach it to you, one level at a time.
+            </p>
+            <div className="mb-9 flex flex-wrap gap-3.5">
+              <a href="#pricing" className="btn btn-primary">See pricing</a>
+              <a href="#learn" className="btn btn-ghost">How it works</a>
+            </div>
+            <div className="flex gap-9 border-t pt-6" style={{ borderColor: 'var(--line)' }}>
+              {[
+                { num: '360+', label: 'Learners' },
+                { num: '12', label: 'Fields covered' },
+                { num: '90+', label: 'Courses' },
+              ].map((s) => (
+                <div key={s.label}>
+                  <div className="font-display text-[26px] font-semibold">{s.num}</div>
+                  <div className="text-xs uppercase tracking-[0.06em]" style={{ color: 'var(--ink-soft)' }}>{s.label}</div>
                 </div>
-              </div>
+              ))}
+            </div>
+          </div>
 
-              <p className="text-intellex-muted text-sm leading-relaxed mb-4 line-clamp-2">
-                {prog.description}
-              </p>
-
-              <div className="flex flex-wrap gap-1.5 mb-4">
-                {prog.technologies.slice(0, 4).map((tech) => (
-                  <span
-                    key={tech}
-                    className="text-xs px-2 py-0.5 rounded-md bg-white/5 text-intellex-muted border border-white/5"
-                  >
-                    {tech}
-                  </span>
-                ))}
-                {prog.technologies.length > 4 && (
-                  <span className="text-xs px-2 py-0.5 rounded-md bg-white/5 text-intellex-muted">
-                    +{prog.technologies.length - 4} more
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                <div>
-                  <div className="text-gold-400 font-display font-bold text-lg">
-                    {prog.monthlyXAF
-                      ? `${(prog.monthlyXAF / 1000).toFixed(0)}k XAF/mo`
-                      : `${(prog.priceXAF / 1000).toFixed(0)}k XAF`}
-                  </div>
-                  <div className="text-xs text-intellex-muted">{prog.level}</div>
-                </div>
-                <Link
-                  href="/register"
-                  className="text-xs flex items-center gap-1.5 text-gold-400 hover:text-gold-300 transition-colors group-hover:gap-2.5"
+          {/* Book card */}
+          <div className="relative rounded-[20px] p-8 shadow-book" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
+            <div className="absolute left-[-10px] top-4 bottom-4 w-2.5 rounded-l-md" style={{ background: 'var(--green-deep)' }} />
+            <div className="mb-5">
+              <div className="font-mono text-[11px] uppercase tracking-wide" style={{ color: 'var(--amber)' }}>AI Tutor · Python Crash Course</div>
+              <h3 className="mt-1.5 font-display text-[22px]">Studying with the author</h3>
+            </div>
+            <div className="my-5 flex flex-col gap-2.5">
+              {[
+                { label: 'Level 1 — Variables & data types', state: 'done' },
+                { label: 'Level 2 — Control flow & loops', state: 'done' },
+                { label: 'Level 3 — Functions & scope', state: 'active' },
+                { label: 'Level 4 — Classes & objects', state: 'locked' },
+                { label: 'Level 5 — Files & error handling', state: 'locked' },
+              ].map((lv, i) => (
+                <div
+                  key={lv.label}
+                  className="flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-[13px]"
+                  style={{ background: 'rgba(251,248,240,0.06)', opacity: lv.state === 'locked' ? 0.55 : 1 }}
                 >
-                  Enroll <ArrowRight size={12} />
-                </Link>
+                  <span
+                    className="flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded-full font-mono text-[11px]"
+                    style={{
+                      background:
+                        lv.state === 'done' ? 'var(--green)' : lv.state === 'active' ? 'var(--amber)' : 'rgba(251,248,240,0.14)',
+                      color: lv.state === 'locked' ? 'rgba(251,248,240,0.5)' : 'var(--ink)',
+                    }}
+                  >
+                    {lv.state === 'done' ? '✓' : i + 1}
+                  </span>
+                  {lv.label}
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-3.5 border-t pt-4" style={{ borderColor: 'var(--line-soft)' }}>
+              <div className="h-1.5 flex-1 overflow-hidden rounded-[10px]" style={{ background: 'rgba(251,248,240,0.12)' }}>
+                <div className="h-full rounded-[10px]" style={{ width: '46%', background: 'var(--amber)' }} />
               </div>
-            </motion.div>
-          ))}
+              <div className="font-mono text-[13px]">46%</div>
+            </div>
+          </div>
         </div>
+      </header>
 
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={fadeUp}
-          className="text-center mt-8"
-        >
-          <Link
-            href="/register"
-            className="inline-flex items-center gap-2 text-intellex-muted hover:text-gold-400 transition-colors text-sm"
-          >
-            + 5 module programs available → Register to see all
-          </Link>
-        </motion.div>
-      </section>
-
-      {/* ── WHAT MAKES US DIFFERENT ─────────────────────────── */}
-      <section className="relative z-10 max-w-5xl mx-auto px-6 pb-24">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={fadeUp}
-          className="glass-card p-8 md:p-12 text-center"
-        >
-          <Star size={28} className="text-gold-400 mx-auto mb-6" />
-          <h2 className="font-display text-xl sm:text-3xl md:text-4xl font-bold mb-4">
-            Started with a WhatsApp group.
-            <br />
-            <span className="gradient-text">Growing into a movement.</span>
-          </h2>
-          <p className="text-intellex-muted text-sm sm:text-lg max-w-2xl mx-auto mb-8 leading-relaxed">
-            Intellex was born in October 2023 with one mission: make real tech education
-            accessible in Cameroon. Within a year, over 600 learners joined through a simple
-            WhatsApp community. Now we&apos;re building the platform that community deserves -
-            structured, supported, and built for outcomes.
+      {/* TRUST */}
+      <div className="border-y py-8" style={{ borderColor: 'var(--line)' }}>
+        <div className="wrap flex flex-wrap items-center justify-between gap-7">
+          <p className="max-w-[280px] text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+            Built by Looping Binary — the same team behind Junior Dev and client software across Web Dev,
+            Data, and Cybersecurity.
           </p>
-          <Link
-            href="/register"
-            className="inline-flex items-center gap-2 px-6 py-3 sm:px-8 sm:py-4 bg-gold-500 text-navy-900 font-semibold text-sm sm:text-base rounded-full hover:bg-gold-300 transition-all duration-200 hover:scale-105"
-          >
-            Be part of what&apos;s next <ArrowRight size={16} />
-          </Link>
-        </motion.div>
+          <div className="flex flex-wrap gap-2.5">
+            {['MTN MoMo', 'Orange Money', 'Certificate on completion', 'Cameroon-built'].map((p) => (
+              <span key={p} className="pill">{p}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* WAYS TO LEARN */}
+      <section id="learn" className="py-24">
+        <div className="wrap">
+          <div className="mb-12 max-w-[600px]">
+            <div className="tab mb-4">Ways to learn</div>
+            <h2 className="mb-3.5 text-[38px] leading-[1.12]">Three ways in, one certificate out</h2>
+            <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
+              Pick the format that matches how you actually learn — or mix all three as you go.
+            </p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {WAYS.map((w) => (
+              <div
+                key={w.letter}
+                className="flex flex-col gap-3.5 rounded-[18px] border p-7"
+                style={{ background: 'var(--paper-dim)', borderColor: 'var(--line)' }}
+              >
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl font-display text-lg" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
+                  {w.letter}
+                </div>
+                <h3 className="font-display text-xl">{w.title}</h3>
+                <p className="text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>{w.body}</p>
+                <div className="mt-auto font-mono text-xs" style={{ color: 'var(--green-deep)' }}>{w.tag}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
-      {/* ── FOOTER ──────────────────────────────────────────── */}
-      <footer className="relative z-10 border-t border-gold-500/10 px-6 py-8 text-center">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="Intellex" className="h-7 w-auto object-contain mx-auto mb-2" />
-        <p className="text-intellex-muted text-sm mb-3">
-          Digital Learning Platform · Cameroon · Online Only
-        </p>
-        <div className="flex items-center justify-center gap-6 text-xs text-intellex-muted">
-          <a
-            href="https://wa.me/237650318856"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-gold-400 transition-colors"
-          >
-            WhatsApp: +237 650 318 856
-          </a>
-          <span>·</span>
-          <span>MTN MoMo: 674 435 138</span>
-          <span>·</span>
-          <span>Orange: 686 705 607</span>
+      {/* FIELDS */}
+      <section id="fields" className="py-24" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
+        <div className="wrap">
+          <div className="mb-12 max-w-[600px]">
+            <div className="tab mb-4" style={{ background: 'rgba(227,162,58,0.18)', color: 'var(--amber)' }}>Fields</div>
+            <h2 className="mb-3.5 text-[38px] leading-[1.12]">Whatever field you&apos;re chasing, it&apos;s in here</h2>
+            <p className="text-base" style={{ color: 'rgba(251,248,240,0.72)' }}>
+              Full stacks, single languages, or one specific skill — you&apos;re not boxed into one path.
+            </p>
+          </div>
+          <div className="mb-9 flex flex-wrap gap-3">
+            {FIELDS.map((f) => (
+              <div
+                key={f.label}
+                className="rounded-full px-4.5 py-2.5 text-sm"
+                style={{
+                  border: `1px solid ${f.core ? 'var(--green-deep)' : 'rgba(251,248,240,0.22)'}`,
+                  background: f.core ? 'var(--green-deep)' : 'rgba(251,248,240,0.04)',
+                  fontWeight: f.core ? 600 : 400,
+                  padding: '11px 18px',
+                }}
+              >
+                {f.label}
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-5 border-t pt-6" style={{ borderColor: 'rgba(251,248,240,0.18)' }}>
+            <p className="max-w-[520px] text-base">
+              Not sure which of these gets you where you want to go? Tell us your goal and we&apos;ll point
+              you to the right course, mentor, or AI tutor track.
+            </p>
+            <a href="#register" className="btn btn-amber">Help me choose</a>
+          </div>
         </div>
-      </footer>
-    </main>
+      </section>
+
+      {/* COURSES */}
+      <section id="courses" className="py-24">
+        <div className="wrap">
+          <div className="mb-12 flex flex-wrap items-end justify-between gap-5">
+            <div className="max-w-[600px]">
+              <div className="tab mb-4">Courses</div>
+              <h2 className="mb-3.5 text-[38px] leading-[1.12]">Top courses, picked to move you forward</h2>
+              <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
+                Every Intellex course is self-paced, included the moment it&apos;s part of your plan, and ends
+                in a certificate. Prices shown are for buying a single course outright.
+              </p>
+            </div>
+            <Link href="/courses" className="btn btn-ghost">Browse all courses →</Link>
+          </div>
+
+          <div className="mb-14 grid gap-6 md:grid-cols-3">
+            {topCourses.map((c) => (
+              <CourseCard key={c.slug} course={c} />
+            ))}
+          </div>
+
+          <div className="mb-6 flex items-center gap-3">
+            <div className="tab">More to explore</div>
+            <div className="h-px flex-1" style={{ background: 'var(--line)' }} />
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {moreCourses.map((c) => (
+              <CourseCard key={c.slug} course={c} />
+            ))}
+          </div>
+
+          {/* SPECIAL PROGRAM */}
+          {special && (
+            <div
+              className="relative mt-14 overflow-hidden rounded-[24px] p-11"
+              style={{ background: 'linear-gradient(135deg, var(--green-deep), #17553a)', color: 'var(--paper)' }}
+            >
+              <div className="relative grid items-center gap-9 lg:grid-cols-[1.2fr_0.8fr]">
+                <div>
+                  <div className="mb-3.5 font-mono text-[11.5px] uppercase tracking-[0.1em]" style={{ color: 'var(--amber)' }}>
+                    Special program · Cohort-based
+                  </div>
+                  <h3 className="mb-3 font-display text-[28px] leading-[1.15]">
+                    Build a real full-stack app in 3 weeks, coding alongside Claude Code &amp; Cursor AI
+                  </h3>
+                  <p className="mb-5 max-w-[480px] text-[14.5px] leading-relaxed" style={{ color: 'rgba(251,248,240,0.82)' }}>
+                    Not a theory course. You ship a working, deployed full-stack application in three weeks,
+                    using AI coding tools the way working developers do — as a pair-programmer, not a crutch.
+                  </p>
+                  <ul className="mb-0 flex flex-col gap-2">
+                    {special.whatYouWillLearn.slice(0, 3).map((p) => (
+                      <li key={p} className="relative pl-5 text-[13.5px]" style={{ color: 'rgba(251,248,240,0.92)' }}>
+                        <span className="absolute left-0" style={{ color: 'var(--amber)' }}>—</span> {p}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-[18px] border p-6" style={{ background: 'rgba(251,248,240,0.08)', borderColor: 'rgba(251,248,240,0.18)' }}>
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {['Claude Code', 'Cursor AI', 'Full-Stack', '3 weeks'].map((s) => (
+                      <span key={s} className="rounded-full px-2.5 py-1 font-mono text-[10.5px]" style={{ background: 'rgba(251,248,240,0.12)' }}>{s}</span>
+                    ))}
+                  </div>
+                  <div className="font-mono text-[13px] line-through opacity-60">{formatXAF(special.originalPrice)}</div>
+                  <div className="my-1 mb-5 flex items-baseline gap-1.5">
+                    <span className="font-display text-[32px] font-semibold">{formatXAF(special.currentPrice)}</span>
+                    <span className="text-[12.5px]" style={{ color: 'rgba(251,248,240,0.7)' }}>/ cohort</span>
+                  </div>
+                  <Link href={`/courses/${special.slug}`} className="btn btn-amber w-full">Reserve my seat</Link>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* PRICING */}
+      <section id="pricing" className="py-24" style={{ background: 'var(--paper-dim)' }}>
+        <div className="wrap">
+          <div className="mb-12 max-w-[600px]">
+            <div className="tab mb-4">Pricing</div>
+            <h2 className="mb-3.5 text-[38px] leading-[1.12]">Priced for students, not corporations</h2>
+            <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
+              We tried higher prices before this. This is the number that actually gets used.
+            </p>
+          </div>
+          <div className="grid items-stretch gap-6 md:grid-cols-3">
+            {/* Monthly */}
+            <div className="flex flex-col rounded-[20px] border bg-paper p-8" style={{ borderColor: 'var(--line)' }}>
+              <h3 className="mb-1.5 font-display text-[19px]">Monthly</h3>
+              <div className="mb-5 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>Full access to every self-paced course, in every field, for as long as you&apos;re subscribed.</div>
+              <div className="mb-5 flex items-baseline gap-1.5">
+                <span className="font-display text-[34px] font-semibold">1,999</span>
+                <span className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>XAF / month</span>
+              </div>
+              <ul className="mb-6 flex flex-col gap-2.5 text-sm">
+                {['Every self-paced course, every field', 'Certificate after each course', 'Cancel or pause anytime'].map((li) => (
+                  <li key={li} className="relative pl-5"><span className="absolute left-0" style={{ color: 'var(--green-deep)' }}>—</span>{li}</li>
+                ))}
+              </ul>
+              <a href="#register" className="btn btn-primary mt-auto">Start monthly</a>
+            </div>
+            {/* Yearly featured */}
+            <div className="relative flex flex-col rounded-[20px] p-8" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
+              <span className="absolute -top-3 right-6 rounded-full px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em]" style={{ background: 'var(--amber)', color: 'var(--ink)' }}>Best value</span>
+              <h3 className="mb-1.5 font-display text-[19px]">Yearly</h3>
+              <div className="mb-5 text-[13.5px]" style={{ color: 'rgba(251,248,240,0.7)' }}>Same access as monthly, paid once a year — 6% cheaper than paying month to month.</div>
+              <div className="font-mono text-[14px] line-through opacity-55">24,000 XAF</div>
+              <div className="mb-5 mt-1.5 flex items-baseline gap-1.5">
+                <span className="font-display text-[34px] font-semibold">22,560</span>
+                <span className="text-[13px]" style={{ color: 'rgba(251,248,240,0.7)' }}>XAF / year</span>
+              </div>
+              <ul className="mb-6 flex flex-col gap-2.5 text-sm">
+                {['Everything in Monthly', '6% off the monthly rate', 'One payment, no renewals to track'].map((li) => (
+                  <li key={li} className="relative pl-5"><span className="absolute left-0" style={{ color: 'var(--amber)' }}>—</span>{li}</li>
+                ))}
+              </ul>
+              <a href="#register" className="btn btn-amber mt-auto">Start yearly</a>
+            </div>
+            {/* Single */}
+            <div className="flex flex-col rounded-[20px] border bg-paper p-8" style={{ borderColor: 'var(--line)' }}>
+              <h3 className="mb-1.5 font-display text-[19px]">Single courses</h3>
+              <div className="mb-5 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>No subscription. Buy one course outright and keep it.</div>
+              <div className="mb-5 flex items-baseline gap-1.5">
+                <span className="font-display text-[34px] font-semibold">From 4,999</span>
+                <span className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>XAF / course</span>
+              </div>
+              <ul className="mb-6 flex flex-col gap-2.5 text-sm">
+                {['Lifetime access to that course', 'Certificate on completion', 'Good for one specific skill'].map((li) => (
+                  <li key={li} className="relative pl-5"><span className="absolute left-0" style={{ color: 'var(--green-deep)' }}>—</span>{li}</li>
+                ))}
+              </ul>
+              <Link href="/courses" className="btn btn-primary mt-auto">Browse courses</Link>
+            </div>
+          </div>
+
+          <div id="discounts" className="mt-6 grid gap-5 md:grid-cols-2">
+            {[
+              { pct: '6%', title: 'Pay yearly, not monthly', body: 'Commit for a year up front and the price drops from 24,000 to 22,560 XAF automatically.' },
+              { pct: '30%', title: 'Win the Junior Dev tournament', body: 'Junior Dev champions get 30% off their first Intellex plan — one more reason to compete.' },
+            ].map((d) => (
+              <div key={d.title} className="flex items-start gap-4 rounded-[16px] p-6" style={{ border: '1px dashed var(--green-deep)', background: 'rgba(47,143,99,0.06)' }}>
+                <div className="font-display text-[26px]" style={{ color: 'var(--green-deep)' }}>{d.pct}</div>
+                <div>
+                  <h4 className="mb-1 text-[15px] font-semibold">{d.title}</h4>
+                  <p className="text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>{d.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* LIVE TUTORING */}
+      <section className="py-24">
+        <div className="wrap grid items-center gap-14 lg:grid-cols-2">
+          <div>
+            <div className="tab mb-4">Live Tutoring</div>
+            <h2 className="mb-3.5 text-[34px]">Sometimes you need a person, not a playlist</h2>
+            <p className="mb-6 text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+              Mentors teach live, one-on-one or in small groups, in any field we cover. You choose the format.
+            </p>
+            <div className="mb-6 flex gap-2.5">
+              <div className="flex-1 rounded-[14px] border p-[18px]" style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}>
+                <h4 className="mb-1.5 font-display text-[15px]">Online</h4>
+                <p className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>Sessions over video call, on your schedule. Lower cost, same mentor quality.</p>
+              </div>
+              <div className="flex-1 rounded-[14px] border p-[18px]" style={{ borderColor: 'var(--line)', background: 'var(--amber-soft)' }}>
+                <h4 className="mb-1.5 font-display text-[15px]">Onsite</h4>
+                <p className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>Mentor comes to a location you choose. Costs more, but nothing beats in-person.</p>
+              </div>
+            </div>
+            <a href="#register" className="btn btn-ghost">Get a quote for your subject</a>
+          </div>
+          <div className="rounded-[20px] p-7" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
+            <div className="mb-4.5 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-[10px] font-display" style={{ background: 'var(--green-deep)' }}>M</div>
+              <div>
+                <div className="text-[14.5px] font-semibold">Mentor-led session</div>
+                <div className="text-xs" style={{ color: 'rgba(251,248,240,0.6)' }}>Full-Stack Web Development</div>
+              </div>
+            </div>
+            <div className="mb-2.5 rounded-[12px] px-4 py-3.5 text-[13.5px] leading-relaxed" style={{ background: 'rgba(251,248,240,0.06)' }}>
+              &ldquo;Let&apos;s start with how your React state actually re-renders — bring your last project and we&apos;ll debug it live.&rdquo;
+            </div>
+            <div className="rounded-[12px] px-4 py-3.5 text-[13.5px] leading-relaxed" style={{ background: 'rgba(251,248,240,0.06)' }}>
+              Onsite sessions are priced per mentor, subject, and distance. Tell us where you are and what you want to learn.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* AI TUTOR */}
+      <section id="ai" className="py-24" style={{ background: 'var(--paper-dim)' }}>
+        <div className="wrap">
+          <div className="mb-12 max-w-[600px]">
+            <div className="tab mb-4">AI Tutor</div>
+            <h2 className="mb-3.5 text-[38px] leading-[1.12]">We teach the AI the book, so it can teach you</h2>
+            <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
+              Take a real textbook — Python Crash Course, for example. We give the AI the full book and it
+              teaches you in that author&apos;s voice, level by level.
+            </p>
+          </div>
+          <div className="flex flex-col gap-4">
+            <div className="rounded-[14px] border bg-paper p-[22px]" style={{ borderColor: 'var(--line)' }}>
+              <h4 className="mb-1.5 flex items-center gap-2 font-display text-[16px]">
+                Pay as you go <span className="rounded-full px-2 py-0.5 font-mono text-[10.5px] uppercase" style={{ background: 'var(--green-deep)', color: 'var(--paper)' }}>Level by level</span>
+              </h4>
+              <p className="text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>Pay for one level at a time. Finish it, unlock the next. Go slow and only pay for what you&apos;re using right now.</p>
+            </div>
+            <div className="rounded-[14px] border bg-paper p-[22px]" style={{ borderColor: 'var(--line)' }}>
+              <h4 className="mb-1.5 flex items-center gap-2 font-display text-[16px]">
+                Pay once <span className="rounded-full px-2 py-0.5 font-mono text-[10.5px] uppercase" style={{ background: 'var(--green-deep)', color: 'var(--paper)' }}>Everything, now</span>
+              </h4>
+              <p className="text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>Unlock every level of that course immediately with one payment and move at whatever speed you want.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* JUNIOR DEV */}
+      <section className="px-6 pb-24 pt-6">
+        <div className="mx-auto max-w-[1140px] rounded-[24px] p-12" style={{ background: 'var(--green-deep)', color: 'var(--paper)' }}>
+          <div className="flex flex-wrap items-center justify-between gap-8">
+            <div>
+              <h3 className="max-w-[520px] font-display text-[26px]">Already in Junior Dev? Your discount is already earned.</h3>
+              <p className="mt-2 max-w-[480px] text-[14.5px]" style={{ color: 'rgba(251,248,240,0.82)' }}>
+                Junior Dev isn&apos;t separate from Intellex — Builder tier and above already includes Intellex
+                course access, and tournament winners get 30% off on top of that.
+              </p>
+            </div>
+            <a href="#register" className="btn btn-amber">Check my tier</a>
+          </div>
+        </div>
+      </section>
+
+      {/* TESTIMONIALS */}
+      <Testimonials />
+
+      {/* REGISTER */}
+      <section id="register" className="py-24">
+        <div className="wrap grid gap-14 lg:grid-cols-[0.9fr_1.1fr]">
+          <div>
+            <div className="tab mb-4">Register</div>
+            <h2 className="mb-3.5 text-[34px]">Pick a plan, tell us how to reach you</h2>
+            <p className="text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+              Fill this in and we&apos;ll follow up on WhatsApp with payment details for MTN MoMo or Orange
+              Money, and get your account set up. Your choices are saved and sent straight to us.
+            </p>
+            <div className="mt-4.5 flex flex-wrap gap-2.5" style={{ marginTop: 18 }}>
+              {['MTN MoMo', 'Orange Money', 'Flutterwave (card)'].map((p) => (
+                <span key={p} className="pill">{p}</span>
+              ))}
+            </div>
+          </div>
+          <ContactForm />
+        </div>
+      </section>
+
+      <Footer />
+    </>
   );
 }
