@@ -30,9 +30,9 @@ function VideoBloom({ videos, onOpen }: { videos: T[]; onOpen: (t: T) => void })
 
   // Fan angles for a "blooming from a plant" arrangement.
   const positions = [
-    { angle: -26, x: -230, y: 24 },
+    { angle: -28, x: -250, y: 24 },
     { angle: 0, x: 0, y: -10 },
-    { angle: 26, x: 230, y: 24 },
+    { angle: 28, x: 250, y: 24 },
   ];
 
   return (
@@ -58,7 +58,7 @@ function VideoBloom({ videos, onOpen }: { videos: T[]; onOpen: (t: T) => void })
 
       {videos.slice(0, 3).map((t, i) => {
         const p = positions[i] ?? positions[1];
-        const spread = hovered ? 1 : 0.62;
+        const spread = hovered ? 1.06 : 0.48;
         return (
           <motion.button
             key={t.id}
@@ -159,7 +159,7 @@ function QuoteMarquee({ quotes }: { quotes: T[] }) {
   useAnimationFrame((_, delta) => {
     const el = ref.current;
     if (!el || paused.current) return;
-    el.scrollLeft += (28 * delta) / 1000;
+    el.scrollLeft += (55 * delta) / 1000;
     const half = el.scrollWidth / 2;
     if (half > 0 && el.scrollLeft >= half) el.scrollLeft -= half;
   });
