@@ -64,3 +64,22 @@ export async function createOrder(order: Order) {
   const res = await db.collection('orders').insertOne(order);
   return res.insertedId;
 }
+
+export async function getOrderByTransaction(transactionId: string): Promise<Order | null> {
+  const db = await getDb();
+  const doc = await db
+    .collection('orders')
+    .findOne({ transactionId }, { projection: { _id: 0 } });
+  return (doc as unknown as Order) ?? null;
+}
+
+export async function updateOrderStatus(
+  transactionId: string,
+  status: Order['status'],
+) {
+  const db = await getDb();
+  await db.collection('orders').updateOne(
+    { transactionId },
+    { $set: { status, paidAt: status === 'paid' ? new Date() : null } },
+  );
+}

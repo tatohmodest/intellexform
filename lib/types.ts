@@ -101,16 +101,22 @@ export interface ContactRequest {
 
 /**
  * A course purchase order created from the checkout flow. Stored in the
- * `orders` collection and surfaced in the admin dashboard.
+ * `orders` collection and surfaced in the admin dashboard. Payment is handled
+ * through PayUnit; `status` moves from `pending` to `paid` (or `failed`).
  */
 export interface Order {
   fullName: string;
   whatsapp: string;
   email?: string;
+  phone?: string;
   courseId: string | number;
+  courseSlug: string;
   courseName: string;
   amountXAF: number;
   paymentMethod: string;
-  status: string;
+  gateway: string;
+  transactionId: string;
+  status: 'pending' | 'paid' | 'failed';
   createdAt: Date;
+  paidAt?: Date | null;
 }

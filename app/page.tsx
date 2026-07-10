@@ -7,6 +7,7 @@ import Footer from '@/components/landing/Footer';
 import ContactForm from '@/components/landing/ContactForm';
 import Testimonials from '@/components/landing/Testimonials';
 import CourseCard from '@/components/CourseCard';
+import Reveal from '@/components/Reveal';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,7 +68,7 @@ export default async function HomePage() {
       {/* HERO */}
       <header className="pb-10 pt-16">
         <div className="wrap grid items-center gap-14 lg:grid-cols-[1.1fr_0.9fr]">
-          <div>
+          <Reveal direction="right">
             <div className="mb-4 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.1em]" style={{ color: 'var(--green-deep)' }}>
               <span style={{ width: 18, height: 1, background: 'var(--green-deep)' }} /> Skills to income, at your own pace
             </div>
@@ -96,9 +97,10 @@ export default async function HomePage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Reveal>
 
           {/* Book card */}
+          <Reveal direction="left" delay={0.15}>
           <div className="relative rounded-[20px] p-8 shadow-book" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
             <div className="absolute left-[-10px] top-4 bottom-4 w-2.5 rounded-l-md" style={{ background: 'var(--green-deep)' }} />
             <div className="mb-5">
@@ -139,6 +141,7 @@ export default async function HomePage() {
               <div className="font-mono text-[13px]">46%</div>
             </div>
           </div>
+          </Reveal>
         </div>
       </header>
 
@@ -160,13 +163,13 @@ export default async function HomePage() {
       {/* WAYS TO LEARN */}
       <section id="learn" className="py-24">
         <div className="wrap">
-          <div className="mb-12 max-w-[600px]">
+          <Reveal className="mb-12 max-w-[600px]">
             <div className="tab mb-4">Ways to learn</div>
             <h2 className="mb-3.5 text-[38px] leading-[1.12]">Three ways in, one certificate out</h2>
             <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
               Pick the format that matches how you actually learn — or mix all three as you go.
             </p>
-          </div>
+          </Reveal>
           <div className="grid gap-6 md:grid-cols-3">
             {WAYS.map((w) => (
               <div
@@ -189,13 +192,13 @@ export default async function HomePage() {
       {/* FIELDS */}
       <section id="fields" className="py-24" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
         <div className="wrap">
-          <div className="mb-12 max-w-[600px]">
+          <Reveal className="mb-12 max-w-[600px]">
             <div className="tab mb-4" style={{ background: 'rgba(227,162,58,0.18)', color: 'var(--amber)' }}>Fields</div>
             <h2 className="mb-3.5 text-[38px] leading-[1.12]">Whatever field you&apos;re chasing, it&apos;s in here</h2>
             <p className="text-base" style={{ color: 'rgba(251,248,240,0.72)' }}>
               Full stacks, single languages, or one specific skill — you&apos;re not boxed into one path.
             </p>
-          </div>
+          </Reveal>
           <div className="mb-9 flex flex-wrap gap-3">
             {FIELDS.map((f) => (
               <div
@@ -226,14 +229,14 @@ export default async function HomePage() {
       <section id="courses" className="py-24">
         <div className="wrap">
           <div className="mb-12 flex flex-wrap items-end justify-between gap-5">
-            <div className="max-w-[600px]">
+            <Reveal className="max-w-[600px]">
               <div className="tab mb-4">Courses</div>
               <h2 className="mb-3.5 text-[38px] leading-[1.12]">Top courses, picked to move you forward</h2>
               <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
                 Every Intellex course is self-paced, included the moment it&apos;s part of your plan, and ends
                 in a certificate. Prices shown are for buying a single course outright.
               </p>
-            </div>
+            </Reveal>
             <Link href="/courses" className="btn btn-ghost">Browse all courses →</Link>
           </div>
 
@@ -301,13 +304,13 @@ export default async function HomePage() {
       {/* PRICING */}
       <section id="pricing" className="py-24" style={{ background: 'var(--paper-dim)' }}>
         <div className="wrap">
-          <div className="mb-12 max-w-[600px]">
+          <Reveal className="mb-12 max-w-[600px]">
             <div className="tab mb-4">Pricing</div>
             <h2 className="mb-3.5 text-[38px] leading-[1.12]">Priced for students, not corporations</h2>
             <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
               We tried higher prices before this. This is the number that actually gets used.
             </p>
-          </div>
+          </Reveal>
           <div className="grid items-stretch gap-6 md:grid-cols-3">
             {/* Monthly */}
             <div className="flex flex-col rounded-[20px] border bg-paper p-8" style={{ borderColor: 'var(--line)' }}>
@@ -417,14 +420,14 @@ export default async function HomePage() {
       {/* AI TUTOR */}
       <section id="ai" className="py-24" style={{ background: 'var(--paper-dim)' }}>
         <div className="wrap">
-          <div className="mb-12 max-w-[600px]">
+          <Reveal className="mb-12 max-w-[600px]">
             <div className="tab mb-4">AI Tutor</div>
             <h2 className="mb-3.5 text-[38px] leading-[1.12]">We teach the AI the book, so it can teach you</h2>
             <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
               Take a real textbook — Python Crash Course, for example. We give the AI the full book and it
               teaches you in that author&apos;s voice, level by level.
             </p>
-          </div>
+          </Reveal>
           <div className="flex flex-col gap-4">
             <div className="rounded-[14px] border bg-paper p-[22px]" style={{ borderColor: 'var(--line)' }}>
               <h4 className="mb-1.5 flex items-center gap-2 font-display text-[16px]">
