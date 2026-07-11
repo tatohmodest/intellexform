@@ -1,22 +1,18 @@
 /**
- * Minimal PayUnit (https://payunit.net) gateway client.
+ * PayUnit (https://developer.payunit.net) gateway client, modelled on the
+ * production-proven Junior Dev integration:
+ *   - uses the hosted `checkout/initialize` flow (returns `data.redirect`)
+ *   - callbacks must be public HTTPS (PayUnit's CloudFront blocks localhost)
+ *   - the success page trusts the redirect and confirms the order
  *
- * Reads credentials from the environment. When they are not configured the app
- * falls back to a local mock checkout so the full purchase flow can still be
- * exercised end-to-end in development.
- *
- * Required env vars for live payments:
- *   PAYUNIT_API_USER      — API user
- *   PAYUNIT_API_PASSWORD  — API password
- *   PAYUNIT_API_KEY       — x-api-key / API token
- *   PAYUNIT_MODE          — "test" or "live" (defaults to "test")
- *   PAYUNIT_BASE_URL      — optional override (defaults to https://api.payunit.net)
+ * Env:
+ *   PAYUNIT_API_USER, PAYUNIT_API_PASSWORD, PAYUNIT_API_KEY  — credentials
+ *   PAYUNIT_MODE        — "test" | "live" (default "test")
+ *   PAYUNIT_BASE_URL    — optional override for the PayUnit gateway host
+ *   PAYUNIT_CALLBACK_URL / APP_PUBLIC_URL — public HTTPS base for callbacks
  */
 
-// Canonical PayUnit gateway host (per https://developer.payunit.net). A custom
-// PAYUNIT_BASE_URL may override it, but it must point at the gateway API host.
-// Public, documented PayUnit gateway host (developer.payunit.net). A custom
-// PAYUNIT_BASE_URL env var overrides it when needed.
+// Public, documented PayUnit gateway host (developer.payunit.net).
 const BASE_URL = process.env.PAYUNIT_BASE_URL || 'https://gateway.payunit.net'; // pragma: allowlist secret
 
 export function isPayunitConfigured(): boolean {
@@ -39,44 +35,73 @@ function authHeaders(): Record<string, string> {
   };
 }
 
-export interface InitializeOpts {
+/**
+ * Resolve the public base URL used for PayUnit callbacks. PayUnit rejects
+ * non-HTTPS / localhost URLs, so on localhost we fall back to the configured
+ * production callback URL (matching the Junior Dev approach).
+ */
+export function resolveCallbackBase(origin: string): string | null {
+  const raw = (process.env.APP_PUBLIC_URL || origin || '').replace(/\/$/, '');
+  const isLocal = raw.includes('localhost') || raw.includes('127.0.0.1');
+  const base = isLocal ? (process.env.PAYUNIT_CALLBACK_URL || process.env.APP_PUBLIC_URL || '') : raw;
+  const clean = base.replace(/\/$/, '');
+  return clean.startsWith('https://') ? clean : null;
+}
+
+export interface CheckoutOpts {
   amount: number;
   currency: string;
   transactionId: string;
-  returnUrl: string;
+  successUrl: string;
+  cancelUrl: string;
   notifyUrl: string;
-  name: string;
-  description: string;
+  productName: string;
+  productImage?: string;
+  about?: string;
+  meta?: Record<string, unknown>;
 }
 
-export async function initializePayment(opts: InitializeOpts): Promise<{ transactionUrl: string }> {
-  const res = await fetch(`${BASE_URL}/api/gateway/initialize`, {
+/** Initialize a hosted PayUnit checkout; returns the redirect (payment) URL. */
+export async function initializeCheckout(opts: CheckoutOpts): Promise<{ redirectUrl: string }> {
+  const res = await fetch(`${BASE_URL}/api/gateway/checkout/initialize`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({
-      total_amount: opts.amount,
-      currency: opts.currency,
-      transaction_id: opts.transactionId,
-      return_url: opts.returnUrl,
-      notify_url: opts.notifyUrl,
-      payment_country: 'CM',
-      name: opts.name,
-      description: opts.description,
-    }),
     cache: 'no-store',
+    body: JSON.stringify({
+      cancel_url: opts.cancelUrl,
+      success_url: opts.successUrl,
+      notify_url: opts.notifyUrl,
+      return_url: opts.notifyUrl,
+      currency: opts.currency,
+      mode: 'payment',
+      transaction_id: opts.transactionId,
+      total_amount: opts.amount,
+      items: [
+        {
+          price_description: { unit_amount: opts.amount },
+          product_description: {
+            name: opts.productName,
+            image_url: opts.productImage || 'https://picsum.photos/seed/intellex/240/160',
+            about_product: opts.about || opts.productName,
+          },
+          quantity: 1,
+        },
+      ],
+      meta: { phone_number_collection: false, address_collection: false, ...(opts.meta || {}) },
+    }),
   });
 
   const data = await res.json().catch(() => ({}));
   const url =
-    data?.data?.transaction_url ||
-    data?.data?.t_url ||
-    data?.transaction_url ||
-    data?.t_url;
+    data?.data?.redirect ||
+    data?.data?.paymentUrl ||
+    data?.redirect ||
+    data?.paymentUrl;
 
   if (!res.ok || !url) {
-    throw new Error(`PayUnit initialize failed: ${res.status} ${JSON.stringify(data)}`);
+    throw new Error(`PayUnit checkout initialize failed: ${res.status} ${JSON.stringify(data).slice(0, 400)}`);
   }
-  return { transactionUrl: url };
+  return { redirectUrl: url };
 }
 
 /** Returns a normalized status: 'SUCCESS' | 'FAILED' | 'PENDING'. */
@@ -87,15 +112,25 @@ export async function getPaymentStatus(transactionId: string): Promise<'SUCCESS'
     cache: 'no-store',
   });
   const data = await res.json().catch(() => ({}));
-  const raw = String(
-    data?.data?.transaction_status ??
-      data?.data?.status ??
-      data?.transaction_status ??
-      data?.status ??
-      'PENDING',
-  ).toUpperCase();
+  return normalizeStatus(data);
+}
 
+export function normalizeStatus(payload: unknown): 'SUCCESS' | 'FAILED' | 'PENDING' {
+  const p = payload as Record<string, unknown> | null;
+  const d = (p?.data ?? p) as Record<string, unknown> | undefined;
+  const raw = String(
+    d?.transaction_status ?? d?.status ?? (p as Record<string, unknown>)?.status ?? 'PENDING',
+  ).toUpperCase();
   if (['SUCCESS', 'SUCCESSFUL', 'SUCCESSFULL', 'COMPLETED', 'PAID', 'OK'].includes(raw)) return 'SUCCESS';
   if (['FAILED', 'FAILURE', 'CANCELLED', 'CANCELED', 'DECLINED', 'ERROR'].includes(raw)) return 'FAILED';
   return 'PENDING';
+}
+
+/** Best-effort extraction of a transaction id from a webhook payload. */
+export function extractTransactionId(payload: unknown): string | null {
+  const p = payload as Record<string, unknown> | null;
+  const d = (p?.data ?? p) as Record<string, unknown> | undefined;
+  const id =
+    d?.transaction_id ?? d?.transactionId ?? d?.transaction ?? p?.transaction_id ?? p?.transactionId;
+  return id ? String(id) : null;
 }

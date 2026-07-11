@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createOrder, getCourseBySlug } from '@/lib/repo';
-import { initializePayment, isPayunitConfigured } from '@/lib/payunit';
+import { initializeCheckout, isPayunitConfigured, resolveCallbackBase } from '@/lib/payunit';
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,13 +16,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     }
 
-    const transactionId = `intx_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-
-    // Public base for PayUnit callbacks. PayUnit requires HTTPS return/notify
-    // URLs, so on http://localhost we transparently use the sandbox checkout.
+    const transactionId = `${Math.floor(Math.random() * 1_000_000_000)}`;
     const origin = req.nextUrl.origin;
-    const publicBase = (process.env.APP_PUBLIC_URL || origin).replace(/\/$/, '');
-    const useLive = isPayunitConfigured() && publicBase.startsWith('https://');
+
+    // PayUnit needs public HTTPS callbacks; falls back to sandbox on localhost.
+    const callbackBase = resolveCallbackBase(origin);
+    const useLive = isPayunitConfigured() && Boolean(callbackBase);
     const gateway = useLive ? 'payunit' : 'mock';
 
     await createOrder({
@@ -42,23 +41,27 @@ export async function POST(req: NextRequest) {
       paidAt: null,
     });
 
-    const returnUrl = `${publicBase}/checkout/return?transaction_id=${transactionId}`;
-    const notifyUrl = `${publicBase}/api/payments/notify`;
-
     let transactionUrl: string;
-    if (useLive) {
-      const init = await initializePayment({
+    if (useLive && callbackBase) {
+      const successUrl = `${callbackBase}/checkout/return?transaction_id=${transactionId}&outcome=success`;
+      const cancelUrl = `${callbackBase}/checkout/return?transaction_id=${transactionId}&outcome=cancel`;
+      const notifyUrl = `${callbackBase}/api/payments/notify`;
+
+      const { redirectUrl } = await initializeCheckout({
         amount: course.currentPrice,
         currency: 'XAF',
         transactionId,
-        returnUrl,
+        successUrl,
+        cancelUrl,
         notifyUrl,
-        name: fullName,
-        description: `Intellex — ${course.name}`,
+        productName: course.name,
+        productImage: course.courseImage || undefined,
+        about: course.shortDescription || `Intellex — ${course.name}`,
+        meta: { courseSlug: course.slug, fullName, whatsapp },
       });
-      transactionUrl = init.transactionUrl;
+      transactionUrl = redirectUrl;
     } else {
-      // Fallback: local mock checkout so the flow works without PayUnit keys.
+      // Local sandbox checkout (no live keys / no public HTTPS callback URL).
       const params = new URLSearchParams({
         transaction_id: transactionId,
         course: course.name,

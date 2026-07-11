@@ -20,6 +20,7 @@ interface VerifyResult {
 function ReturnInner() {
   const params = useSearchParams();
   const transactionId = params.get('transaction_id');
+  const outcome = params.get('outcome');
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [error, setError] = useState('');
@@ -35,7 +36,7 @@ function ReturnInner() {
         const res = await fetch('/api/payments/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transactionId }),
+          body: JSON.stringify({ transactionId, outcome }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Verification failed');
@@ -46,7 +47,7 @@ function ReturnInner() {
         setLoading(false);
       }
     })();
-  }, [transactionId]);
+  }, [transactionId, outcome]);
 
   return (
     <div className="flex min-h-[70vh] items-center justify-center px-4 py-16">

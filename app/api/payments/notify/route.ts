@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateOrderStatus } from '@/lib/repo';
-import { getPaymentStatus, isPayunitConfigured } from '@/lib/payunit';
+import { getOrderByTransaction, updateOrderStatus } from '@/lib/repo';
+import { extractTransactionId, getPaymentStatus, isPayunitConfigured } from '@/lib/payunit';
 
 /**
  * PayUnit server-to-server notification (notify_url). PayUnit posts the
@@ -10,12 +10,15 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const transactionId =
-      body?.transaction_id || body?.transactionId || req.nextUrl.searchParams.get('transaction_id');
+      extractTransactionId(body) || req.nextUrl.searchParams.get('transaction_id');
 
     if (transactionId && isPayunitConfigured()) {
-      const gwStatus = await getPaymentStatus(transactionId);
-      if (gwStatus === 'SUCCESS') await updateOrderStatus(transactionId, 'paid');
-      else if (gwStatus === 'FAILED') await updateOrderStatus(transactionId, 'failed');
+      const order = await getOrderByTransaction(transactionId);
+      if (order && order.status === 'pending') {
+        const gwStatus = await getPaymentStatus(transactionId);
+        if (gwStatus === 'SUCCESS') await updateOrderStatus(transactionId, 'paid');
+        else if (gwStatus === 'FAILED') await updateOrderStatus(transactionId, 'failed');
+      }
     }
 
     return NextResponse.json({ received: true });
