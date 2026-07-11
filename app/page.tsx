@@ -32,19 +32,19 @@ const WAYS = [
   {
     letter: 'A',
     title: 'Self-paced courses',
-    body: 'Recorded courses you work through on your own time, in any field we cover. Finish a course and you get a certificate — it just proves you did the work.',
+    body: 'Recorded courses you work through on your own time, in any field we cover. Finish a course and you get a certificate , it just proves you did the work.',
     tag: 'Included in every subscription',
   },
   {
     letter: 'B',
     title: 'Live tutoring',
-    body: 'A mentor teaches you directly — online from anywhere, or onsite at a location you choose. Best for people who need a real person keeping them accountable.',
+    body: 'A mentor teaches you directly , online from anywhere, or onsite at a location you choose. Best for people who need a real person keeping them accountable.',
     tag: 'Priced per mentor & format',
   },
   {
     letter: 'C',
     title: 'AI Tutor',
-    body: 'We take a real book — say, Python Crash Course — and train an AI on it that teaches like the author would, step by step, level by level. Unlock levels as you go, or all at once.',
+    body: 'We take a real book , say, Python Crash Course , and train an AI on it that teaches like the author would, step by step, level by level. Unlock levels as you go, or all at once.',
     tag: 'Pay per level, or pay once',
   },
 ];
@@ -81,7 +81,7 @@ export default async function HomePage() {
               Learning is the rest of the book.
             </h1>
             <p className="mb-7 max-w-[480px] text-[18px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Intellex is where you actually finish what you start — self-paced courses, live mentors, and
+              Intellex is where you actually finish what you start , self-paced courses, live mentors, and
               an AI tutor that studies a book so it can teach it to you, one level at a time.
             </p>
             <div className="mb-9 flex flex-wrap gap-3.5">
@@ -113,7 +113,7 @@ export default async function HomePage() {
       <div className="border-y py-8" style={{ borderColor: 'var(--line)' }}>
         <div className="wrap flex flex-wrap items-center justify-between gap-7">
           <p className="max-w-[280px] text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-            Built by Looping Binary — the same team behind Junior Dev and client software across Web Dev,
+            Built by Looping Binary , the same team behind Junior Dev and client software across Web Dev,
             Data, and Cybersecurity.
           </p>
           <div className="flex flex-wrap gap-2.5">
@@ -131,7 +131,7 @@ export default async function HomePage() {
             <div className="tab mb-4">Ways to learn</div>
             <h2 className="mb-3.5 text-[27px] leading-[1.15] sm:text-[38px] sm:leading-[1.12]">Three ways in, one certificate out</h2>
             <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
-              Pick the format that matches how you actually learn — or mix all three as you go.
+              Pick the format that matches how you actually learn , or mix all three as you go.
             </p>
           </Reveal>
           <div className="grid gap-6 md:grid-cols-3">
@@ -160,7 +160,7 @@ export default async function HomePage() {
             <div className="tab mb-4" style={{ background: 'rgba(74,144,226,0.18)', color: '#8fc0ff' }}>Fields</div>
             <h2 className="mb-3.5 text-[27px] leading-[1.15] sm:text-[38px] sm:leading-[1.12]">Whatever field you&apos;re chasing, it&apos;s in here</h2>
             <p className="text-base" style={{ color: 'rgba(251,248,240,0.72)' }}>
-              Full stacks, single languages, or one specific skill — you&apos;re not boxed into one path.
+              Full stacks, single languages, or one specific skill , you&apos;re not boxed into one path.
             </p>
           </Reveal>
           <div className="mb-9 flex flex-wrap gap-3">
@@ -236,12 +236,12 @@ export default async function HomePage() {
                   </h3>
                   <p className="mb-5 max-w-[480px] text-[14.5px] leading-relaxed" style={{ color: 'rgba(251,248,240,0.82)' }}>
                     Not a theory course. You ship a working, deployed full-stack application in three weeks,
-                    using AI coding tools the way working developers do — as a pair-programmer, not a crutch.
+                    using AI coding tools the way working developers do , as a pair-programmer, not a crutch.
                   </p>
                   <ul className="mb-0 flex flex-col gap-2">
                     {special.whatYouWillLearn.slice(0, 3).map((p) => (
                       <li key={p} className="relative pl-5 text-[13.5px]" style={{ color: 'rgba(255,255,255,0.92)' }}>
-                        <span className="absolute left-0" style={{ color: '#ffffff' }}>—</span> {p}
+                        <span className="absolute left-0" style={{ color: '#ffffff' }}>,</span> {p}
                       </li>
                     ))}
                   </ul>
@@ -283,9 +283,9 @@ export default async function HomePage() {
           {/* Why they're special */}
           <div className="mb-12 grid gap-5 md:grid-cols-3">
             {[
-              { icon: Sparkles, title: 'Hand-picked for you', body: 'Tell us your goal — we choose the exact course and path that gets you there, no guesswork.' },
+              { icon: Sparkles, title: 'Hand-picked for you', body: 'Tell us your goal , we choose the exact course and path that gets you there, no guesswork.' },
               { icon: Gauge, title: 'Progress monitored', body: 'We keep an eye on how you\u2019re moving through it and nudge you so you never stall out.' },
-              { icon: Compass, title: 'Guided step-by-step', body: 'Checklists, guides and resources at every step — help is there the moment you get stuck.' },
+              { icon: Compass, title: 'Guided step-by-step', body: 'Checklists, guides and resources at every step , help is there the moment you get stuck.' },
             ].map((v) => (
               <div key={v.title} className="flex flex-col gap-3 rounded-[18px] border bg-paper p-6" style={{ borderColor: 'var(--line)' }}>
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ background: 'var(--green)', color: '#fff' }}>
@@ -335,7 +335,7 @@ export default async function HomePage() {
               </div>
               <ul className="mb-6 flex flex-col gap-2.5 text-sm">
                 {['Every self-paced course, every field', 'Certificate after each course', 'Cancel or pause anytime'].map((li) => (
-                  <li key={li} className="relative pl-5"><span className="absolute left-0" style={{ color: 'var(--green-deep)' }}>—</span>{li}</li>
+                  <li key={li} className="relative pl-5"><span className="absolute left-0" style={{ color: 'var(--green-deep)' }}>,</span>{li}</li>
                 ))}
               </ul>
               <a href="#register" className="btn btn-primary mt-auto">Start monthly</a>
@@ -344,7 +344,7 @@ export default async function HomePage() {
             <div className="relative flex flex-col rounded-[20px] p-8" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
               <span className="absolute -top-3 right-6 rounded-full px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em]" style={{ background: 'var(--amber)', color: 'var(--ink)' }}>Best value</span>
               <h3 className="mb-1.5 font-display text-[19px]">Yearly</h3>
-              <div className="mb-5 text-[13.5px]" style={{ color: 'rgba(251,248,240,0.7)' }}>Same access as monthly, paid once a year — 6% cheaper than paying month to month.</div>
+              <div className="mb-5 text-[13.5px]" style={{ color: 'rgba(251,248,240,0.7)' }}>Same access as monthly, paid once a year , 6% cheaper than paying month to month.</div>
               <div className="font-mono text-[14px] line-through opacity-55">24,000 XAF</div>
               <div className="mb-5 mt-1.5 flex items-baseline gap-1.5">
                 <span className="font-display text-[26px] sm:text-[34px] font-semibold">22,560</span>
@@ -352,7 +352,7 @@ export default async function HomePage() {
               </div>
               <ul className="mb-6 flex flex-col gap-2.5 text-sm">
                 {['Everything in Monthly', '6% off the monthly rate', 'One payment, no renewals to track'].map((li) => (
-                  <li key={li} className="relative pl-5"><span className="absolute left-0" style={{ color: 'var(--amber)' }}>—</span>{li}</li>
+                  <li key={li} className="relative pl-5"><span className="absolute left-0" style={{ color: 'var(--amber)' }}>,</span>{li}</li>
                 ))}
               </ul>
               <a href="#register" className="btn btn-amber mt-auto">Start yearly</a>
@@ -367,7 +367,7 @@ export default async function HomePage() {
               </div>
               <ul className="mb-6 flex flex-col gap-2.5 text-sm">
                 {['Lifetime access to that course', 'Certificate on completion', 'Good for one specific skill'].map((li) => (
-                  <li key={li} className="relative pl-5"><span className="absolute left-0" style={{ color: 'var(--green-deep)' }}>—</span>{li}</li>
+                  <li key={li} className="relative pl-5"><span className="absolute left-0" style={{ color: 'var(--green-deep)' }}>,</span>{li}</li>
                 ))}
               </ul>
               <Link href="/courses" className="btn btn-primary mt-auto">Browse courses</Link>
@@ -377,7 +377,7 @@ export default async function HomePage() {
           <div id="discounts" className="mt-6 grid gap-5 md:grid-cols-2">
             {[
               { pct: '6%', title: 'Pay yearly, not monthly', body: 'Commit for a year up front and the price drops from 24,000 to 22,560 XAF automatically.' },
-              { pct: '30%', title: 'Win the Junior Dev tournament', body: 'Junior Dev champions get 30% off their first Intellex plan — one more reason to compete.' },
+              { pct: '30%', title: 'Win the Junior Dev tournament', body: 'Junior Dev champions get 30% off their first Intellex plan , one more reason to compete.' },
             ].map((d) => (
               <div key={d.title} className="flex items-start gap-4 rounded-[16px] p-6" style={{ border: '1px dashed var(--green-deep)', background: 'rgba(0,179,105,0.06)' }}>
                 <div className="font-display text-[26px]" style={{ color: 'var(--green-deep)' }}>{d.pct}</div>
@@ -421,7 +421,7 @@ export default async function HomePage() {
               </div>
             </div>
             <div className="mb-2.5 rounded-[12px] px-4 py-3.5 text-[13.5px] leading-relaxed" style={{ background: 'rgba(251,248,240,0.06)' }}>
-              &ldquo;Let&apos;s start with how your React state actually re-renders — bring your last project and we&apos;ll debug it live.&rdquo;
+              &ldquo;Let&apos;s start with how your React state actually re-renders , bring your last project and we&apos;ll debug it live.&rdquo;
             </div>
             <div className="rounded-[12px] px-4 py-3.5 text-[13.5px] leading-relaxed" style={{ background: 'rgba(251,248,240,0.06)' }}>
               Onsite sessions are priced per mentor, subject, and distance. Tell us where you are and what you want to learn.
@@ -437,7 +437,7 @@ export default async function HomePage() {
             <div className="tab mb-4">AI Tutor</div>
             <h2 className="mb-3.5 text-[27px] leading-[1.15] sm:text-[38px] sm:leading-[1.12]">We teach the AI the book, so it can teach you</h2>
             <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
-              Take a real textbook — Python Crash Course, for example. We give the AI the full book and it
+              Take a real textbook , Python Crash Course, for example. We give the AI the full book and it
               teaches you in that author&apos;s voice, level by level.
             </p>
           </Reveal>
@@ -465,7 +465,7 @@ export default async function HomePage() {
             <div>
               <h3 className="max-w-[520px] font-display text-[22px] sm:text-[26px]">Already in Junior Dev? Your discount is already earned.</h3>
               <p className="mt-2 max-w-[480px] text-[14.5px]" style={{ color: 'rgba(251,248,240,0.82)' }}>
-                Junior Dev isn&apos;t separate from Intellex — Builder tier and above already includes Intellex
+                Junior Dev isn&apos;t separate from Intellex , Builder tier and above already includes Intellex
                 course access, and tournament winners get 30% off on top of that.
               </p>
             </div>

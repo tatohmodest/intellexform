@@ -35,7 +35,7 @@ export default function TopNav() {
       <div className="mx-auto flex max-w-[1140px] items-center justify-between px-5 py-3 sm:px-6 sm:py-4 md:pl-12">
         <Link href="/" className="flex items-center" aria-label="Intellex home" onClick={() => setOpen(false)}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Intellex" className="h-8 w-auto sm:h-9" />
+          <img src="/image.png" alt="Intellex" className="h-8 w-auto sm:h-9" />
         </Link>
 
         <div className="hidden items-center gap-7 text-sm md:flex">
