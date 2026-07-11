@@ -6,6 +6,7 @@ const TABS = [
   { href: '#learn', label: 'Ways to learn' },
   { href: '#fields', label: 'Fields' },
   { href: '#courses', label: 'Courses' },
+  { href: '#self-paced', label: 'Self-paced' },
   { href: '#pricing', label: 'Pricing' },
   { href: '#ai', label: 'AI Tutor' },
   { href: '#testimonials', label: 'Stories' },

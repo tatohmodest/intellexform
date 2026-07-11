@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Sparkles, Gauge, Compass } from 'lucide-react';
 import { getFeaturedCourses } from '@/lib/repo';
 import { formatXAF } from '@/lib/format';
 import TopNav from '@/components/landing/TopNav';
@@ -56,8 +57,9 @@ export default async function HomePage() {
     bySlug('python-from-zero'),
     bySlug('data-analysis-data-science'),
   ].filter(Boolean) as typeof featured;
+  const selfPaced = featured.filter((c) => c.selfPaced);
   const moreCourses = featured
-    .filter((c) => c.slug !== 'fullstack-3-weeks-ai' && !topCourses.includes(c))
+    .filter((c) => c.slug !== 'fullstack-3-weeks-ai' && !topCourses.includes(c) && !c.selfPaced)
     .slice(0, 6);
   const special = bySlug('fullstack-3-weeks-ai');
 
@@ -263,8 +265,57 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* SPECIAL SELF-PACED */}
+      <section id="self-paced" className="py-24" style={{ background: 'var(--paper-dim)' }}>
+        <div className="wrap">
+          <Reveal className="mb-10 max-w-[640px]">
+            <div className="tab mb-4">Special · Self-paced</div>
+            <h2 className="mb-3.5 text-[38px] leading-[1.12]">
+              In-demand skills you can learn <span className="text-gradient">fast</span>
+            </h2>
+            <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
+              These aren&apos;t just courses you scroll past. We hand-pick the right one for your goal,
+              monitor your progress, and give you step-by-step guides so you actually finish. Every
+              special self-paced course starts from <strong>{formatXAF(50000)}</strong>.
+            </p>
+          </Reveal>
+
+          {/* Why they're special */}
+          <div className="mb-12 grid gap-5 md:grid-cols-3">
+            {[
+              { icon: Sparkles, title: 'Hand-picked for you', body: 'Tell us your goal — we choose the exact course and path that gets you there, no guesswork.' },
+              { icon: Gauge, title: 'Progress monitored', body: 'We keep an eye on how you\u2019re moving through it and nudge you so you never stall out.' },
+              { icon: Compass, title: 'Guided step-by-step', body: 'Checklists, guides and resources at every step — help is there the moment you get stuck.' },
+            ].map((v) => (
+              <div key={v.title} className="flex flex-col gap-3 rounded-[18px] border bg-paper p-6" style={{ borderColor: 'var(--line)' }}>
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ background: 'var(--green)', color: '#fff' }}>
+                  <v.icon size={20} />
+                </div>
+                <h3 className="font-display text-[18px]">{v.title}</h3>
+                <p className="text-[14px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>{v.body}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* The courses */}
+          <div className="mb-6 flex items-center gap-3">
+            <div className="tab">Pick your track · from {formatXAF(50000)}</div>
+            <div className="h-px flex-1" style={{ background: 'var(--line)' }} />
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {selfPaced.map((c) => (
+              <CourseCard key={c.slug} course={c} />
+            ))}
+          </div>
+
+          <div className="mt-8 text-center">
+            <Link href="/courses" className="btn btn-ghost">See all courses →</Link>
+          </div>
+        </div>
+      </section>
+
       {/* PRICING */}
-      <section id="pricing" className="py-24" style={{ background: 'var(--paper-dim)' }}>
+      <section id="pricing" className="py-24" style={{ background: 'var(--paper)' }}>
         <div className="wrap">
           <Reveal className="mb-12 max-w-[600px]">
             <div className="tab mb-4">Pricing</div>

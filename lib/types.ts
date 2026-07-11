@@ -71,6 +71,8 @@ export interface Course {
   instructorRating: number | null;
   courseLink: string | null;
   featured?: boolean;
+  /** Curated "special self-paced" track: hand-picked, progress-monitored, guided. */
+  selfPaced?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }

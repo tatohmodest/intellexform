@@ -27,6 +27,18 @@ export async function ensureCoursesSeeded() {
   if (count === 0) {
     await col.insertMany(allSeedCourses() as unknown as Record<string, unknown>[]);
     await col.createIndex({ slug: 1 }, { unique: true }).catch(() => {});
+    return;
+  }
+  // Add-only sync: insert any newly-added Intellex-curated (platform) courses
+  // that aren't in an already-seeded collection. Never overwrites admin edits.
+  const slugs = PLATFORM_COURSES.map((c) => c.slug);
+  const existing = await col
+    .find({ slug: { $in: slugs } }, { projection: { slug: 1 } })
+    .toArray();
+  const have = new Set(existing.map((d) => (d as unknown as { slug: string }).slug));
+  const missing = PLATFORM_COURSES.filter((c) => !have.has(c.slug));
+  if (missing.length) {
+    await col.insertMany(missing as unknown as Record<string, unknown>[]);
   }
 }
 
