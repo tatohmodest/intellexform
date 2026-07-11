@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion, useAnimationFrame, useInView } from 'framer-motion';
+import { AnimatePresence, motion, useAnimationFrame } from 'framer-motion';
 import { Play, Quote, Star, X } from 'lucide-react';
 import { TESTIMONIALS } from '@/lib/data/testimonials';
 import Reveal from '@/components/Reveal';
@@ -22,79 +22,46 @@ function initials(name: string) {
   return name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 }
 
-/* ── Blooming flower video stack ─────────────────────────────────────────── */
-function VideoBloom({ videos, onOpen }: { videos: T[]; onOpen: (t: T) => void }) {
-  const [hovered, setHovered] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: '-120px' });
-
-  // Fan angles for a "blooming from a plant" arrangement.
-  const positions = [
-    { angle: -28, x: -250, y: 24 },
-    { angle: 0, x: 0, y: -10 },
-    { angle: 28, x: 250, y: 24 },
-  ];
-
+/* ── Big video cards (3-up) ──────────────────────────────────────────────── */
+function VideoCard({ t, index, onOpen }: { t: T; index: number; onOpen: (t: T) => void }) {
   return (
-    <div
-      ref={ref}
-      className="relative mx-auto mb-6 flex h-[440px] w-full max-w-3xl items-end justify-center"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+    <motion.button
+      onClick={() => onOpen(t)}
+      aria-label={`Play ${t.name}'s video testimonial`}
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.55, delay: index * 0.12, ease: [0.25, 0.46, 0.45, 0.94] }}
+      whileHover={{ y: -8 }}
+      className="group relative aspect-[3/4] w-full overflow-hidden rounded-[22px] border-4 text-left shadow-book"
+      style={{ borderColor: 'var(--paper)', background: 'var(--ink)' }}
     >
-      {/* stem / plant base */}
-      <motion.div
-        aria-hidden
-        className="absolute bottom-0 left-1/2 -translate-x-1/2"
-        initial={{ scaleY: 0, opacity: 0 }}
-        whileInView={{ scaleY: 1, opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6 }}
-        style={{ transformOrigin: 'bottom center' }}
-      >
-        <div className="mx-auto h-24 w-1.5 rounded-full" style={{ background: 'linear-gradient(to top, var(--green-deep), var(--green))' }} />
-        <div className="mx-auto -mt-1 h-4 w-16 rounded-b-full" style={{ background: 'var(--green-deep)' }} />
-      </motion.div>
+      {/* embedded "screen" frame ring */}
+      <span className="pointer-events-none absolute inset-0 z-10 rounded-[18px]" style={{ boxShadow: 'inset 0 0 0 1px rgba(251,248,240,0.14)' }} />
+      {t.photo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={t.photo} alt={t.name} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center font-display text-6xl" style={{ background: 'linear-gradient(135deg,#1F6B48,#17553a)', color: 'var(--paper)' }}>
+          {initials(t.name)}
+        </div>
+      )}
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(19,32,25,0.9) 0%, rgba(19,32,25,0.05) 58%)' }} />
 
-      {videos.slice(0, 3).map((t, i) => {
-        const p = positions[i] ?? positions[1];
-        const spread = hovered ? 1.06 : 0.48;
-        return (
-          <motion.button
-            key={t.id}
-            onClick={() => onOpen(t)}
-            aria-label={`Play ${t.name}'s video testimonial`}
-            className="group absolute bottom-16 overflow-hidden rounded-[18px] border shadow-book"
-            style={{ width: 190, height: 300, transformOrigin: 'bottom center', borderColor: 'var(--line-soft)', background: 'var(--ink)', zIndex: i === 1 ? 3 : 2 }}
-            initial={{ opacity: 0, y: 60, rotate: 0, x: 0 }}
-            animate={inView ? { opacity: 1, x: p.x * spread, y: p.y - (hovered ? 20 : 0), rotate: p.angle * spread } : { opacity: 0, y: 60 }}
-            transition={{ type: 'spring', stiffness: 120, damping: 16, delay: i * 0.08 }}
-            whileHover={{ scale: 1.06, y: p.y - 44, zIndex: 5 }}
-          >
-            {t.photo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={t.photo} alt={t.name} className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center font-display text-5xl" style={{ background: 'linear-gradient(135deg,#1F6B48,#17553a)', color: 'var(--paper)' }}>
-                {initials(t.name)}
-              </div>
-            )}
-            <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(19,32,25,0.9) 0%, rgba(19,32,25,0.05) 60%)' }} />
-            <span className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full shadow-lg transition-transform duration-300 group-hover:scale-110" style={{ background: 'var(--amber)' }}>
-              <Play size={22} className="ml-0.5 text-ink" fill="currentColor" />
-            </span>
-            <div className="absolute inset-x-0 bottom-0 p-3 text-left text-paper">
-              <p className="font-display text-[15px] leading-tight">{t.name}</p>
-              <p className="font-mono text-[10px] uppercase tracking-wide" style={{ color: 'var(--amber)' }}>{t.fieldOfInterest}</p>
-            </div>
-          </motion.button>
-        );
-      })}
+      <span className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full shadow-lg transition-transform duration-300 group-hover:scale-110" style={{ background: 'var(--amber)' }}>
+        <Play size={26} className="ml-1 text-ink" fill="currentColor" />
+      </span>
 
-      <div className="pointer-events-none absolute -bottom-2 left-1/2 -translate-x-1/2 font-mono text-[11px] uppercase tracking-wide" style={{ color: 'var(--ink-soft)' }}>
-        {hovered ? 'Tap a card to play' : 'Hover to bloom · tap to play'}
+      <span className="absolute left-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[10.5px] uppercase tracking-wide" style={{ background: 'rgba(19,32,25,0.55)', color: 'var(--paper)' }}>
+        <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--amber)' }} /> Video story
+      </span>
+
+      <div className="absolute inset-x-0 bottom-0 z-10 p-5 text-paper">
+        <div className="mb-1.5"><Stars n={t.rating} /></div>
+        <p className="font-display text-xl leading-tight">{t.name}</p>
+        <p className="font-mono text-[11px] uppercase tracking-wide" style={{ color: 'var(--amber)' }}>{t.fieldOfInterest}</p>
       </div>
-    </div>
+    </motion.button>
   );
 }
 
@@ -159,7 +126,7 @@ function QuoteMarquee({ quotes }: { quotes: T[] }) {
   useAnimationFrame((_, delta) => {
     const el = ref.current;
     if (!el || paused.current) return;
-    el.scrollLeft += (55 * delta) / 1000;
+    el.scrollLeft += (32 * delta) / 1000;
     const half = el.scrollWidth / 2;
     if (half > 0 && el.scrollLeft >= half) el.scrollLeft -= half;
   });
@@ -184,39 +151,44 @@ function QuoteMarquee({ quotes }: { quotes: T[] }) {
   const items = [...quotes, ...quotes];
 
   return (
-    <div
-      ref={ref}
-      className="no-scrollbar flex cursor-grab gap-5 overflow-x-auto pb-2 active:cursor-grabbing"
-      onMouseEnter={() => (paused.current = true)}
-      onMouseLeave={() => { if (!drag.current.active) paused.current = false; }}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
-    >
-      {items.map((t, i) => (
-        <div
-          key={`${t.id}-${i}`}
-          className="flex w-[320px] flex-shrink-0 flex-col rounded-[18px] border p-6 transition-transform duration-300 hover:-translate-y-1"
-          style={{ background: 'var(--paper)', borderColor: 'var(--line)' }}
-        >
-          <Quote size={22} className="mb-3" style={{ color: 'var(--green)' }} />
-          <p className="mb-5 flex-1 text-sm leading-relaxed line-clamp-3" style={{ color: 'var(--ink-soft)' }}>{t.testimonial}</p>
-          <div className="flex items-center gap-3">
-            {t.photo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={t.photo} alt={t.name} className="h-10 w-10 rounded-full object-cover" draggable={false} />
-            ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full font-display text-sm" style={{ background: 'var(--green-deep)', color: 'var(--paper)' }}>{initials(t.name)}</div>
-            )}
-            <div>
-              <p className="text-sm font-semibold">{t.name}</p>
-              <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>{t.fieldOfInterest}</p>
+    <div className="relative">
+      {/* edge fades so the scroll reads as intentional */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16" style={{ background: 'linear-gradient(to right, var(--paper), transparent)' }} />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16" style={{ background: 'linear-gradient(to left, var(--paper), transparent)' }} />
+      <div
+        ref={ref}
+        className="no-scrollbar flex cursor-grab gap-5 overflow-x-auto pb-2 active:cursor-grabbing"
+        onMouseEnter={() => (paused.current = true)}
+        onMouseLeave={() => { if (!drag.current.active) paused.current = false; }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
+        {items.map((t, i) => (
+          <div
+            key={`${t.id}-${i}`}
+            className="flex w-[320px] flex-shrink-0 flex-col rounded-[18px] border p-6 transition-transform duration-300 hover:-translate-y-1"
+            style={{ background: 'var(--paper)', borderColor: 'var(--line)' }}
+          >
+            <Quote size={22} className="mb-3" style={{ color: 'var(--green)' }} />
+            <p className="mb-5 flex-1 text-sm leading-relaxed line-clamp-3" style={{ color: 'var(--ink-soft)' }}>{t.testimonial}</p>
+            <div className="flex items-center gap-3">
+              {t.photo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={t.photo} alt={t.name} className="h-10 w-10 rounded-full object-cover" draggable={false} />
+              ) : (
+                <div className="flex h-10 w-10 items-center justify-center rounded-full font-display text-sm" style={{ background: 'var(--green-deep)', color: 'var(--paper)' }}>{initials(t.name)}</div>
+              )}
+              <div>
+                <p className="text-sm font-semibold">{t.name}</p>
+                <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>{t.fieldOfInterest}</p>
+              </div>
+              <div className="ml-auto"><Stars n={t.rating} /></div>
             </div>
-            <div className="ml-auto"><Stars n={t.rating} /></div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
@@ -229,20 +201,41 @@ export default function Testimonials() {
   return (
     <section id="testimonials" className="overflow-hidden py-24" style={{ background: 'var(--paper-dim)' }}>
       <div className="wrap">
-        <Reveal className="mb-12 max-w-2xl">
+        <Reveal className="mb-10 max-w-2xl">
           <div className="tab mb-4">Student stories</div>
           <h2 className="mb-3 text-[38px] leading-[1.12]">Real learners. Real outcomes.</h2>
           <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
-            Hundreds of students have built skills and confidence with Intellex. Hear it in their own
-            voices — the video stories below bloom open, tap any to play.
+            Hundreds of students have built skills and confidence with Intellex — here are a few of them.
           </p>
         </Reveal>
 
-        <VideoBloom videos={videos} onOpen={setActive} />
+        {/* ── Video stories ─────────────────────────────────────────── */}
+        <div className="mb-4 flex items-center gap-3">
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em]" style={{ color: 'var(--green-deep)' }}>
+            Watch their stories
+          </span>
+          <span className="h-px flex-1" style={{ background: 'var(--line)' }} />
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {videos.map((t, i) => (
+            <VideoCard key={t.id} t={t} index={i} onOpen={setActive} />
+          ))}
+        </div>
       </div>
 
-      {/* Full-bleed marquee */}
-      <div className="mt-6">
+      {/* ── Written testimonials (distinct band) ────────────────────── */}
+      <div className="mt-16 border-y py-10" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
+        <div className="wrap mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="font-display text-[22px]">In their own words</div>
+            <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
+              A live scroll of what the community is saying — hover to pause, drag to explore.
+            </p>
+          </div>
+          <span className="pill inline-flex items-center gap-2">
+            <span className="h-2 w-2 animate-pulse rounded-full" style={{ background: 'var(--green)' }} /> Live from the community
+          </span>
+        </div>
         <QuoteMarquee quotes={quotes} />
       </div>
 

@@ -1,3 +1,4 @@
+import { ObjectId } from 'mongodb';
 import clientPromise from '@/lib/mongodb';
 import { Course, ContactRequest, Order } from '@/lib/types';
 import { PLATFORM_COURSES } from '@/lib/data/platformCourses';
@@ -42,6 +43,30 @@ export async function getAllCourses(): Promise<Course[]> {
 export async function getFeaturedCourses(): Promise<Course[]> {
   const courses = await getAllCourses();
   return courses.filter((c) => c.featured);
+}
+
+/** Admin view: full catalogue including the Mongo `_id` (as string) for editing. */
+export async function getAllCoursesAdmin(): Promise<(Course & { _id: string })[]> {
+  await ensureCoursesSeeded();
+  const db = await getDb();
+  const docs = await db.collection('courses').find({}).sort({ featured: -1, name: 1 }).toArray();
+  return docs.map((d) => ({ ...(d as unknown as Course), _id: d._id.toString() }));
+}
+
+export async function updateCourseById(id: string, patch: Partial<Course>) {
+  const db = await getDb();
+  await db.collection('courses').updateOne({ _id: new ObjectId(id) }, { $set: patch });
+}
+
+export async function createCourseDoc(course: Course) {
+  const db = await getDb();
+  const res = await db.collection('courses').insertOne(course as unknown as Record<string, unknown>);
+  return res.insertedId.toString();
+}
+
+export async function deleteCourseById(id: string) {
+  const db = await getDb();
+  await db.collection('courses').deleteOne({ _id: new ObjectId(id) });
 }
 
 export async function getCourseBySlug(slug: string): Promise<Course | null> {

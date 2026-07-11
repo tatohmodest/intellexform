@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   RefreshCw, Search, Lock, LogOut, Eye, EyeOff, ShieldCheck,
-  Users, MessageSquare, ShoppingBag,
+  Users, MessageSquare, ShoppingBag, BookOpen,
 } from 'lucide-react';
 import { formatXAF } from '@/lib/format';
+import AdminCourses from '@/components/admin/AdminCourses';
 
-type Tab = 'requests' | 'orders' | 'registrations';
+type Tab = 'requests' | 'orders' | 'registrations' | 'courses';
 
 interface RequestRow {
   _id: string;
@@ -148,10 +149,11 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const fOrd = orders.filter((o) => `${o.fullName} ${o.courseName} ${o.whatsapp}`.toLowerCase().includes(q));
   const fReg = registrations.filter((r) => `${r.fullName} ${r.email} ${r.program}`.toLowerCase().includes(q));
 
-  const TABS: { id: Tab; label: string; icon: typeof Users; count: number }[] = [
+  const TABS: { id: Tab; label: string; icon: typeof Users; count: number | null }[] = [
     { id: 'requests', label: 'Requests', icon: MessageSquare, count: requests.length },
     { id: 'orders', label: 'Orders', icon: ShoppingBag, count: orders.length },
     { id: 'registrations', label: 'Registrations', icon: Users, count: registrations.length },
+    { id: 'courses', label: 'Courses', icon: BookOpen, count: null },
   ];
 
   return (
@@ -189,7 +191,9 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
               }}
             >
               <t.icon size={15} /> {t.label}
-              <span className="rounded-full px-1.5 text-xs" style={{ background: 'var(--paper-dim)' }}>{t.count}</span>
+              {t.count !== null && (
+                <span className="rounded-full px-1.5 text-xs" style={{ background: 'var(--paper-dim)' }}>{t.count}</span>
+              )}
             </button>
           ))}
         </div>
@@ -223,6 +227,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
             empty={loading ? 'Loading…' : 'No registrations yet'}
           />
         )}
+        {tab === 'courses' && <AdminCourses />}
       </div>
     </div>
   );
