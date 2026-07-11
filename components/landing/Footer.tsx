@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { buildWhatsappLink } from '@/lib/whatsapp';
-import Logo from '@/components/Logo';
 
 export default function Footer() {
   return (
@@ -8,7 +7,8 @@ export default function Footer() {
       <div className="wrap">
         <div className="mb-9 flex flex-wrap justify-between gap-8">
           <div className="max-w-[260px]">
-            <Logo onDark className="text-[22px]" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Intellex" className="h-7 w-auto" />
 
             <p className="mt-3 text-[13.5px]">
               A Looping Binary platform. Skills to income, one level at a time. Built in Douala, Cameroon.

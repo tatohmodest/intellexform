@@ -173,3 +173,47 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Hero card: continuous "computerized" checklist loop (CSS-driven so it
+   keeps running smoothly and isn't throttled like JS timers) ─────────────── */
+@keyframes hc-fill {
+  0%, 8% { width: 0%; }
+  12% { width: 20%; }
+  26% { width: 40%; }
+  40% { width: 60%; }
+  54% { width: 80%; }
+  68%, 90% { width: 100%; }
+  96%, 100% { width: 0%; }
+}
+.hc-bar { animation: hc-fill 6s ease-in-out infinite; }
+
+@keyframes hc-tick-1 { 0%,12%{opacity:0;transform:scale(0)} 15%,90%{opacity:1;transform:scale(1)} 96%,100%{opacity:0;transform:scale(0)} }
+@keyframes hc-tick-2 { 0%,26%{opacity:0;transform:scale(0)} 29%,90%{opacity:1;transform:scale(1)} 96%,100%{opacity:0;transform:scale(0)} }
+@keyframes hc-tick-3 { 0%,40%{opacity:0;transform:scale(0)} 43%,90%{opacity:1;transform:scale(1)} 96%,100%{opacity:0;transform:scale(0)} }
+@keyframes hc-tick-4 { 0%,54%{opacity:0;transform:scale(0)} 57%,90%{opacity:1;transform:scale(1)} 96%,100%{opacity:0;transform:scale(0)} }
+@keyframes hc-tick-5 { 0%,68%{opacity:0;transform:scale(0)} 71%,90%{opacity:1;transform:scale(1)} 96%,100%{opacity:0;transform:scale(0)} }
+.hc-check { animation-duration: 6s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
+.hc-check-1 { animation-name: hc-tick-1; }
+.hc-check-2 { animation-name: hc-tick-2; }
+.hc-check-3 { animation-name: hc-tick-3; }
+.hc-check-4 { animation-name: hc-tick-4; }
+.hc-check-5 { animation-name: hc-tick-5; }
+
+/* processing highlight that sweeps each row just before it ticks */
+@keyframes hc-proc-1 { 0%,7%{background:rgba(251,248,240,0.06)} 9%,12%{background:rgba(74,144,226,0.16)} 14%,100%{background:rgba(251,248,240,0.06)} }
+@keyframes hc-proc-2 { 0%,21%{background:rgba(251,248,240,0.06)} 23%,26%{background:rgba(74,144,226,0.16)} 28%,100%{background:rgba(251,248,240,0.06)} }
+@keyframes hc-proc-3 { 0%,35%{background:rgba(251,248,240,0.06)} 37%,40%{background:rgba(74,144,226,0.16)} 42%,100%{background:rgba(251,248,240,0.06)} }
+@keyframes hc-proc-4 { 0%,49%{background:rgba(251,248,240,0.06)} 51%,54%{background:rgba(74,144,226,0.16)} 56%,100%{background:rgba(251,248,240,0.06)} }
+@keyframes hc-proc-5 { 0%,63%{background:rgba(251,248,240,0.06)} 65%,68%{background:rgba(74,144,226,0.16)} 70%,100%{background:rgba(251,248,240,0.06)} }
+.hc-row { animation-duration: 6s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
+.hc-row-1 { animation-name: hc-proc-1; }
+.hc-row-2 { animation-name: hc-proc-2; }
+.hc-row-3 { animation-name: hc-proc-3; }
+.hc-row-4 { animation-name: hc-proc-4; }
+.hc-row-5 { animation-name: hc-proc-5; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hc-bar, .hc-check, .hc-row { animation: none; }
+  .hc-check { opacity: 1; transform: none; }
+  .hc-bar { width: 100%; }
+}

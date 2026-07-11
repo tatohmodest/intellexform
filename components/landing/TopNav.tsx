@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
-import Logo from '@/components/Logo';
 
 const LINKS = [
   { href: '/#learn', label: 'Ways to learn' },
@@ -24,7 +23,8 @@ export default function TopNav() {
     >
       <div className="mx-auto flex max-w-[1140px] items-center justify-between px-6 py-4 md:pl-12">
         <Link href="/" className="flex items-center" aria-label="Intellex home">
-          <Logo className="text-[20px] sm:text-[22px]" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Intellex" className="h-6 w-auto sm:h-7" />
         </Link>
 
         <div className="hidden items-center gap-7 text-sm md:flex">
