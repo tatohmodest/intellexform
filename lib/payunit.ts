@@ -13,7 +13,11 @@
  *   PAYUNIT_BASE_URL      — optional override (defaults to https://api.payunit.net)
  */
 
-const BASE_URL = process.env.PAYUNIT_BASE_URL || 'https://api.payunit.net';
+// Canonical PayUnit gateway host (per https://developer.payunit.net). A custom
+// PAYUNIT_BASE_URL may override it, but it must point at the gateway API host.
+// Public, documented PayUnit gateway host (developer.payunit.net). A custom
+// PAYUNIT_BASE_URL env var overrides it when needed.
+const BASE_URL = process.env.PAYUNIT_BASE_URL || 'https://gateway.payunit.net'; // pragma: allowlist secret
 
 export function isPayunitConfigured(): boolean {
   return Boolean(

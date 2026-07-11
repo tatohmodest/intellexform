@@ -17,7 +17,13 @@ export async function POST(req: NextRequest) {
     }
 
     const transactionId = `intx_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const configured = isPayunitConfigured();
+
+    // Public base for PayUnit callbacks. PayUnit requires HTTPS return/notify
+    // URLs, so on http://localhost we transparently use the sandbox checkout.
+    const origin = req.nextUrl.origin;
+    const publicBase = (process.env.APP_PUBLIC_URL || origin).replace(/\/$/, '');
+    const useLive = isPayunitConfigured() && publicBase.startsWith('https://');
+    const gateway = useLive ? 'payunit' : 'mock';
 
     await createOrder({
       fullName,
@@ -29,19 +35,18 @@ export async function POST(req: NextRequest) {
       courseName: course.name,
       amountXAF: course.currentPrice,
       paymentMethod: 'PayUnit',
-      gateway: configured ? 'payunit' : 'mock',
+      gateway,
       transactionId,
       status: 'pending',
       createdAt: new Date(),
       paidAt: null,
     });
 
-    const origin = req.nextUrl.origin;
-    const returnUrl = `${origin}/checkout/return?transaction_id=${transactionId}`;
-    const notifyUrl = `${origin}/api/payments/notify`;
+    const returnUrl = `${publicBase}/checkout/return?transaction_id=${transactionId}`;
+    const notifyUrl = `${publicBase}/api/payments/notify`;
 
     let transactionUrl: string;
-    if (configured) {
+    if (useLive) {
       const init = await initializePayment({
         amount: course.currentPrice,
         currency: 'XAF',

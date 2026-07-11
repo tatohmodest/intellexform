@@ -17,8 +17,8 @@ export async function POST(req: NextRequest) {
 
     let status = order.status;
 
-    // If not already resolved and PayUnit is live, ask the gateway.
-    if (status === 'pending' && isPayunitConfigured()) {
+    // If not already resolved and this is a live PayUnit order, ask the gateway.
+    if (status === 'pending' && order.gateway === 'payunit' && isPayunitConfigured()) {
       const gwStatus = await getPaymentStatus(transactionId);
       if (gwStatus === 'SUCCESS') status = 'paid';
       else if (gwStatus === 'FAILED') status = 'failed';

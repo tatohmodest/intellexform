@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrderByTransaction, updateOrderStatus } from '@/lib/repo';
-import { isPayunitConfigured } from '@/lib/payunit';
 
 /**
- * Mock payment completion — only active when PayUnit is NOT configured. Lets the
- * local mock checkout mark an order as paid/failed so the flow can be tested.
+ * Mock payment completion — only valid for orders created against the sandbox
+ * checkout (gateway === 'mock'). Live PayUnit orders are settled via the gateway.
  */
 export async function POST(req: NextRequest) {
-  if (isPayunitConfigured()) {
-    return NextResponse.json({ error: 'Mock disabled when PayUnit is configured' }, { status: 400 });
-  }
   try {
     const { transactionId, outcome } = await req.json();
     if (!transactionId) {
@@ -18,6 +14,9 @@ export async function POST(req: NextRequest) {
     const order = await getOrderByTransaction(transactionId);
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+    if (order.gateway !== 'mock') {
+      return NextResponse.json({ error: 'Mock not allowed for live PayUnit orders' }, { status: 400 });
     }
     await updateOrderStatus(transactionId, outcome === 'success' ? 'paid' : 'failed');
     return NextResponse.json({ success: true });
