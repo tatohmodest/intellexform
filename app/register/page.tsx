@@ -20,7 +20,7 @@ export default function RegisterPage() {
               <ArrowLeft size={15} /> Back to home
             </Link>
             <div className="tab mb-4">Register</div>
-            <h1 className="mb-3.5 text-[34px] leading-[1.1]">Pick a plan, tell us how to reach you</h1>
+            <h1 className="mb-3.5 text-[26px] leading-[1.15] sm:text-[34px] sm:leading-[1.1]">Pick a plan, tell us how to reach you</h1>
             <p className="text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
               Fill this in and we&apos;ll follow up on WhatsApp with payment details for MTN MoMo or Orange
               Money. Your choices are saved to our admin and sent straight to us on WhatsApp.

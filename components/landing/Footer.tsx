@@ -8,7 +8,7 @@ export default function Footer() {
         <div className="mb-9 flex flex-wrap justify-between gap-8">
           <div className="max-w-[260px]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Intellex" className="h-7 w-auto" />
+            <img src="/logo.png" alt="Intellex" className="h-9 w-auto" />
 
             <p className="mt-3 text-[13.5px]">
               A Looping Binary platform. Skills to income, one level at a time. Built in Douala, Cameroon.

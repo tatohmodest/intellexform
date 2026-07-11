@@ -70,12 +70,12 @@ export default async function HomePage() {
 
       {/* HERO */}
       <header className="pb-10 pt-16">
-        <div className="wrap grid items-center gap-14 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="wrap grid items-center gap-10 sm:gap-14 lg:grid-cols-[1.1fr_0.9fr]">
           <Reveal direction="right">
             <div className="mb-4 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.1em]" style={{ color: 'var(--green-deep)' }}>
               <span style={{ width: 18, height: 1, background: 'var(--green-deep)' }} /> Skills to income, at your own pace
             </div>
-            <h1 className="mb-5 font-display text-[40px] leading-[1.04] sm:text-[52px]">
+            <h1 className="mb-5 font-display text-[30px] leading-[1.1] sm:text-[52px] sm:leading-[1.04]">
               A course is only the <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>first chapter.</em>
               <br />
               Learning is the rest of the book.
@@ -88,7 +88,7 @@ export default async function HomePage() {
               <a href="#pricing" className="btn btn-primary">See pricing</a>
               <a href="#learn" className="btn btn-ghost">How it works</a>
             </div>
-            <div className="flex gap-9 border-t pt-6" style={{ borderColor: 'var(--line)' }}>
+            <div className="flex flex-wrap gap-6 border-t pt-6 sm:gap-9" style={{ borderColor: 'var(--line)' }}>
               {[
                 { num: '360+', label: 'Learners' },
                 { num: '12', label: 'Fields covered' },
@@ -125,11 +125,11 @@ export default async function HomePage() {
       </div>
 
       {/* WAYS TO LEARN */}
-      <section id="learn" className="py-24">
+      <section id="learn" className="py-16 sm:py-24">
         <div className="wrap">
           <Reveal className="mb-12 max-w-[600px]">
             <div className="tab mb-4">Ways to learn</div>
-            <h2 className="mb-3.5 text-[38px] leading-[1.12]">Three ways in, one certificate out</h2>
+            <h2 className="mb-3.5 text-[27px] leading-[1.15] sm:text-[38px] sm:leading-[1.12]">Three ways in, one certificate out</h2>
             <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
               Pick the format that matches how you actually learn — or mix all three as you go.
             </p>
@@ -154,11 +154,11 @@ export default async function HomePage() {
       </section>
 
       {/* FIELDS */}
-      <section id="fields" className="py-24" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
+      <section id="fields" className="py-16 sm:py-24" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
         <div className="wrap">
           <Reveal className="mb-12 max-w-[600px]">
             <div className="tab mb-4" style={{ background: 'rgba(74,144,226,0.18)', color: '#8fc0ff' }}>Fields</div>
-            <h2 className="mb-3.5 text-[38px] leading-[1.12]">Whatever field you&apos;re chasing, it&apos;s in here</h2>
+            <h2 className="mb-3.5 text-[27px] leading-[1.15] sm:text-[38px] sm:leading-[1.12]">Whatever field you&apos;re chasing, it&apos;s in here</h2>
             <p className="text-base" style={{ color: 'rgba(251,248,240,0.72)' }}>
               Full stacks, single languages, or one specific skill — you&apos;re not boxed into one path.
             </p>
@@ -190,12 +190,12 @@ export default async function HomePage() {
       </section>
 
       {/* COURSES */}
-      <section id="courses" className="py-24">
+      <section id="courses" className="py-16 sm:py-24">
         <div className="wrap">
           <div className="mb-12 flex flex-wrap items-end justify-between gap-5">
             <Reveal className="max-w-[600px]">
               <div className="tab mb-4">Courses</div>
-              <h2 className="mb-3.5 text-[38px] leading-[1.12]">Top courses, picked to move you forward</h2>
+              <h2 className="mb-3.5 text-[27px] leading-[1.15] sm:text-[38px] sm:leading-[1.12]">Top courses, picked to move you forward</h2>
               <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
                 Every Intellex course is self-paced, included the moment it&apos;s part of your plan, and ends
                 in a certificate. Prices shown are for buying a single course outright.
@@ -223,15 +223,15 @@ export default async function HomePage() {
           {/* SPECIAL PROGRAM */}
           {special && (
             <div
-              className="relative mt-14 overflow-hidden rounded-[24px] p-11"
+              className="relative mt-10 overflow-hidden rounded-[24px] p-6 sm:mt-14 sm:p-11"
               style={{ background: 'linear-gradient(135deg, var(--green), #007a48)', color: '#fff' }}
             >
               <div className="relative grid items-center gap-9 lg:grid-cols-[1.2fr_0.8fr]">
                 <div>
-                  <div className="mb-3.5 font-mono text-[11.5px] uppercase tracking-[0.1em]" style={{ color: 'var(--amber)' }}>
+                  <div className="mb-3.5 font-mono text-[11.5px] uppercase tracking-[0.1em]" style={{ color: '#ffffff' }}>
                     Special program · Cohort-based
                   </div>
-                  <h3 className="mb-3 font-display text-[28px] leading-[1.15]">
+                  <h3 className="mb-3 font-display text-[22px] leading-[1.2] sm:text-[28px]">
                     Build a real full-stack app in 3 weeks, coding alongside Claude Code &amp; Cursor AI
                   </h3>
                   <p className="mb-5 max-w-[480px] text-[14.5px] leading-relaxed" style={{ color: 'rgba(251,248,240,0.82)' }}>
@@ -240,8 +240,8 @@ export default async function HomePage() {
                   </p>
                   <ul className="mb-0 flex flex-col gap-2">
                     {special.whatYouWillLearn.slice(0, 3).map((p) => (
-                      <li key={p} className="relative pl-5 text-[13.5px]" style={{ color: 'rgba(251,248,240,0.92)' }}>
-                        <span className="absolute left-0" style={{ color: 'var(--amber)' }}>—</span> {p}
+                      <li key={p} className="relative pl-5 text-[13.5px]" style={{ color: 'rgba(255,255,255,0.92)' }}>
+                        <span className="absolute left-0" style={{ color: '#ffffff' }}>—</span> {p}
                       </li>
                     ))}
                   </ul>
@@ -257,7 +257,7 @@ export default async function HomePage() {
                     <span className="font-display text-[32px] font-semibold">{formatXAF(special.currentPrice)}</span>
                     <span className="text-[12.5px]" style={{ color: 'rgba(251,248,240,0.7)' }}>/ cohort</span>
                   </div>
-                  <Link href={`/courses/${special.slug}`} className="btn btn-amber w-full">Reserve my seat</Link>
+                  <Link href={`/courses/${special.slug}`} className="btn btn-light w-full">Reserve my seat</Link>
                 </div>
               </div>
             </div>
@@ -266,11 +266,11 @@ export default async function HomePage() {
       </section>
 
       {/* SPECIAL SELF-PACED */}
-      <section id="self-paced" className="py-24" style={{ background: 'var(--paper-dim)' }}>
+      <section id="self-paced" className="py-16 sm:py-24" style={{ background: 'var(--paper-dim)' }}>
         <div className="wrap">
           <Reveal className="mb-10 max-w-[640px]">
             <div className="tab mb-4">Special · Self-paced</div>
-            <h2 className="mb-3.5 text-[38px] leading-[1.12]">
+            <h2 className="mb-3.5 text-[27px] leading-[1.15] sm:text-[38px] sm:leading-[1.12]">
               In-demand skills you can learn <span className="text-gradient">fast</span>
             </h2>
             <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
@@ -315,11 +315,11 @@ export default async function HomePage() {
       </section>
 
       {/* PRICING */}
-      <section id="pricing" className="py-24" style={{ background: 'var(--paper)' }}>
+      <section id="pricing" className="py-16 sm:py-24" style={{ background: 'var(--paper)' }}>
         <div className="wrap">
           <Reveal className="mb-12 max-w-[600px]">
             <div className="tab mb-4">Pricing</div>
-            <h2 className="mb-3.5 text-[38px] leading-[1.12]">Priced for students, not corporations</h2>
+            <h2 className="mb-3.5 text-[27px] leading-[1.15] sm:text-[38px] sm:leading-[1.12]">Priced for students, not corporations</h2>
             <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
               We tried higher prices before this. This is the number that actually gets used.
             </p>
@@ -330,7 +330,7 @@ export default async function HomePage() {
               <h3 className="mb-1.5 font-display text-[19px]">Monthly</h3>
               <div className="mb-5 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>Full access to every self-paced course, in every field, for as long as you&apos;re subscribed.</div>
               <div className="mb-5 flex items-baseline gap-1.5">
-                <span className="font-display text-[34px] font-semibold">1,999</span>
+                <span className="font-display text-[26px] sm:text-[34px] font-semibold">1,999</span>
                 <span className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>XAF / month</span>
               </div>
               <ul className="mb-6 flex flex-col gap-2.5 text-sm">
@@ -347,7 +347,7 @@ export default async function HomePage() {
               <div className="mb-5 text-[13.5px]" style={{ color: 'rgba(251,248,240,0.7)' }}>Same access as monthly, paid once a year — 6% cheaper than paying month to month.</div>
               <div className="font-mono text-[14px] line-through opacity-55">24,000 XAF</div>
               <div className="mb-5 mt-1.5 flex items-baseline gap-1.5">
-                <span className="font-display text-[34px] font-semibold">22,560</span>
+                <span className="font-display text-[26px] sm:text-[34px] font-semibold">22,560</span>
                 <span className="text-[13px]" style={{ color: 'rgba(251,248,240,0.7)' }}>XAF / year</span>
               </div>
               <ul className="mb-6 flex flex-col gap-2.5 text-sm">
@@ -362,7 +362,7 @@ export default async function HomePage() {
               <h3 className="mb-1.5 font-display text-[19px]">Single courses</h3>
               <div className="mb-5 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>No subscription. Buy one course outright and keep it.</div>
               <div className="mb-5 flex items-baseline gap-1.5">
-                <span className="font-display text-[34px] font-semibold">From 4,999</span>
+                <span className="font-display text-[26px] sm:text-[34px] font-semibold">From 4,999</span>
                 <span className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>XAF / course</span>
               </div>
               <ul className="mb-6 flex flex-col gap-2.5 text-sm">
@@ -392,11 +392,11 @@ export default async function HomePage() {
       </section>
 
       {/* LIVE TUTORING */}
-      <section className="py-24">
-        <div className="wrap grid items-center gap-14 lg:grid-cols-2">
+      <section className="py-16 sm:py-24">
+        <div className="wrap grid items-center gap-10 sm:gap-14 lg:grid-cols-2">
           <div>
             <div className="tab mb-4">Live Tutoring</div>
-            <h2 className="mb-3.5 text-[34px]">Sometimes you need a person, not a playlist</h2>
+            <h2 className="mb-3.5 text-[26px] sm:text-[34px]">Sometimes you need a person, not a playlist</h2>
             <p className="mb-6 text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
               Mentors teach live, one-on-one or in small groups, in any field we cover. You choose the format.
             </p>
@@ -431,11 +431,11 @@ export default async function HomePage() {
       </section>
 
       {/* AI TUTOR */}
-      <section id="ai" className="py-24" style={{ background: 'var(--paper-dim)' }}>
+      <section id="ai" className="py-16 sm:py-24" style={{ background: 'var(--paper-dim)' }}>
         <div className="wrap">
           <Reveal className="mb-12 max-w-[600px]">
             <div className="tab mb-4">AI Tutor</div>
-            <h2 className="mb-3.5 text-[38px] leading-[1.12]">We teach the AI the book, so it can teach you</h2>
+            <h2 className="mb-3.5 text-[27px] leading-[1.15] sm:text-[38px] sm:leading-[1.12]">We teach the AI the book, so it can teach you</h2>
             <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
               Take a real textbook — Python Crash Course, for example. We give the AI the full book and it
               teaches you in that author&apos;s voice, level by level.
@@ -460,16 +460,16 @@ export default async function HomePage() {
 
       {/* JUNIOR DEV */}
       <section className="px-6 pb-24 pt-6">
-        <div className="mx-auto max-w-[1140px] rounded-[24px] p-12" style={{ background: 'var(--green-deep)', color: 'var(--paper)' }}>
+        <div className="mx-auto max-w-[1140px] rounded-[24px] p-7 sm:p-12" style={{ background: 'var(--green-deep)', color: 'var(--paper)' }}>
           <div className="flex flex-wrap items-center justify-between gap-8">
             <div>
-              <h3 className="max-w-[520px] font-display text-[26px]">Already in Junior Dev? Your discount is already earned.</h3>
+              <h3 className="max-w-[520px] font-display text-[22px] sm:text-[26px]">Already in Junior Dev? Your discount is already earned.</h3>
               <p className="mt-2 max-w-[480px] text-[14.5px]" style={{ color: 'rgba(251,248,240,0.82)' }}>
                 Junior Dev isn&apos;t separate from Intellex — Builder tier and above already includes Intellex
                 course access, and tournament winners get 30% off on top of that.
               </p>
             </div>
-            <a href="#register" className="btn btn-amber">Check my tier</a>
+            <a href="#register" className="btn btn-light">Check my tier</a>
           </div>
         </div>
       </section>
@@ -478,11 +478,11 @@ export default async function HomePage() {
       <Testimonials />
 
       {/* REGISTER */}
-      <section id="register" className="py-24">
-        <div className="wrap grid gap-14 lg:grid-cols-[0.9fr_1.1fr]">
+      <section id="register" className="py-16 sm:py-24">
+        <div className="wrap grid gap-10 sm:gap-14 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
             <div className="tab mb-4">Register</div>
-            <h2 className="mb-3.5 text-[34px]">Pick a plan, tell us how to reach you</h2>
+            <h2 className="mb-3.5 text-[26px] sm:text-[34px]">Pick a plan, tell us how to reach you</h2>
             <p className="text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
               Fill this in and we&apos;ll follow up on WhatsApp with payment details for MTN MoMo or Orange
               Money, and get your account set up. Your choices are saved and sent straight to us.

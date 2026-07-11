@@ -19,7 +19,7 @@ export default async function CoursesPage() {
       <section className="py-16" style={{ background: 'var(--paper-dim)' }}>
         <div className="wrap">
           <div className="tab mb-4">Courses</div>
-          <h1 className="mb-3 text-[40px] leading-[1.08]">Every skill, one catalogue</h1>
+          <h1 className="mb-3 text-[30px] leading-[1.1] sm:text-[40px]">Every skill, one catalogue</h1>
           <p className="max-w-[560px] text-base" style={{ color: 'var(--ink-soft)' }}>
             {courses.length}+ self-paced courses across web development, data, AI, cybersecurity, design
             and more. Search, filter, and buy directly on the platform.

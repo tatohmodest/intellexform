@@ -43,13 +43,20 @@ export async function ensureCoursesSeeded() {
 }
 
 export async function getAllCourses(): Promise<Course[]> {
-  await ensureCoursesSeeded();
-  const db = await getDb();
-  const docs = await db
-    .collection('courses')
-    .find({}, { projection: { _id: 0 } })
-    .toArray();
-  return docs as unknown as Course[];
+  try {
+    await ensureCoursesSeeded();
+    const db = await getDb();
+    const docs = await db
+      .collection('courses')
+      .find({}, { projection: { _id: 0 } })
+      .toArray();
+    if (docs.length) return docs as unknown as Course[];
+    return allSeedCourses();
+  } catch (err) {
+    // Never hard-fail the catalogue: fall back to the code-defined courses.
+    console.error('getAllCourses fell back to static seed:', err);
+    return allSeedCourses();
+  }
 }
 
 export async function getFeaturedCourses(): Promise<Course[]> {
@@ -82,12 +89,18 @@ export async function deleteCourseById(id: string) {
 }
 
 export async function getCourseBySlug(slug: string): Promise<Course | null> {
-  await ensureCoursesSeeded();
-  const db = await getDb();
-  const doc = await db
-    .collection('courses')
-    .findOne({ slug }, { projection: { _id: 0 } });
-  return (doc as unknown as Course) ?? null;
+  try {
+    await ensureCoursesSeeded();
+    const db = await getDb();
+    const doc = await db
+      .collection('courses')
+      .findOne({ slug }, { projection: { _id: 0 } });
+    if (doc) return doc as unknown as Course;
+    return allSeedCourses().find((c) => c.slug === slug) ?? null;
+  } catch (err) {
+    console.error('getCourseBySlug fell back to static seed:', err);
+    return allSeedCourses().find((c) => c.slug === slug) ?? null;
+  }
 }
 
 export async function createRequest(req: ContactRequest) {

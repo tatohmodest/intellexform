@@ -43,7 +43,7 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
                 <span className="rounded-full px-2.5 py-1 font-mono text-[10.5px] uppercase" style={{ background: 'var(--amber)', color: 'var(--ink)' }}>Bestseller</span>
               )}
             </div>
-            <h1 className="max-w-[760px] font-display text-[36px] leading-[1.1]">{course.name}</h1>
+            <h1 className="max-w-[760px] font-display text-[26px] leading-[1.15] sm:text-[36px] sm:leading-[1.1]">{course.name}</h1>
             <p className="max-w-[680px] text-[16px]" style={{ color: 'rgba(251,248,240,0.82)' }}>{course.shortDescription}</p>
             <div className="mt-2 flex flex-wrap items-center gap-5 text-sm" style={{ color: 'rgba(251,248,240,0.85)' }}>
               {course.instructor && <span>By {course.instructor}</span>}

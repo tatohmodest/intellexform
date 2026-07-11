@@ -100,6 +100,9 @@ h1, h2, h3, .display {
 .btn-primary:hover { background: var(--green-deep); }
 .btn-amber { background: var(--blue); color: #ffffff; }
 .btn-amber:hover { background: #3f7fce; }
+/* light button — for CTAs sitting on green / dark bands (avoids blue-on-green) */
+.btn-light { background: #ffffff; color: var(--ink); }
+.btn-light:hover { background: var(--paper-dim); }
 .btn-ghost { border-color: var(--line); color: var(--ink); background: transparent; }
 .btn-ghost:hover { border-color: var(--ink); }
 
