@@ -8,6 +8,7 @@ import ContactForm from '@/components/landing/ContactForm';
 import Testimonials from '@/components/landing/Testimonials';
 import CourseCard from '@/components/CourseCard';
 import Reveal from '@/components/Reveal';
+import HeroCard from '@/components/landing/HeroCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,48 +100,9 @@ export default async function HomePage() {
             </div>
           </Reveal>
 
-          {/* Book card */}
+          {/* Book card (computerized / typewriter animation) */}
           <Reveal direction="left" delay={0.15}>
-          <div className="relative rounded-[20px] p-8 shadow-book" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
-            <div className="absolute left-[-10px] top-4 bottom-4 w-2.5 rounded-l-md" style={{ background: 'var(--green-deep)' }} />
-            <div className="mb-5">
-              <div className="font-mono text-[11px] uppercase tracking-wide" style={{ color: 'var(--amber)' }}>AI Tutor · Python Crash Course</div>
-              <h3 className="mt-1.5 font-display text-[22px]">Studying with the author</h3>
-            </div>
-            <div className="my-5 flex flex-col gap-2.5">
-              {[
-                { label: 'Level 1 — Variables & data types', state: 'done' },
-                { label: 'Level 2 — Control flow & loops', state: 'done' },
-                { label: 'Level 3 — Functions & scope', state: 'active' },
-                { label: 'Level 4 — Classes & objects', state: 'locked' },
-                { label: 'Level 5 — Files & error handling', state: 'locked' },
-              ].map((lv, i) => (
-                <div
-                  key={lv.label}
-                  className="flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-[13px]"
-                  style={{ background: 'rgba(251,248,240,0.06)', opacity: lv.state === 'locked' ? 0.55 : 1 }}
-                >
-                  <span
-                    className="flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded-full font-mono text-[11px]"
-                    style={{
-                      background:
-                        lv.state === 'done' ? 'var(--green)' : lv.state === 'active' ? 'var(--amber)' : 'rgba(251,248,240,0.14)',
-                      color: lv.state === 'locked' ? 'rgba(251,248,240,0.5)' : 'var(--ink)',
-                    }}
-                  >
-                    {lv.state === 'done' ? '✓' : i + 1}
-                  </span>
-                  {lv.label}
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-3.5 border-t pt-4" style={{ borderColor: 'var(--line-soft)' }}>
-              <div className="h-1.5 flex-1 overflow-hidden rounded-[10px]" style={{ background: 'rgba(251,248,240,0.12)' }}>
-                <div className="h-full rounded-[10px]" style={{ width: '46%', background: 'var(--amber)' }} />
-              </div>
-              <div className="font-mono text-[13px]">46%</div>
-            </div>
-          </div>
+            <HeroCard />
           </Reveal>
         </div>
       </header>
