@@ -9,7 +9,7 @@
   --font-public-sans: 'Public Sans', sans-serif;
   --font-plex-mono: 'IBM Plex Mono', monospace;
 
-  /* Brand: black & white base, green (#00b369) primary, blue (#4a90e2) secondary.
+  /* Brand:  black & white base, green (#00b369) primary, blue (#4a90e2) secondary.
      Token names kept (amber == blue) so the whole app recolours consistently. */
   --ink: #0C1116;
   --ink-soft: #56606E;
