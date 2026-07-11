@@ -42,7 +42,7 @@ function VideoCard({ t, index, onOpen }: { t: T; index: number; onOpen: (t: T) =
         // eslint-disable-next-line @next/next/no-img-element
         <img src={t.photo} alt={t.name} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
       ) : (
-        <div className="absolute inset-0 flex items-center justify-center font-display text-6xl" style={{ background: 'linear-gradient(135deg,#1F6B48,#17553a)', color: 'var(--paper)' }}>
+        <div className="absolute inset-0 flex items-center justify-center font-display text-6xl" style={{ background: 'linear-gradient(135deg,#00b369,#009a5a)', color: '#fff' }}>
           {initials(t.name)}
         </div>
       )}

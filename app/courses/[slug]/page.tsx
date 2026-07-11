@@ -35,7 +35,7 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
           </Link>
           <div className="grid gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="tab" style={{ background: 'rgba(227,162,58,0.18)', color: 'var(--amber)' }}>{course.type}</span>
+              <span className="tab" style={{ background: 'rgba(74,144,226,0.18)', color: '#8fc0ff' }}>{course.type}</span>
               {course.featured && (
                 <span className="rounded-full px-2.5 py-1 font-mono text-[10.5px] uppercase" style={{ background: 'var(--green)', color: 'var(--ink)' }}>Intellex program</span>
               )}

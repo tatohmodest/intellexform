@@ -19,7 +19,7 @@ export default function CourseCard({ course }: { course: Course }) {
         className="relative flex aspect-[16/10] items-center justify-center overflow-hidden"
         style={{
           background:
-            'repeating-linear-gradient(135deg, var(--paper-dim), var(--paper-dim) 10px, #ece7d6 10px, #ece7d6 20px)',
+            'repeating-linear-gradient(135deg, var(--paper-dim), var(--paper-dim) 10px, #E1EBF6 10px, #E1EBF6 20px)',
         }}
       >
         {imgOk && (

@@ -9,16 +9,20 @@
   --font-public-sans: 'Public Sans', sans-serif;
   --font-plex-mono: 'IBM Plex Mono', monospace;
 
-  --ink: #132019;
-  --ink-soft: #2b3b32;
-  --paper: #FBF8F0;
-  --paper-dim: #F1EEE1;
-  --green: #2F8F63;
-  --green-deep: #1F6B48;
-  --amber: #E3A23A;
-  --amber-soft: #F6E3C0;
-  --line: rgba(19, 32, 25, 0.12);
-  --line-soft: rgba(251, 248, 240, 0.16);
+  /* Brand: black & white base, green (#00b369) primary, blue (#4a90e2) secondary.
+     Token names kept (amber == blue) so the whole app recolours consistently. */
+  --ink: #0C1116;
+  --ink-soft: #56606E;
+  --paper: #FFFFFF;
+  --paper-dim: #F2F6FB;
+  --green: #00b369;
+  --green-deep: #009a5a;
+  --amber: #4a90e2;
+  --amber-soft: #E7F1FC;
+  --blue: #4a90e2;
+  --blue-ink: #1f5fa8;
+  --line: rgba(12, 17, 22, 0.10);
+  --line-soft: rgba(255, 255, 255, 0.16);
 }
 
 * {
@@ -58,20 +62,20 @@ h1, h2, h3, .display {
   background: var(--paper-dim);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(31, 107, 72, 0.4);
+  background: rgba(0, 179, 105, 0.45);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(31, 107, 72, 0.6);
+  background: rgba(0, 179, 105, 0.7);
 }
 
 ::selection {
-  background: rgba(47, 143, 99, 0.2);
+  background: rgba(0, 179, 105, 0.2);
   color: var(--ink);
 }
 
 *:focus-visible {
-  outline: 2px solid rgba(47, 143, 99, 0.6);
+  outline: 2px solid rgba(0, 179, 105, 0.6);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -92,10 +96,10 @@ h1, h2, h3, .display {
   transition: background 0.2s, border-color 0.2s, transform 0.15s;
 }
 .btn:hover { transform: translateY(-1px); }
-.btn-primary { background: var(--green-deep); color: var(--paper); }
-.btn-primary:hover { background: var(--ink); }
-.btn-amber { background: var(--amber); color: var(--ink); }
-.btn-amber:hover { background: #f0b866; }
+.btn-primary { background: var(--green); color: #ffffff; }
+.btn-primary:hover { background: var(--green-deep); }
+.btn-amber { background: var(--blue); color: #ffffff; }
+.btn-amber:hover { background: #3f7fce; }
 .btn-ghost { border-color: var(--line); color: var(--ink); background: transparent; }
 .btn-ghost:hover { border-color: var(--ink); }
 
@@ -107,7 +111,7 @@ h1, h2, h3, .display {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   background: var(--amber-soft);
-  color: #7a5417;
+  color: var(--blue-ink);
   padding: 6px 12px;
   border-radius: 6px;
 }
@@ -135,7 +139,7 @@ h1, h2, h3, .display {
 .form-input:focus {
   outline: none;
   border-color: var(--green);
-  box-shadow: 0 0 0 3px rgba(47, 143, 99, 0.12);
+  box-shadow: 0 0 0 3px rgba(0, 179, 105, 0.14);
 }
 .form-input option { background: var(--paper); color: var(--ink); }
 textarea.form-input { resize: vertical; min-height: 100px; }

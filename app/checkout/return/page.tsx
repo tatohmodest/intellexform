@@ -60,7 +60,7 @@ function ReturnInner() {
 
         {!loading && result?.paid && (
           <>
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'rgba(47,143,99,0.15)' }}>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'rgba(0,179,105,0.15)' }}>
               <CheckCircle size={34} style={{ color: 'var(--green-deep)' }} />
             </div>
             <h1 className="mb-2 font-display text-[26px]">Successfully purchased!</h1>

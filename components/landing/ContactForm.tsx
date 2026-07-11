@@ -79,7 +79,7 @@ export default function ContactForm() {
           >
             <div
               className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full"
-              style={{ background: 'rgba(47,143,99,0.15)' }}
+              style={{ background: 'rgba(0,179,105,0.15)' }}
             >
               <CheckCircle className="text-green-deep" size={28} />
             </div>

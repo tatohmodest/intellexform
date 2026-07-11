@@ -50,7 +50,7 @@ export default function PurchasePanel({ course }: { course: Course }) {
         )}
       </div>
       {discount > 0 && (
-        <div className="mb-4 inline-block rounded-full px-2.5 py-1 font-mono text-[11px]" style={{ background: 'var(--amber-soft)', color: '#7a5417' }}>
+        <div className="mb-4 inline-block rounded-full px-2.5 py-1 font-mono text-[11px]" style={{ background: 'var(--amber-soft)', color: 'var(--blue-ink)' }}>
           {discount}% off
         </div>
       )}

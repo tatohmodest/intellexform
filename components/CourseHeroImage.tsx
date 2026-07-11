@@ -10,7 +10,7 @@ export default function CourseHeroImage({ src, name }: { src: string; name: stri
       className="relative flex aspect-[16/9] w-full items-center justify-center overflow-hidden rounded-[18px]"
       style={{
         background:
-          'repeating-linear-gradient(135deg, var(--paper-dim), var(--paper-dim) 12px, #ece7d6 12px, #ece7d6 24px)',
+          'repeating-linear-gradient(135deg, var(--paper-dim), var(--paper-dim) 12px, #E1EBF6 12px, #E1EBF6 24px)',
       }}
     >
       {ok ? (

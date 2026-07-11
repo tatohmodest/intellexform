@@ -193,7 +193,7 @@ export default async function HomePage() {
       <section id="fields" className="py-24" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
         <div className="wrap">
           <Reveal className="mb-12 max-w-[600px]">
-            <div className="tab mb-4" style={{ background: 'rgba(227,162,58,0.18)', color: 'var(--amber)' }}>Fields</div>
+            <div className="tab mb-4" style={{ background: 'rgba(74,144,226,0.18)', color: '#8fc0ff' }}>Fields</div>
             <h2 className="mb-3.5 text-[38px] leading-[1.12]">Whatever field you&apos;re chasing, it&apos;s in here</h2>
             <p className="text-base" style={{ color: 'rgba(251,248,240,0.72)' }}>
               Full stacks, single languages, or one specific skill — you&apos;re not boxed into one path.
@@ -260,7 +260,7 @@ export default async function HomePage() {
           {special && (
             <div
               className="relative mt-14 overflow-hidden rounded-[24px] p-11"
-              style={{ background: 'linear-gradient(135deg, var(--green-deep), #17553a)', color: 'var(--paper)' }}
+              style={{ background: 'linear-gradient(135deg, var(--green), #007a48)', color: '#fff' }}
             >
               <div className="relative grid items-center gap-9 lg:grid-cols-[1.2fr_0.8fr]">
                 <div>
@@ -366,7 +366,7 @@ export default async function HomePage() {
               { pct: '6%', title: 'Pay yearly, not monthly', body: 'Commit for a year up front and the price drops from 24,000 to 22,560 XAF automatically.' },
               { pct: '30%', title: 'Win the Junior Dev tournament', body: 'Junior Dev champions get 30% off their first Intellex plan — one more reason to compete.' },
             ].map((d) => (
-              <div key={d.title} className="flex items-start gap-4 rounded-[16px] p-6" style={{ border: '1px dashed var(--green-deep)', background: 'rgba(47,143,99,0.06)' }}>
+              <div key={d.title} className="flex items-start gap-4 rounded-[16px] p-6" style={{ border: '1px dashed var(--green-deep)', background: 'rgba(0,179,105,0.06)' }}>
                 <div className="font-display text-[26px]" style={{ color: 'var(--green-deep)' }}>{d.pct}</div>
                 <div>
                   <h4 className="mb-1 text-[15px] font-semibold">{d.title}</h4>

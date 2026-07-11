@@ -22,9 +22,9 @@ export default function TopNav() {
       style={{ background: 'rgba(251,248,240,0.9)', borderColor: 'var(--line)' }}
     >
       <div className="mx-auto flex max-w-[1140px] items-center justify-between px-6 py-4 md:pl-12">
-        <Link href="/" className="flex items-baseline gap-1">
-          <span className="font-display text-[22px] font-semibold">Intellex</span>
-          <span className="text-amber font-display text-[22px]">.</span>
+        <Link href="/" className="flex items-center" aria-label="Intellex home">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Intellex" className="h-6 w-auto sm:h-7" />
         </Link>
 
         <div className="hidden items-center gap-7 text-sm md:flex">

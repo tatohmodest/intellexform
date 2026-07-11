@@ -10,20 +10,25 @@ const config: Config = {
     extend: {
       colors: {
         ink: {
-          DEFAULT: '#132019',
-          soft: '#2b3b32',
+          DEFAULT: '#0C1116',
+          soft: '#56606E',
         },
         paper: {
-          DEFAULT: '#FBF8F0',
-          dim: '#F1EEE1',
+          DEFAULT: '#FFFFFF',
+          dim: '#F2F6FB',
         },
         green: {
-          DEFAULT: '#2F8F63',
-          deep: '#1F6B48',
+          DEFAULT: '#00b369',
+          deep: '#009a5a',
         },
+        // `amber` token repurposed as the brand blue so existing utilities recolour.
         amber: {
-          DEFAULT: '#E3A23A',
-          soft: '#F6E3C0',
+          DEFAULT: '#4a90e2',
+          soft: '#E7F1FC',
+        },
+        blue: {
+          DEFAULT: '#4a90e2',
+          ink: '#1f5fa8',
         },
       },
       fontFamily: {

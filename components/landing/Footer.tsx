@@ -7,10 +7,9 @@ export default function Footer() {
       <div className="wrap">
         <div className="mb-9 flex flex-wrap justify-between gap-8">
           <div className="max-w-[260px]">
-            <div className="flex items-baseline gap-1">
-              <span className="font-display text-[22px] font-semibold text-paper">Intellex</span>
-              <span className="font-display text-[22px] text-amber">.</span>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Intellex" className="h-7 w-auto" />
+
             <p className="mt-3 text-[13.5px]">
               A Looping Binary platform. Skills to income, one level at a time. Built in Douala, Cameroon.
             </p>
