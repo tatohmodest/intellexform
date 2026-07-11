@@ -27,6 +27,7 @@ export default function TopNav() {
   }, [open]);
 
   return (
+    <>
     <nav
       className="sticky top-0 z-40 border-b backdrop-blur"
       style={{ background: 'rgba(255,255,255,0.9)', borderColor: 'var(--line)' }}
@@ -63,8 +64,10 @@ export default function TopNav() {
           </button>
         </div>
       </div>
+      </nav>
 
-      {/* App-like full-screen mobile menu */}
+      {/* App-like full-screen mobile menu — rendered outside <nav> so the nav's
+          backdrop-blur doesn't trap this fixed overlay in a containing block. */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -126,6 +129,6 @@ export default function TopNav() {
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+    </>
   );
 }
