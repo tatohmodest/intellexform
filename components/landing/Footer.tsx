@@ -27,6 +27,7 @@ export default function Footer() {
               Explore
             </h5>
             <Link href="/courses" className="mb-2 block text-sm text-paper/80">All courses</Link>
+            <Link href="/certifications" className="mb-2 block text-sm text-paper/80">Certificates</Link>
             <Link href="/#pricing" className="mb-2 block text-sm text-paper/80">Pricing</Link>
             <Link href="/#testimonials" className="mb-2 block text-sm text-paper/80">Student stories</Link>
             <Link href="/#ecosystem" className="mb-2 block text-sm text-paper/80">Ecosystem</Link>

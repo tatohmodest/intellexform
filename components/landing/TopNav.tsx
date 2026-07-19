@@ -7,10 +7,10 @@ import { Menu, X, ArrowRight, MessageCircle } from 'lucide-react';
 import { buildWhatsappLink } from '@/lib/whatsapp';
 
 const LINKS = [
-  { href: '/#learn', label: 'Ways to learn' },
   { href: '/courses', label: 'Courses' },
+  { href: '/certifications', label: 'Certificates' },
   { href: '/#pricing', label: 'Pricing' },
-  { href: '/#ai', label: 'AI Tutor' },
+  { href: '/#learn', label: 'Ways to learn' },
   { href: '/#ecosystem', label: 'Ecosystem' },
   { href: '/junior-dev', label: 'Junior Dev' },
 ];

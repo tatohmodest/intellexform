@@ -1,12 +1,14 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { Course } from '@/lib/types';
 import CourseCard from '@/components/CourseCard';
 
 export default function CoursesBrowser({ courses }: { courses: Course[] }) {
-  const [query, setQuery] = useState('');
+  const params = useSearchParams();
+  const [query, setQuery] = useState(params.get('q') || '');
   const [category, setCategory] = useState('All');
 
   const categories = useMemo(() => {
