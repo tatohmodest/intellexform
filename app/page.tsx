@@ -31,22 +31,28 @@ const FIELDS = [
 
 const WAYS = [
   {
-    letter: 'A',
+    id: 'self-paced',
     title: 'Self-paced courses',
     body: 'Recorded courses you work through on your own time, in any field we cover. Finish a course and you get a certificate , it just proves you did the work.',
     tag: 'Included in every subscription',
+    image: '/way_selfpaced.webp',
+    alt: 'Learner watching a self-paced course on a laptop',
   },
   {
-    letter: 'B',
+    id: 'live',
     title: 'Live tutoring',
     body: 'A mentor teaches you directly , online from anywhere, or onsite at a location you choose. Best for people who need a real person keeping them accountable.',
     tag: 'Priced per mentor & format',
+    image: '/way_live.webp',
+    alt: 'Mentor teaching a student in a live session',
   },
   {
-    letter: 'C',
+    id: 'ai',
     title: 'AI Tutor',
     body: 'We take a real book , say, Python Crash Course , and train an AI on it that teaches like the author would, step by step, level by level. Unlock levels as you go, or all at once.',
     tag: 'Pay per level, or pay once',
+    image: '/way_ai.webp',
+    alt: 'Student learning with an AI tutor and a textbook',
   },
 ];
 
@@ -127,16 +133,17 @@ export default async function HomePage() {
           </Reveal>
           <div className="grid gap-6 md:grid-cols-3">
             {WAYS.map((w) => (
-              <div
-                key={w.letter}
-                className="flex flex-col gap-3.5 rounded-[18px] border p-7"
-                style={{ background: 'var(--paper-dim)', borderColor: 'var(--line)' }}
-              >
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl font-display text-lg" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
-                  {w.letter}
+              <div key={w.id} className="flex flex-col">
+                <div className="mb-5 overflow-hidden rounded-[18px]" style={{ background: 'var(--paper-dim)' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={w.image}
+                    alt={w.alt}
+                    className="aspect-[4/3] w-full object-cover object-center"
+                  />
                 </div>
-                <h3 className="font-display text-xl">{w.title}</h3>
-                <p className="text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>{w.body}</p>
+                <h3 className="mb-2 font-display text-xl">{w.title}</h3>
+                <p className="mb-3 text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>{w.body}</p>
                 <div className="mt-auto font-mono text-xs" style={{ color: 'var(--green-deep)' }}>{w.tag}</div>
               </div>
             ))}

@@ -134,11 +134,11 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
                 animate={{ opacity: 1, x: 0, y: 0 }}
                 exit={{ opacity: 0, x: dir * 24, y: -6 }}
                 transition={{ duration: 0.4, ease: 'easeOut' }}
-                className="flex aspect-[1/0.95] flex-col justify-center rounded-2xl border p-7 shadow-book lg:p-8"
+                className="rounded-2xl border p-6 shadow-book sm:p-7 lg:p-8"
                 style={{ background: 'rgba(255,255,255,0.96)', borderColor: 'var(--line)' }}
               >
                 <h1 className="mb-3 font-display text-[28px] leading-[1.12] lg:text-[32px]">{slide.headline}</h1>
-                <p className="mb-6 text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                <p className="mb-5 text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
                   {slide.body}
                 </p>
                 <div className="flex flex-wrap gap-3">
