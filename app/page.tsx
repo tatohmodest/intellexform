@@ -99,7 +99,7 @@ export default async function HomePage() {
       <TopNav />
 
       {/* HERO */}
-      <header className="pb-14 pt-16 lg:pb-28">
+      <header className="pb-14 pt-16">
         <div className="wrap grid items-center gap-10 sm:gap-14 lg:grid-cols-[1.1fr_0.9fr]">
           <Reveal direction="right">
             <div className="mb-4 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.1em]" style={{ color: 'var(--green-deep)' }}>
@@ -132,8 +132,8 @@ export default async function HomePage() {
             </div>
           </Reveal>
 
-          {/* Hero visual: real learner photo with the live AI-tutor card floating over it */}
-          <Reveal direction="left" delay={0.15} className="relative">
+          {/* Hero visual: real learner photo (clean, room to breathe) */}
+          <Reveal direction="left" delay={0.15}>
             <div className="overflow-hidden rounded-[24px] border shadow-book" style={{ borderColor: 'var(--line)' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -141,9 +141,6 @@ export default async function HomePage() {
                 alt="An Intellex learner building her future"
                 className="aspect-[4/5] h-full w-full object-cover"
               />
-            </div>
-            <div className="mt-5 lg:absolute lg:-bottom-8 lg:-left-8 lg:mt-0 lg:w-[290px] lg:z-10">
-              <HeroCard />
             </div>
           </Reveal>
         </div>
@@ -499,19 +496,25 @@ export default async function HomePage() {
               teaches you in that author&apos;s voice, level by level.
             </p>
           </Reveal>
-          <div className="flex flex-col gap-4">
-            <div className="rounded-[14px] border bg-paper p-[22px]" style={{ borderColor: 'var(--line)' }}>
-              <h4 className="mb-1.5 flex items-center gap-2 font-display text-[16px]">
-                Pay as you go <span className="rounded-full px-2 py-0.5 font-mono text-[10.5px] uppercase" style={{ background: 'var(--green-deep)', color: 'var(--paper)' }}>Level by level</span>
-              </h4>
-              <p className="text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>Pay for one level at a time. Finish it, unlock the next. Go slow and only pay for what you&apos;re using right now.</p>
+          <div className="grid items-start gap-8 lg:grid-cols-2 lg:gap-12">
+            <div className="flex flex-col gap-4">
+              <div className="rounded-[14px] border bg-paper p-[22px]" style={{ borderColor: 'var(--line)' }}>
+                <h4 className="mb-1.5 flex items-center gap-2 font-display text-[16px]">
+                  Pay as you go <span className="rounded-full px-2 py-0.5 font-mono text-[10.5px] uppercase" style={{ background: 'var(--green-deep)', color: 'var(--paper)' }}>Level by level</span>
+                </h4>
+                <p className="text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>Pay for one level at a time. Finish it, unlock the next. Go slow and only pay for what you&apos;re using right now.</p>
+              </div>
+              <div className="rounded-[14px] border bg-paper p-[22px]" style={{ borderColor: 'var(--line)' }}>
+                <h4 className="mb-1.5 flex items-center gap-2 font-display text-[16px]">
+                  Pay once <span className="rounded-full px-2 py-0.5 font-mono text-[10.5px] uppercase" style={{ background: 'var(--green-deep)', color: 'var(--paper)' }}>Everything, now</span>
+                </h4>
+                <p className="text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>Unlock every level of that course immediately with one payment and move at whatever speed you want.</p>
+              </div>
             </div>
-            <div className="rounded-[14px] border bg-paper p-[22px]" style={{ borderColor: 'var(--line)' }}>
-              <h4 className="mb-1.5 flex items-center gap-2 font-display text-[16px]">
-                Pay once <span className="rounded-full px-2 py-0.5 font-mono text-[10.5px] uppercase" style={{ background: 'var(--green-deep)', color: 'var(--paper)' }}>Everything, now</span>
-              </h4>
-              <p className="text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>Unlock every level of that course immediately with one payment and move at whatever speed you want.</p>
-            </div>
+            {/* the live "computerized" tutor card, in its natural home */}
+            <Reveal direction="up">
+              <HeroCard />
+            </Reveal>
           </div>
         </div>
       </section>
