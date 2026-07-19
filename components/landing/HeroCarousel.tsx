@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 
 export type HeroSlide = {
   id: string;
@@ -21,8 +21,11 @@ const AUTO_MS = 5600;
 
 export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
   const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [autoplay, setAutoplay] = useState(true);
+  const [hovering, setHovering] = useState(false);
   const [dir, setDir] = useState(1);
+
+  const paused = !autoplay || hovering;
 
   const go = useCallback(
     (next: number, d: number) => {
@@ -34,6 +37,7 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
 
   const prev = () => go(index - 1, -1);
   const next = () => go(index + 1, 1);
+  const toggleAutoplay = () => setAutoplay((v) => !v);
 
   useEffect(() => {
     if (paused || slides.length < 2) return;
@@ -43,15 +47,27 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
 
   const slide = slides[index];
 
+  const renderControls = () => (
+    <Controls
+      slides={slides}
+      index={index}
+      autoplay={autoplay}
+      onPrev={prev}
+      onNext={next}
+      onToggle={toggleAutoplay}
+      onSelect={(i) => go(i, i > index ? 1 : -1)}
+    />
+  );
+
   return (
     <header
       className="relative"
       style={{ background: 'var(--paper)' }}
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocusCapture={() => setPaused(true)}
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}
+      onFocusCapture={() => setHovering(true)}
       onBlurCapture={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node)) setPaused(false);
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) setHovering(false);
       }}
     >
       {/* ── Mobile: illustration on top, matching card below ── */}
@@ -70,6 +86,9 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
               className="absolute inset-0 h-full w-full object-cover object-center"
             />
           </AnimatePresence>
+
+          {/* overlay controls on the image */}
+          <div className="absolute bottom-3 right-3 z-10">{renderControls()}</div>
         </div>
         <div className="wrap py-7">
           <AnimatePresence mode="wait" custom={dir} initial={false}>
@@ -95,7 +114,6 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
               </div>
             </motion.div>
           </AnimatePresence>
-          <Dots slides={slides} index={index} onSelect={(i) => go(i, i > index ? 1 : -1)} className="mt-6" />
         </div>
       </div>
 
@@ -153,43 +171,97 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
             </AnimatePresence>
           </div>
 
-          {/* controls */}
-          <div className="absolute bottom-6 right-0 flex items-center gap-2 md:bottom-8">
-            <button
-              type="button"
-              onClick={prev}
-              aria-label="Previous slide"
-              className="flex h-10 w-10 items-center justify-center rounded-full border bg-white/90 transition hover:-translate-y-0.5"
-              style={{ borderColor: 'var(--line)' }}
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <Dots slides={slides} index={index} onSelect={(i) => go(i, i > index ? 1 : -1)} />
-            <button
-              type="button"
-              onClick={next}
-              aria-label="Next slide"
-              className="flex h-10 w-10 items-center justify-center rounded-full border bg-white/90 transition hover:-translate-y-0.5"
-              style={{ borderColor: 'var(--line)' }}
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
+          <div className="absolute bottom-6 right-0 md:bottom-8">{renderControls()}</div>
         </div>
 
-        {/* autoplay progress */}
+        {/* autoplay progress — freezes when paused */}
         <div className="absolute bottom-0 left-0 right-0 h-[3px]" style={{ background: 'rgba(12,17,22,0.06)' }}>
           <motion.div
-            key={slide.id + '-bar'}
+            key={`${slide.id}-${autoplay ? 'run' : 'stop'}`}
             className="h-full origin-left"
             style={{ background: 'var(--green)' }}
             initial={{ scaleX: 0 }}
-            animate={{ scaleX: paused ? undefined : 1 }}
+            animate={{ scaleX: paused ? 0 : 1 }}
             transition={paused ? { duration: 0 } : { duration: AUTO_MS / 1000, ease: 'linear' }}
           />
         </div>
       </div>
     </header>
+  );
+}
+
+function Controls({
+  slides,
+  index,
+  autoplay,
+  onPrev,
+  onNext,
+  onToggle,
+  onSelect,
+}: {
+  slides: HeroSlide[];
+  index: number;
+  autoplay: boolean;
+  onPrev: () => void;
+  onNext: () => void;
+  onToggle: () => void;
+  onSelect: (i: number) => void;
+}) {
+  return (
+    <div
+      className="flex items-center gap-1.5 rounded-full border px-1.5 py-1.5 shadow-book backdrop-blur-sm"
+      style={{ background: 'rgba(255,255,255,0.92)', borderColor: 'var(--line)' }}
+      role="group"
+      aria-label="Hero carousel controls"
+    >
+      <ControlBtn onClick={onPrev} label="Previous slide">
+        <ChevronLeft size={18} />
+      </ControlBtn>
+
+      <ControlBtn
+        onClick={onToggle}
+        label={autoplay ? 'Pause slideshow' : 'Play slideshow'}
+        active={!autoplay}
+      >
+        {autoplay ? <Pause size={16} /> : <Play size={16} className="translate-x-px" />}
+      </ControlBtn>
+
+      <ControlBtn onClick={onNext} label="Next slide">
+        <ChevronRight size={18} />
+      </ControlBtn>
+
+      <div className="mx-1 h-5 w-px" style={{ background: 'var(--line)' }} aria-hidden />
+
+      <Dots slides={slides} index={index} onSelect={onSelect} />
+    </div>
+  );
+}
+
+function ControlBtn({
+  onClick,
+  label,
+  children,
+  active = false,
+}: {
+  onClick: () => void;
+  label: string;
+  children: ReactNode;
+  active?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className="flex h-9 w-9 items-center justify-center rounded-full transition hover:-translate-y-0.5"
+      style={{
+        background: active ? 'var(--green)' : 'transparent',
+        color: active ? '#fff' : 'var(--ink)',
+      }}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -205,7 +277,7 @@ function Dots({
   className?: string;
 }) {
   return (
-    <div className={`flex items-center gap-2 ${className}`} role="tablist" aria-label="Hero slides">
+    <div className={`flex items-center gap-1.5 px-1 ${className}`} role="tablist" aria-label="Hero slides">
       {slides.map((s, i) => (
         <button
           key={s.id}
@@ -216,7 +288,7 @@ function Dots({
           onClick={() => onSelect(i)}
           className="h-2 rounded-full transition-all"
           style={{
-            width: i === index ? 22 : 8,
+            width: i === index ? 18 : 8,
             background: i === index ? 'var(--green)' : 'rgba(12,17,22,0.18)',
           }}
         />
