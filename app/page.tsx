@@ -5,7 +5,7 @@ import { formatXAF } from '@/lib/format';
 import TopNav from '@/components/landing/TopNav';
 import Rail from '@/components/landing/Rail';
 import Footer from '@/components/landing/Footer';
-import ContactForm from '@/components/landing/ContactForm';
+import JoinWizard from '@/components/landing/JoinWizard';
 import Testimonials from '@/components/landing/Testimonials';
 import CourseCard from '@/components/CourseCard';
 import CourseRow from '@/components/CourseRow';
@@ -98,49 +98,59 @@ export default async function HomePage() {
       <Rail />
       <TopNav />
 
-      {/* HERO */}
-      <header className="pb-14 pt-16">
-        <div className="wrap grid items-center gap-10 sm:gap-14 lg:grid-cols-[1.1fr_0.9fr]">
-          <Reveal direction="right">
-            <div className="mb-4 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.1em]" style={{ color: 'var(--green-deep)' }}>
-              <span style={{ width: 18, height: 1, background: 'var(--green-deep)' }} /> Skills to income, at your own pace
-            </div>
-            <h1 className="mb-5 font-display text-[30px] leading-[1.1] sm:text-[52px] sm:leading-[1.04]">
-              A course is only the <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>first chapter.</em>
-              <br />
-              Learning is the rest of the book.
-            </h1>
-            <p className="mb-7 max-w-[480px] text-[18px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Intellex is where you actually finish what you start , self-paced courses, live mentors, and
-              an AI tutor that studies a book so it can teach it to you, one level at a time.
-            </p>
-            <div className="mb-9 flex flex-wrap gap-3.5">
-              <a href="#pricing" className="btn btn-primary">See pricing</a>
-              <a href="#learn" className="btn btn-ghost">How it works</a>
-            </div>
-            <div className="flex flex-wrap gap-6 border-t pt-6 sm:gap-9" style={{ borderColor: 'var(--line)' }}>
-              {[
-                { num: '360+', label: 'Learners' },
-                { num: '12', label: 'Fields covered' },
-                { num: '90+', label: 'Courses' },
-              ].map((s) => (
-                <div key={s.label}>
-                  <div className="font-display text-[26px] font-semibold">{s.num}</div>
-                  <div className="text-xs uppercase tracking-[0.06em]" style={{ color: 'var(--ink-soft)' }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </Reveal>
+      {/* HERO — illustration background with a white content card (Udemy-style) */}
+      <header className="relative overflow-hidden" style={{ background: 'var(--paper)' }}>
+        {/* background illustration */}
+        <div className="absolute inset-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/hero_illustration.webp"
+            alt="Illustration of learning at Intellex"
+            className="h-full w-full object-cover object-right"
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'linear-gradient(90deg, rgba(251,248,240,0.96) 0%, rgba(251,248,240,0.72) 42%, rgba(251,248,240,0.12) 72%, rgba(251,248,240,0) 100%)',
+            }}
+          />
+        </div>
 
-          {/* Hero visual: real learner photo (clean, room to breathe) */}
-          <Reveal direction="left" delay={0.15}>
-            <div className="overflow-hidden rounded-[24px] border shadow-book" style={{ borderColor: 'var(--line)' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/hero_learner.webp"
-                alt="An Intellex learner building her future"
-                className="aspect-[4/5] h-full w-full object-cover"
-              />
+        <div className="wrap relative flex items-center py-14 sm:py-20 lg:min-h-[600px] lg:py-24">
+          <Reveal direction="up" className="w-full max-w-[560px]">
+            <div
+              className="rounded-[26px] border p-6 shadow-book sm:p-9"
+              style={{ background: 'rgba(255,255,255,0.94)', borderColor: 'var(--line)', backdropFilter: 'blur(4px)' }}
+            >
+              <div className="mb-4 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.1em]" style={{ color: 'var(--green-deep)' }}>
+                <span style={{ width: 18, height: 1, background: 'var(--green-deep)' }} /> Skills to income, at your own pace
+              </div>
+              <h1 className="mb-5 font-display text-[30px] leading-[1.1] sm:text-[46px] sm:leading-[1.05]">
+                A course is only the <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>first chapter.</em>
+                <br />
+                Learning is the rest of the book.
+              </h1>
+              <p className="mb-7 max-w-[440px] text-[16.5px] leading-relaxed sm:text-[18px]" style={{ color: 'var(--ink-soft)' }}>
+                Intellex is where you actually finish what you start — self-paced courses, live mentors, and
+                an AI tutor that studies a book so it can teach it to you, one level at a time.
+              </p>
+              <div className="mb-8 flex flex-wrap gap-3.5">
+                <a href="#register" className="btn btn-primary">Get started</a>
+                <a href="#pricing" className="btn btn-ghost">See pricing</a>
+              </div>
+              <div className="flex flex-wrap gap-6 border-t pt-6 sm:gap-9" style={{ borderColor: 'var(--line)' }}>
+                {[
+                  { num: '360+', label: 'Learners' },
+                  { num: '12', label: 'Fields covered' },
+                  { num: '90+', label: 'Courses' },
+                ].map((s) => (
+                  <div key={s.label}>
+                    <div className="font-display text-[26px] font-semibold">{s.num}</div>
+                    <div className="text-xs uppercase tracking-[0.06em]" style={{ color: 'var(--ink-soft)' }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </Reveal>
         </div>
@@ -554,7 +564,7 @@ export default async function HomePage() {
               ))}
             </div>
           </div>
-          <ContactForm />
+          <JoinWizard />
         </div>
       </section>
 

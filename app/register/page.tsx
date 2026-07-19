@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import TopNav from '@/components/landing/TopNav';
 import Footer from '@/components/landing/Footer';
-import ContactForm from '@/components/landing/ContactForm';
+import JoinWizard from '@/components/landing/JoinWizard';
 
 export const metadata = {
   title: 'Register — Intellex',
@@ -31,7 +31,7 @@ export default function RegisterPage() {
               ))}
             </div>
           </div>
-          <ContactForm />
+          <JoinWizard />
         </div>
       </section>
       <Footer />
