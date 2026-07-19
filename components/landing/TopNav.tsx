@@ -48,7 +48,7 @@ export default function TopNav() {
 
         <div className="flex items-center gap-2 sm:gap-3">
           <Link
-            href="/#register"
+            href="/register"
             className="hidden whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-semibold text-paper sm:inline-block"
             style={{ background: 'var(--ink)' }}
           >
@@ -113,7 +113,7 @@ export default function TopNav() {
             </div>
 
             <div className="flex flex-col gap-3 border-t p-5" style={{ borderColor: 'var(--line)' }}>
-              <Link href="/#register" onClick={() => setOpen(false)} className="btn btn-primary w-full">
+              <Link href="/register" onClick={() => setOpen(false)} className="btn btn-primary w-full">
                 Register <ArrowRight size={18} />
               </Link>
               <a

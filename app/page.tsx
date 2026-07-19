@@ -5,12 +5,12 @@ import { formatXAF } from '@/lib/format';
 import TopNav from '@/components/landing/TopNav';
 import Rail from '@/components/landing/Rail';
 import Footer from '@/components/landing/Footer';
-import JoinWizard from '@/components/landing/JoinWizard';
 import Testimonials from '@/components/landing/Testimonials';
 import CourseCard from '@/components/CourseCard';
 import CourseRow from '@/components/CourseRow';
 import Reveal from '@/components/Reveal';
 import HeroCard from '@/components/landing/HeroCard';
+import HomeHero from '@/components/landing/HomeHero';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,74 +98,7 @@ export default async function HomePage() {
       <Rail />
       <TopNav />
 
-      {/* HERO — mobile: image stacked above content; desktop: Udemy-style near-square card on illustration */}
-      <header style={{ background: 'var(--paper)' }}>
-        {/* ── Mobile: illustration on top, copy below (not overlaid) ── */}
-        <div className="sm:hidden">
-          <div className="relative h-[220px] w-full overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/hero_illustration.webp"
-              alt="Illustration of learning at Intellex"
-              className="h-full w-full object-cover object-center"
-            />
-          </div>
-          <div className="wrap py-7">
-            <Reveal direction="up">
-              <h1 className="mb-3 font-display text-[26px] leading-[1.15]">
-                A course is only the <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>first chapter.</em>{' '}
-                Learning is the rest of the book.
-              </h1>
-              <p className="mb-5 text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                Finish what you start — self-paced courses, live mentors, and an AI tutor.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <a href="#register" className="btn btn-primary">Get started</a>
-                <a href="#pricing" className="btn btn-ghost">See pricing</a>
-              </div>
-            </Reveal>
-          </div>
-        </div>
-
-        {/* ── Desktop / tablet: illustration background + compact near-square card ── */}
-        <div className="relative hidden overflow-hidden sm:block">
-          <div className="absolute inset-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/hero_illustration.webp"
-              alt="Illustration of learning at Intellex"
-              className="h-full w-full object-cover object-right"
-            />
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  'linear-gradient(90deg, rgba(251,248,240,0.9) 0%, rgba(251,248,240,0.55) 36%, rgba(251,248,240,0.08) 66%, rgba(251,248,240,0) 100%)',
-              }}
-            />
-          </div>
-
-          <div className="wrap relative flex items-center py-12 lg:min-h-[400px] lg:py-14">
-            <Reveal direction="up" className="w-full max-w-[360px]">
-              <div
-                className="flex aspect-[1/0.95] flex-col justify-center rounded-2xl border p-7 shadow-book lg:p-8"
-                style={{ background: 'rgba(255,255,255,0.96)', borderColor: 'var(--line)' }}
-              >
-                <h1 className="mb-3 font-display text-[28px] leading-[1.12] lg:text-[32px]">
-                  A course is only the <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>first chapter.</em>
-                </h1>
-                <p className="mb-6 text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                  Self-paced courses, live mentors, and an AI tutor — so you actually finish.
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  <a href="#register" className="btn btn-primary">Get started</a>
-                  <a href="#pricing" className="btn btn-ghost">See pricing</a>
-                </div>
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </header>
+      <HomeHero />
 
       {/* TRUST */}
       <div className="border-y py-8" style={{ borderColor: 'var(--line)' }}>
@@ -242,7 +175,7 @@ export default async function HomePage() {
               Not sure which of these gets you where you want to go? Tell us your goal and we&apos;ll point
               you to the right course, mentor, or AI tutor track.
             </p>
-            <a href="#register" className="btn btn-amber">Help me choose</a>
+            <Link href="/register" className="btn btn-amber">Help me choose</Link>
           </div>
         </div>
       </section>
@@ -410,7 +343,7 @@ export default async function HomePage() {
                   <li key={li} className="relative pl-5"><span className="absolute left-0" style={{ color: 'var(--green-deep)' }}>,</span>{li}</li>
                 ))}
               </ul>
-              <a href="#register" className="btn btn-primary mt-auto">Start monthly</a>
+              <Link href="/register" className="btn btn-primary mt-auto">Start monthly</Link>
             </div>
             {/* Yearly featured */}
             <div className="relative flex flex-col rounded-[20px] p-8" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
@@ -427,7 +360,7 @@ export default async function HomePage() {
                   <li key={li} className="relative pl-5"><span className="absolute left-0" style={{ color: 'var(--amber)' }}>,</span>{li}</li>
                 ))}
               </ul>
-              <a href="#register" className="btn btn-amber mt-auto">Start yearly</a>
+              <Link href="/register" className="btn btn-amber mt-auto">Start yearly</Link>
             </div>
             {/* Single */}
             <div className="flex flex-col rounded-[20px] border bg-paper p-8" style={{ borderColor: 'var(--line)' }}>
@@ -482,7 +415,7 @@ export default async function HomePage() {
                 <p className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>Mentor comes to a location you choose. Costs more, but nothing beats in-person.</p>
               </div>
             </div>
-            <a href="#register" className="btn btn-ghost">Get a quote for your subject</a>
+            <Link href="/register" className="btn btn-ghost">Get a quote for your subject</Link>
           </div>
           <div className="rounded-[20px] p-7" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
             <div className="mb-5 overflow-hidden rounded-[14px]">
@@ -551,33 +484,13 @@ export default async function HomePage() {
                 course access, and tournament winners get 30% off on top of that.
               </p>
             </div>
-            <a href="#register" className="btn btn-light">Check my tier</a>
+            <Link href="/register" className="btn btn-light">Check my tier</Link>
           </div>
         </div>
       </section>
 
       {/* TESTIMONIALS */}
       <Testimonials />
-
-      {/* REGISTER */}
-      <section id="register" className="py-16 sm:py-24">
-        <div className="wrap grid gap-10 sm:gap-14 lg:grid-cols-[0.9fr_1.1fr]">
-          <div>
-            <div className="tab mb-4">Register</div>
-            <h2 className="mb-3.5 text-[26px] sm:text-[34px]">Pick a plan, tell us how to reach you</h2>
-            <p className="text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Fill this in and we&apos;ll follow up on WhatsApp with payment details for MTN MoMo or Orange
-              Money, and get your account set up. Your choices are saved and sent straight to us.
-            </p>
-            <div className="mt-4.5 flex flex-wrap gap-2.5" style={{ marginTop: 18 }}>
-              {['MTN MoMo', 'Orange Money', 'Flutterwave (card)'].map((p) => (
-                <span key={p} className="pill">{p}</span>
-              ))}
-            </div>
-          </div>
-          <JoinWizard />
-        </div>
-      </section>
 
       <Footer />
     </>

@@ -43,7 +43,7 @@ export default function Footer() {
               WhatsApp
             </a>
             <a href="mailto:tatohmodest@gmail.com" className="mb-2 block text-sm text-paper/80">Email</a>
-            <Link href="/#register" className="mb-2 block text-sm text-paper/80">Register</Link>
+            <Link href="/register" className="mb-2 block text-sm text-paper/80">Register</Link>
           </div>
         </div>
         <div

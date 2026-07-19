@@ -10,7 +10,6 @@ const TABS = [
   { href: '#pricing', label: 'Pricing' },
   { href: '#ai', label: 'AI Tutor' },
   { href: '#testimonials', label: 'Stories' },
-  { href: '#register', label: 'Register' },
 ];
 
 export default function Rail() {
