@@ -80,7 +80,7 @@ export default function TopNav() {
           >
             <div className="flex items-center justify-between border-b px-5 py-3" style={{ borderColor: 'var(--line)' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.png" alt="Intellex" className="h-8 w-auto" />
+              <img src="/image.png" alt="Intellex" className="h-8 w-auto" />
               <button
                 className="flex h-10 w-10 items-center justify-center rounded-full"
                 style={{ background: 'var(--paper-dim)' }}
