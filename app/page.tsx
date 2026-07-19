@@ -427,7 +427,7 @@ export default async function HomePage() {
           <div className="rounded-[20px] p-7" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
             <div className="mb-5 overflow-hidden rounded-[14px]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/mentor_session.webp" alt="An Intellex mentor guiding a student through a live session" className="aspect-[16/10] w-full object-cover" />
+              <img src="/mentor_session.webp" alt="Illustration of an Intellex mentor guiding a student in a live session" className="aspect-[16/10] w-full object-cover" />
             </div>
             <div className="mb-4 flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-[10px] font-display" style={{ background: 'var(--green-deep)' }}>M</div>
