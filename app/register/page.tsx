@@ -30,6 +30,14 @@ export default function RegisterPage() {
                 <span key={p} className="pill">{p}</span>
               ))}
             </div>
+            <div className="mt-8 hidden overflow-hidden rounded-[18px] lg:block">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/join_cta.webp"
+                alt="Milestone path toward joining Intellex"
+                className="aspect-[16/10] w-full object-cover object-center"
+              />
+            </div>
           </div>
           <JoinWizard />
         </div>

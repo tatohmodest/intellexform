@@ -499,6 +499,33 @@ export default async function HomePage() {
       {/* TESTIMONIALS */}
       <Testimonials />
 
+      {/* JOIN CTA */}
+      <section className="py-16 sm:py-24" style={{ background: 'var(--paper-dim)' }}>
+        <div className="wrap grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
+          <div className="overflow-hidden rounded-[22px]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/join_cta.webp"
+              alt="Milestone path toward joining Intellex"
+              className="aspect-[16/10] w-full object-cover object-center"
+            />
+          </div>
+          <div>
+            <div className="tab mb-4">Ready when you are</div>
+            <h2 className="mb-3.5 text-[27px] leading-[1.15] sm:text-[38px] sm:leading-[1.12]">
+              Wanna join?
+            </h2>
+            <p className="mb-7 max-w-[440px] text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+              Pick a plan, tell us how to reach you, and we&apos;ll get you set up on WhatsApp —
+              MTN MoMo or Orange Money, your call.
+            </p>
+            <Link href="/register" className="btn btn-primary">
+              Yes, take me there
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <Footer />
     </>
   );

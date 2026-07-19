@@ -70,7 +70,7 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
         if (!e.currentTarget.contains(e.relatedTarget as Node)) setHovering(false);
       }}
     >
-      {/* ── Mobile: illustration on top, matching card below ── */}
+      {/* ── Mobile: illustration on top, controls above text, then copy ── */}
       <div className="sm:hidden">
         <div className="relative h-[220px] w-full overflow-hidden">
           <AnimatePresence mode="wait" custom={dir} initial={false}>
@@ -86,11 +86,9 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
               className="absolute inset-0 h-full w-full object-cover object-center"
             />
           </AnimatePresence>
-
-          {/* overlay controls on the image */}
-          <div className="absolute bottom-3 right-3 z-10">{renderControls()}</div>
         </div>
-        <div className="wrap py-7">
+        <div className="wrap pb-7 pt-4">
+          <div className="mb-5 flex justify-start">{renderControls()}</div>
           <AnimatePresence mode="wait" custom={dir} initial={false}>
             <motion.div
               key={slide.id + '-m-card'}
