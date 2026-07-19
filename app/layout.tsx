@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import CookieConsent from '@/components/CookieConsent';
 
 export const metadata: Metadata = {
   title: 'Intellex - Learn at your pace, on your terms',
@@ -34,7 +35,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className="bg-paper text-ink font-body antialiased">{children}</body>
+      <body className="bg-paper text-ink font-body antialiased">
+        {children}
+        <CookieConsent />
+      </body>
     </html>
   );
 }

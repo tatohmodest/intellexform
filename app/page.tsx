@@ -99,7 +99,7 @@ export default async function HomePage() {
       <TopNav />
 
       {/* HERO */}
-      <header className="pb-10 pt-16">
+      <header className="pb-14 pt-16 lg:pb-28">
         <div className="wrap grid items-center gap-10 sm:gap-14 lg:grid-cols-[1.1fr_0.9fr]">
           <Reveal direction="right">
             <div className="mb-4 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.1em]" style={{ color: 'var(--green-deep)' }}>
@@ -132,9 +132,19 @@ export default async function HomePage() {
             </div>
           </Reveal>
 
-          {/* Book card (computerized / typewriter animation) */}
-          <Reveal direction="left" delay={0.15}>
-            <HeroCard />
+          {/* Hero visual: real learner photo with the live AI-tutor card floating over it */}
+          <Reveal direction="left" delay={0.15} className="relative">
+            <div className="overflow-hidden rounded-[24px] border shadow-book" style={{ borderColor: 'var(--line)' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/hero_learner.webp"
+                alt="An Intellex learner building her future"
+                className="aspect-[4/5] h-full w-full object-cover"
+              />
+            </div>
+            <div className="mt-5 lg:absolute lg:-bottom-8 lg:-left-8 lg:mt-0 lg:w-[290px] lg:z-10">
+              <HeroCard />
+            </div>
           </Reveal>
         </div>
       </header>
@@ -457,7 +467,11 @@ export default async function HomePage() {
             <a href="#register" className="btn btn-ghost">Get a quote for your subject</a>
           </div>
           <div className="rounded-[20px] p-7" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
-            <div className="mb-4.5 flex items-center gap-3">
+            <div className="mb-5 overflow-hidden rounded-[14px]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/mentor_session.webp" alt="An Intellex mentor guiding a student through a live session" className="aspect-[16/10] w-full object-cover" />
+            </div>
+            <div className="mb-4 flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-[10px] font-display" style={{ background: 'var(--green-deep)' }}>M</div>
               <div>
                 <div className="text-[14.5px] font-semibold">Mentor-led session</div>
