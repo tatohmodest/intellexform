@@ -98,70 +98,72 @@ export default async function HomePage() {
       <Rail />
       <TopNav />
 
-      {/* HERO — illustration background with a white content card (Udemy-style) */}
-      <header className="relative overflow-hidden" style={{ background: 'var(--paper)' }}>
-        {/* background illustration */}
-        <div className="absolute inset-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/hero_illustration.webp"
-            alt="Illustration of learning at Intellex"
-            className="h-full w-full object-cover object-[70%_center] sm:object-right"
-          />
-          {/* Mobile: soft bottom fade so the card sits over the art without blanketing it.
-              Desktop: left-to-right fade so the illustration stays open on the right. */}
-          <div
-            className="absolute inset-0 sm:hidden"
-            style={{
-              background:
-                'linear-gradient(180deg, rgba(251,248,240,0.15) 0%, rgba(251,248,240,0.35) 45%, rgba(251,248,240,0.88) 100%)',
-            }}
-          />
-          <div
-            className="absolute inset-0 hidden sm:block"
-            style={{
-              background:
-                'linear-gradient(90deg, rgba(251,248,240,0.92) 0%, rgba(251,248,240,0.62) 38%, rgba(251,248,240,0.1) 68%, rgba(251,248,240,0) 100%)',
-            }}
-          />
-        </div>
-
-        <div className="wrap relative flex items-end py-10 sm:items-center sm:py-12 lg:min-h-[420px] lg:py-14">
-          <Reveal direction="up" className="w-full max-w-[480px]">
-            <div
-              className="rounded-[20px] border p-5 shadow-book sm:rounded-[24px] sm:p-7"
-              style={{ background: 'rgba(255,255,255,0.94)', borderColor: 'var(--line)', backdropFilter: 'blur(4px)' }}
-            >
-              <div className="mb-3 hidden items-center gap-2 font-mono text-xs uppercase tracking-[0.1em] sm:inline-flex" style={{ color: 'var(--green-deep)' }}>
-                <span style={{ width: 18, height: 1, background: 'var(--green-deep)' }} /> Skills to income, at your own pace
-              </div>
-              <h1 className="mb-4 font-display text-[26px] leading-[1.12] sm:mb-4 sm:text-[38px] sm:leading-[1.05] lg:text-[42px]">
-                A course is only the <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>first chapter.</em>
-                <br className="hidden sm:block" />
-                {' '}Learning is the rest of the book.
+      {/* HERO — mobile: image stacked above content; desktop: Udemy-style near-square card on illustration */}
+      <header style={{ background: 'var(--paper)' }}>
+        {/* ── Mobile: illustration on top, copy below (not overlaid) ── */}
+        <div className="sm:hidden">
+          <div className="relative h-[220px] w-full overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/hero_illustration.webp"
+              alt="Illustration of learning at Intellex"
+              className="h-full w-full object-cover object-center"
+            />
+          </div>
+          <div className="wrap py-7">
+            <Reveal direction="up">
+              <h1 className="mb-3 font-display text-[26px] leading-[1.15]">
+                A course is only the <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>first chapter.</em>{' '}
+                Learning is the rest of the book.
               </h1>
-              <p className="mb-5 hidden max-w-[420px] text-[16px] leading-relaxed sm:mb-5 sm:block sm:text-[17px]" style={{ color: 'var(--ink-soft)' }}>
-                Intellex is where you actually finish what you start — self-paced courses, live mentors, and
-                an AI tutor that studies a book so it can teach it to you, one level at a time.
+              <p className="mb-5 text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                Finish what you start — self-paced courses, live mentors, and an AI tutor.
               </p>
               <div className="flex flex-wrap gap-3">
                 <a href="#register" className="btn btn-primary">Get started</a>
                 <a href="#pricing" className="btn btn-ghost">See pricing</a>
               </div>
-              <div className="mt-5 hidden flex-wrap gap-7 border-t pt-5 sm:flex" style={{ borderColor: 'var(--line)' }}>
-                {[
-                  { num: '360+', label: 'Learners' },
-                  { num: '12', label: 'Fields covered' },
-                  { num: '90+', label: 'Courses' },
-                ].map((s) => (
-                  <div key={s.label}>
-                    <div className="font-display text-[22px] font-semibold">{s.num}</div>
-                    <div className="text-xs uppercase tracking-[0.06em]" style={{ color: 'var(--ink-soft)' }}>{s.label}</div>
-                  </div>
-                ))}
+            </Reveal>
+          </div>
+        </div>
+
+        {/* ── Desktop / tablet: illustration background + compact near-square card ── */}
+        <div className="relative hidden overflow-hidden sm:block">
+          <div className="absolute inset-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/hero_illustration.webp"
+              alt="Illustration of learning at Intellex"
+              className="h-full w-full object-cover object-right"
+            />
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  'linear-gradient(90deg, rgba(251,248,240,0.9) 0%, rgba(251,248,240,0.55) 36%, rgba(251,248,240,0.08) 66%, rgba(251,248,240,0) 100%)',
+              }}
+            />
+          </div>
+
+          <div className="wrap relative flex items-center py-12 lg:min-h-[400px] lg:py-14">
+            <Reveal direction="up" className="w-full max-w-[360px]">
+              <div
+                className="flex aspect-[1/0.95] flex-col justify-center rounded-2xl border p-7 shadow-book lg:p-8"
+                style={{ background: 'rgba(255,255,255,0.96)', borderColor: 'var(--line)' }}
+              >
+                <h1 className="mb-3 font-display text-[28px] leading-[1.12] lg:text-[32px]">
+                  A course is only the <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>first chapter.</em>
+                </h1>
+                <p className="mb-6 text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                  Self-paced courses, live mentors, and an AI tutor — so you actually finish.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <a href="#register" className="btn btn-primary">Get started</a>
+                  <a href="#pricing" className="btn btn-ghost">See pricing</a>
+                </div>
               </div>
-            </div>
-          </Reveal>
+            </Reveal>
+          </div>
         </div>
       </header>
 
