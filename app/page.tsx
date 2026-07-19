@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { Sparkles, Gauge, Compass } from 'lucide-react';
-import { getFeaturedCourses } from '@/lib/repo';
+import { Sparkles, Gauge, Compass, Globe, Video, BadgeCheck } from 'lucide-react';
+import { getAllCourses } from '@/lib/repo';
 import { formatXAF } from '@/lib/format';
 import TopNav from '@/components/landing/TopNav';
 import Rail from '@/components/landing/Rail';
@@ -8,6 +8,7 @@ import Footer from '@/components/landing/Footer';
 import ContactForm from '@/components/landing/ContactForm';
 import Testimonials from '@/components/landing/Testimonials';
 import CourseCard from '@/components/CourseCard';
+import CourseRow from '@/components/CourseRow';
 import Reveal from '@/components/Reveal';
 import HeroCard from '@/components/landing/HeroCard';
 
@@ -50,18 +51,47 @@ const WAYS = [
 ];
 
 export default async function HomePage() {
-  const featured = await getFeaturedCourses();
-  const bySlug = (s: string) => featured.find((c) => c.slug === s);
-  const topCourses = [
-    bySlug('fullstack-web-development'),
-    bySlug('python-from-zero'),
-    bySlug('data-analysis-data-science'),
-  ].filter(Boolean) as typeof featured;
-  const selfPaced = featured.filter((c) => c.selfPaced);
-  const moreCourses = featured
-    .filter((c) => c.slug !== 'fullstack-3-weeks-ai' && !topCourses.includes(c) && !c.selfPaced)
-    .slice(0, 6);
+  const all = await getAllCourses();
+  const bySlug = (s: string) => all.find((c) => c.slug === s);
   const special = bySlug('fullstack-3-weeks-ai');
+  const selfPaced = all.filter((c) => c.selfPaced);
+
+  const byTypes = (types: string[], limit = 14) => {
+    const set = new Set(types.map((t) => t.toLowerCase()));
+    return all.filter((c) => set.has((c.type || '').toLowerCase())).slice(0, limit);
+  };
+
+  // Live / mentor-led = the flagship Intellex programs (not self-paced, not the cohort).
+  const mentorLed = all.filter(
+    (c) => c.featured && !c.selfPaced && c.slug !== 'fullstack-3-weeks-ai',
+  );
+  const trending = all
+    .filter((c) => c.bestSeller && !c.featured && !c.selfPaced)
+    .sort((a, b) => (b.courseNumberOfVotes || 0) - (a.courseNumberOfVotes || 0))
+    .slice(0, 14);
+  const webDev = byTypes(['Web Development', 'WordPress', 'E-commerce']);
+  const dataAI = byTypes([
+    'Data Science',
+    'Machine Learning',
+    'Artificial Intelligence',
+    'AI & Data Science',
+    'Database',
+  ]);
+  const security = byTypes(['Cybersecurity']);
+  const designMkt = byTypes(['Design', 'Graphic Design', 'Marketing', 'Branding']);
+  const devProg = byTypes([
+    'Development',
+    'Programming',
+    'DevOps',
+    'Linux',
+    'Mobile Development',
+    'Networking',
+    'IT Certification',
+    'Blockchain',
+    'CAD',
+    'Finance',
+    'Business',
+  ]);
 
   return (
     <>
@@ -192,33 +222,47 @@ export default async function HomePage() {
       {/* COURSES */}
       <section id="courses" className="py-16 sm:py-24">
         <div className="wrap">
-          <div className="mb-12 flex flex-wrap items-end justify-between gap-5">
-            <Reveal className="max-w-[600px]">
-              <div className="tab mb-4">Courses</div>
-              <h2 className="mb-3.5 text-[27px] leading-[1.15] sm:text-[38px] sm:leading-[1.12]">Top courses, picked to move you forward</h2>
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
+            <Reveal className="max-w-[640px]">
+              <div className="tab mb-4">The academy</div>
+              <h2 className="mb-3.5 text-[27px] leading-[1.15] sm:text-[38px] sm:leading-[1.12]">
+                A world-class catalogue, <span className="text-gradient">live</span> and on-demand
+              </h2>
               <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
-                Every Intellex course is self-paced, included the moment it&apos;s part of your plan, and ends
-                in a certificate. Prices shown are for buying a single course outright.
+                Live, mentor-led programs and 100+ self-paced courses — from web development to AI,
+                cybersecurity and design. Learn from anywhere in the world, at your pace or ours.
               </p>
             </Reveal>
             <Link href="/courses" className="btn btn-ghost">Browse all courses →</Link>
           </div>
 
-          <div className="mb-14 grid gap-6 md:grid-cols-3">
-            {topCourses.map((c) => (
-              <CourseCard key={c.slug} course={c} />
+          {/* Trust strip */}
+          <div className="mb-12 flex flex-wrap gap-x-8 gap-y-3">
+            {[
+              { icon: Video, label: 'Live & mentor-led programs' },
+              { icon: Globe, label: 'Learners across Cameroon & beyond' },
+              { icon: BadgeCheck, label: 'Certificate on completion' },
+            ].map((t) => (
+              <span key={t.label} className="inline-flex items-center gap-2 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
+                <t.icon size={16} style={{ color: 'var(--green-deep)' }} /> {t.label}
+              </span>
             ))}
           </div>
 
-          <div className="mb-6 flex items-center gap-3">
-            <div className="tab">More to explore</div>
-            <div className="h-px flex-1" style={{ background: 'var(--line)' }} />
-          </div>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {moreCourses.map((c) => (
-              <CourseCard key={c.slug} course={c} />
-            ))}
-          </div>
+          {/* Academy-style scrollable rows */}
+          <CourseRow
+            title="Live & mentor-led programs"
+            subtitle="Flagship Intellex programs with real mentors — online or onsite."
+            courses={mentorLed}
+            live
+            href="/courses"
+          />
+          <CourseRow title="Trending on Intellex" subtitle="What learners are picking up right now." courses={trending} href="/courses" />
+          <CourseRow title="Web development" subtitle="From first web page to full-stack apps." courses={webDev} href="/courses" />
+          <CourseRow title="Data, AI & Machine Learning" subtitle="The skills every field is hiring for." courses={dataAI} href="/courses" />
+          <CourseRow title="Cybersecurity" subtitle="Think like an attacker, defend like a pro." courses={security} href="/courses" />
+          <CourseRow title="Design & Marketing" subtitle="Make it look good and get it seen." courses={designMkt} href="/courses" />
+          <CourseRow title="Programming & DevOps" subtitle="Languages, tools and the craft of shipping." courses={devProg} href="/courses" />
 
           {/* SPECIAL PROGRAM */}
           {special && (
