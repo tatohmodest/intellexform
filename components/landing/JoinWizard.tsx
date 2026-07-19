@@ -110,8 +110,8 @@ export default function JoinWizard() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Something went wrong');
+      // Land on the celebratory success screen first; user taps through to WhatsApp.
       setDone({ whatsappUrl: data.whatsappUrl });
-      window.open(data.whatsappUrl, '_blank', 'noopener,noreferrer');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
