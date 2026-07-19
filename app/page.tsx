@@ -106,47 +106,56 @@ export default async function HomePage() {
           <img
             src="/hero_illustration.webp"
             alt="Illustration of learning at Intellex"
-            className="h-full w-full object-cover object-right"
+            className="h-full w-full object-cover object-[70%_center] sm:object-right"
           />
+          {/* Mobile: soft bottom fade so the card sits over the art without blanketing it.
+              Desktop: left-to-right fade so the illustration stays open on the right. */}
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 sm:hidden"
             style={{
               background:
-                'linear-gradient(90deg, rgba(251,248,240,0.96) 0%, rgba(251,248,240,0.72) 42%, rgba(251,248,240,0.12) 72%, rgba(251,248,240,0) 100%)',
+                'linear-gradient(180deg, rgba(251,248,240,0.15) 0%, rgba(251,248,240,0.35) 45%, rgba(251,248,240,0.88) 100%)',
+            }}
+          />
+          <div
+            className="absolute inset-0 hidden sm:block"
+            style={{
+              background:
+                'linear-gradient(90deg, rgba(251,248,240,0.92) 0%, rgba(251,248,240,0.62) 38%, rgba(251,248,240,0.1) 68%, rgba(251,248,240,0) 100%)',
             }}
           />
         </div>
 
-        <div className="wrap relative flex items-center py-14 sm:py-20 lg:min-h-[600px] lg:py-24">
-          <Reveal direction="up" className="w-full max-w-[560px]">
+        <div className="wrap relative flex items-end py-10 sm:items-center sm:py-12 lg:min-h-[420px] lg:py-14">
+          <Reveal direction="up" className="w-full max-w-[480px]">
             <div
-              className="rounded-[26px] border p-6 shadow-book sm:p-9"
+              className="rounded-[20px] border p-5 shadow-book sm:rounded-[24px] sm:p-7"
               style={{ background: 'rgba(255,255,255,0.94)', borderColor: 'var(--line)', backdropFilter: 'blur(4px)' }}
             >
-              <div className="mb-4 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.1em]" style={{ color: 'var(--green-deep)' }}>
+              <div className="mb-3 hidden items-center gap-2 font-mono text-xs uppercase tracking-[0.1em] sm:inline-flex" style={{ color: 'var(--green-deep)' }}>
                 <span style={{ width: 18, height: 1, background: 'var(--green-deep)' }} /> Skills to income, at your own pace
               </div>
-              <h1 className="mb-5 font-display text-[30px] leading-[1.1] sm:text-[46px] sm:leading-[1.05]">
+              <h1 className="mb-4 font-display text-[26px] leading-[1.12] sm:mb-4 sm:text-[38px] sm:leading-[1.05] lg:text-[42px]">
                 A course is only the <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>first chapter.</em>
-                <br />
-                Learning is the rest of the book.
+                <br className="hidden sm:block" />
+                {' '}Learning is the rest of the book.
               </h1>
-              <p className="mb-7 max-w-[440px] text-[16.5px] leading-relaxed sm:text-[18px]" style={{ color: 'var(--ink-soft)' }}>
+              <p className="mb-5 hidden max-w-[420px] text-[16px] leading-relaxed sm:mb-5 sm:block sm:text-[17px]" style={{ color: 'var(--ink-soft)' }}>
                 Intellex is where you actually finish what you start — self-paced courses, live mentors, and
                 an AI tutor that studies a book so it can teach it to you, one level at a time.
               </p>
-              <div className="mb-8 flex flex-wrap gap-3.5">
+              <div className="flex flex-wrap gap-3">
                 <a href="#register" className="btn btn-primary">Get started</a>
                 <a href="#pricing" className="btn btn-ghost">See pricing</a>
               </div>
-              <div className="flex flex-wrap gap-6 border-t pt-6 sm:gap-9" style={{ borderColor: 'var(--line)' }}>
+              <div className="mt-5 hidden flex-wrap gap-7 border-t pt-5 sm:flex" style={{ borderColor: 'var(--line)' }}>
                 {[
                   { num: '360+', label: 'Learners' },
                   { num: '12', label: 'Fields covered' },
                   { num: '90+', label: 'Courses' },
                 ].map((s) => (
                   <div key={s.label}>
-                    <div className="font-display text-[26px] font-semibold">{s.num}</div>
+                    <div className="font-display text-[22px] font-semibold">{s.num}</div>
                     <div className="text-xs uppercase tracking-[0.06em]" style={{ color: 'var(--ink-soft)' }}>{s.label}</div>
                   </div>
                 ))}
