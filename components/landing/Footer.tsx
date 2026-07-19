@@ -29,6 +29,18 @@ export default function Footer() {
             <Link href="/courses" className="mb-2 block text-sm text-paper/80">All courses</Link>
             <Link href="/#pricing" className="mb-2 block text-sm text-paper/80">Pricing</Link>
             <Link href="/#testimonials" className="mb-2 block text-sm text-paper/80">Student stories</Link>
+            <Link href="/#ecosystem" className="mb-2 block text-sm text-paper/80">Ecosystem</Link>
+          </div>
+          <div>
+            <h5 className="mb-3.5 text-[12.5px] uppercase tracking-[0.08em]" style={{ color: 'rgba(251,248,240,0.5)' }}>
+              Ecosystem
+            </h5>
+            <Link href="/certifications" className="mb-2 block text-sm text-paper/80">Certifications</Link>
+            <Link href="/internships" className="mb-2 block text-sm text-paper/80">Internships</Link>
+            <Link href="/junior-dev" className="mb-2 block text-sm text-paper/80">Junior Dev</Link>
+            <Link href="/books" className="mb-2 block text-sm text-paper/80">Books</Link>
+            <Link href="/resources" className="mb-2 block text-sm text-paper/80">Free resources</Link>
+            <Link href="/learning" className="mb-2 block text-sm text-paper/80">Learning environment</Link>
           </div>
           <div>
             <h5 className="mb-3.5 text-[12.5px] uppercase tracking-[0.08em]" style={{ color: 'rgba(251,248,240,0.5)' }}>
@@ -44,6 +56,9 @@ export default function Footer() {
             </a>
             <a href="mailto:tatohmodest@gmail.com" className="mb-2 block text-sm text-paper/80">Email</a>
             <Link href="/register" className="mb-2 block text-sm text-paper/80">Register</Link>
+            <a href="https://loopingbinary.com" target="_blank" rel="noopener noreferrer" className="mb-2 block text-sm text-paper/80">
+              Looping Binary
+            </a>
           </div>
         </div>
         <div

@@ -11,6 +11,7 @@ import CourseRow from '@/components/CourseRow';
 import Reveal from '@/components/Reveal';
 import HeroCard from '@/components/landing/HeroCard';
 import HomeHero from '@/components/landing/HomeHero';
+import { ECOSYSTEM, LOOPING_BINARY } from '@/lib/ecosystem';
 
 export const dynamic = 'force-dynamic';
 
@@ -387,18 +388,29 @@ export default async function HomePage() {
           </div>
 
           <div id="discounts" className="mt-6 grid gap-5 md:grid-cols-2">
-            {[
-              { pct: '6%', title: 'Pay yearly, not monthly', body: 'Commit for a year up front and the price drops from 24,000 to 22,560 XAF automatically.' },
-              { pct: '30%', title: 'Win the Junior Dev tournament', body: 'Junior Dev champions get 30% off their first Intellex plan , one more reason to compete.' },
-            ].map((d) => (
-              <div key={d.title} className="flex items-start gap-4 rounded-[16px] p-6" style={{ border: '1px dashed var(--green-deep)', background: 'rgba(0,179,105,0.06)' }}>
-                <div className="font-display text-[26px]" style={{ color: 'var(--green-deep)' }}>{d.pct}</div>
-                <div>
-                  <h4 className="mb-1 text-[15px] font-semibold">{d.title}</h4>
-                  <p className="text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>{d.body}</p>
-                </div>
+            <div className="flex items-start gap-4 rounded-[16px] p-6" style={{ border: '1px dashed var(--green-deep)', background: 'rgba(0,179,105,0.06)' }}>
+              <div className="font-display text-[26px]" style={{ color: 'var(--green-deep)' }}>6%</div>
+              <div>
+                <h4 className="mb-1 text-[15px] font-semibold">Pay yearly, not monthly</h4>
+                <p className="text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
+                  Commit for a year up front and the price drops from 24,000 to 22,560 XAF automatically.
+                </p>
               </div>
-            ))}
+            </div>
+            <div className="flex items-start gap-4 rounded-[16px] p-6" style={{ border: '1px dashed var(--green-deep)', background: 'rgba(0,179,105,0.06)' }}>
+              <div className="font-display text-[26px]" style={{ color: 'var(--green-deep)' }}>30%</div>
+              <div>
+                <h4 className="mb-1 text-[15px] font-semibold">Win the Junior Dev tournament</h4>
+                <p className="text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
+                  Junior Dev champions get 30% off their first Intellex plan.{' '}
+                  <Link href="/junior-dev" className="underline" style={{ color: 'var(--green-deep)' }}>Learn more</Link>
+                  {' '}or{' '}
+                  <a href={LOOPING_BINARY.juniorDev} target="_blank" rel="noopener noreferrer" className="underline" style={{ color: 'var(--green-deep)' }}>
+                    compete on Junior Dev
+                  </a>.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -480,6 +492,68 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ECOSYSTEM */}
+      <section id="ecosystem" className="py-16 sm:py-24">
+        <div className="wrap">
+          <Reveal className="mb-12 max-w-[640px]">
+            <div className="tab mb-4">The ecosystem</div>
+            <h2 className="mb-3.5 text-[27px] leading-[1.15] sm:text-[38px] sm:leading-[1.12]">
+              More than courses — the whole Looping Binary orbit
+            </h2>
+            <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
+              Certifications, internships, Junior Dev tournaments, free books, resources, and the learning
+              environment itself. Each has its own home — pick what you need next.
+            </p>
+          </Reveal>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {ECOSYSTEM.map((e) => (
+              <Link
+                key={e.slug}
+                href={e.href}
+                className="group flex flex-col overflow-hidden rounded-[18px] border transition hover:-translate-y-0.5"
+                style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={e.image} alt={e.alt} className="aspect-[16/10] w-full object-cover" />
+                <div className="flex flex-1 flex-col p-5">
+                  <div className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--green-deep)' }}>
+                    {e.tab}
+                  </div>
+                  <h3 className="mb-2 font-display text-[18px] leading-snug group-hover:underline">{e.title}</h3>
+                  <p className="text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>{e.short}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+          <div className="mt-10 flex flex-wrap gap-3">
+            <a
+              href={LOOPING_BINARY.home}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-ghost"
+            >
+              loopingbinary.com
+            </a>
+            <a
+              href={LOOPING_BINARY.intern}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-ghost"
+            >
+              Internships
+            </a>
+            <a
+              href={LOOPING_BINARY.juniorDev}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-ghost"
+            >
+              Junior Dev
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* JUNIOR DEV */}
       <section className="px-6 pb-24 pt-6">
         <div className="mx-auto max-w-[1140px] rounded-[24px] p-7 sm:p-12" style={{ background: 'var(--green-deep)', color: 'var(--paper)' }}>
@@ -491,7 +565,18 @@ export default async function HomePage() {
                 course access, and tournament winners get 30% off on top of that.
               </p>
             </div>
-            <Link href="/register" className="btn btn-light">Check my tier</Link>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/junior-dev" className="btn btn-light">About Junior Dev</Link>
+              <a
+                href={LOOPING_BINARY.juniorDev}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-ghost"
+                style={{ borderColor: 'rgba(251,248,240,0.35)', color: 'var(--paper)' }}
+              >
+                Open Junior Dev
+              </a>
+            </div>
           </div>
         </div>
       </section>

@@ -8,12 +8,11 @@ import { buildWhatsappLink } from '@/lib/whatsapp';
 
 const LINKS = [
   { href: '/#learn', label: 'Ways to learn' },
-  { href: '/#fields', label: 'Fields' },
   { href: '/courses', label: 'Courses' },
-  { href: '/#self-paced', label: 'Self-paced' },
   { href: '/#pricing', label: 'Pricing' },
   { href: '/#ai', label: 'AI Tutor' },
-  { href: '/#testimonials', label: 'Stories' },
+  { href: '/#ecosystem', label: 'Ecosystem' },
+  { href: '/junior-dev', label: 'Junior Dev' },
 ];
 
 export default function TopNav() {
