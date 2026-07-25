@@ -43,6 +43,11 @@ import {
   getAllNodejsExpressLessons,
   getNodejsExpressLessonNav,
 } from './nodejs-express';
+import {
+  nestjsTutorial,
+  getAllNestjsLessons,
+  getNestjsLessonNav,
+} from './nestjs';
 import type { TutorialCourse, TutorialLesson } from './types';
 
 export const TUTORIALS: TutorialCourse[] = [
@@ -59,6 +64,7 @@ export const TUTORIALS: TutorialCourse[] = [
   golangTutorial,
   dockerTutorial,
   nodejsExpressTutorial,
+  nestjsTutorial,
 ];
 
 export function getTutorial(slug: string): TutorialCourse | undefined {
@@ -79,6 +85,7 @@ export function getTutorialLessons(courseSlug: string): TutorialLesson[] {
   if (courseSlug === 'golang') return getAllGolangLessons();
   if (courseSlug === 'docker') return getAllDockerLessons();
   if (courseSlug === 'nodejs-express') return getAllNodejsExpressLessons();
+  if (courseSlug === 'nestjs') return getAllNestjsLessons();
   return [];
 }
 
@@ -96,6 +103,7 @@ export function getTutorialLessonNav(courseSlug: string, lessonSlug: string) {
   if (courseSlug === 'golang') return getGolangLessonNav(lessonSlug);
   if (courseSlug === 'docker') return getDockerLessonNav(lessonSlug);
   if (courseSlug === 'nodejs-express') return getNodejsExpressLessonNav(lessonSlug);
+  if (courseSlug === 'nestjs') return getNestjsLessonNav(lessonSlug);
   return null;
 }
 
@@ -117,4 +125,5 @@ export {
   golangTutorial,
   dockerTutorial,
   nodejsExpressTutorial,
+  nestjsTutorial,
 };
