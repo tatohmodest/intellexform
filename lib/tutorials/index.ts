@@ -8,6 +8,11 @@ import {
   getAllPostgresqlLessons,
   getPostgresqlLessonNav,
 } from './postgresql';
+import {
+  mongodbTutorial,
+  getAllMongodbLessons,
+  getMongodbLessonNav,
+} from './mongodb';
 import type { TutorialCourse, TutorialLesson } from './types';
 
 export const TUTORIALS: TutorialCourse[] = [
@@ -17,6 +22,7 @@ export const TUTORIALS: TutorialCourse[] = [
   djangoTutorial,
   flaskTutorial,
   postgresqlTutorial,
+  mongodbTutorial,
 ];
 
 export function getTutorial(slug: string): TutorialCourse | undefined {
@@ -30,6 +36,7 @@ export function getTutorialLessons(courseSlug: string): TutorialLesson[] {
   if (courseSlug === 'django') return getAllDjangoLessons();
   if (courseSlug === 'flask') return getAllFlaskLessons();
   if (courseSlug === 'postgresql') return getAllPostgresqlLessons();
+  if (courseSlug === 'mongodb') return getAllMongodbLessons();
   return [];
 }
 
@@ -40,6 +47,7 @@ export function getTutorialLessonNav(courseSlug: string, lessonSlug: string) {
   if (courseSlug === 'django') return getDjangoLessonNav(lessonSlug);
   if (courseSlug === 'flask') return getFlaskLessonNav(lessonSlug);
   if (courseSlug === 'postgresql') return getPostgresqlLessonNav(lessonSlug);
+  if (courseSlug === 'mongodb') return getMongodbLessonNav(lessonSlug);
   return null;
 }
 
@@ -54,4 +62,5 @@ export {
   djangoTutorial,
   flaskTutorial,
   postgresqlTutorial,
+  mongodbTutorial,
 };

@@ -34,6 +34,7 @@ export default function Footer() {
             <Link href="/tutorials/django" className="mb-2 block text-sm text-paper/80">Django tutorial</Link>
             <Link href="/tutorials/flask" className="mb-2 block text-sm text-paper/80">Flask tutorial</Link>
             <Link href="/tutorials/postgresql" className="mb-2 block text-sm text-paper/80">PostgreSQL tutorial</Link>
+            <Link href="/tutorials/mongodb" className="mb-2 block text-sm text-paper/80">MongoDB tutorial</Link>
             <Link href="/certifications" className="mb-2 block text-sm text-paper/80">Certificates</Link>
             <Link href="/#pricing" className="mb-2 block text-sm text-paper/80">Pricing</Link>
             <Link href="/#testimonials" className="mb-2 block text-sm text-paper/80">Student stories</Link>
