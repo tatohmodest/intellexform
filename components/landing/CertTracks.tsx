@@ -30,12 +30,12 @@ export default function CertTracks({ courses }: { courses: Course[] }) {
         </Reveal>
 
         {/* Brand-led track rail - marks & issuers, not AI photo cards */}
-        <div className="mb-12 grid gap-3 sm:grid-cols-2">
+        <div className="mb-10 grid gap-2.5 sm:mb-12 sm:grid-cols-2 sm:gap-3">
           {CERT_TRACKS.map((t) => (
             <Link
               key={t.id}
               href={t.href}
-              className="group relative flex items-center gap-4 overflow-hidden rounded-[18px] border px-4 py-4 transition hover:-translate-y-0.5 sm:px-5"
+              className="group relative flex items-center gap-3 overflow-hidden rounded-[16px] border px-3.5 py-3.5 transition hover:-translate-y-0.5 sm:gap-4 sm:rounded-[18px] sm:px-5 sm:py-4"
               style={{
                 borderColor: 'var(--line)',
                 background: 'var(--paper)',
@@ -46,15 +46,15 @@ export default function CertTracks({ courses }: { courses: Course[] }) {
                 style={{ background: t.accent }}
                 aria-hidden
               />
-              <CertBrandMark mark={t.mark} className="h-12 w-12 shrink-0 sm:h-14 sm:w-14" />
+              <CertBrandMark mark={t.mark} className="h-11 w-11 shrink-0 sm:h-14 sm:w-14" />
               <span className="min-w-0 flex-1">
                 <span className="mb-0.5 block font-mono text-[10px] uppercase tracking-[0.12em]" style={{ color: t.accent }}>
                   {t.badge}
                 </span>
-                <span className="block text-[12.5px] font-semibold" style={{ color: 'var(--ink-soft)' }}>
+                <span className="block text-[12px] font-semibold sm:text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
                   {t.issuer}
                 </span>
-                <span className="mt-0.5 block font-display text-[16px] leading-snug group-hover:underline sm:text-[17px]">
+                <span className="mt-0.5 block font-display text-[14.5px] leading-snug group-hover:underline sm:text-[17px]">
                   {t.title}
                 </span>
               </span>
