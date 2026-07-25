@@ -30,6 +30,7 @@ export default function Footer() {
             <Link href="/tutorials" className="mb-2 block text-sm text-paper/80">Free tutorials</Link>
             <Link href="/tutorials/javascript" className="mb-2 block text-sm text-paper/80">JavaScript tutorial</Link>
             <Link href="/tutorials/nextjs" className="mb-2 block text-sm text-paper/80">Next.js tutorial</Link>
+            <Link href="/tutorials/python" className="mb-2 block text-sm text-paper/80">Python tutorial</Link>
             <Link href="/certifications" className="mb-2 block text-sm text-paper/80">Certificates</Link>
             <Link href="/#pricing" className="mb-2 block text-sm text-paper/80">Pricing</Link>
             <Link href="/#testimonials" className="mb-2 block text-sm text-paper/80">Student stories</Link>
