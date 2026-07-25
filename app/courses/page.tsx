@@ -7,7 +7,7 @@ import CoursesBrowser from '@/components/CoursesBrowser';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Courses — Intellex',
+  title: 'Courses - Intellex',
   description: 'Browse every course on Intellex: web development, data science, cybersecurity, design and more.',
 };
 
@@ -17,20 +17,20 @@ export default async function CoursesPage() {
   return (
     <>
       <TopNav />
-      <section className="py-16" style={{ background: 'var(--paper-dim)' }}>
+      <section className="py-10 sm:py-16" style={{ background: 'var(--paper-dim)' }}>
         <div className="wrap">
-          <div className="tab mb-4">Courses</div>
-          <h1 className="mb-3 text-[30px] leading-[1.1] sm:text-[40px]">Every skill, one catalogue</h1>
-          <p className="max-w-[560px] text-base" style={{ color: 'var(--ink-soft)' }}>
+          <div className="tab mb-3 sm:mb-4">Courses</div>
+          <h1 className="mb-3 text-[26px] leading-[1.12] sm:text-[40px]">Every skill, one catalogue</h1>
+          <p className="max-w-[560px] text-[14.5px] sm:text-base" style={{ color: 'var(--ink-soft)' }}>
             {courses.length}+ self-paced courses across web development, data, AI, cybersecurity, design
-            and more — plus EC-Council, Azure/cloud, and Intellex certification paths.
+            and more - plus EC-Council, Azure/cloud, and Intellex certification paths.
           </p>
         </div>
       </section>
 
-      <section className="py-14">
+      <section className="py-10 sm:py-14">
         <div className="wrap">
-          <Suspense fallback={<div className="text-sm" style={{ color: 'var(--ink-soft)' }}>Loading catalogue…</div>}>
+          <Suspense fallback={<div className="text-sm" style={{ color: 'var(--ink-soft)' }}>Loading catalogue...</div>}>
             <CoursesBrowser courses={courses} />
           </Suspense>
         </div>

@@ -12,9 +12,9 @@ export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const course = await getCourseBySlug(params.slug);
-  if (!course) return { title: 'Course not found — Intellex' };
+  if (!course) return { title: 'Course not found - Intellex' };
   return {
-    title: `${course.name} — Intellex`,
+    title: `${course.name} - Intellex`,
     description: course.shortDescription,
   };
 }
@@ -28,12 +28,12 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
       <TopNav />
 
       {/* Header band */}
-      <section className="py-12" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
+      <section className="py-8 sm:py-12" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
         <div className="wrap">
-          <Link href="/courses" className="mb-6 inline-flex items-center gap-2 text-sm" style={{ color: 'rgba(251,248,240,0.7)' }}>
+          <Link href="/courses" className="mb-4 inline-flex items-center gap-2 text-sm sm:mb-6" style={{ color: 'rgba(251,248,240,0.7)' }}>
             <ArrowLeft size={15} /> All courses
           </Link>
-          <div className="grid gap-3">
+          <div className="grid gap-2.5 sm:gap-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="tab" style={{ background: 'rgba(74,144,226,0.18)', color: '#8fc0ff' }}>{course.type}</span>
               {course.featured && (
@@ -43,10 +43,10 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
                 <span className="rounded-full px-2.5 py-1 font-mono text-[10.5px] uppercase" style={{ background: 'var(--amber)', color: 'var(--ink)' }}>Bestseller</span>
               )}
             </div>
-            <h1 className="max-w-[760px] font-display text-[26px] leading-[1.15] sm:text-[36px] sm:leading-[1.1]">{course.name}</h1>
-            <p className="max-w-[680px] text-[16px]" style={{ color: 'rgba(251,248,240,0.82)' }}>{course.shortDescription}</p>
-            <div className="mt-2 flex flex-wrap items-center gap-5 text-sm" style={{ color: 'rgba(251,248,240,0.85)' }}>
-              {course.instructor && <span>By {course.instructor}</span>}
+            <h1 className="max-w-[760px] font-display text-[22px] leading-[1.18] sm:text-[36px] sm:leading-[1.1]">{course.name}</h1>
+            <p className="max-w-[680px] text-[14.5px] sm:text-[16px]" style={{ color: 'rgba(251,248,240,0.82)' }}>{course.shortDescription}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] sm:mt-2 sm:gap-5 sm:text-sm" style={{ color: 'rgba(251,248,240,0.85)' }}>
+              {course.instructor && <span className="min-w-0">By {course.instructor}</span>}
               {course.courseRating > 0 && (
                 <span className="inline-flex items-center gap-1.5">
                   <Star size={15} style={{ fill: 'var(--amber)', color: 'var(--amber)' }} />
@@ -65,14 +65,14 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
       </section>
 
       {/* Body */}
-      <section className="py-14">
-        <div className="wrap grid gap-10 lg:grid-cols-[1.6fr_0.9fr]">
-          <div>
+      <section className="py-8 sm:py-14">
+        <div className="wrap grid gap-8 lg:grid-cols-[1.6fr_0.9fr] lg:gap-10">
+          <div className="min-w-0">
             <CourseHeroImage src={course.courseImage} name={course.name} />
 
             {course.whatYouWillLearn.length > 0 && (
-              <div className="mt-10 rounded-[18px] border p-7" style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}>
-                <h2 className="mb-5 font-display text-[22px]">What you&apos;ll learn</h2>
+              <div className="mt-8 rounded-[18px] border p-5 sm:mt-10 sm:p-7" style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}>
+                <h2 className="mb-4 font-display text-[20px] sm:mb-5 sm:text-[22px]">What you&apos;ll learn</h2>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {course.whatYouWillLearn.map((item) => (
                     <div key={item} className="flex items-start gap-2.5 text-[14px]">

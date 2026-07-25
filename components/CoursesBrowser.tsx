@@ -44,17 +44,17 @@ export default function CoursesBrowser({ courses }: { courses: Course[] }) {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search courses, instructors, topics…"
+            placeholder="Search courses, instructors, topics..."
             className="form-input pl-11"
             style={{ background: 'var(--paper)' }}
           />
         </div>
-        <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+        <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setCategory(cat)}
-              className="whitespace-nowrap rounded-full px-3.5 py-2 font-mono text-[11.5px] transition-colors"
+              className="whitespace-nowrap rounded-full px-3 py-1.5 font-mono text-[11px] transition-colors sm:px-3.5 sm:py-2 sm:text-[11.5px]"
               style={{
                 border: `1px solid ${category === cat ? 'var(--ink)' : 'var(--line)'}`,
                 background: category === cat ? 'var(--ink)' : 'transparent',
@@ -68,12 +68,12 @@ export default function CoursesBrowser({ courses }: { courses: Course[] }) {
       </div>
 
       {showFeatured && featured.length > 0 && (
-        <div className="mb-12">
-          <div className="mb-5 flex items-center gap-3">
+        <div className="mb-10 sm:mb-12">
+          <div className="mb-4 flex items-center gap-3 sm:mb-5">
             <div className="tab">Intellex programs</div>
             <div className="h-px flex-1" style={{ background: 'var(--line)' }} />
           </div>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
             {featured.map((c) => (
               <CourseCard key={c.slug} course={c} />
             ))}
@@ -81,18 +81,18 @@ export default function CoursesBrowser({ courses }: { courses: Course[] }) {
         </div>
       )}
 
-      <div className="mb-5 flex items-center gap-3">
+      <div className="mb-4 flex items-center gap-3 sm:mb-5">
         <div className="tab">{showFeatured ? 'Full catalogue' : `${filtered.length} result${filtered.length === 1 ? '' : 's'}`}</div>
         <div className="h-px flex-1" style={{ background: 'var(--line)' }} />
       </div>
 
       {filtered.length === 0 ? (
-        <div className="py-20 text-center" style={{ color: 'var(--ink-soft)' }}>
+        <div className="py-16 text-center sm:py-20" style={{ color: 'var(--ink-soft)' }}>
           <p className="font-display text-xl">No courses match your search</p>
           <p className="mt-1 text-sm">Try a different term or category.</p>
         </div>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
           {(showFeatured ? filtered.filter((c) => !c.featured) : filtered).map((c) => (
             <CourseCard key={c.slug} course={c} />
           ))}

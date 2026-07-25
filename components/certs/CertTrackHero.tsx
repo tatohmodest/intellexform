@@ -20,7 +20,7 @@ export function CertTrackHero({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-[22px] border ${compact ? 'p-5 sm:p-6' : 'p-6 sm:p-8'}`}
+      className={`relative overflow-hidden rounded-[18px] border sm:rounded-[22px] ${compact ? 'p-4 sm:p-6' : 'p-4 sm:p-8'}`}
       style={{
         borderColor: 'var(--line)',
         background: `linear-gradient(145deg, ${track.accentSoft} 0%, var(--paper) 55%, var(--paper) 100%)`,
@@ -41,9 +41,9 @@ export function CertTrackHero({
         aria-hidden
       />
 
-      <div className={`relative flex flex-col gap-5 ${compact ? '' : 'lg:flex-row lg:items-start lg:justify-between'}`}>
-        <div className="flex min-w-0 items-start gap-4">
-          <CertBrandMark mark={track.mark} className={compact ? 'h-14 w-14 shrink-0' : 'h-16 w-16 shrink-0 sm:h-[4.5rem] sm:w-[4.5rem]'} />
+      <div className={`relative flex flex-col gap-4 sm:gap-5 ${compact ? '' : 'lg:flex-row lg:items-start lg:justify-between'}`}>
+        <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+          <CertBrandMark mark={track.mark} className={compact ? 'h-12 w-12 shrink-0 sm:h-14 sm:w-14' : 'h-12 w-12 shrink-0 sm:h-[4.5rem] sm:w-[4.5rem]'} />
           <div className="min-w-0">
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <span
@@ -52,7 +52,7 @@ export function CertTrackHero({
               >
                 <BadgeCheck size={12} /> {track.badge}
               </span>
-              <span className="text-[12.5px] font-semibold" style={{ color: 'var(--ink-soft)' }}>
+              <span className="text-[12px] font-semibold sm:text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
                 {track.issuer}
               </span>
               {typeof courseCount === 'number' ? (
@@ -61,21 +61,21 @@ export function CertTrackHero({
                 </span>
               ) : null}
             </div>
-            <h3 className={`font-display leading-snug ${compact ? 'text-[18px] sm:text-[20px]' : 'text-[22px] sm:text-[28px]'}`}>
+            <h3 className={`font-display leading-snug ${compact ? 'text-[16px] sm:text-[20px]' : 'text-[18px] sm:text-[28px]'}`}>
               {track.title}
             </h3>
-            <p className={`mt-2 max-w-[540px] leading-relaxed ${compact ? 'text-[13.5px]' : 'text-[14.5px]'}`} style={{ color: 'var(--ink-soft)' }}>
+            <p className={`mt-2 max-w-[540px] leading-relaxed ${compact ? 'text-[13px] sm:text-[13.5px]' : 'text-[13.5px] sm:text-[14.5px]'}`} style={{ color: 'var(--ink-soft)' }}>
               {track.blurb}
             </p>
           </div>
         </div>
 
         <div className={`flex flex-col gap-3 ${compact ? '' : 'lg:min-w-[220px] lg:items-end'}`}>
-          <ul className={`flex flex-wrap gap-2 ${compact ? '' : 'lg:justify-end'}`}>
+          <ul className={`flex flex-wrap gap-1.5 sm:gap-2 ${compact ? '' : 'lg:justify-end'}`}>
             {track.outcomes.map((o) => (
               <li
                 key={o}
-                className="rounded-full border px-3 py-1 text-[11.5px] font-medium"
+                className="rounded-full border px-2.5 py-1 text-[11px] font-medium sm:px-3 sm:text-[11.5px]"
                 style={{ borderColor: 'var(--line)', background: 'rgba(255,255,255,0.72)', color: 'var(--ink)' }}
               >
                 {o}
