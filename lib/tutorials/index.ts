@@ -3,6 +3,11 @@ import { nextjsTutorial, getAllNextLessons, getNextLessonNav } from './nextjs';
 import { pythonTutorial, getAllPythonLessons, getPythonLessonNav } from './python';
 import { djangoTutorial, getAllDjangoLessons, getDjangoLessonNav } from './django';
 import { flaskTutorial, getAllFlaskLessons, getFlaskLessonNav } from './flask';
+import {
+  postgresqlTutorial,
+  getAllPostgresqlLessons,
+  getPostgresqlLessonNav,
+} from './postgresql';
 import type { TutorialCourse, TutorialLesson } from './types';
 
 export const TUTORIALS: TutorialCourse[] = [
@@ -11,6 +16,7 @@ export const TUTORIALS: TutorialCourse[] = [
   pythonTutorial,
   djangoTutorial,
   flaskTutorial,
+  postgresqlTutorial,
 ];
 
 export function getTutorial(slug: string): TutorialCourse | undefined {
@@ -23,6 +29,7 @@ export function getTutorialLessons(courseSlug: string): TutorialLesson[] {
   if (courseSlug === 'python') return getAllPythonLessons();
   if (courseSlug === 'django') return getAllDjangoLessons();
   if (courseSlug === 'flask') return getAllFlaskLessons();
+  if (courseSlug === 'postgresql') return getAllPostgresqlLessons();
   return [];
 }
 
@@ -32,6 +39,7 @@ export function getTutorialLessonNav(courseSlug: string, lessonSlug: string) {
   if (courseSlug === 'python') return getPythonLessonNav(lessonSlug);
   if (courseSlug === 'django') return getDjangoLessonNav(lessonSlug);
   if (courseSlug === 'flask') return getFlaskLessonNav(lessonSlug);
+  if (courseSlug === 'postgresql') return getPostgresqlLessonNav(lessonSlug);
   return null;
 }
 
@@ -45,4 +53,5 @@ export {
   pythonTutorial,
   djangoTutorial,
   flaskTutorial,
+  postgresqlTutorial,
 };
