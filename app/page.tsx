@@ -16,7 +16,6 @@ import CategoryStrip from '@/components/landing/CategoryStrip';
 import CertTracks from '@/components/landing/CertTracks';
 import { ECOSYSTEM, LOOPING_BINARY } from '@/lib/ecosystem';
 import { coursesForTrack, CERT_TRACKS } from '@/lib/certTracks';
-import { getTutorialSearchIndex } from '@/lib/tutorials/searchIndex';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,13 +47,7 @@ const WAYS = [
 ];
 
 export default async function HomePage() {
-  const [all, tutorialIndex] = await Promise.all([getAllCourses(), Promise.resolve(getTutorialSearchIndex())]);
-  const courseSearchItems = all.map((c) => ({
-    slug: c.slug,
-    name: c.name,
-    type: c.type,
-    shortDescription: c.shortDescription,
-  }));
+  const all = await getAllCourses();
   const bySlug = (s: string) => all.find((c) => c.slug === s);
   const special = bySlug('fullstack-3-weeks-ai');
   const selfPaced = all.filter((c) => c.selfPaced);
@@ -103,7 +96,7 @@ export default async function HomePage() {
       <Rail />
       <TopNav />
       <HomeHero />
-      <CategoryStrip tutorialIndex={tutorialIndex} courses={courseSearchItems} />
+      <CategoryStrip />
 
       {/* Trust / stats — Coursera-style social proof strip */}
       <div className="border-b py-7" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
