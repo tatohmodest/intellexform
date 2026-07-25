@@ -7,7 +7,7 @@ import { TUTORIALS, getFirstLessonSlug } from '@/lib/tutorials';
 export const metadata = {
   title: 'Tutorials — Intellex',
   description:
-    'Free step-by-step tutorials from Intellex. Learn JavaScript, Next.js, Python, Django, Flask, PostgreSQL, and MongoDB from beginner to pro.',
+    'Free step-by-step tutorials from Intellex. Learn JavaScript, Next.js, Python, Django, Flask, PostgreSQL, MongoDB, and Flutter from beginner to pro.',
 };
 
 export default function TutorialsHubPage() {
@@ -30,7 +30,7 @@ export default function TutorialsHubPage() {
           </h1>
           <p className="max-w-[560px] text-[16px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
             Clean, guided tutorials designed like the guides you love — but built for real skill.
-            Start with JavaScript or Python, build apps with Next.js, ship with Django or Flask, and store data with PostgreSQL or MongoDB.
+            Start with JavaScript or Python, build apps with Next.js or Flutter, ship with Django or Flask, and store data with PostgreSQL or MongoDB.
           </p>
         </div>
       </section>
@@ -108,7 +108,9 @@ export default function TutorialsHubPage() {
                                     ? 'linear-gradient(160deg, #0C1116 0%, #14263a 55%, #0C1116 100%)'
                                     : course.slug === 'mongodb'
                                       ? 'linear-gradient(160deg, #0C1116 0%, #16351f 55%, #0C1116 100%)'
-                                      : 'linear-gradient(160deg, #0C1116 0%, #163024 55%, #0C1116 100%)',
+                                      : course.slug === 'flutter'
+                                        ? 'linear-gradient(160deg, #0C1116 0%, #0f2a3d 55%, #0C1116 100%)'
+                                        : 'linear-gradient(160deg, #0C1116 0%, #163024 55%, #0C1116 100%)',
                         color: 'var(--paper)',
                       }}
                     >
@@ -144,7 +146,9 @@ export default function TutorialsHubPage() {
                                         ? '#9ecbff'
                                         : course.slug === 'mongodb'
                                           ? '#86efac'
-                                          : '#7dffc0',
+                                          : course.slug === 'flutter'
+                                            ? '#7dd3fc'
+                                            : '#7dffc0',
                           }}
                         >
                           Jump to lesson 1 <ArrowRight size={15} />

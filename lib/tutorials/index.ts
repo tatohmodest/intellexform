@@ -13,6 +13,11 @@ import {
   getAllMongodbLessons,
   getMongodbLessonNav,
 } from './mongodb';
+import {
+  flutterTutorial,
+  getAllFlutterLessons,
+  getFlutterLessonNav,
+} from './flutter';
 import type { TutorialCourse, TutorialLesson } from './types';
 
 export const TUTORIALS: TutorialCourse[] = [
@@ -23,6 +28,7 @@ export const TUTORIALS: TutorialCourse[] = [
   flaskTutorial,
   postgresqlTutorial,
   mongodbTutorial,
+  flutterTutorial,
 ];
 
 export function getTutorial(slug: string): TutorialCourse | undefined {
@@ -37,6 +43,7 @@ export function getTutorialLessons(courseSlug: string): TutorialLesson[] {
   if (courseSlug === 'flask') return getAllFlaskLessons();
   if (courseSlug === 'postgresql') return getAllPostgresqlLessons();
   if (courseSlug === 'mongodb') return getAllMongodbLessons();
+  if (courseSlug === 'flutter') return getAllFlutterLessons();
   return [];
 }
 
@@ -48,6 +55,7 @@ export function getTutorialLessonNav(courseSlug: string, lessonSlug: string) {
   if (courseSlug === 'flask') return getFlaskLessonNav(lessonSlug);
   if (courseSlug === 'postgresql') return getPostgresqlLessonNav(lessonSlug);
   if (courseSlug === 'mongodb') return getMongodbLessonNav(lessonSlug);
+  if (courseSlug === 'flutter') return getFlutterLessonNav(lessonSlug);
   return null;
 }
 
@@ -63,4 +71,5 @@ export {
   flaskTutorial,
   postgresqlTutorial,
   mongodbTutorial,
+  flutterTutorial,
 };
