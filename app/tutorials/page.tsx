@@ -7,7 +7,7 @@ import { TUTORIALS, getFirstLessonSlug } from '@/lib/tutorials';
 export const metadata = {
   title: 'Tutorials — Intellex',
   description:
-    'Free step-by-step tutorials from Intellex. Learn JavaScript, Next.js, and Python from beginner to pro.',
+    'Free step-by-step tutorials from Intellex. Learn JavaScript, Next.js, Python, and Django from beginner to pro.',
 };
 
 export default function TutorialsHubPage() {
@@ -30,7 +30,7 @@ export default function TutorialsHubPage() {
           </h1>
           <p className="max-w-[560px] text-[16px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
             Clean, guided tutorials designed like the guides you love — but built for real skill.
-            Start with JavaScript or Python, then build apps with Next.js (React included, no separate React course).
+            Start with JavaScript or Python, build apps with Next.js, and ship Python web apps with Django.
           </p>
         </div>
       </section>
@@ -100,7 +100,9 @@ export default function TutorialsHubPage() {
                             ? 'linear-gradient(160deg, #0C1116 0%, #10263d 55%, #0C1116 100%)'
                             : course.slug === 'python'
                               ? 'linear-gradient(160deg, #0C1116 0%, #2a2410 55%, #0C1116 100%)'
-                              : 'linear-gradient(160deg, #0C1116 0%, #163024 55%, #0C1116 100%)',
+                              : course.slug === 'django'
+                                ? 'linear-gradient(160deg, #0C1116 0%, #1a3324 55%, #0C1116 100%)'
+                                : 'linear-gradient(160deg, #0C1116 0%, #163024 55%, #0C1116 100%)',
                         color: 'var(--paper)',
                       }}
                     >
@@ -128,7 +130,9 @@ export default function TutorialsHubPage() {
                                 ? '#8fc0ff'
                                 : course.slug === 'python'
                                   ? '#ffd666'
-                                  : '#7dffc0',
+                                  : course.slug === 'django'
+                                    ? '#8dffb5'
+                                    : '#7dffc0',
                           }}
                         >
                           Jump to lesson 1 <ArrowRight size={15} />
