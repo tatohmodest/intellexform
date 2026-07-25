@@ -23,6 +23,11 @@ import {
   getAllDataAnalysisLessons,
   getDataAnalysisLessonNav,
 } from './data-analysis';
+import {
+  digitalMarketingTutorial,
+  getAllDigitalMarketingLessons,
+  getDigitalMarketingLessonNav,
+} from './digital-marketing';
 import type { TutorialCourse, TutorialLesson } from './types';
 
 export const TUTORIALS: TutorialCourse[] = [
@@ -35,6 +40,7 @@ export const TUTORIALS: TutorialCourse[] = [
   mongodbTutorial,
   flutterTutorial,
   dataAnalysisTutorial,
+  digitalMarketingTutorial,
 ];
 
 export function getTutorial(slug: string): TutorialCourse | undefined {
@@ -51,6 +57,7 @@ export function getTutorialLessons(courseSlug: string): TutorialLesson[] {
   if (courseSlug === 'mongodb') return getAllMongodbLessons();
   if (courseSlug === 'flutter') return getAllFlutterLessons();
   if (courseSlug === 'data-analysis') return getAllDataAnalysisLessons();
+  if (courseSlug === 'digital-marketing') return getAllDigitalMarketingLessons();
   return [];
 }
 
@@ -64,6 +71,7 @@ export function getTutorialLessonNav(courseSlug: string, lessonSlug: string) {
   if (courseSlug === 'mongodb') return getMongodbLessonNav(lessonSlug);
   if (courseSlug === 'flutter') return getFlutterLessonNav(lessonSlug);
   if (courseSlug === 'data-analysis') return getDataAnalysisLessonNav(lessonSlug);
+  if (courseSlug === 'digital-marketing') return getDigitalMarketingLessonNav(lessonSlug);
   return null;
 }
 
@@ -81,4 +89,5 @@ export {
   mongodbTutorial,
   flutterTutorial,
   dataAnalysisTutorial,
+  digitalMarketingTutorial,
 };

@@ -37,6 +37,7 @@ export default function Footer() {
             <Link href="/tutorials/mongodb" className="mb-2 block text-sm text-paper/80">MongoDB tutorial</Link>
             <Link href="/tutorials/flutter" className="mb-2 block text-sm text-paper/80">Flutter tutorial</Link>
             <Link href="/tutorials/data-analysis" className="mb-2 block text-sm text-paper/80">Data Analysis tutorial</Link>
+            <Link href="/tutorials/digital-marketing" className="mb-2 block text-sm text-paper/80">Digital Marketing tutorial</Link>
             <Link href="/certifications" className="mb-2 block text-sm text-paper/80">Certificates</Link>
             <Link href="/#pricing" className="mb-2 block text-sm text-paper/80">Pricing</Link>
             <Link href="/#testimonials" className="mb-2 block text-sm text-paper/80">Student stories</Link>
