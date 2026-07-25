@@ -33,6 +33,11 @@ import {
   getAllGolangLessons,
   getGolangLessonNav,
 } from './golang';
+import {
+  dockerTutorial,
+  getAllDockerLessons,
+  getDockerLessonNav,
+} from './docker';
 import type { TutorialCourse, TutorialLesson } from './types';
 
 export const TUTORIALS: TutorialCourse[] = [
@@ -47,6 +52,7 @@ export const TUTORIALS: TutorialCourse[] = [
   dataAnalysisTutorial,
   digitalMarketingTutorial,
   golangTutorial,
+  dockerTutorial,
 ];
 
 export function getTutorial(slug: string): TutorialCourse | undefined {
@@ -65,6 +71,7 @@ export function getTutorialLessons(courseSlug: string): TutorialLesson[] {
   if (courseSlug === 'data-analysis') return getAllDataAnalysisLessons();
   if (courseSlug === 'digital-marketing') return getAllDigitalMarketingLessons();
   if (courseSlug === 'golang') return getAllGolangLessons();
+  if (courseSlug === 'docker') return getAllDockerLessons();
   return [];
 }
 
@@ -80,6 +87,7 @@ export function getTutorialLessonNav(courseSlug: string, lessonSlug: string) {
   if (courseSlug === 'data-analysis') return getDataAnalysisLessonNav(lessonSlug);
   if (courseSlug === 'digital-marketing') return getDigitalMarketingLessonNav(lessonSlug);
   if (courseSlug === 'golang') return getGolangLessonNav(lessonSlug);
+  if (courseSlug === 'docker') return getDockerLessonNav(lessonSlug);
   return null;
 }
 
@@ -99,4 +107,5 @@ export {
   dataAnalysisTutorial,
   digitalMarketingTutorial,
   golangTutorial,
+  dockerTutorial,
 };
