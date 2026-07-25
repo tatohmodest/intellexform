@@ -7,7 +7,7 @@ import { TUTORIALS, getFirstLessonSlug } from '@/lib/tutorials';
 export const metadata = {
   title: 'Tutorials — Intellex',
   description:
-    'Free step-by-step tutorials from Intellex. Learn JavaScript, Next.js, Python, and Django from beginner to pro.',
+    'Free step-by-step tutorials from Intellex. Learn JavaScript, Next.js, Python, Django, and Flask from beginner to pro.',
 };
 
 export default function TutorialsHubPage() {
@@ -30,7 +30,7 @@ export default function TutorialsHubPage() {
           </h1>
           <p className="max-w-[560px] text-[16px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
             Clean, guided tutorials designed like the guides you love — but built for real skill.
-            Start with JavaScript or Python, build apps with Next.js, and ship Python web apps with Django.
+            Start with JavaScript or Python, build apps with Next.js, and ship Python web apps with Django or Flask.
           </p>
         </div>
       </section>
@@ -102,7 +102,9 @@ export default function TutorialsHubPage() {
                               ? 'linear-gradient(160deg, #0C1116 0%, #2a2410 55%, #0C1116 100%)'
                               : course.slug === 'django'
                                 ? 'linear-gradient(160deg, #0C1116 0%, #1a3324 55%, #0C1116 100%)'
-                                : 'linear-gradient(160deg, #0C1116 0%, #163024 55%, #0C1116 100%)',
+                                : course.slug === 'flask'
+                                  ? 'linear-gradient(160deg, #0C1116 0%, #2a1a14 55%, #0C1116 100%)'
+                                  : 'linear-gradient(160deg, #0C1116 0%, #163024 55%, #0C1116 100%)',
                         color: 'var(--paper)',
                       }}
                     >
@@ -132,7 +134,9 @@ export default function TutorialsHubPage() {
                                   ? '#ffd666'
                                   : course.slug === 'django'
                                     ? '#8dffb5'
-                                    : '#7dffc0',
+                                    : course.slug === 'flask'
+                                      ? '#ffb38a'
+                                      : '#7dffc0',
                           }}
                         >
                           Jump to lesson 1 <ArrowRight size={15} />
