@@ -8,6 +8,7 @@ import { buildWhatsappLink } from '@/lib/whatsapp';
 
 const LINKS = [
   { href: '/courses', label: 'Courses' },
+  { href: '/tutorials', label: 'Tutorials' },
   { href: '/certifications', label: 'Certificates' },
   { href: '/#pricing', label: 'Pricing' },
   { href: '/#learn', label: 'Ways to learn' },
