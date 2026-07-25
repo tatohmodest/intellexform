@@ -64,7 +64,7 @@ export default async function SearchPage({
             {q
               ? total
                 ? `${total} match${total === 1 ? '' : 'es'} across courses, tutorial paths, and lessons.`
-                : 'No matches yet — try a broader skill name like Python, Docker, or NestJS.'
+                : 'No matches yet - try a broader skill name like Python, Docker, or NestJS.'
               : 'Find a paid course or a free tutorial path in one place.'}
           </p>
 
@@ -72,7 +72,7 @@ export default async function SearchPage({
             tutorialIndex={tutorialIndex}
             courses={courses}
             className="mb-10 max-w-xl"
-            placeholder="Search for courses, tutorials, skills…"
+            placeholder="Search for courses, tutorials, skills..."
           />
 
           {!q ? (

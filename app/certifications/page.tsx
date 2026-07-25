@@ -10,7 +10,7 @@ import { CertBrandMark } from '@/components/certs/CertBrandMark';
 import { CertTrackHero } from '@/components/certs/CertTrackHero';
 
 export const metadata = {
-  title: 'Certifications — Intellex',
+  title: 'Certifications - Intellex',
   description:
     'EC-Council CEH prep, Microsoft Azure & cloud paths, Data Analysis tracks, and the Intellex Professional Certificate.',
 };
@@ -41,7 +41,7 @@ export default async function CertificationsPage() {
             </p>
           </Reveal>
 
-          {/* Jump nav — brand marks, not photo thumbnails */}
+          {/* Jump nav - brand marks, not photo thumbnails */}
           <nav aria-label="Certificate tracks" className="mb-16">
             <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {CERT_TRACKS.map((t) => {

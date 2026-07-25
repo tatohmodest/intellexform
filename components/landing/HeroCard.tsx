@@ -1,16 +1,16 @@
 import { Check } from 'lucide-react';
 
 const LEVELS = [
-  'Level 1 — Variables & data types',
-  'Level 2 — Control flow & loops',
-  'Level 3 — Functions & scope',
-  'Level 4 — Classes & objects',
-  'Level 5 — Files & error handling',
+  'Level 1 - Variables & data types',
+  'Level 2 - Control flow & loops',
+  'Level 3 - Functions & scope',
+  'Level 4 - Classes & objects',
+  'Level 5 - Files & error handling',
 ];
 
 /**
  * Hero "AI tutor" card. The checklist runs a continuous, looping computerized
- * process — levels tick one-by-one, the progress bar fills, then it resets and
+ * process - levels tick one-by-one, the progress bar fills, then it resets and
  * repeats. Driven entirely by CSS keyframes (see globals.css `hc-*`) so it stays
  * smooth and never stalls.
  */

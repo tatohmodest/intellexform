@@ -255,7 +255,7 @@ export default function Testimonials() {
           <div className="tab mb-4">Student stories</div>
           <h2 className="mb-3 text-[27px] leading-[1.15] sm:text-[38px]">Real learners. Real outcomes.</h2>
           <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
-            Hear it straight from students — in their own voices. The stories play live; tap any to watch full-screen.
+            Hear it straight from students - in their own voices. The stories play live; tap any to watch full-screen.
           </p>
         </Reveal>
 
@@ -277,7 +277,7 @@ export default function Testimonials() {
         <div className="wrap mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="font-display text-[20px] sm:text-[22px]">In their own words</div>
-            <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>A live scroll of what the community is saying — swipe to explore.</p>
+            <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>A live scroll of what the community is saying - swipe to explore.</p>
           </div>
           <span className="pill inline-flex items-center gap-2">
             <span className="h-2 w-2 animate-pulse rounded-full" style={{ background: 'var(--green)' }} /> Live from the community

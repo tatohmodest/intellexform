@@ -3,7 +3,7 @@ import type { TutorialSearchItem } from './searchTypes';
 
 export type { TutorialSearchItem };
 
-/** Slim searchable index — call from server components, pass to clients. */
+/** Slim searchable index - call from server components, pass to clients. */
 export function getTutorialSearchIndex(): TutorialSearchItem[] {
   const items: TutorialSearchItem[] = [];
 

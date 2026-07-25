@@ -210,7 +210,7 @@ export default function TopNav() {
         </div>
       </nav>
 
-      {/* App-like full-screen mobile menu — rendered outside <nav> so the nav's
+      {/* App-like full-screen mobile menu - rendered outside <nav> so the nav's
           backdrop-blur doesn't trap this fixed overlay in a containing block. */}
       <AnimatePresence>
         {open && (

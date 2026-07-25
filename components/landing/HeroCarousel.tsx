@@ -172,7 +172,7 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
           <div className="absolute bottom-6 right-0 md:bottom-8">{renderControls()}</div>
         </div>
 
-        {/* autoplay progress — freezes when paused */}
+        {/* autoplay progress - freezes when paused */}
         <div className="absolute bottom-0 left-0 right-0 h-[3px]" style={{ background: 'rgba(12,17,22,0.06)' }}>
           <motion.div
             key={`${slide.id}-${autoplay ? 'run' : 'stop'}`}

@@ -12,7 +12,7 @@ const HERO_SLIDES: HeroSlide[] = [
         A course is only the <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>first chapter.</em>
       </>
     ),
-    body: 'Self-paced courses, live mentors, and an AI tutor — so you actually finish.',
+    body: 'Self-paced courses, live mentors, and an AI tutor - so you actually finish.',
   },
   {
     id: 'mentor',
@@ -23,7 +23,7 @@ const HERO_SLIDES: HeroSlide[] = [
         Sometimes you need a <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>person</em>, not a playlist.
       </>
     ),
-    body: 'Live tutoring online or onsite — a real mentor keeping you accountable.',
+    body: 'Live tutoring online or onsite - a real mentor keeping you accountable.',
     ctaLabel: 'Get a quote',
     secondaryLabel: 'See how it works',
     secondaryHref: '/#learn',
@@ -37,7 +37,7 @@ const HERO_SLIDES: HeroSlide[] = [
         We teach the AI the book, so it can <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>teach you.</em>
       </>
     ),
-    body: "Unlock levels one by one — or everything at once — in the author's voice.",
+    body: "Unlock levels one by one - or everything at once - in the author's voice.",
     ctaLabel: 'Try AI Tutor',
     secondaryLabel: 'How AI works',
     secondaryHref: '/#ai',
@@ -51,7 +51,7 @@ const HERO_SLIDES: HeroSlide[] = [
         Skills to income, at <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>your</em> pace.
       </>
     ),
-    body: 'Cameroon-built learning that sticks — certificates when you finish the work.',
+    body: 'Cameroon-built learning that sticks - certificates when you finish the work.',
     ctaLabel: 'Start learning',
     secondaryLabel: 'Browse courses',
     secondaryHref: '/courses',
