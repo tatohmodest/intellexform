@@ -19,7 +19,7 @@ export type CertTrack = {
 
 /**
  * Professional / accredited certification tracks.
- * Visual identity is brand marks + color systems — not AI stock photos.
+ * Visual identity is brand marks + color systems - not AI stock photos.
  */
 export const CERT_TRACKS: CertTrack[] = [
   {
@@ -27,7 +27,7 @@ export const CERT_TRACKS: CertTrack[] = [
     issuer: 'EC-Council',
     title: 'Certified Ethical Hacker (CEH) Prep',
     blurb:
-      'Industry-recognized ethical hacking prep aligned to the EC-Council CEH pathway — labs, domains, and exam readiness.',
+      'Industry-recognized ethical hacking prep aligned to the EC-Council CEH pathway - labs, domains, and exam readiness.',
     badge: 'Accredited path',
     href: '/certifications#ec-council-ceh',
     mark: 'ceh',
@@ -50,7 +50,7 @@ export const CERT_TRACKS: CertTrack[] = [
     issuer: 'Microsoft Azure',
     title: 'Azure & Cloud Professional Path',
     blurb:
-      'Cloud architecture, DevOps, and Azure-ready skills — prepare for Microsoft-aligned cloud roles and certifications.',
+      'Cloud architecture, DevOps, and Azure-ready skills - prepare for Microsoft-aligned cloud roles and certifications.',
     badge: 'Cloud credential',
     href: '/certifications#microsoft-azure',
     mark: 'azure',
@@ -75,7 +75,7 @@ export const CERT_TRACKS: CertTrack[] = [
     issuer: 'Intellex',
     title: 'Intellex Professional Certificate',
     blurb:
-      'Our own completion credential — finish an Intellex path and earn a certificate that proves you did the work.',
+      'Our own completion credential - finish an Intellex path and earn a certificate that proves you did the work.',
     badge: 'Intellex certified',
     href: '/certifications#intellex',
     mark: 'intellex',
@@ -90,7 +90,7 @@ export const CERT_TRACKS: CertTrack[] = [
     issuer: 'Data & Analytics',
     title: 'Data Analysis Professional Track',
     blurb:
-      'From spreadsheets to Python analytics — a job-ready data path with certificate of completion on every finished course.',
+      'From spreadsheets to Python analytics - a job-ready data path with certificate of completion on every finished course.',
     badge: 'Career track',
     href: '/certifications#data-analysis',
     mark: 'data',

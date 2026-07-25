@@ -12,7 +12,6 @@ import CourseList from '@/components/CourseList';
 import Reveal from '@/components/Reveal';
 import HeroCard from '@/components/landing/HeroCard';
 import HomeHero from '@/components/landing/HomeHero';
-import CategoryStrip from '@/components/landing/CategoryStrip';
 import CertTracks from '@/components/landing/CertTracks';
 import { ECOSYSTEM, LOOPING_BINARY } from '@/lib/ecosystem';
 import { coursesForTrack, CERT_TRACKS } from '@/lib/certTracks';
@@ -31,7 +30,7 @@ const WAYS = [
   {
     id: 'live',
     title: 'Live tutoring',
-    body: 'A mentor teaches you directly — online from anywhere, or onsite at a location you choose.',
+    body: 'A mentor teaches you directly - online from anywhere, or onsite at a location you choose.',
     tag: 'Priced per mentor & format',
     image: '/way_live.webp',
     alt: 'Mentor teaching a student in a live session',
@@ -39,7 +38,7 @@ const WAYS = [
   {
     id: 'ai',
     title: 'AI Tutor',
-    body: 'We train an AI on a real book so it teaches like the author — level by level.',
+    body: 'We train an AI on a real book so it teaches like the author - level by level.',
     tag: 'Pay per level, or pay once',
     image: '/way_ai.webp',
     alt: 'Student learning with an AI tutor and a textbook',
@@ -96,9 +95,8 @@ export default async function HomePage() {
       <Rail />
       <TopNav />
       <HomeHero />
-      <CategoryStrip />
 
-      {/* Trust / stats — Coursera-style social proof strip */}
+      {/* Trust / stats - Coursera-style social proof strip */}
       <div className="border-b py-7" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
         <div className="wrap flex flex-wrap items-center justify-between gap-6">
           <div className="flex flex-wrap gap-x-8 gap-y-3">
@@ -121,7 +119,7 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* MARKETPLACE — courses first, Udemy/Coursera style */}
+      {/* MARKETPLACE - courses first, Udemy/Coursera style */}
       <section id="courses" className="py-12 sm:py-16">
         <div className="wrap">
           <div className="mb-10 flex flex-wrap items-end justify-between gap-5">
@@ -131,7 +129,7 @@ export default async function HomePage() {
                 Learn skills that employers actually hire for
               </h2>
               <p className="text-[15px]" style={{ color: 'var(--ink-soft)' }}>
-                Live mentor programs, 100+ self-paced courses, and accredited certification tracks —
+                Live mentor programs, 100+ self-paced courses, and accredited certification tracks  - 
                 from web development to cybersecurity and cloud.
               </p>
             </Reveal>
@@ -146,7 +144,7 @@ export default async function HomePage() {
           />
           <CourseRow
             title="Live & mentor-led programs"
-            subtitle="Flagship Intellex programs with real mentors — online or onsite."
+            subtitle="Flagship Intellex programs with real mentors - online or onsite."
             courses={mentorLed}
             live
             href="/courses"
@@ -169,10 +167,10 @@ export default async function HomePage() {
           <Reveal className="mb-10 max-w-[640px]">
             <div className="tab mb-3">Career lists</div>
             <h2 className="mb-2 text-[26px] leading-[1.12] sm:text-[34px]">
-              Data Analysis & Cybersecurity — listed like the pros
+              Data Analysis & Cybersecurity - listed like the pros
             </h2>
             <p className="text-[15px]" style={{ color: 'var(--ink-soft)' }}>
-              Dense, scannable course lists for high-demand tracks — the same pattern you know from
+              Dense, scannable course lists for high-demand tracks - the same pattern you know from
               Coursera and Udemy, tuned for Cameroon.
             </p>
           </Reveal>
@@ -249,7 +247,7 @@ export default async function HomePage() {
             <div className="tab mb-4">Ways to learn</div>
             <h2 className="mb-3.5 text-[27px] leading-[1.15] sm:text-[36px]">Three ways in, one certificate out</h2>
             <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
-              Self-paced, live mentors, or AI Tutor — mix them as you go.
+              Self-paced, live mentors, or AI Tutor - mix them as you go.
             </p>
           </Reveal>
           <div className="grid gap-6 md:grid-cols-3">
@@ -275,7 +273,7 @@ export default async function HomePage() {
             <div className="tab mb-4">Self-paced</div>
             <h2 className="mb-3 text-[26px] sm:text-[34px]">Built so you actually finish</h2>
             <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
-              Progress monitoring, checklists, and certificates — not another abandoned playlist.
+              Progress monitoring, checklists, and certificates - not another abandoned playlist.
             </p>
           </Reveal>
           <div className="mb-10 grid gap-5 md:grid-cols-3">
@@ -329,7 +327,7 @@ export default async function HomePage() {
             <div className="relative flex flex-col rounded-[20px] p-8" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
               <span className="absolute -top-3 right-6 rounded-full px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em]" style={{ background: 'var(--amber)', color: 'var(--ink)' }}>Best value</span>
               <h3 className="mb-1.5 font-display text-[19px]">Yearly</h3>
-              <div className="mb-5 text-[13.5px]" style={{ color: 'rgba(251,248,240,0.7)' }}>Same access as monthly — 6% cheaper paid yearly.</div>
+              <div className="mb-5 text-[13.5px]" style={{ color: 'rgba(251,248,240,0.7)' }}>Same access as monthly - 6% cheaper paid yearly.</div>
               <div className="font-mono text-[14px] line-through opacity-55">24,000 XAF</div>
               <div className="mb-5 mt-1.5 flex items-baseline gap-1.5">
                 <span className="font-display text-[26px] font-semibold sm:text-[34px]">22,560</span>
@@ -393,7 +391,7 @@ export default async function HomePage() {
             <div className="tab mb-4">Live Tutoring</div>
             <h2 className="mb-3 font-display text-[24px] sm:text-[28px]">Sometimes you need a person</h2>
             <p className="mb-5 text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Mentors teach live — online or onsite — in any field we cover.
+              Mentors teach live - online or onsite - in any field we cover.
             </p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/mentor_session.webp" alt="" className="mb-5 aspect-[16/10] w-full rounded-[14px] object-cover" />
@@ -403,7 +401,7 @@ export default async function HomePage() {
             <div className="tab mb-4">AI Tutor</div>
             <h2 className="mb-3 font-display text-[24px] sm:text-[28px]">We teach the AI the book</h2>
             <p className="mb-5 text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Train on a real textbook. Learn level by level — pay as you go, or unlock everything.
+              Train on a real textbook. Learn level by level - pay as you go, or unlock everything.
             </p>
             <HeroCard />
           </div>
@@ -480,7 +478,7 @@ export default async function HomePage() {
             <div className="tab mb-4">Ready when you are</div>
             <h2 className="mb-3.5 text-[27px] leading-[1.15] sm:text-[36px]">Wanna join?</h2>
             <p className="mb-7 max-w-[440px] text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Pick a plan, tell us how to reach you, and we&apos;ll get you set up on WhatsApp —
+              Pick a plan, tell us how to reach you, and we&apos;ll get you set up on WhatsApp  - 
               MTN MoMo or Orange Money, your call.
             </p>
             <Link href="/register" className="btn btn-primary">Yes, take me there</Link>

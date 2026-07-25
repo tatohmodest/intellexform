@@ -21,7 +21,6 @@ import {
   GraduationCap,
   Loader2,
   Search,
-  Sparkles,
   X,
 } from 'lucide-react';
 import {
@@ -30,7 +29,6 @@ import {
   type CourseSearchItem,
   type TutorialSearchItem,
 } from '@/lib/tutorials/searchFilter';
-import { TUTORIAL_NAV } from '@/lib/tutorials/nav';
 
 export type { CourseSearchItem };
 
@@ -39,17 +37,6 @@ type Suggestion =
   | { key: string; kind: 'tutorial'; href: string; title: string; meta: string }
   | { key: string; kind: 'lesson'; href: string; title: string; meta: string }
   | { key: string; kind: 'action'; href: string; title: string; meta: string };
-
-const POPULAR = [
-  { label: 'JavaScript', q: 'JavaScript' },
-  { label: 'Python', q: 'Python' },
-  { label: 'Next.js', q: 'Next.js' },
-  { label: 'Docker', q: 'Docker' },
-  { label: 'NestJS', q: 'NestJS' },
-  { label: 'Data Analysis', q: 'Data Analysis' },
-  { label: 'Cybersecurity', q: 'Cybersecurity' },
-  { label: 'Flutter', q: 'Flutter' },
-];
 
 function buildSuggestions(
   courses: CourseSearchItem[],
@@ -90,7 +77,7 @@ function buildSuggestions(
       key: `action-all-${query}`,
       kind: 'action',
       href: `/search?q=${encodeURIComponent(query.trim())}`,
-      title: `View all results for “${query.trim()}”`,
+      title: `View all results for "${query.trim()}"`,
       meta: 'Courses, tutorials & lessons',
     });
   }
@@ -142,7 +129,7 @@ function SuggestionIcon({ kind }: { kind: Suggestion['kind'] }) {
 export default function SiteSearch({
   tutorialIndex,
   courses = [],
-  placeholder = 'Search courses, tutorials, skills…',
+  placeholder = 'Search courses, tutorials, skills...',
   className = '',
   compact = false,
   variant = 'page',
@@ -178,14 +165,15 @@ export default function SiteSearch({
     [courses, tutorialIndex, q],
   );
 
-  const showPanel = open && (q.trim().length >= 1 || variant === 'header');
+  // Only show suggestions while the user is typing
+  const showPanel = open && q.trim().length >= 1;
   const isHeader = variant === 'header';
 
   const updatePanelBox = useCallback(() => {
     const el = rootRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const width = isHeader ? Math.min(Math.max(rect.width, 320), 448) : rect.width;
+    const width = isHeader ? Math.min(Math.max(rect.width, 280), 448) : rect.width;
     const left = isHeader
       ? Math.min(Math.max(8, rect.right - width), window.innerWidth - width - 8)
       : Math.max(8, rect.left);
@@ -209,7 +197,10 @@ export default function SiteSearch({
   }, [autoFocus]);
 
   useLayoutEffect(() => {
-    if (!showPanel) return;
+    if (!showPanel) {
+      setPanelBox(null);
+      return;
+    }
     updatePanelBox();
     function onReposition() {
       updatePanelBox();
@@ -368,73 +359,15 @@ export default function SiteSearch({
           role="listbox"
           id={listId}
         >
-          {!q.trim() ? (
-            <div className="p-3 sm:p-4">
-              <div className="mb-3 flex items-center gap-2 px-1">
-                <Sparkles size={14} style={{ color: 'var(--green-deep)' }} />
-                <span className="font-mono text-[10.5px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
-                  Popular right now
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {POPULAR.map((p) => (
-                  <button
-                    key={p.label}
-                    type="button"
-                    onClick={() => {
-                      setQ(p.q);
-                      setOpen(true);
-                      inputRef.current?.focus();
-                    }}
-                    className="rounded-full border px-3 py-1.5 text-[12.5px] font-medium transition hover:-translate-y-0.5"
-                    style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-4 border-t pt-3" style={{ borderColor: 'var(--line)' }}>
-                <div className="mb-2 px-1 font-mono text-[10.5px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
-                  Free tutorial paths
-                </div>
-                <div className="grid gap-0.5 sm:grid-cols-2">
-                  {TUTORIAL_NAV.slice(0, 8).map((t) => (
-                    <Link
-                      key={t.href}
-                      href={t.href}
-                      onClick={() => {
-                        setOpen(false);
-                        onNavigate?.();
-                      }}
-                      className="flex items-center gap-2 rounded-xl px-2.5 py-2 text-[13px] transition-colors hover:bg-[var(--paper-dim)]"
-                    >
-                      <BookOpen size={14} style={{ color: 'var(--blue-ink)' }} />
-                      <span className="truncate font-medium">{t.label}</span>
-                    </Link>
-                  ))}
-                </div>
-                <Link
-                  href="/tutorials"
-                  onClick={() => {
-                    setOpen(false);
-                    onNavigate?.();
-                  }}
-                  className="mt-2 inline-flex items-center gap-1 px-2.5 text-[13px] font-semibold"
-                  style={{ color: 'var(--green-deep)' }}
-                >
-                  Browse all tutorials <ArrowRight size={14} />
-                </Link>
-              </div>
-            </div>
-          ) : suggestions.length === 0 ? (
+          {suggestions.length === 0 ? (
             <div className="px-4 py-5 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
               {loading ? (
                 <span className="inline-flex items-center gap-2">
-                  <Loader2 size={14} className="animate-spin" /> Loading catalogue…
+                  <Loader2 size={14} className="animate-spin" /> Loading catalogue...
                 </span>
               ) : (
                 <>
-                  No matches for “{q.trim()}”. Try another skill or browse free paths.
+                  No matches for &ldquo;{q.trim()}&rdquo;. Try another skill or browse free paths.
                   <div className="mt-3 flex flex-wrap gap-3">
                     <Link
                       href={`/courses?q=${encodeURIComponent(q.trim())}`}
@@ -520,8 +453,10 @@ export default function SiteSearch({
           ref={inputRef}
           value={q}
           onChange={(e) => {
-            setQ(e.target.value);
+            const next = e.target.value;
+            setQ(next);
             setOpen(true);
+            if (next.trim()) onFocusSearch?.();
           }}
           onFocus={() => {
             setOpen(true);
@@ -529,14 +464,14 @@ export default function SiteSearch({
           }}
           onKeyDown={onKeyDown}
           className={`form-input w-full !rounded-full ${
-            compact || isHeader ? '!py-2.5 !pl-10 !pr-16 text-[13.5px]' : '!py-3 !pl-11 !pr-4'
+            compact || isHeader ? '!py-2.5 !pl-10 !pr-10 text-[13.5px]' : '!py-3 !pl-11 !pr-4'
           }`}
           style={
             isHeader
               ? {
-                  background: open ? 'var(--paper)' : 'var(--paper-dim)',
-                  borderColor: open ? 'var(--green)' : 'transparent',
-                  boxShadow: open ? '0 0 0 3px rgba(0,179,105,0.14)' : 'none',
+                  background: open || q ? 'var(--paper)' : 'var(--paper-dim)',
+                  borderColor: open || q ? 'var(--green)' : 'transparent',
+                  boxShadow: open || q ? '0 0 0 3px rgba(0,179,105,0.14)' : 'none',
                 }
               : undefined
           }
@@ -549,39 +484,15 @@ export default function SiteSearch({
           role="combobox"
           aria-expanded={showPanel}
         />
-        {isHeader ? (
-          <div className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 items-center gap-1.5 sm:flex">
-            {q ? (
-              <button
-                type="button"
-                className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full"
-                style={{ background: 'var(--paper-dim)', color: 'var(--ink-soft)' }}
-                aria-label="Clear search"
-                onClick={() => {
-                  setQ('');
-                  inputRef.current?.focus();
-                }}
-              >
-                <X size={14} />
-              </button>
-            ) : (
-              <kbd
-                className="rounded-md border px-1.5 py-0.5 font-mono text-[10px]"
-                style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)', background: 'var(--paper)' }}
-              >
-                ⌘K
-              </kbd>
-            )}
-          </div>
-        ) : null}
-        {q && !isHeader ? (
+        {q ? (
           <button
             type="button"
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1"
-            style={{ color: 'var(--ink-soft)' }}
+            className="absolute right-2.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full"
+            style={{ background: 'var(--paper-dim)', color: 'var(--ink-soft)' }}
             aria-label="Clear search"
             onClick={() => {
               setQ('');
+              setOpen(false);
               inputRef.current?.focus();
             }}
           >

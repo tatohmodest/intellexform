@@ -1,4 +1,4 @@
-/** Lightweight tutorial links for client nav — no lesson content imports. */
+/** Lightweight tutorial links for client nav - no lesson content imports. */
 export const TUTORIAL_NAV = [
   { href: '/tutorials/javascript', label: 'JavaScript', tag: 'Frontend' },
   { href: '/tutorials/nextjs', label: 'Next.js', tag: 'Full-stack' },

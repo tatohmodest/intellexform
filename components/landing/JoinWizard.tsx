@@ -19,19 +19,19 @@ const FIELDS = [
   'Cybersecurity',
   'Digital Marketing',
   'Branding',
-  'Not sure yet — help me choose',
-  'Special Program — Full-Stack in 3 Weeks (AI-assisted)',
+  'Not sure yet - help me choose',
+  'Special Program - Full-Stack in 3 Weeks (AI-assisted)',
 ];
 
 const PLANS = [
-  'Monthly — 1,999 XAF',
-  'Yearly — 22,560 XAF',
-  'Single course — from 4,999 XAF',
-  'Special Program — Full-Stack in 3 Weeks (150,000 XAF)',
-  'Live tutoring — online',
-  'Live tutoring — onsite',
-  'AI Tutor — pay as you go',
-  'AI Tutor — pay once',
+  'Monthly - 1,999 XAF',
+  'Yearly - 22,560 XAF',
+  'Single course - from 4,999 XAF',
+  'Special Program - Full-Stack in 3 Weeks (150,000 XAF)',
+  'Live tutoring - online',
+  'Live tutoring - onsite',
+  'AI Tutor - pay as you go',
+  'AI Tutor - pay once',
 ];
 
 const TOTAL = 5;
@@ -245,7 +245,7 @@ export default function JoinWizard() {
                       onChange={(e) => setMessage(e.target.value)}
                     />
                     <div className="mt-3 rounded-xl p-3 text-[13px]" style={{ background: 'var(--paper-dim)', color: 'var(--ink-soft)' }}>
-                      <span className="font-semibold" style={{ color: 'var(--ink)' }}>{field || '—'}</span> · {plan || '—'}
+                      <span className="font-semibold" style={{ color: 'var(--ink)' }}>{field || '-'}</span> · {plan || '-'}
                     </div>
                   </StepShell>
                 )}

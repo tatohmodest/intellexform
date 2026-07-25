@@ -1,4 +1,4 @@
-/** Professional credential marks — brand-accurate colors, no AI stock photos. */
+/** Professional credential marks - brand-accurate colors, no AI stock photos. */
 
 type MarkProps = {
   className?: string;

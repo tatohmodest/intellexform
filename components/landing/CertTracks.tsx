@@ -24,12 +24,12 @@ export default function CertTracks({ courses }: { courses: Course[] }) {
             Accredited paths. Intellex credentials. Job-ready proof.
           </h2>
           <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
-            Prepare for EC-Council CEH, Microsoft Azure & cloud roles, Data Analysis careers — and earn the
+            Prepare for EC-Council CEH, Microsoft Azure & cloud roles, Data Analysis careers - and earn the
             Intellex Professional Certificate when you finish the work.
           </p>
         </Reveal>
 
-        {/* Brand-led track rail — marks & issuers, not AI photo cards */}
+        {/* Brand-led track rail - marks & issuers, not AI photo cards */}
         <div className="mb-12 grid gap-3 sm:grid-cols-2">
           {CERT_TRACKS.map((t) => (
             <Link
