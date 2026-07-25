@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 import SiteSearch from '@/components/landing/SiteSearch';
@@ -9,6 +10,11 @@ import { useSearchIndex } from '@/lib/search/useSearchIndex';
 export default function HeaderSearch() {
   const { courses, tutorials, loading, ensureLoaded } = useSearchIndex();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? 'hidden' : '';
@@ -17,42 +23,13 @@ export default function HeaderSearch() {
     };
   }, [mobileOpen]);
 
-  return (
-    <>
-      {/* Desktop / tablet inline search */}
-      <div className="relative z-[110] hidden min-w-0 flex-1 overflow-visible md:block md:max-w-[18rem] lg:max-w-[22rem] xl:max-w-[28rem]">
-        <SiteSearch
-          variant="header"
-          compact
-          courses={courses}
-          tutorialIndex={tutorials}
-          loading={loading}
-          onFocusSearch={() => {
-            void ensureLoaded();
-          }}
-          placeholder="Search courses & tutorials…"
-          className="w-full"
-        />
-      </div>
-
-      {/* Mobile search trigger — sits left of the far-right menu cluster */}
-      <button
-        type="button"
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full md:hidden"
-        style={{ background: 'var(--paper-dim)' }}
-        aria-label="Search"
-        onClick={() => {
-          setMobileOpen(true);
-          void ensureLoaded();
-        }}
-      >
-        <Search size={18} />
-      </button>
-
+  const mobileSheet =
+    mounted &&
+    createPortal(
       <AnimatePresence>
         {mobileOpen ? (
           <motion.div
-            className="fixed inset-0 z-[140] flex flex-col md:hidden"
+            className="fixed inset-0 z-[10000] flex flex-col md:hidden"
             style={{ background: 'var(--paper)' }}
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -91,7 +68,43 @@ export default function HeaderSearch() {
             </div>
           </motion.div>
         ) : null}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body,
+    );
+
+  return (
+    <>
+      {/* Desktop / tablet inline search */}
+      <div className="relative hidden min-w-0 flex-1 overflow-visible md:block md:max-w-[18rem] lg:max-w-[22rem] xl:max-w-[28rem]">
+        <SiteSearch
+          variant="header"
+          compact
+          courses={courses}
+          tutorialIndex={tutorials}
+          loading={loading}
+          onFocusSearch={() => {
+            void ensureLoaded();
+          }}
+          placeholder="Search courses & tutorials…"
+          className="w-full"
+        />
+      </div>
+
+      {/* Mobile search trigger — left cluster; menu stays far right */}
+      <button
+        type="button"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full md:hidden"
+        style={{ background: 'var(--paper-dim)' }}
+        aria-label="Search"
+        onClick={() => {
+          setMobileOpen(true);
+          void ensureLoaded();
+        }}
+      >
+        <Search size={18} />
+      </button>
+
+      {mobileSheet}
     </>
   );
 }

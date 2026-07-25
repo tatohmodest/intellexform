@@ -356,7 +356,7 @@ export default function SiteSearch({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 6, scale: 0.99 }}
           transition={{ duration: 0.16, ease: 'easeOut' }}
-          className="fixed z-[200] overflow-hidden rounded-2xl border shadow-card"
+          className="fixed z-[9999] overflow-hidden rounded-2xl border shadow-card"
           style={{
             top: panelBox.top,
             left: panelBox.left,

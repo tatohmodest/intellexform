@@ -93,16 +93,17 @@ export default function TopNav() {
         style={{ background: 'rgba(255,255,255,0.95)', borderColor: 'var(--line)' }}
         aria-label="Primary"
       >
-        <div className="mx-auto flex max-w-[1140px] items-center gap-3 overflow-visible px-5 py-3 sm:gap-4 sm:px-6 sm:py-4 md:pl-12">
-          <Link href="/" className="flex shrink-0 items-center" aria-label="Intellex home" onClick={() => setOpen(false)}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/image.png" alt="Intellex" className="h-8 w-auto sm:h-9" />
-          </Link>
+        <div className="mx-auto flex w-full max-w-[1140px] items-center justify-between gap-3 overflow-visible px-5 py-3 sm:gap-4 sm:px-6 sm:py-4 md:pl-12">
+          <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
+            <Link href="/" className="flex shrink-0 items-center" aria-label="Intellex home" onClick={() => setOpen(false)}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/image.png" alt="Intellex" className="h-8 w-auto sm:h-9" />
+            </Link>
+            <HeaderSearch />
+          </div>
 
-          <HeaderSearch />
-
-          {/* ml-auto keeps Register + Menu pinned to the extreme right on mobile */}
-          <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+          {/* Always extreme-right: Register + Menu (and desktop nav) */}
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <div className="hidden items-center gap-1 lg:flex">
               {NAV_GROUPS.map((group) => {
                 const isOpen = desktopMenu === group.id;
@@ -214,7 +215,7 @@ export default function TopNav() {
       <AnimatePresence>
         {open && (
           <motion.div
-            className="fixed inset-0 z-[130] flex flex-col lg:hidden"
+            className="fixed inset-0 z-[10000] flex flex-col lg:hidden"
             style={{ background: 'var(--paper)' }}
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
