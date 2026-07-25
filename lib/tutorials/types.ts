@@ -42,4 +42,8 @@ export interface TutorialCourse {
   audience: string;
   totalLessons: number;
   sections: TutorialSection[];
+  /** Hub badge label, e.g. Frontend or Full-stack */
+  tag?: string;
+  /** Optional callout bullets on the hub card */
+  highlights?: string[];
 }

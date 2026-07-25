@@ -1,31 +1,31 @@
 import { notFound } from 'next/navigation';
 import TutorialLessonView from '@/components/tutorials/TutorialLessonView';
 import {
-  getAllJsLessons,
-  getJsLessonNav,
-  javascriptTutorial,
-} from '@/lib/tutorials/javascript';
+  getAllNextLessons,
+  getNextLessonNav,
+  nextjsTutorial,
+} from '@/lib/tutorials/nextjs';
 
 export function generateStaticParams() {
-  return getAllJsLessons().map((lesson) => ({ slug: lesson.slug }));
+  return getAllNextLessons().map((lesson) => ({ slug: lesson.slug }));
 }
 
 export function generateMetadata({ params }: { params: { slug: string } }) {
-  const nav = getJsLessonNav(params.slug);
+  const nav = getNextLessonNav(params.slug);
   if (!nav) return { title: 'Lesson not found — Intellex' };
   return {
-    title: `${nav.lesson.title} — JavaScript Tutorial | Intellex`,
+    title: `${nav.lesson.title} — Next.js Tutorial | Intellex`,
     description: nav.lesson.description,
   };
 }
 
-export default function JavaScriptLessonPage({ params }: { params: { slug: string } }) {
-  const nav = getJsLessonNav(params.slug);
+export default function NextjsLessonPage({ params }: { params: { slug: string } }) {
+  const nav = getNextLessonNav(params.slug);
   if (!nav) notFound();
 
   return (
     <TutorialLessonView
-      course={javascriptTutorial}
+      course={nextjsTutorial}
       lesson={nav.lesson}
       prev={nav.prev}
       next={nav.next}
