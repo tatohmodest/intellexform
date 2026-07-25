@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import SiteSearch, { type CourseSearchItem } from '@/components/landing/SiteSearch';
+import SiteSearch from '@/components/landing/SiteSearch';
+import type { CourseSearchItem } from '@/lib/tutorials/searchFilter';
 import type { TutorialSearchItem } from '@/lib/tutorials/searchTypes';
 
 const CATEGORIES = [
