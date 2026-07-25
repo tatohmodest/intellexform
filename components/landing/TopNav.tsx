@@ -89,11 +89,11 @@ export default function TopNav() {
     <>
       <nav
         ref={navRef}
-        className="sticky top-0 z-40 border-b backdrop-blur"
-        style={{ background: 'rgba(255,255,255,0.9)', borderColor: 'var(--line)' }}
+        className="sticky top-0 z-[100] overflow-visible border-b backdrop-blur"
+        style={{ background: 'rgba(255,255,255,0.95)', borderColor: 'var(--line)' }}
         aria-label="Primary"
       >
-        <div className="mx-auto flex max-w-[1140px] items-center gap-3 px-5 py-3 sm:gap-4 sm:px-6 sm:py-4 md:pl-12">
+        <div className="mx-auto flex max-w-[1140px] items-center gap-3 overflow-visible px-5 py-3 sm:gap-4 sm:px-6 sm:py-4 md:pl-12">
           <Link href="/" className="flex shrink-0 items-center" aria-label="Intellex home" onClick={() => setOpen(false)}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/image.png" alt="Intellex" className="h-8 w-auto sm:h-9" />
@@ -101,94 +101,95 @@ export default function TopNav() {
 
           <HeaderSearch />
 
-          <div className="ml-auto hidden items-center gap-1 lg:flex">
-            {NAV_GROUPS.map((group) => {
-              const isOpen = desktopMenu === group.id;
-              return (
-                <div
-                  key={group.id}
-                  className="relative"
-                  onMouseEnter={() => setDesktopMenu(group.id)}
-                  onMouseLeave={() => setDesktopMenu(null)}
-                >
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm opacity-75 transition-opacity hover:opacity-100"
-                    aria-expanded={isOpen}
-                    aria-haspopup="true"
-                    onClick={() => setDesktopMenu(isOpen ? null : group.id)}
+          {/* ml-auto keeps Register + Menu pinned to the extreme right on mobile */}
+          <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+            <div className="hidden items-center gap-1 lg:flex">
+              {NAV_GROUPS.map((group) => {
+                const isOpen = desktopMenu === group.id;
+                return (
+                  <div
+                    key={group.id}
+                    className="relative"
+                    onMouseEnter={() => setDesktopMenu(group.id)}
+                    onMouseLeave={() => setDesktopMenu(null)}
                   >
-                    {group.label}
-                    <ChevronDown
-                      size={14}
-                      className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                      style={{ color: 'var(--ink-soft)' }}
-                    />
-                  </button>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm opacity-75 transition-opacity hover:opacity-100"
+                      aria-expanded={isOpen}
+                      aria-haspopup="true"
+                      onClick={() => setDesktopMenu(isOpen ? null : group.id)}
+                    >
+                      {group.label}
+                      <ChevronDown
+                        size={14}
+                        className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                        style={{ color: 'var(--ink-soft)' }}
+                      />
+                    </button>
 
-                  <AnimatePresence>
-                    {isOpen ? (
-                      <motion.div
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 4 }}
-                        transition={{ duration: 0.16, ease: 'easeOut' }}
-                        className="absolute left-0 top-full z-50 pt-2"
-                      >
-                        <div
-                          className="w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border shadow-card"
-                          style={{ background: 'var(--paper)', borderColor: 'var(--line)' }}
+                    <AnimatePresence>
+                      {isOpen ? (
+                        <motion.div
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 4 }}
+                          transition={{ duration: 0.16, ease: 'easeOut' }}
+                          className="absolute left-0 top-full z-[120] pt-2"
                         >
-                          <Link
-                            href={group.href}
-                            className="block border-b px-4 py-3 text-sm font-semibold transition-colors hover:bg-[var(--paper-dim)]"
-                            style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
-                            onClick={() => setDesktopMenu(null)}
+                          <div
+                            className="w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border shadow-card"
+                            style={{ background: 'var(--paper)', borderColor: 'var(--line)' }}
                           >
-                            All {group.label} →
-                          </Link>
-                          <ul
-                            className={`grid gap-0.5 p-2 ${
-                              group.id === 'tutorials' ? 'max-h-[22rem] overflow-y-auto' : ''
-                            }`}
-                          >
-                            {group.items.map((item) => (
-                              <li key={item.href}>
-                                <Link
-                                  href={item.href}
-                                  className="block rounded-xl px-3 py-2.5 transition-colors hover:bg-[var(--paper-dim)]"
-                                  onClick={() => setDesktopMenu(null)}
-                                >
-                                  <span className="block text-sm font-medium">{item.label}</span>
-                                  {item.desc || item.tag ? (
-                                    <span className="mt-0.5 block text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-                                      {item.desc || item.tag}
-                                    </span>
-                                  ) : null}
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </motion.div>
-                    ) : null}
-                  </AnimatePresence>
-                </div>
-              );
-            })}
+                            <Link
+                              href={group.href}
+                              className="block border-b px-4 py-3 text-sm font-semibold transition-colors hover:bg-[var(--paper-dim)]"
+                              style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
+                              onClick={() => setDesktopMenu(null)}
+                            >
+                              All {group.label} →
+                            </Link>
+                            <ul
+                              className={`grid gap-0.5 p-2 ${
+                                group.id === 'tutorials' ? 'max-h-[22rem] overflow-y-auto' : ''
+                              }`}
+                            >
+                              {group.items.map((item) => (
+                                <li key={item.href}>
+                                  <Link
+                                    href={item.href}
+                                    className="block rounded-xl px-3 py-2.5 transition-colors hover:bg-[var(--paper-dim)]"
+                                    onClick={() => setDesktopMenu(null)}
+                                  >
+                                    <span className="block text-sm font-medium">{item.label}</span>
+                                    {item.desc || item.tag ? (
+                                      <span className="mt-0.5 block text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                                        {item.desc || item.tag}
+                                      </span>
+                                    ) : null}
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </motion.div>
+                      ) : null}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
 
-            {FLAT_LINKS.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="rounded-full px-3 py-2 text-sm opacity-75 transition-opacity hover:opacity-100"
-              >
-                {l.label}
-              </Link>
-            ))}
-          </div>
+              {FLAT_LINKS.map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className="rounded-full px-3 py-2 text-sm opacity-75 transition-opacity hover:opacity-100"
+                >
+                  {l.label}
+                </Link>
+              ))}
+            </div>
 
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <Link
               href="/register"
               className="hidden whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-semibold text-paper sm:inline-block"
@@ -213,7 +214,7 @@ export default function TopNav() {
       <AnimatePresence>
         {open && (
           <motion.div
-            className="fixed inset-0 z-50 flex flex-col lg:hidden"
+            className="fixed inset-0 z-[130] flex flex-col lg:hidden"
             style={{ background: 'var(--paper)' }}
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}

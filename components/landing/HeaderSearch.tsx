@@ -20,7 +20,7 @@ export default function HeaderSearch() {
   return (
     <>
       {/* Desktop / tablet inline search */}
-      <div className="relative hidden min-w-0 flex-1 md:block md:max-w-[18rem] lg:max-w-[22rem] xl:max-w-[28rem]">
+      <div className="relative z-[110] hidden min-w-0 flex-1 overflow-visible md:block md:max-w-[18rem] lg:max-w-[22rem] xl:max-w-[28rem]">
         <SiteSearch
           variant="header"
           compact
@@ -35,10 +35,10 @@ export default function HeaderSearch() {
         />
       </div>
 
-      {/* Mobile search trigger */}
+      {/* Mobile search trigger — sits left of the far-right menu cluster */}
       <button
         type="button"
-        className="flex h-10 w-10 items-center justify-center rounded-full md:hidden"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full md:hidden"
         style={{ background: 'var(--paper-dim)' }}
         aria-label="Search"
         onClick={() => {
@@ -52,7 +52,7 @@ export default function HeaderSearch() {
       <AnimatePresence>
         {mobileOpen ? (
           <motion.div
-            className="fixed inset-0 z-[70] flex flex-col md:hidden"
+            className="fixed inset-0 z-[140] flex flex-col md:hidden"
             style={{ background: 'var(--paper)' }}
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}

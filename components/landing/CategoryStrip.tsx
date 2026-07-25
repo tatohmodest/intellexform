@@ -27,15 +27,15 @@ export default function CategoryStrip({
   courses?: CourseSearchItem[];
 }) {
   return (
-    <div className="border-b" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
-      <div className="wrap py-4">
+    <div className="relative z-40 border-b" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
+      <div className="wrap overflow-visible py-4">
         <SiteSearch
           tutorialIndex={tutorialIndex}
           courses={courses}
           className="mb-3.5 max-w-xl"
           placeholder="Search for courses, tutorials, skills…"
         />
-        <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        <div className="no-scrollbar relative z-0 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           {CATEGORIES.map((c) =>
             'href' in c && c.href ? (
               <Link

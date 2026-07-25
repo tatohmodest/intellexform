@@ -5,12 +5,15 @@ import { useRouter } from 'next/navigation';
 import {
   FormEvent,
   KeyboardEvent,
+  useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -163,9 +166,12 @@ export default function SiteSearch({
   const listId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  const [mounted, setMounted] = useState(false);
+  const [panelBox, setPanelBox] = useState<{ top: number; left: number; width: number } | null>(null);
 
   const suggestions = useMemo(
     () => (q.trim() ? buildSuggestions(courses, tutorialIndex, q) : []),
@@ -175,6 +181,25 @@ export default function SiteSearch({
   const showPanel = open && (q.trim().length >= 1 || variant === 'header');
   const isHeader = variant === 'header';
 
+  const updatePanelBox = useCallback(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const width = isHeader ? Math.min(Math.max(rect.width, 320), 448) : rect.width;
+    const left = isHeader
+      ? Math.min(Math.max(8, rect.right - width), window.innerWidth - width - 8)
+      : Math.max(8, rect.left);
+    setPanelBox({
+      top: rect.bottom + 8,
+      left,
+      width,
+    });
+  }, [isHeader]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     setActive(0);
   }, [q]);
@@ -183,9 +208,25 @@ export default function SiteSearch({
     if (autoFocus) inputRef.current?.focus();
   }, [autoFocus]);
 
+  useLayoutEffect(() => {
+    if (!showPanel) return;
+    updatePanelBox();
+    function onReposition() {
+      updatePanelBox();
+    }
+    window.addEventListener('resize', onReposition);
+    window.addEventListener('scroll', onReposition, true);
+    return () => {
+      window.removeEventListener('resize', onReposition);
+      window.removeEventListener('scroll', onReposition, true);
+    };
+  }, [showPanel, updatePanelBox, q]);
+
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (rootRef.current?.contains(target) || panelRef.current?.contains(target)) return;
+      setOpen(false);
     }
     function onKey(e: globalThis.KeyboardEvent) {
       if (e.key === 'Escape') {
@@ -308,21 +349,21 @@ export default function SiteSearch({
 
   const panel = (
     <AnimatePresence>
-      {showPanel ? (
+      {showPanel && panelBox ? (
         <motion.div
+          ref={panelRef}
           initial={{ opacity: 0, y: 8, scale: 0.985 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 6, scale: 0.99 }}
           transition={{ duration: 0.16, ease: 'easeOut' }}
-          className={`absolute z-[60] overflow-hidden rounded-2xl border shadow-card ${
-            isHeader
-              ? 'left-0 right-0 top-[calc(100%+10px)] min-w-[min(100vw-2rem,28rem)] sm:left-auto sm:right-0 sm:w-[28rem]'
-              : 'left-0 right-0 top-[calc(100%+8px)]'
-          }`}
+          className="fixed z-[200] overflow-hidden rounded-2xl border shadow-card"
           style={{
+            top: panelBox.top,
+            left: panelBox.left,
+            width: panelBox.width,
             background: 'var(--paper)',
             borderColor: 'var(--line)',
-            boxShadow: '0 18px 50px rgba(12,17,22,0.12), 0 2px 8px rgba(12,17,22,0.06)',
+            boxShadow: '0 22px 60px rgba(12,17,22,0.18), 0 4px 14px rgba(12,17,22,0.08)',
           }}
           role="listbox"
           id={listId}
@@ -460,7 +501,10 @@ export default function SiteSearch({
   );
 
   return (
-    <div ref={rootRef} className={`relative ${className}`}>
+    <div
+      ref={rootRef}
+      className={`relative ${showPanel ? 'z-[120]' : 'z-10'} ${className}`}
+    >
       <form
         onSubmit={onSubmit}
         className={`relative transition-all duration-200 ${
@@ -545,7 +589,7 @@ export default function SiteSearch({
           </button>
         ) : null}
       </form>
-      {panel}
+      {mounted ? createPortal(panel, document.body) : null}
     </div>
   );
 }
