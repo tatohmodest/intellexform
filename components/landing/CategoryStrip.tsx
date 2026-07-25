@@ -1,9 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import SiteSearch from '@/components/landing/SiteSearch';
-import type { CourseSearchItem } from '@/lib/tutorials/searchFilter';
-import type { TutorialSearchItem } from '@/lib/tutorials/searchTypes';
 
 const CATEGORIES = [
   { label: 'Web Development', q: 'Web Development' },
@@ -19,22 +16,10 @@ const CATEGORIES = [
   { label: 'IT Certification', q: 'IT Certification' },
 ];
 
-export default function CategoryStrip({
-  tutorialIndex,
-  courses = [],
-}: {
-  tutorialIndex: TutorialSearchItem[];
-  courses?: CourseSearchItem[];
-}) {
+export default function CategoryStrip() {
   return (
     <div className="border-b" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
-      <div className="wrap py-4">
-        <SiteSearch
-          tutorialIndex={tutorialIndex}
-          courses={courses}
-          className="mb-3.5 max-w-xl"
-          placeholder="Search for courses, tutorials, skills…"
-        />
+      <div className="wrap py-3.5">
         <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           {CATEGORIES.map((c) =>
             'href' in c && c.href ? (
