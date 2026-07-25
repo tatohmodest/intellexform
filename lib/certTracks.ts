@@ -1,29 +1,40 @@
 import type { Course } from '@/lib/types';
 
+export type CertMarkId = 'azure' | 'ceh' | 'intellex' | 'data';
+
 export type CertTrack = {
   id: string;
   issuer: string;
   title: string;
   blurb: string;
-  image: string;
   badge: string;
   href: string;
+  mark: CertMarkId;
+  accent: string;
+  accentSoft: string;
+  inkOnAccent: string;
+  outcomes: string[];
   match: (c: Course) => boolean;
 };
 
 /**
- * Coursera-style professional / accredited certification tracks.
- * Matchers pull related catalogue courses into list views.
+ * Professional / accredited certification tracks.
+ * Visual identity is brand marks + color systems — not AI stock photos.
  */
 export const CERT_TRACKS: CertTrack[] = [
   {
     id: 'ec-council-ceh',
     issuer: 'EC-Council',
     title: 'Certified Ethical Hacker (CEH) Prep',
-    blurb: 'Industry-recognized ethical hacking prep aligned to the EC-Council CEH pathway — labs, domains, and exam readiness.',
-    image: '/cert_eccouncil.webp',
+    blurb:
+      'Industry-recognized ethical hacking prep aligned to the EC-Council CEH pathway — labs, domains, and exam readiness.',
     badge: 'Accredited path',
     href: '/certifications#ec-council-ceh',
+    mark: 'ceh',
+    accent: '#B42318',
+    accentSoft: '#FFF5F4',
+    inkOnAccent: '#FFFFFF',
+    outcomes: ['Recon & scanning labs', 'Threat modeling drills', 'Exam-domain mapping'],
     match: (c) => {
       const hay = `${c.name} ${c.shortDescription} ${c.type}`.toLowerCase();
       return (
@@ -38,10 +49,15 @@ export const CERT_TRACKS: CertTrack[] = [
     id: 'microsoft-azure',
     issuer: 'Microsoft Azure',
     title: 'Azure & Cloud Professional Path',
-    blurb: 'Cloud architecture, DevOps, and Azure-ready skills — prepare for Microsoft-aligned cloud roles and certifications.',
-    image: '/cert_azure.webp',
+    blurb:
+      'Cloud architecture, DevOps, and Azure-ready skills — prepare for Microsoft-aligned cloud roles and certifications.',
     badge: 'Cloud credential',
     href: '/certifications#microsoft-azure',
+    mark: 'azure',
+    accent: '#0078D4',
+    accentSoft: '#F3F9FF',
+    inkOnAccent: '#FFFFFF',
+    outcomes: ['Azure fundamentals', 'Cloud architecture', 'DevOps & IaC basics'],
     match: (c) => {
       const hay = `${c.name} ${c.shortDescription} ${c.courseDetails} ${c.type}`.toLowerCase();
       return (
@@ -58,27 +74,37 @@ export const CERT_TRACKS: CertTrack[] = [
     id: 'intellex',
     issuer: 'Intellex',
     title: 'Intellex Professional Certificate',
-    blurb: 'Our own completion credential — finish an Intellex path and earn a certificate that proves you did the work.',
-    image: '/cert_intellex.webp',
+    blurb:
+      'Our own completion credential — finish an Intellex path and earn a certificate that proves you did the work.',
     badge: 'Intellex certified',
     href: '/certifications#intellex',
+    mark: 'intellex',
+    accent: '#009a5a',
+    accentSoft: '#F0FBF5',
+    inkOnAccent: '#FFFFFF',
+    outcomes: ['Verified completion', 'Mentor-ready skills', 'Shareable credential'],
     match: (c) => Boolean(c.featured || c.selfPaced || c.certificateOfCompletion),
   },
   {
     id: 'data-analysis',
     issuer: 'Data & Analytics',
     title: 'Data Analysis Professional Track',
-    blurb: 'From spreadsheets to Python analytics — a job-ready data path with certificate of completion on every finished course.',
-    image: '/eco_learning.webp',
+    blurb:
+      'From spreadsheets to Python analytics — a job-ready data path with certificate of completion on every finished course.',
     badge: 'Career track',
     href: '/certifications#data-analysis',
+    mark: 'data',
+    accent: '#1F5FA8',
+    accentSoft: '#F3F8FE',
+    inkOnAccent: '#FFFFFF',
+    outcomes: ['Python & spreadsheets', 'Dashboards & SQL', 'Portfolio projects'],
     match: (c) => {
       const hay = `${c.name} ${c.type}`.toLowerCase();
       return (
         hay.includes('data') ||
         hay.includes('analysis') ||
         hay.includes('analytics') ||
-        hay.includes('python') && hay.includes('data') ||
+        (hay.includes('python') && hay.includes('data')) ||
         ['data science', 'ai & data science', 'database'].includes((c.type || '').toLowerCase())
       );
     },

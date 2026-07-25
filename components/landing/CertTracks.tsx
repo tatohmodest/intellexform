@@ -1,9 +1,11 @@
 import Link from 'next/link';
-import { ArrowRight, BadgeCheck } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import type { Course } from '@/lib/types';
 import { CERT_TRACKS, coursesForTrack } from '@/lib/certTracks';
 import CourseList from '@/components/CourseList';
 import Reveal from '@/components/Reveal';
+import { CertBrandMark } from '@/components/certs/CertBrandMark';
+import { CertTrackHero } from '@/components/certs/CertTrackHero';
 
 export default function CertTracks({ courses }: { courses: Course[] }) {
   const tracks = CERT_TRACKS.map((t) => ({
@@ -27,24 +29,40 @@ export default function CertTracks({ courses }: { courses: Course[] }) {
           </p>
         </Reveal>
 
-        <div className="mb-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        {/* Brand-led track rail — marks & issuers, not AI photo cards */}
+        <div className="mb-12 grid gap-3 sm:grid-cols-2">
           {CERT_TRACKS.map((t) => (
             <Link
               key={t.id}
               href={t.href}
-              className="group overflow-hidden rounded-[18px] border transition hover:-translate-y-1"
-              style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}
+              className="group relative flex items-center gap-4 overflow-hidden rounded-[18px] border px-4 py-4 transition hover:-translate-y-0.5 sm:px-5"
+              style={{
+                borderColor: 'var(--line)',
+                background: 'var(--paper)',
+              }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={t.image} alt="" className="aspect-[4/3] w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
-              <div className="p-5">
-                <div className="mb-2 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.12em]" style={{ color: 'var(--green-deep)' }}>
-                  <BadgeCheck size={12} /> {t.badge}
-                </div>
-                <div className="mb-1 text-[12.5px] font-semibold" style={{ color: 'var(--ink-soft)' }}>{t.issuer}</div>
-                <h3 className="mb-2 font-display text-[17px] leading-snug group-hover:underline">{t.title}</h3>
-                <p className="text-[13px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>{t.blurb}</p>
-              </div>
+              <span
+                className="absolute inset-y-0 left-0 w-1 opacity-90 transition group-hover:w-1.5"
+                style={{ background: t.accent }}
+                aria-hidden
+              />
+              <CertBrandMark mark={t.mark} className="h-12 w-12 shrink-0 sm:h-14 sm:w-14" />
+              <span className="min-w-0 flex-1">
+                <span className="mb-0.5 block font-mono text-[10px] uppercase tracking-[0.12em]" style={{ color: t.accent }}>
+                  {t.badge}
+                </span>
+                <span className="block text-[12.5px] font-semibold" style={{ color: 'var(--ink-soft)' }}>
+                  {t.issuer}
+                </span>
+                <span className="mt-0.5 block font-display text-[16px] leading-snug group-hover:underline sm:text-[17px]">
+                  {t.title}
+                </span>
+              </span>
+              <ArrowRight
+                size={16}
+                className="shrink-0 opacity-40 transition group-hover:translate-x-0.5 group-hover:opacity-100"
+                style={{ color: t.accent }}
+              />
             </Link>
           ))}
         </div>
@@ -52,17 +70,14 @@ export default function CertTracks({ courses }: { courses: Course[] }) {
         <div className="space-y-12">
           {tracks.slice(0, 3).map(({ track, items }) => (
             <div key={track.id} id={track.id}>
-              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <div className="mb-1 font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--green-deep)' }}>
-                    {track.issuer}
-                  </div>
-                  <h3 className="font-display text-[22px] sm:text-[26px]">{track.title}</h3>
-                  <p className="mt-1 max-w-[560px] text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>{track.blurb}</p>
-                </div>
-                <Link href={track.href} className="inline-flex items-center gap-1 text-[13px] font-semibold" style={{ color: 'var(--green-deep)' }}>
-                  View track <ArrowRight size={15} />
-                </Link>
+              <div className="mb-4">
+                <CertTrackHero
+                  track={track}
+                  courseCount={items.length}
+                  ctaHref={track.href}
+                  ctaLabel="View full track"
+                  compact
+                />
               </div>
               <CourseList courses={items} issuer={track.issuer} />
             </div>
