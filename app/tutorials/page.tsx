@@ -7,7 +7,7 @@ import { TUTORIALS, getFirstLessonSlug } from '@/lib/tutorials';
 export const metadata = {
   title: 'Tutorials — Intellex',
   description:
-    'Free step-by-step tutorials from Intellex. Learn JavaScript, Next.js, Python, Django, Flask, PostgreSQL, MongoDB, Flutter, Data Analysis, and Digital Marketing from beginner to pro.',
+    'Free step-by-step tutorials from Intellex. Learn JavaScript, Next.js, Python, Go, Django, Flask, PostgreSQL, MongoDB, Flutter, Data Analysis, and Digital Marketing from beginner to pro.',
 };
 
 export default function TutorialsHubPage() {
@@ -30,7 +30,7 @@ export default function TutorialsHubPage() {
           </h1>
           <p className="max-w-[560px] text-[16px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
             Clean, guided tutorials designed like the guides you love — but built for real skill.
-            Start with JavaScript or Python, build apps with Next.js or Flutter, ship with Django or Flask, store data with PostgreSQL or MongoDB, analyze it with Data Analysis, and grow with Digital Marketing.
+            Start with JavaScript, Python, or Go, build apps with Next.js or Flutter, ship with Django or Flask, store data with PostgreSQL or MongoDB, analyze it with Data Analysis, and grow with Digital Marketing.
           </p>
         </div>
       </section>
@@ -114,7 +114,9 @@ export default function TutorialsHubPage() {
                                           ? 'linear-gradient(160deg, #0C1116 0%, #2a1830 55%, #0C1116 100%)'
                                           : course.slug === 'digital-marketing'
                                             ? 'linear-gradient(160deg, #0C1116 0%, #3a1f14 55%, #0C1116 100%)'
-                                            : 'linear-gradient(160deg, #0C1116 0%, #163024 55%, #0C1116 100%)',
+                                            : course.slug === 'golang'
+                                              ? 'linear-gradient(160deg, #0C1116 0%, #0f2f35 55%, #0C1116 100%)'
+                                              : 'linear-gradient(160deg, #0C1116 0%, #163024 55%, #0C1116 100%)',
                         color: 'var(--paper)',
                       }}
                     >
@@ -156,7 +158,9 @@ export default function TutorialsHubPage() {
                                               ? '#e9b3ff'
                                               : course.slug === 'digital-marketing'
                                                 ? '#ffc089'
-                                                : '#7dffc0',
+                                                : course.slug === 'golang'
+                                                  ? '#5dc9e0'
+                                                  : '#7dffc0',
                           }}
                         >
                           Jump to lesson 1 <ArrowRight size={15} />

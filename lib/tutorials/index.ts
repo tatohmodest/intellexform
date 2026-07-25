@@ -28,6 +28,11 @@ import {
   getAllDigitalMarketingLessons,
   getDigitalMarketingLessonNav,
 } from './digital-marketing';
+import {
+  golangTutorial,
+  getAllGolangLessons,
+  getGolangLessonNav,
+} from './golang';
 import type { TutorialCourse, TutorialLesson } from './types';
 
 export const TUTORIALS: TutorialCourse[] = [
@@ -41,6 +46,7 @@ export const TUTORIALS: TutorialCourse[] = [
   flutterTutorial,
   dataAnalysisTutorial,
   digitalMarketingTutorial,
+  golangTutorial,
 ];
 
 export function getTutorial(slug: string): TutorialCourse | undefined {
@@ -58,6 +64,7 @@ export function getTutorialLessons(courseSlug: string): TutorialLesson[] {
   if (courseSlug === 'flutter') return getAllFlutterLessons();
   if (courseSlug === 'data-analysis') return getAllDataAnalysisLessons();
   if (courseSlug === 'digital-marketing') return getAllDigitalMarketingLessons();
+  if (courseSlug === 'golang') return getAllGolangLessons();
   return [];
 }
 
@@ -72,6 +79,7 @@ export function getTutorialLessonNav(courseSlug: string, lessonSlug: string) {
   if (courseSlug === 'flutter') return getFlutterLessonNav(lessonSlug);
   if (courseSlug === 'data-analysis') return getDataAnalysisLessonNav(lessonSlug);
   if (courseSlug === 'digital-marketing') return getDigitalMarketingLessonNav(lessonSlug);
+  if (courseSlug === 'golang') return getGolangLessonNav(lessonSlug);
   return null;
 }
 
@@ -90,4 +98,5 @@ export {
   flutterTutorial,
   dataAnalysisTutorial,
   digitalMarketingTutorial,
+  golangTutorial,
 };
