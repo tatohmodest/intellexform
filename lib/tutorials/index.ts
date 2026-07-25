@@ -38,6 +38,11 @@ import {
   getAllDockerLessons,
   getDockerLessonNav,
 } from './docker';
+import {
+  nodejsExpressTutorial,
+  getAllNodejsExpressLessons,
+  getNodejsExpressLessonNav,
+} from './nodejs-express';
 import type { TutorialCourse, TutorialLesson } from './types';
 
 export const TUTORIALS: TutorialCourse[] = [
@@ -53,6 +58,7 @@ export const TUTORIALS: TutorialCourse[] = [
   digitalMarketingTutorial,
   golangTutorial,
   dockerTutorial,
+  nodejsExpressTutorial,
 ];
 
 export function getTutorial(slug: string): TutorialCourse | undefined {
@@ -72,6 +78,7 @@ export function getTutorialLessons(courseSlug: string): TutorialLesson[] {
   if (courseSlug === 'digital-marketing') return getAllDigitalMarketingLessons();
   if (courseSlug === 'golang') return getAllGolangLessons();
   if (courseSlug === 'docker') return getAllDockerLessons();
+  if (courseSlug === 'nodejs-express') return getAllNodejsExpressLessons();
   return [];
 }
 
@@ -88,6 +95,7 @@ export function getTutorialLessonNav(courseSlug: string, lessonSlug: string) {
   if (courseSlug === 'digital-marketing') return getDigitalMarketingLessonNav(lessonSlug);
   if (courseSlug === 'golang') return getGolangLessonNav(lessonSlug);
   if (courseSlug === 'docker') return getDockerLessonNav(lessonSlug);
+  if (courseSlug === 'nodejs-express') return getNodejsExpressLessonNav(lessonSlug);
   return null;
 }
 
@@ -108,4 +116,5 @@ export {
   digitalMarketingTutorial,
   golangTutorial,
   dockerTutorial,
+  nodejsExpressTutorial,
 };

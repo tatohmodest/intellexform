@@ -7,7 +7,7 @@ import { TUTORIALS, getFirstLessonSlug } from '@/lib/tutorials';
 export const metadata = {
   title: 'Tutorials — Intellex',
   description:
-    'Free step-by-step tutorials from Intellex. Learn JavaScript, Next.js, Python, Go, Django, Flask, PostgreSQL, MongoDB, Flutter, Data Analysis, Digital Marketing, and Docker from beginner to pro.',
+    'Free step-by-step tutorials from Intellex. Learn JavaScript, Next.js, Node.js & Express, Python, Go, Django, Flask, PostgreSQL, MongoDB, Flutter, Data Analysis, Digital Marketing, and Docker from beginner to pro.',
 };
 
 export default function TutorialsHubPage() {
@@ -30,7 +30,7 @@ export default function TutorialsHubPage() {
           </h1>
           <p className="max-w-[560px] text-[16px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
             Clean, guided tutorials designed like the guides you love — but built for real skill.
-            Start with JavaScript, Python, or Go, build apps with Next.js or Flutter, ship with Django or Flask, store data with PostgreSQL or MongoDB, analyze it with Data Analysis, grow with Digital Marketing, and containerize with Docker.
+            Start with JavaScript, Python, or Go, build backends with Node.js & Express, ship apps with Next.js or Flutter, use Django or Flask, store data with PostgreSQL or MongoDB, analyze it, grow with Digital Marketing, and containerize with Docker.
           </p>
         </div>
       </section>
@@ -118,7 +118,9 @@ export default function TutorialsHubPage() {
                                               ? 'linear-gradient(160deg, #0C1116 0%, #0f2f35 55%, #0C1116 100%)'
                                               : course.slug === 'docker'
                                                 ? 'linear-gradient(160deg, #0C1116 0%, #0d2a45 55%, #0C1116 100%)'
-                                                : 'linear-gradient(160deg, #0C1116 0%, #163024 55%, #0C1116 100%)',
+                                                : course.slug === 'nodejs-express'
+                                                  ? 'linear-gradient(160deg, #0C1116 0%, #1a3320 55%, #0C1116 100%)'
+                                                  : 'linear-gradient(160deg, #0C1116 0%, #163024 55%, #0C1116 100%)',
                         color: 'var(--paper)',
                       }}
                     >
@@ -164,7 +166,9 @@ export default function TutorialsHubPage() {
                                                   ? '#5dc9e0'
                                                   : course.slug === 'docker'
                                                     ? '#7eb6ff'
-                                                    : '#7dffc0',
+                                                    : course.slug === 'nodejs-express'
+                                                      ? '#8dffb0'
+                                                      : '#7dffc0',
                           }}
                         >
                           Jump to lesson 1 <ArrowRight size={15} />
