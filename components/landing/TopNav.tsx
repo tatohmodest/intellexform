@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, X, ArrowRight, MessageCircle, ChevronDown } from 'lucide-react';
 import { buildWhatsappLink } from '@/lib/whatsapp';
 import { EXPLORE_NAV, LEARN_NAV, TUTORIAL_NAV } from '@/lib/tutorials/nav';
+import HeaderSearch from '@/components/landing/HeaderSearch';
 
 type NavItem = {
   href: string;
@@ -92,13 +93,15 @@ export default function TopNav() {
         style={{ background: 'rgba(255,255,255,0.9)', borderColor: 'var(--line)' }}
         aria-label="Primary"
       >
-        <div className="mx-auto flex max-w-[1140px] items-center justify-between gap-4 px-5 py-3 sm:px-6 sm:py-4 md:pl-12">
+        <div className="mx-auto flex max-w-[1140px] items-center gap-3 px-5 py-3 sm:gap-4 sm:px-6 sm:py-4 md:pl-12">
           <Link href="/" className="flex shrink-0 items-center" aria-label="Intellex home" onClick={() => setOpen(false)}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/image.png" alt="Intellex" className="h-8 w-auto sm:h-9" />
           </Link>
 
-          <div className="hidden items-center gap-1 lg:flex">
+          <HeaderSearch />
+
+          <div className="ml-auto hidden items-center gap-1 lg:flex">
             {NAV_GROUPS.map((group) => {
               const isOpen = desktopMenu === group.id;
               return (
@@ -185,7 +188,7 @@ export default function TopNav() {
             ))}
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <Link
               href="/register"
               className="hidden whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-semibold text-paper sm:inline-block"
