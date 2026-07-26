@@ -7,7 +7,7 @@ import { TUTORIALS, getFirstLessonSlug } from '@/lib/tutorials';
 export const metadata = {
   title: 'Tutorials - Intellex',
   description:
-    'Free step-by-step tutorials from Intellex. Learn JavaScript, Next.js, Node.js & Express, NestJS, Python, Go, Django, Flask, PostgreSQL, MongoDB, Flutter, Data Analysis, Digital Marketing, Docker, and Pygame from beginner to pro.',
+    'Free step-by-step tutorials from Intellex. Learn HTML, CSS, JavaScript, Next.js, Node.js & Express, NestJS, Python, Go, Django, Flask, PostgreSQL, MongoDB, Flutter, Data Analysis, Digital Marketing, Docker, and Pygame from beginner to pro.',
 };
 
 export default function TutorialsHubPage() {
@@ -30,7 +30,7 @@ export default function TutorialsHubPage() {
           </h1>
           <p className="max-w-[560px] text-[16px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
             Clean, guided tutorials designed like the guides you love - but built for real skill.
-            Start with JavaScript, Python, or Go, build backends with Node.js & Express or NestJS, ship apps with Next.js or Flutter, make games with Pygame, use Django or Flask, store data with PostgreSQL or MongoDB, analyze it, grow with Digital Marketing, and containerize with Docker.
+            Start with HTML and CSS, then JavaScript, Python, or Go. Build backends with Node.js & Express or NestJS, ship apps with Next.js or Flutter, make games with Pygame, use Django or Flask, store data with PostgreSQL or MongoDB, analyze it, grow with Digital Marketing, and containerize with Docker.
           </p>
         </div>
       </section>
@@ -96,7 +96,11 @@ export default function TutorialsHubPage() {
                       style={{
                         borderColor: 'var(--line)',
                         background:
-                          course.slug === 'nextjs'
+                          course.slug === 'html'
+                            ? 'linear-gradient(160deg, #0C1116 0%, #3a2210 55%, #0C1116 100%)'
+                            : course.slug === 'css'
+                              ? 'linear-gradient(160deg, #0C1116 0%, #10284a 55%, #0C1116 100%)'
+                            : course.slug === 'nextjs'
                             ? 'linear-gradient(160deg, #0C1116 0%, #10263d 55%, #0C1116 100%)'
                             : course.slug === 'python'
                               ? 'linear-gradient(160deg, #0C1116 0%, #2a2410 55%, #0C1116 100%)'
@@ -148,7 +152,11 @@ export default function TutorialsHubPage() {
                           className="mt-8 inline-flex items-center gap-2 text-[14px] font-semibold"
                           style={{
                             color:
-                              course.slug === 'nextjs'
+                              course.slug === 'html'
+                                ? '#ffb38a'
+                                : course.slug === 'css'
+                                  ? '#8fc0ff'
+                              : course.slug === 'nextjs'
                                 ? '#8fc0ff'
                                 : course.slug === 'python'
                                   ? '#ffd666'

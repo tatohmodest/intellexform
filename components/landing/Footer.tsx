@@ -28,6 +28,8 @@ export default function Footer() {
             </h5>
             <Link href="/courses" className="mb-2 block text-sm text-paper/80">All courses</Link>
             <Link href="/tutorials" className="mb-2 block text-sm text-paper/80">Free tutorials</Link>
+            <Link href="/tutorials/html" className="mb-2 block text-sm text-paper/80">HTML tutorial</Link>
+            <Link href="/tutorials/css" className="mb-2 block text-sm text-paper/80">CSS tutorial</Link>
             <Link href="/tutorials/javascript" className="mb-2 block text-sm text-paper/80">JavaScript tutorial</Link>
             <Link href="/tutorials/nextjs" className="mb-2 block text-sm text-paper/80">Next.js tutorial</Link>
             <Link href="/tutorials/python" className="mb-2 block text-sm text-paper/80">Python tutorial</Link>

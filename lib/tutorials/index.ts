@@ -53,9 +53,21 @@ import {
   getAllPygameLessons,
   getPygameLessonNav,
 } from './pygame';
+import {
+  htmlTutorial,
+  getAllHtmlLessons,
+  getHtmlLessonNav,
+} from './html';
+import {
+  cssTutorial,
+  getAllCssLessons,
+  getCssLessonNav,
+} from './css';
 import type { TutorialCourse, TutorialLesson } from './types';
 
 export const TUTORIALS: TutorialCourse[] = [
+  htmlTutorial,
+  cssTutorial,
   javascriptTutorial,
   nextjsTutorial,
   pythonTutorial,
@@ -93,6 +105,8 @@ export function getTutorialLessons(courseSlug: string): TutorialLesson[] {
   if (courseSlug === 'nodejs-express') return getAllNodejsExpressLessons();
   if (courseSlug === 'nestjs') return getAllNestjsLessons();
   if (courseSlug === 'pygame') return getAllPygameLessons();
+  if (courseSlug === 'html') return getAllHtmlLessons();
+  if (courseSlug === 'css') return getAllCssLessons();
   return [];
 }
 
@@ -112,6 +126,8 @@ export function getTutorialLessonNav(courseSlug: string, lessonSlug: string) {
   if (courseSlug === 'nodejs-express') return getNodejsExpressLessonNav(lessonSlug);
   if (courseSlug === 'nestjs') return getNestjsLessonNav(lessonSlug);
   if (courseSlug === 'pygame') return getPygameLessonNav(lessonSlug);
+  if (courseSlug === 'html') return getHtmlLessonNav(lessonSlug);
+  if (courseSlug === 'css') return getCssLessonNav(lessonSlug);
   return null;
 }
 
@@ -120,6 +136,8 @@ export function getFirstLessonSlug(course: TutorialCourse): string | undefined {
 }
 
 export {
+  htmlTutorial,
+  cssTutorial,
   javascriptTutorial,
   nextjsTutorial,
   pythonTutorial,
