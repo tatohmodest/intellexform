@@ -42,6 +42,7 @@ export default function Footer() {
             <Link href="/tutorials/docker" className="mb-2 block text-sm text-paper/80">Docker tutorial</Link>
             <Link href="/tutorials/nodejs-express" className="mb-2 block text-sm text-paper/80">Node.js & Express tutorial</Link>
             <Link href="/tutorials/nestjs" className="mb-2 block text-sm text-paper/80">NestJS tutorial</Link>
+            <Link href="/tutorials/pygame" className="mb-2 block text-sm text-paper/80">Pygame tutorial</Link>
             <Link href="/certifications" className="mb-2 block text-sm text-paper/80">Certificates</Link>
             <Link href="/#pricing" className="mb-2 block text-sm text-paper/80">Pricing</Link>
             <Link href="/#testimonials" className="mb-2 block text-sm text-paper/80">Student stories</Link>

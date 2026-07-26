@@ -5,9 +5,9 @@ import Footer from '@/components/landing/Footer';
 import { TUTORIALS, getFirstLessonSlug } from '@/lib/tutorials';
 
 export const metadata = {
-  title: 'Tutorials — Intellex',
+  title: 'Tutorials - Intellex',
   description:
-    'Free step-by-step tutorials from Intellex. Learn JavaScript, Next.js, Node.js & Express, NestJS, Python, Go, Django, Flask, PostgreSQL, MongoDB, Flutter, Data Analysis, Digital Marketing, and Docker from beginner to pro.',
+    'Free step-by-step tutorials from Intellex. Learn JavaScript, Next.js, Node.js & Express, NestJS, Python, Go, Django, Flask, PostgreSQL, MongoDB, Flutter, Data Analysis, Digital Marketing, Docker, and Pygame from beginner to pro.',
 };
 
 export default function TutorialsHubPage() {
@@ -29,8 +29,8 @@ export default function TutorialsHubPage() {
             Learn by doing, section by section
           </h1>
           <p className="max-w-[560px] text-[16px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-            Clean, guided tutorials designed like the guides you love — but built for real skill.
-            Start with JavaScript, Python, or Go, build backends with Node.js & Express or NestJS, ship apps with Next.js or Flutter, use Django or Flask, store data with PostgreSQL or MongoDB, analyze it, grow with Digital Marketing, and containerize with Docker.
+            Clean, guided tutorials designed like the guides you love - but built for real skill.
+            Start with JavaScript, Python, or Go, build backends with Node.js & Express or NestJS, ship apps with Next.js or Flutter, make games with Pygame, use Django or Flask, store data with PostgreSQL or MongoDB, analyze it, grow with Digital Marketing, and containerize with Docker.
           </p>
         </div>
       </section>
@@ -54,7 +54,7 @@ export default function TutorialsHubPage() {
                 'Clear explanations with real examples',
                 'Practice prompts after every lesson',
                 'Capstone mini-projects at the end',
-                'No fluff — one idea per section',
+                'No fluff - one idea per section',
               ];
 
               return (
@@ -122,7 +122,9 @@ export default function TutorialsHubPage() {
                                                   ? 'linear-gradient(160deg, #0C1116 0%, #1a3320 55%, #0C1116 100%)'
                                                   : course.slug === 'nestjs'
                                                     ? 'linear-gradient(160deg, #0C1116 0%, #2a1630 55%, #0C1116 100%)'
-                                                    : 'linear-gradient(160deg, #0C1116 0%, #163024 55%, #0C1116 100%)',
+                                                    : course.slug === 'pygame'
+                                                      ? 'linear-gradient(160deg, #0C1116 0%, #1a2840 55%, #0C1116 100%)'
+                                                      : 'linear-gradient(160deg, #0C1116 0%, #163024 55%, #0C1116 100%)',
                         color: 'var(--paper)',
                       }}
                     >
@@ -172,7 +174,9 @@ export default function TutorialsHubPage() {
                                                       ? '#8dffb0'
                                                       : course.slug === 'nestjs'
                                                         ? '#f0abfc'
-                                                        : '#7dffc0',
+                                                        : course.slug === 'pygame'
+                                                          ? '#9ecbff'
+                                                          : '#7dffc0',
                           }}
                         >
                           Jump to lesson 1 <ArrowRight size={15} />
