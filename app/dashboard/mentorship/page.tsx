@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { Users } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getBookings } from '@/lib/learn/repo';
-import { MENTORS } from '@/lib/learn/mentors';
+import { getAllMentors } from '@/lib/learn/ecosystem';
 import MentorDirectory, { type BookingView } from '@/components/dashboard/MentorDirectory';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,10 @@ export default async function MentorshipPage() {
   const session = getSessionUser();
   if (!session) redirect('/login?next=/dashboard/mentorship');
 
-  const bookings = await getBookings(session.uid);
+  const [bookings, mentors] = await Promise.all([
+    getBookings(session.uid),
+    getAllMentors(),
+  ]);
   const bookingViews: BookingView[] = bookings.map((b) => ({
     id: b.id,
     mentorId: b.mentorId,
@@ -37,7 +40,7 @@ export default async function MentorshipPage() {
         </p>
       </div>
 
-      <MentorDirectory mentors={MENTORS} bookings={bookingViews} />
+      <MentorDirectory mentors={mentors} bookings={bookingViews} />
     </div>
   );
 }

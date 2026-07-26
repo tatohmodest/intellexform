@@ -13,6 +13,8 @@ export interface LearnerDoc {
   email: string;
   name: string;
   avatar?: string;
+  /** Progressive roles: every account is a student; mentor/admin unlock more UI. */
+  roles?: ('student' | 'mentor' | 'admin')[];
   xp: number;
   streakCount: number;
   /** YYYY-MM-DD of the last day the learner did something. */
@@ -48,6 +50,7 @@ export interface BookingDoc {
   scheduledAt: Date;
   durationMinutes: number;
   channel: string;
+  priceXAF?: number;
   status: 'upcoming' | 'completed' | 'cancelled';
   createdAt: Date;
 }
@@ -86,6 +89,7 @@ export async function upsertLearnerFromOAuth(profile: LBProfile): Promise<Learne
         },
         $setOnInsert: {
           lbId: profile.sub,
+          roles: ['student'],
           xp: 0,
           streakCount: 0,
           lastActiveDay: null,

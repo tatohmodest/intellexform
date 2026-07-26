@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { createBooking, getBookings } from '@/lib/learn/repo';
-import { getMentor } from '@/lib/learn/mentors';
+import { findMentor } from '@/lib/learn/ecosystem';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
-  const mentor = getMentor(String(body.mentorId ?? ''));
+  const mentor = await findMentor(String(body.mentorId ?? ''));
   if (!mentor) return NextResponse.json({ error: 'unknown_mentor' }, { status: 400 });
 
   const scheduledAt = new Date(String(body.scheduledAt ?? ''));
@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
       scheduledAt,
       durationMinutes: mentor.sessionMinutes,
       channel,
+      priceXAF: mentor.priceXAF,
     });
     return NextResponse.json({ ok: true, id, channel });
   } catch (err) {

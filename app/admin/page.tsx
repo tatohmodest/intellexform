@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   RefreshCw, Search, Lock, LogOut, Eye, EyeOff, ShieldCheck,
-  Users, MessageSquare, ShoppingBag, BookOpen,
+  Users, MessageSquare, ShoppingBag, BookOpen, GraduationCap,
 } from 'lucide-react';
 import { formatXAF } from '@/lib/format';
 import AdminCourses from '@/components/admin/AdminCourses';
+import AdminLearning from '@/components/admin/AdminLearning';
 
-type Tab = 'requests' | 'orders' | 'registrations' | 'courses';
+type Tab = 'learning' | 'requests' | 'orders' | 'registrations' | 'courses';
 
 interface RequestRow {
   _id: string;
@@ -113,7 +114,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
 }
 
 function Dashboard({ onLogout }: { onLogout: () => void }) {
-  const [tab, setTab] = useState<Tab>('requests');
+  const [tab, setTab] = useState<Tab>('learning');
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [registrations, setRegistrations] = useState<RegistrationRow[]>([]);
@@ -150,6 +151,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const fReg = registrations.filter((r) => `${r.fullName} ${r.email} ${r.program}`.toLowerCase().includes(q));
 
   const TABS: { id: Tab; label: string; icon: typeof Users; count: number | null }[] = [
+    { id: 'learning', label: 'Learning', icon: GraduationCap, count: null },
     { id: 'requests', label: 'Requests', icon: MessageSquare, count: requests.length },
     { id: 'orders', label: 'Orders', icon: ShoppingBag, count: orders.length },
     { id: 'registrations', label: 'Registrations', icon: Users, count: registrations.length },
@@ -200,6 +202,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       </div>
 
       <div className="mx-auto max-w-7xl px-6 py-8">
+        {tab === 'learning' && <AdminLearning />}
         {tab === 'requests' && (
           <Table
             head={['#', 'NAME', 'WHATSAPP', 'FIELD', 'PLAN', 'MESSAGE', 'CREATED']}

@@ -16,6 +16,10 @@ import {
   Menu,
   X,
   Home,
+  BookMarked,
+  Youtube,
+  Building2,
+  GraduationCap,
 } from 'lucide-react';
 
 export interface ShellUser {
@@ -24,13 +28,17 @@ export interface ShellUser {
   avatar: string | null;
   xp: number;
   streakCount: number;
+  roles?: string[];
 }
 
 const NAV = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, exact: true },
   { href: '/dashboard/courses', label: 'My Courses', icon: BookOpen },
   { href: '/dashboard/mentorship', label: 'Mentorship', icon: Users },
+  { href: '/dashboard/library', label: 'Library', icon: BookMarked },
+  { href: '/dashboard/videos', label: 'Video Hall', icon: Youtube },
   { href: '/dashboard/tutor', label: 'AI Tutor', icon: Bot },
+  { href: '/dashboard/institutions', label: 'Institutions', icon: Building2 },
   { href: '/dashboard/achievements', label: 'Achievements', icon: Trophy },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
@@ -44,13 +52,24 @@ function initials(name: string): string {
     .join('');
 }
 
-function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+function NavLinks({
+  pathname,
+  isMentor,
+  onNavigate,
+}: {
+  pathname: string;
+  isMentor: boolean;
+  onNavigate?: () => void;
+}) {
+  const mentorActive = pathname.startsWith('/dashboard/mentor') && !pathname.startsWith('/dashboard/mentorship');
   return (
     <nav className="flex flex-col gap-1">
       {NAV.map((item) => {
         const active = item.exact
           ? pathname === item.href
-          : pathname.startsWith(item.href);
+          : item.href === '/dashboard/mentorship'
+            ? pathname.startsWith('/dashboard/mentorship')
+            : pathname.startsWith(item.href) && !(item.href === '/dashboard/courses' && mentorActive);
         const Icon = item.icon;
         return (
           <Link
@@ -69,6 +88,26 @@ function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
           </Link>
         );
       })}
+
+      {/* Progressive disclosure: teaching tools appear when you're a mentor. */}
+      <div className="mt-4 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
+        <div className="mono mb-1.5 px-3.5 text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
+          {isMentor ? 'Teaching' : 'Teach'}
+        </div>
+        <Link
+          href="/dashboard/mentor"
+          onClick={onNavigate}
+          className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
+          style={
+            mentorActive
+              ? { background: 'rgba(74,144,226,0.12)', color: 'var(--blue-ink)' }
+              : { color: 'var(--ink-soft)' }
+          }
+        >
+          <GraduationCap size={17} strokeWidth={mentorActive ? 2.4 : 2} />
+          {isMentor ? 'Mentor Studio' : 'Become a mentor'}
+        </Link>
+      </div>
     </nav>
   );
 }
@@ -101,7 +140,11 @@ export default function DashboardShell({
         </span>
       </div>
 
-      <NavLinks pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+      <NavLinks
+        pathname={pathname}
+        isMentor={Boolean(user.roles?.includes('mentor'))}
+        onNavigate={() => setMobileOpen(false)}
+      />
 
       <div className="mt-auto space-y-1 pt-6">
         <Link

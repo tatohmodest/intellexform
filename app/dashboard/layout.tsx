@@ -30,6 +30,7 @@ export default async function DashboardLayout({
         avatar: learner?.avatar ?? session.avatar ?? null,
         xp: learner?.xp ?? 0,
         streakCount: learner?.streakCount ?? 0,
+        roles: learner?.roles ?? ['student'],
       }}
     >
       {children}
