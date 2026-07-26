@@ -8,9 +8,11 @@
  *  4. We fetch the profile at  GET https://auth.loopingbinary.com/api/oauth/userinfo
  */
 
+// The API authorize endpoint validates client_id/redirect_uri server-side and
+// 302-redirects the browser to the hosted LoopingBinary login screen.
 const AUTHORIZE_URL =
   process.env.LB_OAUTH_AUTHORIZE_URL ||
-  'https://auth.loopingbinary.com/oauth/authorize';
+  'https://auth.loopingbinary.com/api/oauth/authorize';
 const TOKEN_URL =
   process.env.LB_OAUTH_TOKEN_URL ||
   'https://auth.loopingbinary.com/api/oauth/token';
