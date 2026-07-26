@@ -48,6 +48,11 @@ import {
   getAllNestjsLessons,
   getNestjsLessonNav,
 } from './nestjs';
+import {
+  pygameTutorial,
+  getAllPygameLessons,
+  getPygameLessonNav,
+} from './pygame';
 import type { TutorialCourse, TutorialLesson } from './types';
 
 export const TUTORIALS: TutorialCourse[] = [
@@ -65,6 +70,7 @@ export const TUTORIALS: TutorialCourse[] = [
   dockerTutorial,
   nodejsExpressTutorial,
   nestjsTutorial,
+  pygameTutorial,
 ];
 
 export function getTutorial(slug: string): TutorialCourse | undefined {
@@ -86,6 +92,7 @@ export function getTutorialLessons(courseSlug: string): TutorialLesson[] {
   if (courseSlug === 'docker') return getAllDockerLessons();
   if (courseSlug === 'nodejs-express') return getAllNodejsExpressLessons();
   if (courseSlug === 'nestjs') return getAllNestjsLessons();
+  if (courseSlug === 'pygame') return getAllPygameLessons();
   return [];
 }
 
@@ -104,6 +111,7 @@ export function getTutorialLessonNav(courseSlug: string, lessonSlug: string) {
   if (courseSlug === 'docker') return getDockerLessonNav(lessonSlug);
   if (courseSlug === 'nodejs-express') return getNodejsExpressLessonNav(lessonSlug);
   if (courseSlug === 'nestjs') return getNestjsLessonNav(lessonSlug);
+  if (courseSlug === 'pygame') return getPygameLessonNav(lessonSlug);
   return null;
 }
 
@@ -126,4 +134,5 @@ export {
   dockerTutorial,
   nodejsExpressTutorial,
   nestjsTutorial,
+  pygameTutorial,
 };

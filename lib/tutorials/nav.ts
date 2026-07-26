@@ -14,6 +14,7 @@ export const TUTORIAL_NAV = [
   { href: '/tutorials/flutter', label: 'Flutter', tag: 'Mobile' },
   { href: '/tutorials/data-analysis', label: 'Data Analysis', tag: 'Data' },
   { href: '/tutorials/digital-marketing', label: 'Digital Marketing', tag: 'Marketing' },
+  { href: '/tutorials/pygame', label: 'Pygame', tag: 'Game Dev' },
 ] as const;
 
 export const LEARN_NAV = [
