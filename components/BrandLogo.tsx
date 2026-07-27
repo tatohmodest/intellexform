@@ -1,11 +1,17 @@
 import Link from 'next/link';
-import { BRAND_LOGO_FULL, BRAND_LOGO_MARK, BRAND_NAME } from '@/lib/brand';
+import {
+  BRAND_LOGO_FOOTER,
+  BRAND_LOGO_FULL,
+  BRAND_LOGO_MARK,
+  BRAND_NAME,
+} from '@/lib/brand';
 
-type BrandLogoVariant = 'full' | 'mark';
+type BrandLogoVariant = 'full' | 'mark' | 'footer';
 
 /**
  * InTelleX brand mark.
- * - `full`: homepage header wordmark (`/logo.png`)
+ * - `full`: header wordmark (S3 InTelleX.svg)
+ * - `footer`: legacy PNG mark for dark footer bars
  * - `mark`: compact icon when the wordmark cannot fit
  */
 export default function BrandLogo({
@@ -23,7 +29,13 @@ export default function BrandLogo({
   variant?: BrandLogoVariant;
   onClick?: () => void;
 }) {
-  const src = variant === 'mark' ? BRAND_LOGO_MARK : BRAND_LOGO_FULL;
+  const src =
+    variant === 'mark'
+      ? BRAND_LOGO_MARK
+      : variant === 'footer'
+        ? BRAND_LOGO_FOOTER
+        : BRAND_LOGO_FULL;
+
   const img = (
     // eslint-disable-next-line @next/next/no-img-element
     <img

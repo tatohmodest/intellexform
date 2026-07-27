@@ -4,15 +4,38 @@ import HeroCarousel, { type HeroSlide } from '@/components/landing/HeroCarousel'
 
 const HERO_SLIDES: HeroSlide[] = [
   {
-    id: 'chapter',
+    id: 'eduos',
     image: '/hero_illustration.webp',
-    alt: 'Learner studying at a desk with floating course icons',
+    alt: 'InTelleX Education Operating System',
     headline: (
       <>
-        A course is only the <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>first chapter.</em>
+        Not another LMS.{' '}
+        <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>
+          An Education OS.
+        </em>
       </>
     ),
-    body: 'Self-paced courses, live mentors, and an AI tutor - so you actually finish.',
+    body: 'InTelleX is the network schools plug into — identity, trust, courses, mentors, and AI.',
+    ctaLabel: 'Enter InTelleX',
+    secondaryLabel: 'See the ecosystem',
+    secondaryHref: '/ecosystem',
+  },
+  {
+    id: 'network',
+    image: '/hero_career.webp',
+    alt: 'Federated institution network',
+    headline: (
+      <>
+        Schools own their data.{' '}
+        <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>
+          You own the network.
+        </em>
+      </>
+    ),
+    body: 'Federated campuses, verified institutions, one learner identity across the ecosystem.',
+    ctaLabel: 'Explore the network',
+    secondaryLabel: 'How governance works',
+    secondaryHref: '/network',
   },
   {
     id: 'mentor',
@@ -20,39 +43,33 @@ const HERO_SLIDES: HeroSlide[] = [
     alt: 'Mentor guiding a student in a live tutoring session',
     headline: (
       <>
-        Sometimes you need a <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>person</em>, not a playlist.
+        Mentors and campuses are{' '}
+        <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>
+          approved
+        </em>
+        , not assumed.
       </>
     ),
-    body: 'Live tutoring online or onsite - a real mentor keeping you accountable.',
+    body: 'Live tutoring with accountability — privileges earned through review, not a toggle.',
     ctaLabel: 'Get a quote',
-    secondaryLabel: 'See how it works',
+    secondaryLabel: 'Ways to learn',
     secondaryHref: '/#learn',
   },
   {
     id: 'ai',
     image: '/hero_ai.webp',
-    alt: 'Student learning with an AI tutor trained on a real textbook',
+    alt: 'Student learning with an AI tutor',
     headline: (
       <>
-        We teach the AI the book, so it can <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>teach you.</em>
+        An AI that knows{' '}
+        <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>
+          InTelleX
+        </em>
+        — and your catalogue.
       </>
     ),
-    body: "Unlock levels one by one - or everything at once - in the author's voice.",
+    body: 'Grounded in free tutorials, Mongo courses, and how the platform actually works.',
     ctaLabel: 'Try AI Tutor',
-    secondaryLabel: 'How AI works',
-    secondaryHref: '/#ai',
-  },
-  {
-    id: 'career',
-    image: '/hero_career.webp',
-    alt: 'Graduate celebrating skills-to-income progress',
-    headline: (
-      <>
-        Skills to income, at <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>your</em> pace.
-      </>
-    ),
-    body: 'Cameroon-built learning that sticks - certificates when you finish the work.',
-    ctaLabel: 'Start learning',
     secondaryLabel: 'Browse courses',
     secondaryHref: '/courses',
   },
