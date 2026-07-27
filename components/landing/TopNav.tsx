@@ -51,6 +51,7 @@ const NAV_GROUPS: NavGroup[] = [
 const FLAT_LINKS = [
   { href: '/certifications', label: 'Certificates' },
   { href: '/#pricing', label: 'Pricing' },
+  { href: '/contact', label: 'Contact' },
 ];
 
 export default function TopNav() {

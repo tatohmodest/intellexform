@@ -87,7 +87,7 @@ export default async function CertificationsPage() {
                     <CertTrackHero
                       track={track}
                       courseCount={items.length}
-                      ctaHref="/register"
+                      ctaHref="/signup"
                       ctaLabel="Start this path"
                     />
                   </div>

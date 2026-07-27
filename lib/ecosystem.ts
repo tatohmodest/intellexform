@@ -28,7 +28,7 @@ export const ECOSYSTEM: EcosystemItem[] = [
       'CEH and other certification-prep tracks available in the catalogue',
     ],
     primaryCta: { label: 'Browse courses', href: '/courses' },
-    secondaryCta: { label: 'Join Intellex', href: '/register' },
+    secondaryCta: { label: 'Join Intellex', href: '/signup' },
   },
   {
     slug: 'internships',
@@ -70,7 +70,7 @@ export const ECOSYSTEM: EcosystemItem[] = [
       href: 'https://juniordev.loopingbinary.com',
       external: true,
     },
-    secondaryCta: { label: 'Claim my Intellex plan', href: '/register' },
+    secondaryCta: { label: 'Claim my Intellex plan', href: '/signup' },
   },
   {
     slug: 'books',
@@ -86,7 +86,7 @@ export const ECOSYSTEM: EcosystemItem[] = [
       'Subscribe for the fuller curated list',
       'Pairs with AI Tutor book-trained learning',
     ],
-    primaryCta: { label: 'Join to unlock more', href: '/register' },
+    primaryCta: { label: 'Join to unlock more', href: '/signup' },
     secondaryCta: { label: 'See AI Tutor', href: '/#ai' },
   },
   {
@@ -103,7 +103,7 @@ export const ECOSYSTEM: EcosystemItem[] = [
       'Downloadable helpers you can keep',
       'Built to complement Intellex courses',
     ],
-    primaryCta: { label: 'Get started free', href: '/register' },
+    primaryCta: { label: 'Get started free', href: '/signup' },
     secondaryCta: { label: 'Browse courses', href: '/courses' },
   },
   {
@@ -120,7 +120,7 @@ export const ECOSYSTEM: EcosystemItem[] = [
       'Progress you can see — and finish',
       'Mobile-friendly access wherever you are',
     ],
-    primaryCta: { label: 'Enter Intellex', href: '/register' },
+    primaryCta: { label: 'Enter Intellex', href: '/signup' },
     secondaryCta: { label: 'How learning works', href: '/#learn' },
   },
 ];

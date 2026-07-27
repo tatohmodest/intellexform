@@ -42,7 +42,7 @@ const WAYS = [
     tag: 'Priced per mentor & format',
     image: '/way_live.webp',
     alt: 'Mentor teaching a student in a live session',
-    href: '/register',
+    href: '/contact?type=mentorship',
   },
   {
     id: 'ai',
@@ -240,7 +240,7 @@ export default async function HomePage() {
             <Link href="/ecosystem" className="btn btn-primary">
               Full ecosystem map
             </Link>
-            <Link href="/network#partner" className="btn btn-ghost">
+            <Link href="/contact?type=institution" className="btn btn-ghost">
               <Building2 size={15} /> Partner your institution
             </Link>
           </div>
@@ -398,7 +398,7 @@ export default async function HomePage() {
                   </li>
                 ))}
               </ul>
-              <Link href="/register" className="btn btn-primary mt-auto">
+              <Link href="/signup" className="btn btn-primary mt-auto">
                 Start monthly
               </Link>
             </div>
@@ -440,7 +440,7 @@ export default async function HomePage() {
                   </li>
                 ))}
               </ul>
-              <Link href="/register" className="btn btn-amber mt-auto">
+              <Link href="/signup" className="btn btn-amber mt-auto">
                 Start yearly
               </Link>
             </div>
@@ -545,8 +545,8 @@ export default async function HomePage() {
               alt="Mentor guiding a learner in a live session"
               className="mb-5 aspect-[16/10] w-full rounded-[14px] object-cover"
             />
-            <Link href="/register" className="btn btn-ghost">
-              Get a quote
+            <Link href="/contact?type=mentorship" className="btn btn-ghost">
+              Contact us for a quote
             </Link>
           </div>
           <div id="ai" className="rounded-[22px] border bg-paper p-7 sm:p-8" style={{ borderColor: 'var(--line)' }}>
@@ -629,7 +629,7 @@ export default async function HomePage() {
                 Sign in with Looping Binary
               </Link>
               <Link
-                href="/network#partner"
+                href="/contact?type=institution"
                 className="btn btn-ghost"
                 style={{ color: 'var(--paper)', borderColor: 'rgba(251,248,240,0.25)' }}
               >

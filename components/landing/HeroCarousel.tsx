@@ -103,7 +103,7 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
                 {slide.body}
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link href={slide.ctaHref || '/register'} className="btn btn-primary">
+                <Link href={slide.ctaHref || '/signup'} className="btn btn-primary">
                   {slide.ctaLabel || 'Get started'}
                 </Link>
                 <Link href={slide.secondaryHref || '/#pricing'} className="btn btn-ghost">
@@ -158,7 +158,7 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
                   {slide.body}
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  <Link href={slide.ctaHref || '/register'} className="btn btn-primary">
+                  <Link href={slide.ctaHref || '/signup'} className="btn btn-primary">
                     {slide.ctaLabel || 'Get started'}
                   </Link>
                   <Link href={slide.secondaryHref || '/#pricing'} className="btn btn-ghost">
