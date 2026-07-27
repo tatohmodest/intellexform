@@ -44,6 +44,7 @@ export function signMentorUpload(opts: {
   signature: string;
   resourceType: 'image' | 'raw' | 'video' | 'auto';
   eager?: string;
+  transformation?: string;
 } {
   if (!isCloudinaryConfigured()) {
     throw new Error('cloudinary_not_configured');
@@ -63,12 +64,14 @@ export function signMentorUpload(opts: {
 
   // Cap stored video: 1280×720, auto quality, ~800kbps - keeps intro clips small.
   let eager: string | undefined;
+  let transformation: string | undefined;
   if (opts.kind === 'intro_video') {
     eager = 'c_limit,w_1280,h_720,q_auto:good,br_800k,f_mp4';
     paramsToSign.eager = eager;
   } else if (opts.kind === 'id_front' || opts.kind === 'id_back') {
-    // Incoming image transform to shrink ID photos without looking soft.
-    paramsToSign.transformation = 'c_limit,w_1600,q_auto:good';
+    // Incoming image transform — sharp ID photos, smaller stored bytes.
+    transformation = 'c_limit,w_1600,q_auto:good,f_auto';
+    paramsToSign.transformation = transformation;
   }
 
   const signature = cloudinary.utils.api_sign_request(paramsToSign, apiSecret);
@@ -82,6 +85,7 @@ export function signMentorUpload(opts: {
     signature,
     resourceType,
     eager,
+    transformation,
   };
 }
 

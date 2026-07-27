@@ -1,4 +1,5 @@
 import type { MentorUploadKind } from '@/lib/learn/mentorUploadKinds';
+import { MAX_MENTOR_DOC_BYTES, prepareImageForUpload } from '@/lib/compressImage';
 
 export type UploadedAsset = {
   url: string;
@@ -7,6 +8,9 @@ export type UploadedAsset = {
   resourceType: string;
 };
 
+const ID_MAX_EDGE = 1600;
+const ID_QUALITY = 0.88;
+
 /** Sign + upload a file directly to Cloudinary (keeps large videos off Next.js). */
 export async function uploadMentorAsset(
   kind: MentorUploadKind,
@@ -14,6 +18,33 @@ export async function uploadMentorAsset(
   filename: string,
   onProgress?: (pct: number) => void,
 ): Promise<UploadedAsset> {
+  let uploadBlob: Blob = file;
+  let uploadName = filename;
+
+  // ID photos (and image CVs): accept up to 10MB, shrink client-side, keep them sharp.
+  if (
+    typeof File !== 'undefined' &&
+    file instanceof File &&
+    file.type.startsWith('image/') &&
+    (kind === 'id_front' || kind === 'id_back' || kind === 'resume')
+  ) {
+    if (file.size > MAX_MENTOR_DOC_BYTES) {
+      throw new Error('file_too_large');
+    }
+    try {
+      const prepared = await prepareImageForUpload(file, {
+        maxEdge: kind === 'resume' ? 1920 : ID_MAX_EDGE,
+        quality: ID_QUALITY,
+      });
+      uploadBlob = prepared;
+      uploadName = prepared.name || filename;
+    } catch {
+      // Fall through — Cloudinary transform still caps ID photos.
+    }
+  } else if (kind === 'resume' && file.size > MAX_MENTOR_DOC_BYTES) {
+    throw new Error('file_too_large');
+  }
+
   const signRes = await fetch('/api/learn/mentor/upload-sign', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -26,15 +57,15 @@ export async function uploadMentorAsset(
   const signed = await signRes.json();
 
   const form = new FormData();
-  form.append('file', file, filename);
+  form.append('file', uploadBlob, uploadName);
   form.append('api_key', signed.apiKey);
   form.append('timestamp', String(signed.timestamp));
   form.append('signature', signed.signature);
   form.append('folder', signed.folder);
   form.append('public_id', signed.publicId);
   if (signed.eager) form.append('eager', signed.eager);
-  if (kind === 'id_front' || kind === 'id_back') {
-    form.append('transformation', 'c_limit,w_1600,q_auto:good');
+  if (signed.transformation) {
+    form.append('transformation', signed.transformation);
   }
 
   const result = await new Promise<Record<string, unknown>>((resolve, reject) => {
@@ -58,7 +89,6 @@ export async function uploadMentorAsset(
     xhr.send(form);
   });
 
-  // Prefer eager (compressed) URL for videos when Cloudinary returns it.
   const eager = Array.isArray(result.eager) ? result.eager[0] : null;
   const eagerUrl =
     eager && typeof eager === 'object' && eager !== null && 'secure_url' in eager
@@ -66,9 +96,8 @@ export async function uploadMentorAsset(
       : null;
 
   return {
-    // Prefer the original upload URL — eager derivatives can be async / empty.
     url: String(result.secure_url ?? result.url ?? eagerUrl ?? ''),
-    bytes: Number(result.bytes ?? file.size),
+    bytes: Number(result.bytes ?? uploadBlob.size),
     publicId: String(result.public_id ?? signed.publicId),
     resourceType: String(result.resource_type ?? signed.resourceType),
   };
