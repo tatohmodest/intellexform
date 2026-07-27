@@ -242,7 +242,7 @@ function ApplicationCard({
 
       <div className="mt-4 flex flex-wrap gap-2">
         <DocLink
-          href={app.resumeUrl}
+          href={app.resumeUrl ? `/api/admin/applications/${app.id}/resume` : undefined}
           icon={Download}
           label="Download CV"
           download
@@ -282,23 +282,6 @@ function StatusPill({ status }: { status: string }) {
   );
 }
 
-/** Force Cloudinary delivery to download instead of opening in the browser. */
-function attachmentUrl(url: string, filename?: string): string {
-  try {
-    const u = new URL(url);
-    if (!u.hostname.includes('cloudinary.com')) return url;
-    if (!u.pathname.includes('/upload/')) return url;
-    const flag = filename
-      ? `fl_attachment:${encodeURIComponent(filename.replace(/[^\w.-]+/g, '_'))}`
-      : 'fl_attachment';
-    if (u.pathname.includes('/fl_attachment')) return u.toString();
-    u.pathname = u.pathname.replace('/upload/', `/upload/${flag}/`);
-    return u.toString();
-  } catch {
-    return url;
-  }
-}
-
 function DocLink({
   href,
   icon: Icon,
@@ -322,10 +305,9 @@ function DocLink({
   }
 
   if (download) {
-    const hrefDownload = attachmentUrl(href, filename);
     return (
       <a
-        href={hrefDownload}
+        href={href}
         download={filename || true}
         className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors hover:border-[var(--green-deep)]"
         style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
