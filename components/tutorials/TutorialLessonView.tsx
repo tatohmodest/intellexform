@@ -32,15 +32,19 @@ export default function TutorialLessonView({
   return (
     <>
       <TopNav />
-      <div className="flex min-h-[calc(100vh-57px)] flex-col overflow-x-hidden lg:flex-row">
+      {/*
+        Desktop: viewport-locked row so the lesson pane scrolls independently.
+        Avoid overflow-x-hidden here — it forces overflow-y:auto and breaks page scroll.
+      */}
+      <div className="flex flex-col lg:h-[calc(100vh-57px)] lg:flex-row lg:overflow-hidden">
         <TutorialSidebar
           course={course}
           activeSlug={lesson.slug}
           activeTitle={lesson.title}
         />
 
-        <main className="min-w-0 w-full flex-1 px-4 py-6 sm:px-6 sm:py-8 md:px-8 lg:px-12 lg:py-10">
-          <div className="mx-auto w-full max-w-[720px]">
+        <main className="min-w-0 w-full flex-1 lg:overflow-y-auto lg:overscroll-contain">
+          <div className="mx-auto w-full max-w-[720px] px-4 py-6 sm:px-6 sm:py-8 md:px-8 lg:px-12 lg:py-10">
             <Link
               href={`/tutorials/${course.slug}`}
               className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-medium sm:mb-5"
@@ -76,12 +80,16 @@ export default function TutorialLessonView({
               {lesson.description}
             </p>
 
-            <LessonBlocks blocks={lesson.content} />
+            <div className="max-w-full">
+              <LessonBlocks blocks={lesson.content} />
+            </div>
             <LessonNav courseSlug={course.slug} prev={prev} next={next} />
+          </div>
+          <div className="lg:hidden">
+            <Footer />
           </div>
         </main>
       </div>
-      <Footer />
     </>
   );
 }

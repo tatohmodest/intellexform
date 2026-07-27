@@ -44,6 +44,10 @@ export default function TutorialSidebar({
   }, [activeSlug, course.sections]);
 
   useEffect(() => {
+    setOpen(false);
+  }, [activeSlug]);
+
+  useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
@@ -150,19 +154,19 @@ export default function TutorialSidebar({
 
   return (
     <>
-      {/* Desktop sidebar - only participates in lg+ row layout */}
+      {/* Desktop sidebar — fills the locked viewport row and scrolls its own list */}
       <aside
-        className="sticky top-[57px] hidden h-[calc(100vh-57px)] w-[280px] shrink-0 border-r xl:w-[300px] lg:block"
+        className="hidden h-full w-[280px] shrink-0 border-r xl:w-[300px] lg:block"
         style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}
       >
         {nav}
       </aside>
 
-      {/* Mobile curriculum bar - full width above content in the column layout */}
+      {/* Mobile curriculum bar */}
       <div
-        className="sticky top-[57px] z-30 w-full border-b px-3 py-2.5 sm:px-4 lg:hidden"
+        className="sticky top-[57px] z-[40] w-full border-b px-3 py-2.5 sm:px-4 lg:hidden"
         style={{
-          background: 'rgba(255,255,255,0.96)',
+          background: 'rgba(255,255,255,0.97)',
           borderColor: 'var(--line)',
           backdropFilter: 'blur(8px)',
         }}
@@ -171,8 +175,8 @@ export default function TutorialSidebar({
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-[13px] font-semibold"
-            style={{ background: 'var(--paper-dim)' }}
+            className="inline-flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-[13px] font-semibold text-white shadow-sm"
+            style={{ background: 'var(--green)' }}
             aria-expanded={open}
             aria-controls="tutorial-mobile-curriculum"
           >
@@ -194,7 +198,7 @@ export default function TutorialSidebar({
         {open && (
           <motion.div
             id="tutorial-mobile-curriculum"
-            className="fixed inset-0 z-[60] lg:hidden"
+            className="fixed inset-0 z-[110] lg:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

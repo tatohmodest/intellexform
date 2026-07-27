@@ -38,27 +38,27 @@ export default async function CourseDetailPage({
     <div className="mx-auto max-w-[900px]">
       <Link
         href="/dashboard/courses"
-        className="mb-6 inline-flex items-center gap-1.5 text-[13.5px] font-semibold"
+        className="mb-5 inline-flex items-center gap-1.5 text-[13.5px] font-semibold sm:mb-6"
         style={{ color: 'var(--ink-soft)' }}
       >
         <ArrowLeft size={14} /> All courses
       </Link>
 
       <div
-        className="mb-8 rounded-3xl border p-6 sm:p-8"
+        className="mb-6 rounded-2xl border p-4 sm:mb-8 sm:rounded-3xl sm:p-8"
         style={{ borderColor: 'var(--line)', background: `linear-gradient(135deg, ${track.color}10, transparent 55%)` }}
       >
-        <div className="flex flex-wrap items-start gap-5">
-          <TrackLogo slug={track.slug} color={track.color} size={64} className="rounded-2xl" />
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+          <TrackLogo slug={track.slug} color={track.color} size={56} className="rounded-2xl sm:h-16 sm:w-16" />
           <div className="min-w-0 flex-1">
             <div className="mono mb-1 text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
               {track.tag} · Self-paced
             </div>
-            <h1 className="font-display text-[28px] leading-tight">{track.title}</h1>
-            <p className="mt-2 max-w-xl text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+            <h1 className="break-words font-display text-[24px] leading-tight sm:text-[28px]">{track.title}</h1>
+            <p className="mt-2 max-w-xl text-[14px] leading-relaxed sm:text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
               {track.description}
             </p>
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
               <span className="flex items-center gap-1.5">
                 <BookOpen size={13} /> {track.totalLessons} lessons
               </span>
@@ -70,7 +70,7 @@ export default async function CourseDetailPage({
               </span>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-3">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end sm:gap-3">
             <EnrollButton courseSlug={params.slug} enrolled={enrolled} continueHref={continueHref} />
             {enrolled && (
               <div className="text-[12.5px] font-semibold" style={{ color: 'var(--green-deep)' }}>
@@ -81,27 +81,27 @@ export default async function CourseDetailPage({
         </div>
       </div>
 
-      <h2 className="mb-4 font-display text-[21px]">Curriculum</h2>
-      <div className="space-y-4">
+      <h2 className="mb-3 font-display text-[19px] sm:mb-4 sm:text-[21px]">Curriculum</h2>
+      <div className="space-y-3 sm:space-y-4">
         {course.sections.map((section, si) => {
           const sectionDone = section.lessons.filter((l) => done.has(l.slug)).length;
           return (
             <div
               key={section.id}
-              className="overflow-hidden rounded-2xl border"
+              className="overflow-hidden rounded-xl border sm:rounded-2xl"
               style={{ borderColor: 'var(--line)' }}
             >
               <div
-                className="flex flex-wrap items-center justify-between gap-2 border-b px-5 py-4"
+                className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3 sm:px-5 sm:py-4"
                 style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}
               >
-                <div>
+                <div className="min-w-0">
                   <div className="mono text-[10.5px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
                     Section {si + 1} · {section.level}
                   </div>
-                  <div className="text-[15px] font-semibold">{section.title}</div>
+                  <div className="text-[14px] font-semibold sm:text-[15px]">{section.title}</div>
                 </div>
-                <span className="text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+                <span className="shrink-0 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
                   {sectionDone}/{section.lessons.length} done
                 </span>
               </div>
@@ -112,20 +112,20 @@ export default async function CourseDetailPage({
                     <li key={lesson.slug} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
                       <Link
                         href={`/dashboard/courses/${params.slug}/${lesson.slug}`}
-                        className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-[var(--paper-dim)]"
+                        className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--paper-dim)] sm:px-5 sm:py-3.5"
                       >
                         {isDone ? (
-                          <CheckCircle2 size={17} style={{ color: 'var(--green)' }} />
+                          <CheckCircle2 size={17} className="shrink-0" style={{ color: 'var(--green)' }} />
                         ) : (
-                          <Circle size={17} style={{ color: 'var(--line)' }} />
+                          <Circle size={17} className="shrink-0" style={{ color: 'var(--line)' }} />
                         )}
                         <span
-                          className="min-w-0 flex-1 truncate text-[14px]"
+                          className="min-w-0 flex-1 text-[13.5px] sm:truncate sm:text-[14px]"
                           style={{ color: isDone ? 'var(--ink-soft)' : 'var(--ink)' }}
                         >
                           {lesson.title}
                         </span>
-                        <span className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                        <span className="shrink-0 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
                           {lesson.minutes} min
                         </span>
                       </Link>

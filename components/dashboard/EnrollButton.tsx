@@ -39,7 +39,7 @@ export default function EnrollButton({
 
   const cls = compact
     ? 'btn btn-primary !px-4 !py-2 text-[12.5px]'
-    : 'btn btn-primary !py-3 text-[14px]';
+    : 'btn btn-primary w-full !py-3 text-[14px] sm:w-auto';
 
   if (enrolled) {
     return (
