@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { getDb } from '@/lib/repo';
 import { MENTORS, type Mentor, type MentorSlot } from '@/lib/learn/mentors';
+import type { InstitutionAuthMethod } from '@/lib/learn/identity';
 
 /**
  * Ecosystem data layer — roles, mentor profiles, the book library &
@@ -622,6 +623,9 @@ export interface InstitutionDoc {
   color: string;
   emoji: string;
   visibility: 'public' | 'private';
+  /** How this campus authenticates students when they affiliate. */
+  authMethod?: InstitutionAuthMethod;
+  country?: string | null;
   ownerId: string;
   ownerName: string;
   memberCount: number;
@@ -756,6 +760,97 @@ export async function listPublicInstitutions(): Promise<InstitutionDoc[]> {
   }
 }
 
+/** Case-insensitive name/tagline/country search over public campuses. */
+export async function searchInstitutions(query: string, limit = 20): Promise<InstitutionDoc[]> {
+  const q = query.trim();
+  const all = await listPublicInstitutions();
+  if (!q) return all.slice(0, limit);
+  const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+  return all
+    .map((inst) => {
+      const hay = `${inst.name} ${inst.tagline} ${inst.slug} ${inst.country ?? ''}`.toLowerCase();
+      const score = terms.reduce((s, t) => s + (hay.includes(t) ? 1 : 0), 0);
+      return { inst, score };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score || b.inst.memberCount - a.inst.memberCount)
+    .slice(0, limit)
+    .map((x) => x.inst);
+}
+
+/**
+ * Verify a student against an institution's auth method.
+ * Credentials are forwarded to the campus (or accepted in demo mode) —
+ * InTelleX never stores the campus password.
+ */
+export async function verifyInstitutionStudent(opts: {
+  institution: InstitutionDoc;
+  matricule: string;
+  password: string;
+}): Promise<
+  | {
+      ok: true;
+      studentId: string;
+      department?: string;
+      faculty?: string;
+      program?: string;
+      year?: string;
+    }
+  | { ok: false; error: string }
+> {
+  const method = opts.institution.authMethod ?? 'open';
+  const matricule = opts.matricule.trim();
+  if (!matricule) return { ok: false, error: 'matricule_required' };
+
+  if (method === 'open') {
+    return { ok: true, studentId: matricule };
+  }
+
+  if (method === 'matricule' || method === 'enrollment_code') {
+    if (!opts.password || opts.password.length < 3) {
+      return { ok: false, error: 'password_required' };
+    }
+    // Federated verify: if the campus exposes a gateway URL, call it.
+    const gateway = process.env.INSTITUTION_VERIFY_URL;
+    if (gateway) {
+      try {
+        const res = await fetch(gateway, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            institutionSlug: opts.institution.slug,
+            matricule,
+            password: opts.password,
+          }),
+        });
+        if (!res.ok) return { ok: false, error: 'institution_rejected' };
+        const data = await res.json().catch(() => ({}));
+        return {
+          ok: true,
+          studentId: String(data.studentId ?? matricule),
+          department: data.department ? String(data.department) : undefined,
+          faculty: data.faculty ? String(data.faculty) : undefined,
+          program: data.program ? String(data.program) : undefined,
+          year: data.year ? String(data.year) : undefined,
+        };
+      } catch {
+        return { ok: false, error: 'institution_unreachable' };
+      }
+    }
+    // Demo / bootstrap: accept well-formed credentials; academic data stays local.
+    if (matricule.length < 3) return { ok: false, error: 'invalid_matricule' };
+    return {
+      ok: true,
+      studentId: matricule,
+      department: 'General',
+      program: 'Enrolled student',
+      year: '—',
+    };
+  }
+
+  return { ok: false, error: 'auth_method_unsupported' };
+}
+
 export async function getInstitution(slug: string): Promise<InstitutionDoc | null> {
   try {
     await ensureLearnCollections();
@@ -878,21 +973,89 @@ export async function getAdminLearningOverview() {
 
 async function seedIntellexInstitution(db: Awaited<ReturnType<typeof getDb>>) {
   const exists = await db.collection('institutions').findOne({ slug: 'intellex' });
-  if (exists) return;
-  await db.collection('institutions').insertOne({
-    slug: 'intellex',
-    name: 'Intellex',
-    tagline: 'The home campus of the Intellex learning ecosystem',
-    about:
-      'Intellex is the founding institution of the ecosystem — public courses, mentorship, certifications, career programs and communities. Other schools, academies and companies can open their own campus and run it alongside Intellex.',
-    color: '#00b369',
-    emoji: '',
-    visibility: 'public',
-    ownerId: 'system',
-    ownerName: 'Intellex',
-    memberCount: 0,
-    createdAt: new Date(),
-  });
+  if (!exists) {
+    await db.collection('institutions').insertOne({
+      slug: 'intellex',
+      name: 'InTelleX',
+      tagline: 'The home campus of the InTelleX learning ecosystem',
+      about:
+        'InTelleX is the founding institution of the ecosystem — public courses, mentorship, certifications, career programs and communities. Other schools, academies and companies can open their own campus and run it alongside InTelleX.',
+      color: '#00b369',
+      emoji: '',
+      visibility: 'public',
+      authMethod: 'open',
+      country: 'Cameroon',
+      ownerId: 'system',
+      ownerName: 'InTelleX',
+      memberCount: 0,
+      createdAt: new Date(),
+    });
+  } else if (!exists.authMethod) {
+    await db.collection('institutions').updateOne(
+      { slug: 'intellex' },
+      { $set: { authMethod: 'open', country: exists.country ?? 'Cameroon' } },
+    );
+  }
+
+  const demos: Array<{
+    slug: string;
+    name: string;
+    tagline: string;
+    about: string;
+    color: string;
+    authMethod: string;
+    country: string;
+  }> = [
+    {
+      slug: 'university-of-buea',
+      name: 'University of Buea',
+      tagline: 'Knowledge with wisdom',
+      about: 'Public university in Buea, Cameroon — affiliate with your matricule to enter the campus workspace.',
+      color: '#1f5fa8',
+      authMethod: 'matricule',
+      country: 'Cameroon',
+    },
+    {
+      slug: 'saint-monica-university',
+      name: 'Saint Monica University',
+      tagline: 'Faith · Excellence · Service',
+      about: 'Private university campus on the InTelleX network. Students verify with matricule; academic records stay with Saint Monica.',
+      color: '#7c3aed',
+      authMethod: 'matricule',
+      country: 'Cameroon',
+    },
+    {
+      slug: 'seven-advanced-academy',
+      name: 'Seven Advanced Academy',
+      tagline: 'Skills that ship',
+      about: 'Professional academy for builders — join with your student ID to access academy courses and announcements.',
+      color: '#c2570a',
+      authMethod: 'matricule',
+      country: 'Cameroon',
+    },
+  ];
+
+  for (const d of demos) {
+    const found = await db.collection('institutions').findOne({ slug: d.slug });
+    if (found) {
+      if (!found.authMethod) {
+        await db.collection('institutions').updateOne(
+          { slug: d.slug },
+          { $set: { authMethod: d.authMethod, country: d.country } },
+        );
+      }
+      continue;
+    }
+    await db.collection('institutions').insertOne({
+      ...d,
+      emoji: '',
+      visibility: 'public',
+      ownerId: 'system',
+      ownerName: 'InTelleX Network',
+      memberCount: 0,
+      createdAt: new Date(),
+    });
+  }
 }
 
 const SEED_BOOKS: Array<

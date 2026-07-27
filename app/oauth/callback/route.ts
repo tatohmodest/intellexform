@@ -10,12 +10,14 @@ import {
   sessionCookieOptions,
 } from '@/lib/auth/session';
 import { upsertLearnerFromOAuth } from '@/lib/learn/repo';
+import { isOnboardingComplete } from '@/lib/learn/identity';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * GET /oauth/callback?code=...&state=...
  * LoopingBinary redirects here after the learner authorizes Intellex.
+ * First-time identities continue to onboarding; returning users go home.
  */
 export async function GET(req: NextRequest) {
   const url = req.nextUrl;
@@ -49,7 +51,6 @@ export async function GET(req: NextRequest) {
       avatar: learner.avatar ?? profile.picture,
     });
 
-    // The post-login destination was encoded into the state by /api/auth/login.
     let nextPath = '/dashboard';
     const encoded = state.split('.')[1];
     if (encoded) {
@@ -59,6 +60,11 @@ export async function GET(req: NextRequest) {
       } catch {
         /* keep default */
       }
+    }
+
+    // Identity first: unfinished profiles finish onboarding (except platform admin).
+    if (!isOnboardingComplete(learner) && !nextPath.startsWith('/admin')) {
+      nextPath = '/dashboard/onboarding';
     }
 
     const res = NextResponse.redirect(new URL(nextPath, req.url));

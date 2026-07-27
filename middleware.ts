@@ -4,8 +4,7 @@ const SESSION_COOKIE = 'intellex_session';
 
 /**
  * Fast redirect for signed-out visitors hitting the learning dashboard.
- * (Cryptographic verification of the session happens server-side in the
- * dashboard layout and API routes — this is just the front gate.)
+ * Also forwards pathname so the dashboard layout can gate onboarding.
  */
 export function middleware(req: NextRequest) {
   const hasSession = Boolean(req.cookies.get(SESSION_COOKIE)?.value);
@@ -14,7 +13,12 @@ export function middleware(req: NextRequest) {
     login.searchParams.set('next', req.nextUrl.pathname);
     return NextResponse.redirect(login);
   }
-  return NextResponse.next();
+
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set('x-pathname', req.nextUrl.pathname);
+  return NextResponse.next({
+    request: { headers: requestHeaders },
+  });
 }
 
 export const config = {

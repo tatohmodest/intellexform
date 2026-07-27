@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getLearner } from '@/lib/learn/repo';
+import { isOnboardingComplete } from '@/lib/learn/identity';
 import DashboardShell from '@/components/dashboard/DashboardShell';
 
 export const metadata: Metadata = {
@@ -21,6 +23,12 @@ export default async function DashboardLayout({
   if (!session) redirect('/login?next=/dashboard');
 
   const learner = await getLearner(session.uid);
+  const pathname = headers().get('x-pathname') || '';
+  const onOnboarding = pathname.startsWith('/dashboard/onboarding');
+
+  if (!isOnboardingComplete(learner) && !onOnboarding) {
+    redirect('/dashboard/onboarding');
+  }
 
   return (
     <DashboardShell
@@ -31,7 +39,12 @@ export default async function DashboardLayout({
         xp: learner?.xp ?? 0,
         streakCount: learner?.streakCount ?? 0,
         roles: learner?.roles ?? ['student'],
+        primaryIntent: learner?.primaryIntent ?? null,
+        affiliations: learner?.affiliations ?? [],
+        activeContext: learner?.activeContext ?? { kind: 'personal' },
+        onboardingComplete: isOnboardingComplete(learner),
       }}
+      minimal={onOnboarding}
     >
       {children}
     </DashboardShell>

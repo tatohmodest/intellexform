@@ -3,19 +3,25 @@ import { getSessionUser } from '@/lib/auth/getUser';
 import {
   listPublicInstitutions,
   myInstitutionSlugs,
+  searchInstitutions,
   submitInstitutionApplication,
 } from '@/lib/learn/ecosystem';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const user = getSessionUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const q = req.nextUrl.searchParams.get('q') ?? '';
   const [institutions, mine] = await Promise.all([
-    listPublicInstitutions(),
+    q.trim() ? searchInstitutions(q, 24) : listPublicInstitutions(),
     myInstitutionSlugs(user.uid),
   ]);
-  return NextResponse.json({ institutions, memberOf: Array.from(mine) });
+  return NextResponse.json({
+    institutions,
+    memberOf: Array.from(mine),
+    query: q.trim() || null,
+  });
 }
 
 /**

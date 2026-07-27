@@ -16,6 +16,11 @@ export async function GET() {
       avatar: learner?.avatar ?? session.avatar,
       xp: learner?.xp ?? 0,
       streakCount: learner?.streakCount ?? 0,
+      roles: learner?.roles ?? ['student'],
+      onboardingComplete: learner?.onboardingComplete !== false,
+      primaryIntent: learner?.primaryIntent ?? null,
+      affiliations: learner?.affiliations ?? [],
+      activeContext: learner?.activeContext ?? { kind: 'personal' },
     },
   });
 }
