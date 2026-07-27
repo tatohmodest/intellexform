@@ -4,9 +4,27 @@ import HeroCarousel, { type HeroSlide } from '@/components/landing/HeroCarousel'
 
 const HERO_SLIDES: HeroSlide[] = [
   {
+    id: 'eduiaas',
+    image: '/hero_illustration.webp',
+    alt: 'Build your digital campus with InTelleX',
+    headline: (
+      <>
+        Build your{' '}
+        <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>
+          digital campus
+        </em>{' '}
+        with InTelleX.
+      </>
+    ),
+    body: 'Education infrastructure as a service — Core for every institution, then unlock the capabilities you need: learning, live teaching, AI, library, career, and more.',
+    ctaLabel: 'Enter InTelleX',
+    secondaryLabel: 'Assemble a campus',
+    secondaryHref: '/network#capabilities',
+  },
+  {
     id: 'eduos',
-    image: '/mockups/mockup-core-modules.webp',
-    alt: 'InTelleX Core plus modular capabilities',
+    image: '/hero_illustration.webp',
+    alt: 'InTelleX Education Operating System',
     headline: (
       <>
         Not another LMS.{' '}
@@ -15,66 +33,10 @@ const HERO_SLIDES: HeroSlide[] = [
         </em>
       </>
     ),
-    body: 'InTelleX is education infrastructure as a service. Every institution gets the Core. Capabilities unlock based on how you teach, learn, and grow.',
+    body: 'Courses, mentors, campuses, and AI on one trustworthy spine — so you actually finish what you start.',
     ctaLabel: 'Enter InTelleX',
-    secondaryLabel: 'See the OS',
-    secondaryHref: '/#os',
-  },
-  {
-    id: 'campus',
-    image: '/mockups/mockup-phone-campus.webp',
-    alt: 'Campus app on a phone mockup',
-    headline: (
-      <>
-        Build your{' '}
-        <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>
-          digital campus
-        </em>
-        .
-      </>
-    ),
-    body: 'Branded portal, students, teachers, calendar, announcements — then add video classes, AI, library, live teaching, and more when you are ready.',
-    ctaLabel: 'Partner with us',
-    ctaHref: '/network#partner',
-    secondaryLabel: 'Capabilities',
-    secondaryHref: '/#pricing',
-  },
-  {
-    id: 'teach',
-    image: '/mockups/mockup-dashboard-instructor.webp',
-    alt: 'Instructor campus dashboard mockup',
-    headline: (
-      <>
-        Instructors see only what the{' '}
-        <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>
-          campus owns
-        </em>
-        .
-      </>
-    ),
-    body: 'Course studio, assessments, AI assistant, analytics — dashboards assemble from role, permissions, and enabled capabilities. No clutter.',
-    ctaLabel: 'Explore teaching',
-    secondaryLabel: 'How campuses work',
-    secondaryHref: '/#os',
-  },
-  {
-    id: 'ai',
-    image: '/mockups/mockup-phone-student-ai.webp',
-    alt: 'Student AI tutor on a phone mockup',
-    headline: (
-      <>
-        Campus AI that{' '}
-        <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>
-          respects knowledge boundaries
-        </em>
-        .
-      </>
-    ),
-    body: 'Private lecture notes stay private. Public InTelleX resources strengthen every learner. Institutions control what the AI may learn from.',
-    ctaLabel: 'Try AI Tutor',
-    ctaHref: '/signup',
-    secondaryLabel: 'Browse courses',
-    secondaryHref: '/courses',
+    secondaryLabel: 'See what you get',
+    secondaryHref: '/#learn',
   },
   {
     id: 'network',
@@ -88,11 +50,46 @@ const HERO_SLIDES: HeroSlide[] = [
         </em>
       </>
     ),
-    body: 'One learner identity across campuses, mentors, certificates, and careers — without a giant shared academic database.',
+    body: 'Federated campuses, verified institutions, and one learner identity — without a giant shared academic database.',
     ctaLabel: 'Explore the network',
-    ctaHref: '/network',
     secondaryLabel: 'Ecosystem map',
     secondaryHref: '/ecosystem',
+  },
+  {
+    id: 'mentor',
+    image: '/hero_mentor.webp',
+    alt: 'Mentor guiding a student in a live tutoring session',
+    headline: (
+      <>
+        Sometimes you need a{' '}
+        <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>
+          person
+        </em>
+        , not a playlist.
+      </>
+    ),
+    body: 'Live tutoring online or onsite — mentors are approved, accountable, and priced for real guidance.',
+    ctaLabel: 'Get a quote',
+    secondaryLabel: 'Ways to learn',
+    secondaryHref: '/#learn',
+  },
+  {
+    id: 'ai',
+    image: '/hero_ai.webp',
+    alt: 'Student learning with an AI tutor',
+    headline: (
+      <>
+        An AI that knows{' '}
+        <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>
+          InTelleX
+        </em>{' '}
+        — and your campus.
+      </>
+    ),
+    body: 'Institution-scoped knowledge boundaries: private materials stay private. Public resources strengthen the whole network.',
+    ctaLabel: 'Try AI Tutor',
+    secondaryLabel: 'Browse courses',
+    secondaryHref: '/courses',
   },
 ];
 

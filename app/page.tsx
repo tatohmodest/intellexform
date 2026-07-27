@@ -21,8 +21,12 @@ import CourseRow from '@/components/CourseRow';
 import Reveal from '@/components/Reveal';
 import HomeHero from '@/components/landing/HomeHero';
 import HeroCard from '@/components/landing/HeroCard';
-import OsShowcase from '@/components/landing/OsShowcase';
 import { ECOSYSTEM, LOOPING_BINARY } from '@/lib/ecosystem';
+import { MODULE_CATALOG } from '@/lib/eduos/capabilities';
+import {
+  PLATFORM_CONTACT,
+  institutionMailto,
+} from '@/lib/contact';
 
 export const dynamic = 'force-dynamic';
 
@@ -123,7 +127,7 @@ export default async function HomePage() {
           <div className="flex flex-wrap gap-x-8 gap-y-3">
             {[
               { icon: Users, label: '360+ learners across Cameroon & beyond' },
-              { icon: ShieldCheck, label: 'Education OS · Core + capabilities' },
+              { icon: ShieldCheck, label: 'Governance-first Education OS' },
               { icon: BadgeCheck, label: 'Certificate on every completed course' },
               { icon: Globe, label: 'Built by Looping Binary in Douala' },
             ].map((t) => (
@@ -152,12 +156,12 @@ export default async function HomePage() {
           <Reveal className="mb-10 max-w-[680px]">
             <div className="tab mb-3">Why InTelleX</div>
             <h2 className="mb-3 text-[26px] leading-[1.12] sm:text-[34px]">
-              An Education OS for learners, instructors, and institutions
+              Built so learning, campuses, and careers share one trustworthy spine
             </h2>
             <p className="text-[15.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Most platforms sell features. InTelleX sells infrastructure: who is allowed to teach,
-              how a campus is provisioned, how a learner moves from a free tutorial to a certificate
-              to a mentor — and how institutions grow without changing platforms.
+              Most platforms sell features. InTelleX sells follow-through: who is allowed to teach,
+              who owns a campus, how a learner moves from a free tutorial to a certificate to a
+              mentor — and how institutions join a network without surrendering their data.
             </p>
           </Reveal>
 
@@ -184,20 +188,60 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <OsShowcase />
+      {/* Build your digital campus — capabilities */}
+      <section id="capabilities" className="border-t py-16 sm:py-20" style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}>
+        <div className="wrap">
+          <Reveal className="mb-10 max-w-[720px]">
+            <div className="tab mb-3">For institutions</div>
+            <h2 className="mb-3 text-[26px] leading-[1.12] sm:text-[34px]">
+              Build your digital campus
+            </h2>
+            <p className="text-[15.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+              Start with the InTelleX Core — portal, branding, students, teachers, courses,
+              calendar, announcements, and basic analytics. Then activate the capabilities your
+              institution needs. You are not buying a gold plan. You are assembling how you teach,
+              learn, and grow.
+            </p>
+          </Reveal>
 
-      {/* Ecosystem — InTelleX's own doors */}
+          <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {MODULE_CATALOG.map((m) => (
+              <div
+                key={m.id}
+                className="rounded-[18px] border bg-paper p-5"
+                style={{ borderColor: 'var(--line)' }}
+              >
+                <h3 className="font-display text-[17px]">{m.name}</h3>
+                <p className="mt-1.5 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                  {m.tagline}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Link href="/network#capabilities" className="btn btn-primary">
+              See how campuses assemble
+            </Link>
+            <a href={institutionMailto()} className="btn btn-ghost">
+              Contact Platform Team · {PLATFORM_CONTACT.email}
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Ecosystem */}
       <section id="ecosystem" className="border-t py-16 sm:py-20" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
         <div className="wrap">
           <Reveal className="mb-10 max-w-[680px]">
-            <div className="tab mb-3">Also on InTelleX</div>
+            <div className="tab mb-3">The ecosystem</div>
             <h2 className="mb-3 text-[26px] leading-[1.12] sm:text-[34px]">
-              The OS still showcases what InTelleX itself runs
+              One network. Many doors into the same future.
             </h2>
             <p className="text-[15.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Certifications, internships, Junior Dev, books, free tutorials, and the public
-              catalogue — InTelleX is both the infrastructure partners plug into and a learning
-              campus of its own.
+              Certifications, internships, Junior Dev, books, free resources, tutorials, and
+              institution campuses are not side products — they are how InTelleX stays useful after
+              the first lesson ends. Each path has its own page; the home page shows you the map.
             </p>
           </Reveal>
 
