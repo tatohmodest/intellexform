@@ -5,9 +5,19 @@ import type { MentorSlot } from '@/lib/learn/mentors';
 
 export const dynamic = 'force-dynamic';
 
+function isCloudinaryUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return u.protocol === 'https:' && u.hostname.includes('cloudinary.com');
+  } catch {
+    return false;
+  }
+}
+
 /**
  * POST /api/learn/mentor/apply — submit a mentor *application*.
- * Mentorship is not toggled on; Platform/Institution admins approve after review.
+ * Mentorship is not toggled on; Platform admins approve after reviewing
+ * CV, government ID (front/back), and intro video.
  */
 export async function POST(req: NextRequest) {
   const user = getSessionUser();
@@ -33,8 +43,22 @@ export async function POST(req: NextRequest) {
         .map((s: MentorSlot) => ({ dayOffset: s.dayOffset, time: s.time }))
     : [];
 
+  const resumeUrl = String(body.resumeUrl ?? '').trim();
+  const idFrontUrl = String(body.idFrontUrl ?? '').trim();
+  const idBackUrl = String(body.idBackUrl ?? '').trim();
+  const introVideoUrl = String(body.introVideoUrl ?? '').trim();
+  const introVideoBytes = Number(body.introVideoBytes ?? 0);
+
   if (!title || !bio || expertise.length === 0 || slots.length === 0) {
     return NextResponse.json({ error: 'missing_fields' }, { status: 400 });
+  }
+  if (!resumeUrl || !idFrontUrl || !idBackUrl || !introVideoUrl) {
+    return NextResponse.json({ error: 'missing_documents' }, { status: 400 });
+  }
+  if (
+    ![resumeUrl, idFrontUrl, idBackUrl, introVideoUrl].every(isCloudinaryUrl)
+  ) {
+    return NextResponse.json({ error: 'invalid_document_url' }, { status: 400 });
   }
 
   try {
@@ -51,6 +75,11 @@ export async function POST(req: NextRequest) {
       linkedinUrl: String(body.linkedinUrl ?? '').trim() || undefined,
       githubUrl: String(body.githubUrl ?? '').trim() || undefined,
       portfolioUrl: String(body.portfolioUrl ?? '').trim() || undefined,
+      resumeUrl,
+      idFrontUrl,
+      idBackUrl,
+      introVideoUrl,
+      introVideoBytes: Number.isFinite(introVideoBytes) ? introVideoBytes : undefined,
     });
     return NextResponse.json({
       ok: true,
@@ -58,7 +87,7 @@ export async function POST(req: NextRequest) {
       applicationId: result.applicationId,
       status: result.status,
       message:
-        'Mentor application submitted. You will receive mentor access after review and approval.',
+        'Mentor application submitted. You will receive mentor access after InTelleX admin review and approval.',
     });
   } catch (err) {
     console.error('submitMentorApplication failed:', err);

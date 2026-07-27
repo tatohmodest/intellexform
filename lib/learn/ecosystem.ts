@@ -171,9 +171,42 @@ export async function becomeMentor(opts: {
   await grantRole(opts.lbId, 'mentor', opts.name);
 }
 
+export type MentorApplicationStatus =
+  | 'submitted'
+  | 'under_review'
+  | 'approved'
+  | 'rejected';
+
+export interface MentorApplicationDoc {
+  id: string;
+  lbId: string;
+  name: string;
+  email?: string | null;
+  title: string;
+  expertise: string[];
+  bio: string;
+  priceXAF: number;
+  sessionMinutes: number;
+  slots: MentorSlot[];
+  linkedinUrl?: string | null;
+  githubUrl?: string | null;
+  portfolioUrl?: string | null;
+  resumeUrl: string;
+  idFrontUrl: string;
+  idBackUrl: string;
+  introVideoUrl: string;
+  introVideoBytes?: number | null;
+  status: MentorApplicationStatus;
+  reviewNote?: string | null;
+  reviewedAt?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 /**
  * Mentorship is a privilege — applications enter a review queue.
  * Role is NOT granted until a Platform/Institution admin approves.
+ * Applicants must attach CV, ID (front/back), and a short intro video.
  */
 export async function submitMentorApplication(opts: {
   lbId: string;
@@ -188,6 +221,11 @@ export async function submitMentorApplication(opts: {
   linkedinUrl?: string;
   githubUrl?: string;
   portfolioUrl?: string;
+  resumeUrl: string;
+  idFrontUrl: string;
+  idBackUrl: string;
+  introVideoUrl: string;
+  introVideoBytes?: number;
 }): Promise<{ applicationId: string; status: 'submitted' }> {
   await ensureLearnCollections();
   const db = await getDb();
@@ -211,11 +249,108 @@ export async function submitMentorApplication(opts: {
     linkedinUrl: opts.linkedinUrl ?? null,
     githubUrl: opts.githubUrl ?? null,
     portfolioUrl: opts.portfolioUrl ?? null,
+    resumeUrl: opts.resumeUrl,
+    idFrontUrl: opts.idFrontUrl,
+    idBackUrl: opts.idBackUrl,
+    introVideoUrl: opts.introVideoUrl,
+    introVideoBytes: opts.introVideoBytes ?? null,
     status: 'submitted',
+    reviewNote: null,
+    reviewedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
   return { applicationId: res.insertedId.toString(), status: 'submitted' };
+}
+
+export async function getPendingMentorApplication(
+  lbId: string,
+): Promise<MentorApplicationDoc | null> {
+  try {
+    const db = await getDb();
+    const doc = await db.collection('mentor_applications').findOne({
+      lbId,
+      status: { $in: ['submitted', 'under_review'] },
+    });
+    if (!doc) return null;
+    const { _id, ...rest } = doc;
+    return { id: _id.toString(), ...(rest as Omit<MentorApplicationDoc, 'id'>) };
+  } catch {
+    return null;
+  }
+}
+
+/** Approve a mentor application → create mentor profile + grant role. */
+export async function approveMentorApplication(
+  applicationId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await ensureLearnCollections();
+  const db = await getDb();
+  let oid: ObjectId;
+  try {
+    oid = new ObjectId(applicationId);
+  } catch {
+    return { ok: false, error: 'invalid_id' };
+  }
+  const app = await db.collection('mentor_applications').findOne({ _id: oid });
+  if (!app) return { ok: false, error: 'not_found' };
+  if (app.status === 'approved') return { ok: true };
+  if (!['submitted', 'under_review'].includes(String(app.status))) {
+    return { ok: false, error: 'not_pending' };
+  }
+
+  await becomeMentor({
+    lbId: String(app.lbId),
+    name: String(app.name),
+    title: String(app.title),
+    expertise: Array.isArray(app.expertise) ? app.expertise.map(String) : [],
+    bio: String(app.bio ?? ''),
+    priceXAF: Number(app.priceXAF ?? 0),
+    sessionMinutes: Number(app.sessionMinutes ?? 45),
+    slots: Array.isArray(app.slots) ? (app.slots as MentorSlot[]) : [],
+  });
+
+  await db.collection('mentor_applications').updateOne(
+    { _id: oid },
+    {
+      $set: {
+        status: 'approved',
+        reviewedAt: new Date(),
+        updatedAt: new Date(),
+      },
+    },
+  );
+  return { ok: true };
+}
+
+export async function rejectMentorApplication(
+  applicationId: string,
+  note?: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const db = await getDb();
+  let oid: ObjectId;
+  try {
+    oid = new ObjectId(applicationId);
+  } catch {
+    return { ok: false, error: 'invalid_id' };
+  }
+  const app = await db.collection('mentor_applications').findOne({ _id: oid });
+  if (!app) return { ok: false, error: 'not_found' };
+  if (!['submitted', 'under_review'].includes(String(app.status))) {
+    return { ok: false, error: 'not_pending' };
+  }
+  await db.collection('mentor_applications').updateOne(
+    { _id: oid },
+    {
+      $set: {
+        status: 'rejected',
+        reviewNote: (note ?? '').slice(0, 500) || null,
+        reviewedAt: new Date(),
+        updatedAt: new Date(),
+      },
+    },
+  );
+  return { ok: true };
 }
 
 export async function getMentorProfile(lbId: string): Promise<MentorProfileDoc | null> {
