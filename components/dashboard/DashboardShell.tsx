@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard,
   BookOpen,
@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 import type { ActiveContext, Affiliation, CampusBrand, PrimaryIntent } from '@/lib/learn/identity';
+import { campusNavItems, type ModuleId } from '@/lib/eduos/capabilities';
 
 export interface ShellUser {
   name: string;
@@ -66,14 +67,19 @@ function NavLinks({
   isMentor,
   context,
   accent,
+  campusBrand,
+  campusRole,
   onNavigate,
 }: {
   pathname: string;
   isMentor: boolean;
   context?: ActiveContext;
   accent: string;
+  campusBrand?: CampusBrand | null;
+  campusRole?: string;
   onNavigate?: () => void;
 }) {
+  const searchParams = useSearchParams();
   const campusSlug =
     context?.kind === 'institution' ? context.institutionSlug : null;
   const mentorActive =
@@ -81,28 +87,45 @@ function NavLinks({
     !pathname.startsWith('/dashboard/mentorship');
   const activeBg = `${accent}1a`;
   const activeColor = accent;
+  const currentTab = searchParams.get('tab');
 
   if (campusSlug) {
-    const base = `/dashboard/institutions/${campusSlug}`;
+    const modules = (campusBrand?.enabledModules ?? []) as ModuleId[];
+    const items = campusNavItems({
+      slug: campusSlug,
+      role: campusRole || 'student',
+      modules,
+    });
     return (
       <nav className="flex flex-col gap-1">
-        <Link
-          href={base}
-          onClick={onNavigate}
-          className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
-          style={
-            pathname === base || pathname.startsWith(base + '/')
-              ? { background: activeBg, color: activeColor }
-              : { color: 'var(--ink-soft)' }
-          }
-        >
-          <Building2 size={17} />
-          Campus home
-        </Link>
+        {items.map((item) => {
+          const itemTab = item.href.includes('tab=')
+            ? item.href.split('tab=')[1]?.split('&')[0]
+            : null;
+          const active = itemTab
+            ? currentTab === itemTab
+            : !currentTab && pathname.startsWith(`/dashboard/institutions/${campusSlug}`);
+          return (
+            <Link
+              key={item.id}
+              href={item.href}
+              onClick={onNavigate}
+              className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
+              style={
+                active
+                  ? { background: activeBg, color: activeColor }
+                  : { color: 'var(--ink-soft)' }
+              }
+            >
+              <Building2 size={17} />
+              {item.label}
+            </Link>
+          );
+        })}
         <Link
           href="/dashboard"
           onClick={onNavigate}
-          className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
+          className="mt-2 flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
           style={{ color: 'var(--ink-soft)' }}
         >
           <Home size={17} />
@@ -359,6 +382,11 @@ export default function DashboardShell({
   const inCampus =
     user.activeContext?.kind === 'institution' && Boolean(campusBrand);
   const accent = inCampus && campusBrand ? campusBrand.color : '#00b369';
+  const campusRole =
+    inCampus && campusBrand
+      ? user.affiliations?.find((a) => a.institutionSlug === campusBrand.slug)?.role ||
+        'member'
+      : undefined;
 
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -425,6 +453,8 @@ export default function DashboardShell({
         isMentor={Boolean(user.roles?.includes('mentor'))}
         context={user.activeContext}
         accent={accent}
+        campusBrand={campusBrand}
+        campusRole={campusRole}
         onNavigate={() => setMobileOpen(false)}
       />
 
