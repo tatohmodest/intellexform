@@ -28,7 +28,7 @@ export default function Footer() {
             </h5>
             <Link href="/courses" className="mb-2 block text-sm text-paper/80">All courses</Link>
             <Link href="/ecosystem" className="mb-2 block text-sm text-paper/80">Ecosystem</Link>
-            <Link href="/network" className="mb-2 block text-sm text-paper/80">Institution network</Link>
+            <Link href="/enterprise" className="mb-2 block text-sm text-paper/80">For institutions</Link>
             <Link href="/tutorials" className="mb-2 block text-sm text-paper/80">Free tutorials</Link>
             <Link href="/tutorials/computer-architecture" className="mb-2 block text-sm text-paper/80">Computer Architecture tutorial</Link>
             <Link href="/tutorials/html" className="mb-2 block text-sm text-paper/80">HTML tutorial</Link>

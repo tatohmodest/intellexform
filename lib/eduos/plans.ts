@@ -123,6 +123,7 @@ export const COMMERCIAL_PLANS: Record<
     /** Extra modules when pack is custom, or override list for invite form. */
     modules: ModuleId[];
     billing: BillingCycle[];
+    priceLabel: string;
     highlights: string[];
     /** What the onboarder can request on the invite form. */
     selectableModules: ModuleId[];
@@ -134,6 +135,7 @@ export const COMMERCIAL_PLANS: Record<
     capabilityPack: 'foundation',
     modules: [],
     billing: ['monthly', 'yearly'],
+    priceLabel: 'From 45,000 XAF / month',
     highlights: [
       'InTelleX Core',
       'Branded portal',
@@ -148,6 +150,7 @@ export const COMMERCIAL_PLANS: Record<
     capabilityPack: 'custom',
     modules: ['digital_learning', 'assessment', 'intellex_resources'],
     billing: ['monthly', 'yearly'],
+    priceLabel: 'From 95,000 XAF / month',
     highlights: [
       'Everything in Starter',
       'Course Studio',
@@ -162,6 +165,7 @@ export const COMMERCIAL_PLANS: Record<
     capabilityPack: 'professional',
     modules: [...CAPABILITY_PACKS.professional.modules],
     billing: ['monthly', 'yearly'],
+    priceLabel: 'From 180,000 XAF / month',
     highlights: [
       'Everything in Builder',
       'AI Learning',
@@ -176,6 +180,7 @@ export const COMMERCIAL_PLANS: Record<
     capabilityPack: 'enterprise',
     modules: [...CAPABILITY_PACKS.enterprise.modules],
     billing: ['yearly'],
+    priceLabel: 'Custom · yearly',
     highlights: [
       'All capabilities',
       'Live teaching',
@@ -191,6 +196,7 @@ export const COMMERCIAL_PLANS: Record<
     capabilityPack: 'enterprise',
     modules: [...CAPABILITY_PACKS.enterprise.modules],
     billing: ['yearly'],
+    priceLabel: 'Custom · yearly',
     highlights: [
       'Everything in Enterprise',
       'Matricule / SSO-ready auth paths',

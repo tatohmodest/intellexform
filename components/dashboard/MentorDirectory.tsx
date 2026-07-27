@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   CalendarClock,
-  Globe2,
   Loader2,
   Star,
   Video,

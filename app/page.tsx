@@ -3,12 +3,9 @@ import {
   ArrowRight,
   BadgeCheck,
   BookOpen,
-  Building2,
   Compass,
   Gauge,
   Globe,
-  Network,
-  ShieldCheck,
   Users,
   Video,
 } from 'lucide-react';
@@ -57,24 +54,24 @@ const WAYS = [
 
 const VALUE_PILLARS = [
   {
-    icon: Network,
-    title: 'Education infrastructure, not another app',
-    body: 'InTelleX is built as an Education Operating System. Schools plug into a trusted network for identity, discovery, verification, AI, and marketplace - while keeping ownership of their academic data.',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Governance you can feel',
-    body: 'Institutions partner with the InTelleX Platform Team - reviewed, provisioned, and branded. Mentors and instructors are reviewed. Sensitive actions are auditable.',
-  },
-  {
     icon: BookOpen,
-    title: 'Learn in layers that stick',
-    body: 'Free tutorials for fundamentals, a paid catalogue for career skills, live mentors when you need a person, and an AI Tutor grounded in what we actually teach - not generic chat.',
+    title: 'Courses you can finish',
+    body: 'Self-paced paths with progress tracking, checklists when you stall, and a certificate when you complete - not another abandoned playlist.',
   },
   {
-    icon: Building2,
-    title: 'One identity across the ecosystem',
-    body: 'Certificates, internships, Junior Dev, books, and campus memberships orbit the same account. You progress once - and carry that progress through the Looping Binary world.',
+    icon: Users,
+    title: 'Mentors who earned the role',
+    body: 'Live tutoring online or onsite. Mentorship is reviewed before someone can guide learners - so you get real accountability.',
+  },
+  {
+    icon: Compass,
+    title: 'Free tutorials to fundamentals',
+    body: 'World-class beginner-to-pro tracks - HTML, Python, design, marketing, DevOps, and more - so you can start before you pay.',
+  },
+  {
+    icon: BadgeCheck,
+    title: 'One identity across Looping Binary',
+    body: 'Certificates, Junior Dev, books, and your learning progress sit on the same account. Progress once - carry it everywhere.',
   },
 ];
 
@@ -88,16 +85,6 @@ export default async function HomePage() {
 
   const pillars = [
     ...ECOSYSTEM.slice(0, 4),
-    {
-      slug: 'network',
-      href: '/network',
-      tab: 'Network',
-      title: 'Federated institution network',
-      short:
-        'Campuses connect through InTelleX. Schools own grades, students, and exams - the Core owns trust and identity.',
-      image: '/eco_learning.webp',
-      alt: 'Institution network illustration',
-    },
     {
       slug: 'tutorials',
       href: '/tutorials',
@@ -122,8 +109,8 @@ export default async function HomePage() {
           <div className="flex flex-wrap gap-x-8 gap-y-3">
             {[
               { icon: Users, label: '360+ learners across Cameroon & beyond' },
-              { icon: ShieldCheck, label: 'Governance-first Education OS' },
               { icon: BadgeCheck, label: 'Certificate on every completed course' },
+              { icon: BookOpen, label: 'Self-paced, live mentors & AI Tutor' },
               { icon: Globe, label: 'Built by Looping Binary in Douala' },
             ].map((t) => (
               <span
@@ -136,7 +123,7 @@ export default async function HomePage() {
             ))}
           </div>
           <div className="flex flex-wrap gap-2">
-            {['MTN MoMo', 'Orange Money', 'Verified institutions', 'InTelleX Cert'].map((p) => (
+            {['MTN MoMo', 'Orange Money', 'Certificates', 'InTelleX'].map((p) => (
               <span key={p} className="pill">
                 {p}
               </span>
@@ -151,12 +138,11 @@ export default async function HomePage() {
           <Reveal className="mb-10 max-w-[680px]">
             <div className="tab mb-3">Why InTelleX</div>
             <h2 className="mb-3 text-[26px] leading-[1.12] sm:text-[34px]">
-              Built so learning, campuses, and careers share one trustworthy spine
+              Built so you actually finish what you start
             </h2>
             <p className="text-[15.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Most platforms sell features. InTelleX sells follow-through: who is allowed to teach,
-              who owns a campus, how a learner moves from a free tutorial to a certificate to a
-              mentor - and how institutions join a network without surrendering their data.
+              Free tutorials for fundamentals, a paid catalogue for career skills, live mentors when
+              you need a person, and an AI Tutor grounded in what we teach - not generic chat.
             </p>
           </Reveal>
 
@@ -189,12 +175,11 @@ export default async function HomePage() {
           <Reveal className="mb-10 max-w-[680px]">
             <div className="tab mb-3">The ecosystem</div>
             <h2 className="mb-3 text-[26px] leading-[1.12] sm:text-[34px]">
-              One network. Many doors into the same future.
+              One account. Many doors into the same future.
             </h2>
             <p className="text-[15.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Certifications, internships, Junior Dev, books, free resources, tutorials, and
-              institution campuses are not side products - they are how InTelleX stays useful after
-              the first lesson ends. Each path has its own page; the home page shows you the map.
+              Certifications, internships, Junior Dev, books, free resources, and tutorials are how
+              InTelleX stays useful after the first lesson. Each path has its own page - this is the map.
             </p>
           </Reveal>
 
@@ -240,8 +225,8 @@ export default async function HomePage() {
             <Link href="/ecosystem" className="btn btn-primary">
               Full ecosystem map
             </Link>
-            <Link href="/contact?type=institution" className="btn btn-ghost">
-              <Building2 size={15} /> Partner your institution
+            <Link href="/tutorials" className="btn btn-ghost">
+              Free tutorials
             </Link>
           </div>
         </div>
@@ -614,14 +599,14 @@ export default async function HomePage() {
                 className="mb-2 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em]"
                 style={{ color: '#9AFFC8' }}
               >
-                <BadgeCheck size={14} /> Education infrastructure
+                <BadgeCheck size={14} /> Start today
               </div>
               <h2 className="font-display text-[26px] leading-tight sm:text-[32px]">
-                Ready to plug into the network?
+                Ready to learn with InTelleX?
               </h2>
               <p className="mt-2 text-[14.5px] leading-relaxed" style={{ color: 'rgba(251,248,240,0.75)' }}>
-                Learners start with free tutorials today. Institutions partner with our Platform Team -
-                curated, provisioned, never self-serve. Mentors earn their place.
+                Free tutorials now. Full catalogue, certificates, mentors, and AI when you are ready.
+                Schools and companies: see our enterprise campus platform.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -629,11 +614,11 @@ export default async function HomePage() {
                 Sign in with Looping Binary
               </Link>
               <Link
-                href="/contact?type=institution"
+                href="/enterprise"
                 className="btn btn-ghost"
                 style={{ color: 'var(--paper)', borderColor: 'rgba(251,248,240,0.25)' }}
               >
-                Partner your institution
+                For institutions
               </Link>
             </div>
           </div>

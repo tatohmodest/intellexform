@@ -204,6 +204,8 @@ export async function getPlatformOverview() {
 }
 
 export async function listInstitutions(opts?: { q?: string; status?: string }) {
+  await syncMongoInstitutionsIntoPrisma();
+
   const where: Prisma.InstitutionWhereInput = {};
   if (opts?.status && opts.status !== 'all') {
     where.status = opts.status as InstitutionLifecycleStatus;
@@ -243,7 +245,73 @@ export async function listInstitutions(opts?: { q?: string; status?: string }) {
   }));
 }
 
+/**
+ * Import Mongo campus docs into Prisma so Platform Admin can edit every
+ * institution that exists in the learner portal (including seeded InTelleX).
+ */
+export async function syncMongoInstitutionsIntoPrisma() {
+  try {
+    const db = await getDb();
+    const docs = await db.collection('institutions').find({}).toArray();
+    for (const raw of docs) {
+      const d = raw as Record<string, unknown>;
+      const slug = String(d.slug || '').trim();
+      if (!slug) continue;
+      const name = String(d.name || slug).slice(0, 120);
+      const pack = isPack(String(d.capabilityPack || 'foundation'))
+        ? String(d.capabilityPack)
+        : 'foundation';
+      const enabledModules = Array.isArray(d.enabledModules)
+        ? (d.enabledModules as string[])
+        : [];
+      const visibility = d.visibility === 'public' ? 'PUBLIC' : 'PRIVATE';
+      const statusRaw = String(d.status || 'ACTIVE').toUpperCase();
+      const status = (
+        ['PENDING', 'PROVISIONING', 'ACTIVE', 'SUSPENDED', 'REJECTED', 'ARCHIVED'].includes(
+          statusRaw,
+        )
+          ? statusRaw
+          : 'ACTIVE'
+      ) as InstitutionLifecycleStatus;
+
+      await prisma.institution.upsert({
+        where: { slug },
+        create: {
+          slug,
+          name,
+          description: String(d.about || d.tagline || '') || null,
+          primaryColor: String(d.color || '#00b369'),
+          logoUrl: (d.logoUrl as string) || null,
+          coverUrl: (d.coverUrl as string) || null,
+          visibility: visibility as 'PUBLIC' | 'PRIVATE',
+          status,
+          capabilityPack: pack,
+          enabledModules,
+          country: (d.country as string) || null,
+          isPlatformHome: slug === 'intellex',
+          verified: slug === 'intellex',
+        },
+        update: {
+          // Never wipe admin edits - only fill blanks / keep Mongo branding in sync when set
+          name,
+          ...(d.about || d.tagline
+            ? { description: String(d.about || d.tagline || '') }
+            : {}),
+          ...(d.color ? { primaryColor: String(d.color) } : {}),
+          ...(d.logoUrl !== undefined ? { logoUrl: (d.logoUrl as string) || null } : {}),
+          ...(d.coverUrl !== undefined ? { coverUrl: (d.coverUrl as string) || null } : {}),
+          ...(d.capabilityPack ? { capabilityPack: pack } : {}),
+          ...(Array.isArray(d.enabledModules) ? { enabledModules } : {}),
+        },
+      });
+    }
+  } catch (err) {
+    console.error('syncMongoInstitutionsIntoPrisma failed:', err);
+  }
+}
+
 export async function getInstitutionDetail(id: string) {
+  await syncMongoInstitutionsIntoPrisma();
   const inst = await prisma.institution.findUnique({
     where: { id },
     include: {

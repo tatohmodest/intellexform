@@ -39,7 +39,7 @@ export const LEARN_NAV = [
 
 export const EXPLORE_NAV = [
   { href: '/ecosystem', label: 'Ecosystem', desc: 'How InTelleX fits together' },
-  { href: '/network', label: 'Institution network', desc: 'Federated campuses & trust' },
+  { href: '/enterprise', label: 'For institutions', desc: 'Campus plans, pricing & onboarding' },
   { href: '/internships', label: 'Internships', desc: 'Real-world experience' },
   { href: '/books', label: 'Books', desc: 'AI-powered book learning' },
   { href: '/resources', label: 'Free resources', desc: 'Guides and checklists' },

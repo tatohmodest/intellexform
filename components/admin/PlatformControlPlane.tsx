@@ -99,8 +99,12 @@ function Badge({ children, tone = 'neutral' }: { children: React.ReactNode; tone
   );
 }
 
-export default function PlatformControlPlane() {
-  const [section, setSection] = useState<Section>('overview');
+export default function PlatformControlPlane({
+  initialSection = 'overview',
+}: {
+  initialSection?: Section;
+}) {
+  const [section, setSection] = useState<Section>(initialSection);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [overview, setOverview] = useState<Record<string, unknown> | null>(null);
@@ -122,6 +126,11 @@ export default function PlatformControlPlane() {
     country: '',
   });
   const [purgeMsg, setPurgeMsg] = useState('');
+
+  useEffect(() => {
+    setSection(initialSection);
+    setSelectedInst(null);
+  }, [initialSection]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -220,10 +229,12 @@ export default function PlatformControlPlane() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl font-bold">Platform control plane</h2>
+          <h2 className="font-display text-2xl font-bold">
+            {NAV.find((n) => n.id === section)?.label || 'Platform'}
+          </h2>
           <p className="mt-1 max-w-2xl text-sm" style={{ color: 'var(--ink-soft)' }}>
-            Supabase / Prisma source of truth: institutions, capability packs, personnel bans,
-            withdrawals vs wallet earnings, federation connections, and audit.
+            Supabase / Prisma control plane. Institutions from Mongo are synced here so you can edit
+            every campus - including InTelleX.
           </p>
         </div>
         <button type="button" onClick={load} className="btn btn-ghost" disabled={loading || busy}>
@@ -231,22 +242,13 @@ export default function PlatformControlPlane() {
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-2 border-b pb-2" style={{ borderColor: 'var(--line)' }}>
+      {/* Keep in-page section switcher only when used as embedded overview hub */}
+      {initialSection === 'overview' && section === 'overview' ? null : null}
+
+      <div className="hidden">
         {NAV.map((n) => (
-          <button
-            key={n.id}
-            type="button"
-            onClick={() => {
-              setSelectedInst(null);
-              setSection(n.id);
-            }}
-            className="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium"
-            style={{
-              background: section === n.id ? 'rgba(0,179,105,0.12)' : 'transparent',
-              color: section === n.id ? 'var(--green-deep)' : 'var(--ink-soft)',
-            }}
-          >
-            <n.icon size={14} /> {n.label}
+          <button key={n.id} type="button" onClick={() => setSection(n.id)}>
+            {n.label}
           </button>
         ))}
       </div>
@@ -330,36 +332,43 @@ export default function PlatformControlPlane() {
             </div>
             <div className="space-y-2">
               {institutions.map((inst) => (
-                <button
+                <div
                   key={String(inst.id)}
-                  type="button"
-                  onClick={() => openInstitution(String(inst.id))}
-                  className="w-full rounded-2xl border p-4 text-left transition"
+                  className="w-full rounded-2xl border p-4 text-left"
                   style={{
                     borderColor: selectedInst?.id === inst.id ? 'var(--green-deep)' : 'var(--line)',
                     background: 'var(--paper-dim)',
                   }}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="font-semibold">{String(inst.name)}</p>
-                      <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>
-                        /{String(inst.slug)} · pack {String(inst.capabilityPack)}
-                      </p>
+                  <button type="button" className="w-full text-left" onClick={() => openInstitution(String(inst.id))}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-semibold">{String(inst.name)}</p>
+                        <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>
+                          /{String(inst.slug)} · pack {String(inst.capabilityPack)}
+                        </p>
+                      </div>
+                      <Badge
+                        tone={
+                          inst.status === 'ACTIVE' ? 'ok' : inst.status === 'SUSPENDED' ? 'bad' : 'warn'
+                        }
+                      >
+                        {String(inst.status)}
+                      </Badge>
                     </div>
-                    <Badge
-                      tone={
-                        inst.status === 'ACTIVE' ? 'ok' : inst.status === 'SUSPENDED' ? 'bad' : 'warn'
-                      }
-                    >
-                      {String(inst.status)}
-                    </Badge>
-                  </div>
-                  <p className="mt-2 text-xs" style={{ color: 'var(--ink-soft)' }}>
-                    {(inst._count as { memberships?: number; courses?: number })?.memberships ?? 0} members ·{' '}
-                    {(inst._count as { courses?: number })?.courses ?? 0} courses
-                  </p>
-                </button>
+                    <p className="mt-2 text-xs" style={{ color: 'var(--ink-soft)' }}>
+                      {(inst._count as { memberships?: number; courses?: number })?.memberships ?? 0} members ·{' '}
+                      {(inst._count as { courses?: number })?.courses ?? 0} courses
+                    </p>
+                  </button>
+                  <a
+                    href={`/admin/institutions/${String(inst.id)}`}
+                    className="mt-3 inline-block text-[12.5px] font-semibold"
+                    style={{ color: 'var(--green-deep)' }}
+                  >
+                    Open full editor →
+                  </a>
+                </div>
               ))}
               {!loading && institutions.length === 0 ? (
                 <p className="py-8 text-center text-sm" style={{ color: 'var(--ink-soft)' }}>

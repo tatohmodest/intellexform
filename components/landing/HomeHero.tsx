@@ -2,42 +2,44 @@
 
 import HeroCarousel, { type HeroSlide } from '@/components/landing/HeroCarousel';
 
+/** Learner-first hero - institution / EduOS marketing lives on /enterprise. */
 const HERO_SLIDES: HeroSlide[] = [
   {
-    id: 'eduos',
+    id: 'learn',
     image: '/hero_illustration.webp',
-    alt: 'InTelleX Education Operating System',
+    alt: 'InTelleX learning platform',
     headline: (
       <>
-        Not another LMS.{' '}
+        Learn skills that{' '}
         <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>
-          An Education OS.
+          actually ship.
         </em>
       </>
     ),
-    body: 'Courses, mentors, campuses, and AI on one trustworthy spine - so you actually finish what you start.',
-    ctaLabel: 'Enter InTelleX',
+    body: 'Self-paced courses, live mentors, and an AI Tutor on one account - so you finish what you start.',
+    ctaLabel: 'Start learning',
     ctaHref: '/signup',
-    secondaryLabel: 'See what you get',
-    secondaryHref: '/#learn',
+    secondaryLabel: 'Browse courses',
+    secondaryHref: '/courses',
   },
   {
-    id: 'network',
+    id: 'career',
     image: '/hero_career.webp',
-    alt: 'Federated institution network',
+    alt: 'Career-ready skills',
     headline: (
       <>
-        Schools own their data.{' '}
+        From first lesson to{' '}
         <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>
-          InTelleX owns the network.
+          certificate
         </em>
+        .
       </>
     ),
-    body: 'Federated campuses, verified institutions, and one learner identity - without a giant shared academic database.',
-    ctaLabel: 'Explore the network',
-    ctaHref: '/network',
-    secondaryLabel: 'Contact us',
-    secondaryHref: '/contact?type=institution',
+    body: 'Web, data, design, marketing, and more - priced for students, built to help you complete.',
+    ctaLabel: 'See pricing',
+    ctaHref: '/#pricing',
+    secondaryLabel: 'Free tutorials',
+    secondaryHref: '/tutorials',
   },
   {
     id: 'mentor',
@@ -71,7 +73,7 @@ const HERO_SLIDES: HeroSlide[] = [
         - and your next lesson.
       </>
     ),
-    body: 'Grounded in free tutorials, the live catalogue, and how this Education OS actually works.',
+    body: 'Grounded in free tutorials and the live catalogue - ask about a skill, a course, or what to learn next.',
     ctaLabel: 'Try AI Tutor',
     ctaHref: '/signup',
     secondaryLabel: 'Browse courses',
