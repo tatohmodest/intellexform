@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Loader2, Pencil, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react';
 import { Course } from '@/lib/types';
 import { formatXAF } from '@/lib/format';
+import ImageUploadField from '@/components/media/ImageUploadField';
 
 type AdminCourse = Course & { _id: string };
 
@@ -70,13 +71,15 @@ function Editor({ course, onClose, onSaved }: { course: Partial<AdminCourse>; on
             <Field label="Slug (URL, optional)"><input className={inputCls} value={form.slug ?? ''} onChange={(e) => set('slug', e.target.value)} placeholder="auto from name" /></Field>
           </div>
 
-          <Field label="Image URL">
-            <input className={inputCls} value={form.courseImage ?? ''} onChange={(e) => set('courseImage', e.target.value)} placeholder="https://…" />
-          </Field>
-          {form.courseImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={form.courseImage} alt="preview" className="h-32 w-full rounded-xl border object-cover" style={{ borderColor: 'var(--line)' }} onError={(e) => ((e.target as HTMLImageElement).style.opacity = '0.25')} />
-          ) : null}
+          <ImageUploadField
+            label="Course image"
+            kind="course_image"
+            ownerId={form.slug || form._id || 'course'}
+            value={form.courseImage ?? ''}
+            onChange={(courseImage) => set('courseImage', courseImage)}
+            previewHeight={128}
+            hint="Upload cover art to Cloudinary — we save the generated URL."
+          />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Type / category"><input className={inputCls} value={form.type ?? ''} onChange={(e) => set('type', e.target.value)} /></Field>

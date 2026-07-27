@@ -6,7 +6,10 @@ import Link from 'next/link';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import AdminGate from '@/components/admin/AdminGate';
 import AdminShell from '@/components/admin/AdminShell';
+import ImageUploadField from '@/components/media/ImageUploadField';
+import ColorPickerField from '@/components/media/ColorPickerField';
 import { CAPABILITY_PACKS, MODULE_CATALOG, type CapabilityPack } from '@/lib/eduos/capabilities';
+import { normalizeHexColor } from '@/lib/imageColor';
 
 export default function AdminInstitutionDetailPage() {
   return (
@@ -143,9 +146,6 @@ function InstitutionEditor() {
             ['email', 'Email'],
             ['website', 'Website'],
             ['country', 'Country'],
-            ['primaryColor', 'Primary color'],
-            ['logoUrl', 'Logo URL'],
-            ['coverUrl', 'Cover URL'],
           ] as const
         ).map(([key, label]) => (
           <label key={key} className="block">
@@ -159,6 +159,41 @@ function InstitutionEditor() {
             />
           </label>
         ))}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <ImageUploadField
+            label="Logo"
+            kind="logo"
+            ownerId={id}
+            value={form.logoUrl}
+            autoColor
+            onChange={(logoUrl) => setForm((f) => ({ ...f, logoUrl }))}
+            onColorExtracted={(hex) => setForm((f) => ({ ...f, primaryColor: hex }))}
+            previewHeight={120}
+            hint="Upload a square-ish logo. Cloudinary URL is saved to the DB."
+          />
+          <ImageUploadField
+            label="Cover image"
+            kind="cover"
+            ownerId={id}
+            value={form.coverUrl}
+            autoColor={!form.logoUrl}
+            onChange={(coverUrl) => setForm((f) => ({ ...f, coverUrl }))}
+            onColorExtracted={(hex) => {
+              if (!form.logoUrl) setForm((f) => ({ ...f, primaryColor: hex }));
+            }}
+            previewHeight={120}
+            hint="Wide campus banner. Uploading also suggests a brand color if no logo yet."
+          />
+        </div>
+
+        <ColorPickerField
+          label="Primary color"
+          value={form.primaryColor}
+          onChange={(primaryColor) =>
+            setForm((f) => ({ ...f, primaryColor: normalizeHexColor(primaryColor) }))
+          }
+        />
 
         <label className="block">
           <span className="mb-1 block text-xs font-semibold uppercase" style={{ color: 'var(--ink-soft)' }}>
