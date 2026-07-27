@@ -21,6 +21,14 @@ export const TRACK_LOGOS: Record<string, string> = {
   pygame: '/tech/pygame.png',
   'computer-architecture': '/tech/cpu.svg',
   'digital-marketing': '/tech/marketing.svg',
+  cpp: '/tech/cpp.png',
+  java: '/tech/java.jpg',
+  arduino: '/tech/arduino.png',
+  kubernetes: '/tech/kubernetes.svg',
+  rust: '/tech/rust.jpg',
+  'ruby-on-rails': '/tech/ruby.png',
+  'linux-administration': '/tech/linux.jpg',
+  'bash-scripting': '/tech/bash.jpg',
 };
 
 export function getTrackLogo(slug: string): string | null {

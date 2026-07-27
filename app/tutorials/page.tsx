@@ -9,7 +9,7 @@ import { getCatalogTrack } from '@/lib/learn/catalog';
 export const metadata = {
   title: 'Tutorials - Intellex',
   description:
-    'Free step-by-step tutorials from Intellex. Learn Computer Architecture, HTML, CSS, JavaScript, Next.js, Node.js & Express, NestJS, Python, Go, Django, Flask, PostgreSQL, MongoDB, Flutter, Data Analysis, Digital Marketing, Docker, and Pygame from beginner to pro.',
+    'Free step-by-step tutorials from Intellex. Learn Computer Architecture, HTML, CSS, JavaScript, Next.js, Node.js & Express, NestJS, Python, Go, C++, Java, Rust, Ruby on Rails, Django, Flask, PostgreSQL, MongoDB, Flutter, Data Analysis, Digital Marketing, Docker, Kubernetes, Linux Administration, Bash Scripting, Arduino, and Pygame from beginner to pro.',
 };
 
 export default function TutorialsHubPage() {
@@ -32,7 +32,7 @@ export default function TutorialsHubPage() {
           </h1>
           <p className="max-w-[560px] text-[16px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
             Clean, guided tutorials designed like the guides you love - but built for real skill.
-            Start with Computer Architecture for hardware DNA, then HTML and CSS, JavaScript, Python, or Go. Build backends with Node.js & Express or NestJS, ship apps with Next.js or Flutter, make games with Pygame, use Django or Flask, store data with PostgreSQL or MongoDB, analyze it, grow with Digital Marketing, and containerize with Docker.
+            Start with Computer Architecture for hardware DNA, then HTML and CSS, JavaScript, Python, Go, C++, Java, or Rust. Build backends with Node.js & Express, NestJS, or Ruby on Rails, ship apps with Next.js or Flutter, make games with Pygame, use Django or Flask, store data with PostgreSQL or MongoDB, analyze it, grow with Digital Marketing, containerize with Docker and Kubernetes, administer Linux, automate with Bash, and prototype electronics with Arduino.
           </p>
         </div>
       </section>

@@ -14,10 +14,18 @@ export const TUTORIAL_NAV = [
   { href: '/tutorials/postgresql', label: 'PostgreSQL', tag: 'Database' },
   { href: '/tutorials/mongodb', label: 'MongoDB', tag: 'Database' },
   { href: '/tutorials/docker', label: 'Docker', tag: 'DevOps' },
+  { href: '/tutorials/kubernetes', label: 'Kubernetes', tag: 'DevOps' },
+  { href: '/tutorials/linux-administration', label: 'Linux Administration', tag: 'DevOps' },
+  { href: '/tutorials/bash-scripting', label: 'Bash Scripting', tag: 'DevOps' },
   { href: '/tutorials/flutter', label: 'Flutter', tag: 'Mobile' },
   { href: '/tutorials/data-analysis', label: 'Data Analysis', tag: 'Data' },
   { href: '/tutorials/digital-marketing', label: 'Digital Marketing', tag: 'Marketing' },
   { href: '/tutorials/pygame', label: 'Pygame', tag: 'Game Dev' },
+  { href: '/tutorials/cpp', label: 'C++', tag: 'Systems' },
+  { href: '/tutorials/java', label: 'Java', tag: 'Backend' },
+  { href: '/tutorials/rust', label: 'Rust', tag: 'Systems' },
+  { href: '/tutorials/ruby-on-rails', label: 'Ruby on Rails', tag: 'Full-stack' },
+  { href: '/tutorials/arduino', label: 'Arduino', tag: 'Embedded' },
 ] as const;
 
 export const LEARN_NAV = [

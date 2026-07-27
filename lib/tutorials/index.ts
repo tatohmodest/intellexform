@@ -68,6 +68,46 @@ import {
   getAllComputerArchitectureLessons,
   getComputerArchitectureLessonNav,
 } from './computer-architecture';
+import {
+  cppTutorial,
+  getAllCppLessons,
+  getCppLessonNav,
+} from './cpp';
+import {
+  javaTutorial,
+  getAllJavaLessons,
+  getJavaLessonNav,
+} from './java';
+import {
+  arduinoTutorial,
+  getAllArduinoLessons,
+  getArduinoLessonNav,
+} from './arduino';
+import {
+  kubernetesTutorial,
+  getAllKubernetesLessons,
+  getKubernetesLessonNav,
+} from './kubernetes';
+import {
+  rustTutorial,
+  getAllRustLessons,
+  getRustLessonNav,
+} from './rust';
+import {
+  rubyOnRailsTutorial,
+  getAllRubyOnRailsLessons,
+  getRubyOnRailsLessonNav,
+} from './ruby-on-rails';
+import {
+  linuxAdministrationTutorial,
+  getAllLinuxAdministrationLessons,
+  getLinuxAdministrationLessonNav,
+} from './linux-administration';
+import {
+  bashScriptingTutorial,
+  getAllBashScriptingLessons,
+  getBashScriptingLessonNav,
+} from './bash-scripting';
 import type { TutorialCourse, TutorialLesson } from './types';
 
 export const TUTORIALS: TutorialCourse[] = [
@@ -89,6 +129,14 @@ export const TUTORIALS: TutorialCourse[] = [
   nodejsExpressTutorial,
   nestjsTutorial,
   pygameTutorial,
+  cppTutorial,
+  javaTutorial,
+  arduinoTutorial,
+  kubernetesTutorial,
+  rustTutorial,
+  rubyOnRailsTutorial,
+  linuxAdministrationTutorial,
+  bashScriptingTutorial,
 ];
 
 export function getTutorial(slug: string): TutorialCourse | undefined {
@@ -114,6 +162,14 @@ export function getTutorialLessons(courseSlug: string): TutorialLesson[] {
   if (courseSlug === 'html') return getAllHtmlLessons();
   if (courseSlug === 'css') return getAllCssLessons();
   if (courseSlug === 'computer-architecture') return getAllComputerArchitectureLessons();
+  if (courseSlug === 'cpp') return getAllCppLessons();
+  if (courseSlug === 'java') return getAllJavaLessons();
+  if (courseSlug === 'arduino') return getAllArduinoLessons();
+  if (courseSlug === 'kubernetes') return getAllKubernetesLessons();
+  if (courseSlug === 'rust') return getAllRustLessons();
+  if (courseSlug === 'ruby-on-rails') return getAllRubyOnRailsLessons();
+  if (courseSlug === 'linux-administration') return getAllLinuxAdministrationLessons();
+  if (courseSlug === 'bash-scripting') return getAllBashScriptingLessons();
   return [];
 }
 
@@ -136,6 +192,14 @@ export function getTutorialLessonNav(courseSlug: string, lessonSlug: string) {
   if (courseSlug === 'html') return getHtmlLessonNav(lessonSlug);
   if (courseSlug === 'css') return getCssLessonNav(lessonSlug);
   if (courseSlug === 'computer-architecture') return getComputerArchitectureLessonNav(lessonSlug);
+  if (courseSlug === 'cpp') return getCppLessonNav(lessonSlug);
+  if (courseSlug === 'java') return getJavaLessonNav(lessonSlug);
+  if (courseSlug === 'arduino') return getArduinoLessonNav(lessonSlug);
+  if (courseSlug === 'kubernetes') return getKubernetesLessonNav(lessonSlug);
+  if (courseSlug === 'rust') return getRustLessonNav(lessonSlug);
+  if (courseSlug === 'ruby-on-rails') return getRubyOnRailsLessonNav(lessonSlug);
+  if (courseSlug === 'linux-administration') return getLinuxAdministrationLessonNav(lessonSlug);
+  if (courseSlug === 'bash-scripting') return getBashScriptingLessonNav(lessonSlug);
   return null;
 }
 
@@ -162,4 +226,12 @@ export {
   nodejsExpressTutorial,
   nestjsTutorial,
   pygameTutorial,
+  cppTutorial,
+  javaTutorial,
+  arduinoTutorial,
+  kubernetesTutorial,
+  rustTutorial,
+  rubyOnRailsTutorial,
+  linuxAdministrationTutorial,
+  bashScriptingTutorial,
 };
