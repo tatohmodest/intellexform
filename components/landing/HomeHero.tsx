@@ -38,7 +38,7 @@ const HERO_SLIDES: HeroSlide[] = [
     body: 'Web, data, design, marketing, and more - priced for students, built to help you complete.',
     ctaLabel: 'See pricing',
     ctaHref: '/#pricing',
-    secondaryLabel: 'Free tutorials',
+    secondaryLabel: 'Student tutorials',
     secondaryHref: '/tutorials',
   },
   {
