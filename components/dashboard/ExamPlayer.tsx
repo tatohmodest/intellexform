@@ -125,7 +125,7 @@ export default function ExamPlayer({
         </h2>
         <p className="mt-2 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
           {done.status === 'terminated'
-            ? `Attempt closed (${done.reason || 'policy'}). Leaving the tab or window ends a locked exam — same integrity model used by professional certifiers.`
+            ? `Attempt closed (${done.reason || 'policy'}). Leaving the tab or window ends a locked exam - same integrity model used by professional certifiers.`
             : 'Your answers are saved. MCQ portions may be auto-graded; structural answers await instructor review.'}
         </p>
         {typeof done.score === 'number' && (
@@ -149,7 +149,7 @@ export default function ExamPlayer({
           {assessment.instructions || 'Read each question carefully.'}
         </p>
         <ul className="mt-5 space-y-2 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
-          <li>• One question at a time — you cannot go back.</li>
+          <li>• One question at a time - you cannot go back.</li>
           <li>• Leaving this tab or window terminates the exam immediately.</li>
           {assessment.durationMinutes ? <li>• Timed: {assessment.durationMinutes} minutes.</li> : null}
           <li>• {questions.length} questions.</li>

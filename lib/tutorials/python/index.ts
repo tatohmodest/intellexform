@@ -31,7 +31,7 @@ export const pythonTutorial: TutorialCourse = {
   title: 'Python Tutorial',
   shortTitle: 'Python',
   description:
-    'A complete Python path from absolute beginner to advanced — clear explanations, practical examples, and projects you can actually build.',
+    'A complete Python path from absolute beginner to advanced - clear explanations, practical examples, and projects you can actually build.',
   tagline: 'Python from zero to real projects',
   audience: 'Complete beginners to developers ready for professional Python',
   totalLessons: allLessons.length,
@@ -41,7 +41,7 @@ export const pythonTutorial: TutorialCourse = {
     'Friendly beginner start with real examples',
     'Core Python, OOP, files, APIs, and tooling',
     'Capstone projects you can put in a portfolio',
-    'One clear idea per lesson — no fluff',
+    'One clear idea per lesson - no fluff',
   ],
 };
 

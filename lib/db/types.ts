@@ -1,7 +1,7 @@
 /**
  * Domain notes for the EduOS data model
  *
- * Golden rule — see lib/eduos/governance.ts and docs/EDUOS_ARCHITECTURE.md
+ * Golden rule - see lib/eduos/governance.ts and docs/EDUOS_ARCHITECTURE.md
  *
  * Books vs media recommendations
  * - Book: tutor/instructor authored digital books with optional XAF price.
@@ -12,7 +12,7 @@
  * - Layer 1 (Core): identity, institution registry, applications, API gateway.
  * - Layer 2 (Institution): academic records owned by each campus.
  * - User is a global identity; InstitutionMembership attaches roles per campus.
- * - Institutions are never self-created — application → review → provision.
+ * - Institutions are never self-created - application → review → provision.
  * - Switching campuses is modeled by User.currentInstitutionId.
  */
 

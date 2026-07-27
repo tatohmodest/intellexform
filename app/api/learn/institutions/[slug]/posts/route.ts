@@ -8,7 +8,7 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-/** POST — owners publish an announcement to their campus news feed. */
+/** POST - owners publish an announcement to their campus news feed. */
 export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
   const user = getSessionUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });

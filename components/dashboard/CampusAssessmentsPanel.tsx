@@ -37,7 +37,7 @@ export default function CampusAssessmentsPanel({
           <p className="mt-1 max-w-lg text-[14px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
             {isStaff
               ? 'Create locked exams and Drive-based assignments. Grade submissions with documents opened inside InTelleX.'
-              : 'Submit Drive/Docs links for assignments. Exams are one question at a time — leaving the tab ends the attempt.'}
+              : 'Submit Drive/Docs links for assignments. Exams are one question at a time - leaving the tab ends the attempt.'}
           </p>
         </div>
         {isStaff && (

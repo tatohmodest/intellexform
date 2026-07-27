@@ -61,7 +61,7 @@ export function signMentorUpload(opts: {
     public_id: publicId,
   };
 
-  // Cap stored video: 1280×720, auto quality, ~800kbps — keeps intro clips small.
+  // Cap stored video: 1280×720, auto quality, ~800kbps - keeps intro clips small.
   let eager: string | undefined;
   if (opts.kind === 'intro_video') {
     eager = 'c_limit,w_1280,h_720,q_auto:good,br_800k,f_mp4';

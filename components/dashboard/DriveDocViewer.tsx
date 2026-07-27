@@ -1,6 +1,6 @@
 'use client';
 
-/** In-dashboard Google Drive / Docs / Sheets / Slides viewer — no leave to Drive. */
+/** In-dashboard Google Drive / Docs / Sheets / Slides viewer - no leave to Drive. */
 export default function DriveDocViewer({
   embedUrl,
   title = 'Document',

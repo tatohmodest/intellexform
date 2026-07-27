@@ -63,7 +63,7 @@ export default function CampusCoursesPanel({
       {courses.length === 0 ? (
         <div className="border border-dashed py-10 text-center" style={{ borderColor: 'var(--line)' }}>
           <p className="text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-            {isStaff ? 'No courses yet — open Course Studio to create one.' : 'No published courses yet.'}
+            {isStaff ? 'No courses yet - open Course Studio to create one.' : 'No published courses yet.'}
           </p>
         </div>
       ) : (

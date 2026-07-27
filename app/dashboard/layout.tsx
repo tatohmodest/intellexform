@@ -9,9 +9,9 @@ import { resolveCampusModules, type ModuleId } from '@/lib/eduos/capabilities';
 import DashboardShell from '@/components/dashboard/DashboardShell';
 
 export const metadata: Metadata = {
-  title: 'Learning Dashboard — Intellex',
+  title: 'Learning Dashboard - Intellex',
   description:
-    'Your Intellex learning dashboard — courses, mentorship, live sessions and AI tutoring.',
+    'Your Intellex learning dashboard - courses, mentorship, live sessions and AI tutoring.',
 };
 
 export const dynamic = 'force-dynamic';

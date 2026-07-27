@@ -150,7 +150,7 @@ export default function TutorialSidebar({
 
   return (
     <>
-      {/* Desktop sidebar — only participates in lg+ row layout */}
+      {/* Desktop sidebar - only participates in lg+ row layout */}
       <aside
         className="sticky top-[57px] hidden h-[calc(100vh-57px)] w-[280px] shrink-0 border-r xl:w-[300px] lg:block"
         style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}
@@ -158,7 +158,7 @@ export default function TutorialSidebar({
         {nav}
       </aside>
 
-      {/* Mobile curriculum bar — full width above content in the column layout */}
+      {/* Mobile curriculum bar - full width above content in the column layout */}
       <div
         className="sticky top-[57px] z-30 w-full border-b px-3 py-2.5 sm:px-4 lg:hidden"
         style={{

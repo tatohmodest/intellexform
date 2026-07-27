@@ -29,7 +29,7 @@ const WAYS = [
   {
     id: 'self-paced',
     title: 'Self-paced courses',
-    body: 'Recorded courses you work through on your own time — progress monitored, checklists when you stall, and a certificate when you finish. Mobile-friendly so you can learn between classes, work, or traffic.',
+    body: 'Recorded courses you work through on your own time - progress monitored, checklists when you stall, and a certificate when you finish. Mobile-friendly so you can learn between classes, work, or traffic.',
     tag: 'Included in every subscription',
     image: '/way_selfpaced.webp',
     alt: 'Learner watching a self-paced course on a laptop',
@@ -38,7 +38,7 @@ const WAYS = [
   {
     id: 'live',
     title: 'Live mentoring',
-    body: 'A real mentor teaches you directly — online from anywhere, or onsite at a location you choose. Mentorship is approved, not toggled on: people earn the right to guide learners.',
+    body: 'A real mentor teaches you directly - online from anywhere, or onsite at a location you choose. Mentorship is approved, not toggled on: people earn the right to guide learners.',
     tag: 'Priced per mentor & format',
     image: '/way_live.webp',
     alt: 'Mentor teaching a student in a live session',
@@ -47,7 +47,7 @@ const WAYS = [
   {
     id: 'ai',
     title: 'AI Tutor',
-    body: 'An AI that knows InTelleX — free tutorials, the live Mongo catalogue, how campuses join the network, and how to learn step by step. Ask it about a skill, a course, or the platform itself.',
+    body: 'An AI that knows InTelleX - free tutorials, the live Mongo catalogue, how campuses join the network, and how to learn step by step. Ask it about a skill, a course, or the platform itself.',
     tag: 'Included with your account',
     image: '/way_ai.webp',
     alt: 'Student learning with an AI tutor',
@@ -59,22 +59,22 @@ const VALUE_PILLARS = [
   {
     icon: Network,
     title: 'Education infrastructure, not another app',
-    body: 'InTelleX is built as an Education Operating System. Schools plug into a trusted network for identity, discovery, verification, AI, and marketplace — while keeping ownership of their academic data.',
+    body: 'InTelleX is built as an Education Operating System. Schools plug into a trusted network for identity, discovery, verification, AI, and marketplace - while keeping ownership of their academic data.',
   },
   {
     icon: ShieldCheck,
     title: 'Governance you can feel',
-    body: 'Institutions partner with the InTelleX Platform Team — reviewed, provisioned, and branded. Mentors and instructors are reviewed. Sensitive actions are auditable.',
+    body: 'Institutions partner with the InTelleX Platform Team - reviewed, provisioned, and branded. Mentors and instructors are reviewed. Sensitive actions are auditable.',
   },
   {
     icon: BookOpen,
     title: 'Learn in layers that stick',
-    body: 'Free tutorials for fundamentals, a paid catalogue for career skills, live mentors when you need a person, and an AI Tutor grounded in what we actually teach — not generic chat.',
+    body: 'Free tutorials for fundamentals, a paid catalogue for career skills, live mentors when you need a person, and an AI Tutor grounded in what we actually teach - not generic chat.',
   },
   {
     icon: Building2,
     title: 'One identity across the ecosystem',
-    body: 'Certificates, internships, Junior Dev, books, and campus memberships orbit the same account. You progress once — and carry that progress through the Looping Binary world.',
+    body: 'Certificates, internships, Junior Dev, books, and campus memberships orbit the same account. You progress once - and carry that progress through the Looping Binary world.',
   },
 ];
 
@@ -94,7 +94,7 @@ export default async function HomePage() {
       tab: 'Network',
       title: 'Federated institution network',
       short:
-        'Campuses connect through InTelleX. Schools own grades, students, and exams — the Core owns trust and identity.',
+        'Campuses connect through InTelleX. Schools own grades, students, and exams - the Core owns trust and identity.',
       image: '/eco_learning.webp',
       alt: 'Institution network illustration',
     },
@@ -104,7 +104,7 @@ export default async function HomePage() {
       tab: 'Tutorials',
       title: 'Free world-class tutorials',
       short:
-        'Twenty-six beginner-to-pro tracks — from HTML and Python to Kubernetes, C++, Rust, Linux, and Arduino.',
+        'Twenty-six beginner-to-pro tracks - from HTML and Python to Kubernetes, C++, Rust, Linux, and Arduino.',
       image: '/eco_resources.webp',
       alt: 'Free tutorials illustration',
     },
@@ -156,7 +156,7 @@ export default async function HomePage() {
             <p className="text-[15.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
               Most platforms sell features. InTelleX sells follow-through: who is allowed to teach,
               who owns a campus, how a learner moves from a free tutorial to a certificate to a
-              mentor — and how institutions join a network without surrendering their data.
+              mentor - and how institutions join a network without surrendering their data.
             </p>
           </Reveal>
 
@@ -193,7 +193,7 @@ export default async function HomePage() {
             </h2>
             <p className="text-[15.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
               Certifications, internships, Junior Dev, books, free resources, tutorials, and
-              institution campuses are not side products — they are how InTelleX stays useful after
+              institution campuses are not side products - they are how InTelleX stays useful after
               the first lesson ends. Each path has its own page; the home page shows you the map.
             </p>
           </Reveal>
@@ -247,18 +247,18 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Catalogue — fewer rows, still explained */}
+      {/* Catalogue - fewer rows, still explained */}
       <section id="courses" className="py-16 sm:py-20">
         <div className="wrap">
           <div className="mb-10 flex flex-wrap items-end justify-between gap-5">
             <Reveal className="max-w-[640px]">
               <div className="tab mb-3">Catalogue</div>
               <h2 className="mb-3 text-[26px] leading-[1.12] sm:text-[34px]">
-                Skills employers hire for — sampled, not dumped
+                Skills employers hire for - sampled, not dumped
               </h2>
               <p className="text-[15.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
                 The full Mongo catalogue lives on the courses page. Here we only spotlight what
-                learners are viewing right now and a few mentor-led programs — so the home page
+                learners are viewing right now and a few mentor-led programs - so the home page
                 stays readable while still advertising the depth behind InTelleX.
               </p>
             </Reveal>
@@ -269,14 +269,14 @@ export default async function HomePage() {
 
           <CourseRow
             title="Learners are viewing"
-            subtitle="Popular picks from the live InTelleX catalogue — web, data, security, and more."
+            subtitle="Popular picks from the live InTelleX catalogue - web, data, security, and more."
             courses={trending}
             href="/courses"
           />
           {mentorLed.length > 0 && (
             <CourseRow
               title="Live & mentor-led programs"
-              subtitle="Flagship paths with real mentors — online or onsite — when a playlist is not enough."
+              subtitle="Flagship paths with real mentors - online or onsite - when a playlist is not enough."
               courses={mentorLed}
               live
               href="/courses"
@@ -285,7 +285,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Ways to learn — full copy + imagery */}
+      {/* Ways to learn - full copy + imagery */}
       <section id="learn" className="border-t py-16 sm:py-24" style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}>
         <div className="wrap">
           <Reveal className="mb-12 max-w-[640px]">
@@ -294,7 +294,7 @@ export default async function HomePage() {
               Three ways in, one certificate out
             </h2>
             <p className="text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Self-paced courses, live mentors, or the AI Tutor — mix them as you go. One InTelleX
+              Self-paced courses, live mentors, or the AI Tutor - mix them as you go. One InTelleX
               identity carries your progress, your campus memberships, and the proof you finished.
             </p>
           </Reveal>
@@ -321,7 +321,7 @@ export default async function HomePage() {
               {
                 icon: Video,
                 title: 'Watch anywhere',
-                body: 'Mobile-friendly lessons you can pick up between classes, work, or traffic — without losing your place.',
+                body: 'Mobile-friendly lessons you can pick up between classes, work, or traffic - without losing your place.',
               },
               {
                 icon: Gauge,
@@ -355,7 +355,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Pricing — full value articulation restored */}
+      {/* Pricing - full value articulation restored */}
       <section id="pricing" className="py-16 sm:py-24">
         <div className="wrap">
           <Reveal className="mb-12 max-w-[640px]">
@@ -365,7 +365,7 @@ export default async function HomePage() {
             </h2>
             <p className="text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
               We tried higher prices before this. These are the numbers that actually get used in
-              Cameroon — full catalogue access, certificates, and the learning environment that
+              Cameroon - full catalogue access, certificates, and the learning environment that
               helps you finish. Pay with MTN MoMo, Orange Money, or card.
             </p>
           </Reveal>
@@ -374,7 +374,7 @@ export default async function HomePage() {
             <div className="flex flex-col rounded-[20px] border bg-paper p-8" style={{ borderColor: 'var(--line)' }}>
               <h3 className="mb-1.5 font-display text-[19px]">Monthly</h3>
               <div className="mb-5 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                Full access to every self-paced course, in every field — plus certificates and the
+                Full access to every self-paced course, in every field - plus certificates and the
                 learning dashboard.
               </div>
               <div className="mb-5 flex items-baseline gap-1.5">
@@ -415,7 +415,7 @@ export default async function HomePage() {
               </span>
               <h3 className="mb-1.5 font-display text-[19px]">Yearly</h3>
               <div className="mb-5 text-[13.5px] leading-relaxed" style={{ color: 'rgba(251,248,240,0.7)' }}>
-                Same access as monthly — 6% cheaper when you commit for the year. One payment, fewer
+                Same access as monthly - 6% cheaper when you commit for the year. One payment, fewer
                 renewals to track.
               </div>
               <div className="font-mono text-[14px] line-through opacity-55">24,000 XAF</div>
@@ -448,7 +448,7 @@ export default async function HomePage() {
             <div className="flex flex-col rounded-[20px] border bg-paper p-8" style={{ borderColor: 'var(--line)' }}>
               <h3 className="mb-1.5 font-display text-[19px]">Single courses</h3>
               <div className="mb-5 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                No subscription. Buy one course outright when you need a specific skill — and keep
+                No subscription. Buy one course outright when you need a specific skill - and keep
                 lifetime access to that course.
               </div>
               <div className="mb-5 flex items-baseline gap-1.5">
@@ -490,7 +490,7 @@ export default async function HomePage() {
                 <h4 className="mb-1 text-[15px] font-semibold">Pay yearly, not monthly</h4>
                 <p className="text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
                   Commit for a year up front and the price drops from 24,000 to 22,560 XAF
-                  automatically — same catalogue, same certificates, fewer payments to remember.
+                  automatically - same catalogue, same certificates, fewer payments to remember.
                 </p>
               </div>
             </div>
@@ -535,7 +535,7 @@ export default async function HomePage() {
               Sometimes you need a person, not a playlist
             </h2>
             <p className="mb-5 text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Mentors teach live — online or onsite — in the fields we cover. On InTelleX,
+              Mentors teach live - online or onsite - in the fields we cover. On InTelleX,
               mentorship is a privilege: applications are reviewed before someone can guide
               learners or publish in the library.
             </p>
@@ -552,7 +552,7 @@ export default async function HomePage() {
           <div id="ai" className="rounded-[22px] border bg-paper p-7 sm:p-8" style={{ borderColor: 'var(--line)' }}>
             <div className="tab mb-4">AI Tutor</div>
             <h2 className="mb-3 font-display text-[24px] sm:text-[28px]">
-              An AI that knows InTelleX — and your next lesson
+              An AI that knows InTelleX - and your next lesson
             </h2>
             <p className="mb-5 text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
               Ask about Docker, how campuses join the network, or which catalogue course fits your
@@ -577,7 +577,7 @@ export default async function HomePage() {
               </h3>
               <p className="mt-2 max-w-[520px] text-[14.5px] leading-relaxed" style={{ color: 'rgba(251,248,240,0.82)' }}>
                 Builder tier and above includes InTelleX course access. Tournament champions get 30%
-                off their first plan — competition that turns into real learning leverage.
+                off their first plan - competition that turns into real learning leverage.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -620,7 +620,7 @@ export default async function HomePage() {
                 Ready to plug into the network?
               </h2>
               <p className="mt-2 text-[14.5px] leading-relaxed" style={{ color: 'rgba(251,248,240,0.75)' }}>
-                Learners start with free tutorials today. Institutions partner with our Platform Team —
+                Learners start with free tutorials today. Institutions partner with our Platform Team -
                 curated, provisioned, never self-serve. Mentors earn their place.
               </p>
             </div>

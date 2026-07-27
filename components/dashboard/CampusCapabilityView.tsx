@@ -148,7 +148,7 @@ export default function CampusCapabilityView({
           icon={Calendar}
           title="Calendar"
           accent={accent}
-          body={`Core calendar for ${institutionName} — exams, deadlines, and campus dates. Live session blocks appear when Live Teaching is enabled.`}
+          body={`Core calendar for ${institutionName} - exams, deadlines, and campus dates. Live session blocks appear when Live Teaching is enabled.`}
         />
       )}
 
@@ -166,7 +166,7 @@ export default function CampusCapabilityView({
           icon={Radio}
           title="Live classes"
           accent={accent}
-          body="Live Teaching capability: video classes, attendance, whiteboard, and session recordings — only visible because this campus unlocked it."
+          body="Live Teaching capability: video classes, attendance, whiteboard, and session recordings - only visible because this campus unlocked it."
         />
       )}
 
@@ -207,7 +207,7 @@ export default function CampusCapabilityView({
           icon={Sparkles}
           title="InTelleX resources"
           accent={accent}
-          body="Free tutorials and catalogue highlights embedded inside this campus — so learners use InTelleX materials without leaving institutional context."
+          body="Free tutorials and catalogue highlights embedded inside this campus - so learners use InTelleX materials without leaving institutional context."
           cta={
             <Link href="/tutorials" className="text-[13px] font-semibold" style={{ color: accent }}>
               Browse free tutorials →
@@ -230,7 +230,7 @@ export default function CampusCapabilityView({
           icon={Briefcase}
           title="Career center"
           accent={accent}
-          body="CV builder, internships, job board, and portfolios — Career capability for this campus."
+          body="CV builder, internships, job board, and portfolios - Career capability for this campus."
         />
       )}
 

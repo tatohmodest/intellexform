@@ -2,7 +2,7 @@ import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
 import { postgresqlTutorial } from '@/lib/tutorials/postgresql';
 
 export const metadata = {
-  title: 'PostgreSQL Tutorial — Intellex',
+  title: 'PostgreSQL Tutorial - Intellex',
   description: postgresqlTutorial.description,
 };
 

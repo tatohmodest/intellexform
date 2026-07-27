@@ -140,7 +140,7 @@ function writeAppRoutes(slug, cfg) {
 import { ${cfg.varName} } from '@/lib/tutorials/${slug}';
 
 export const metadata = {
-  title: '${cfg.title} — Intellex',
+  title: '${cfg.title} - Intellex',
   description: ${cfg.varName}.description,
 };
 
@@ -165,9 +165,9 @@ export function generateStaticParams() {
 
 export function generateMetadata({ params }: { params: { slug: string } }) {
   const nav = get${cfg.pascal}LessonNav(params.slug);
-  if (!nav) return { title: 'Lesson not found — Intellex' };
+  if (!nav) return { title: 'Lesson not found - Intellex' };
   return {
-    title: \`\${nav.lesson.title} — ${cfg.title} | Intellex\`,
+    title: \`\${nav.lesson.title} - ${cfg.title} | Intellex\`,
     description: nav.lesson.description,
   };
 }
@@ -214,7 +214,7 @@ function buildFromOutline(courseName, lang, outline) {
         ? [h2('Example'), code(item.code, item.codeTitle || 'Example', item.lang || lang)]
         : []),
       ...(item.extra || []),
-      tip(item.tip || 'Type the example yourself — reading alone is not enough.'),
+      tip(item.tip || 'Type the example yourself - reading alone is not enough.'),
       note(item.note || `Keep notes in your ${courseName} lab folder as you go.`),
       ...(item.warning ? [warning(item.warning)] : []),
       ...standardClose(
@@ -295,7 +295,7 @@ const CPP = [
   { slug: 'cpp-atomics', title: 'Atomics Overview', description: 'When lock-free counters make sense.', section: 'Concurrency' },
   { slug: 'cpp-performance', title: 'Performance Mindset', description: 'Measure first: cache locality, copies, and allocations.', section: 'Performance' },
   { slug: 'cpp-optimization-flags', title: 'Compiler Optimization Flags', description: '-O2, -O3, and debug vs release builds.', section: 'Performance' },
-  { slug: 'cpp-undefined-behavior', title: 'Undefined Behavior', description: 'Recognize UB and write defined programs.', section: 'Reliability Advanced', warning: 'UB can appear to work until it does not — never rely on it.' },
+  { slug: 'cpp-undefined-behavior', title: 'Undefined Behavior', description: 'Recognize UB and write defined programs.', section: 'Reliability Advanced', warning: 'UB can appear to work until it does not - never rely on it.' },
   { slug: 'cpp-sanitizers', title: 'Sanitizers (ASan/UBSan)', description: 'Catch memory and UB bugs early.', section: 'Reliability Advanced', code: 'g++ -fsanitize=address,undefined -g main.cpp', lang: 'bash' },
   { slug: 'cpp-design-patterns', title: 'Useful Patterns in C++', description: 'Factory, Strategy, and Observer in practical form.', section: 'Design' },
   { slug: 'cpp-networking-intro', title: 'Networking Intro', description: 'Sockets at a high level for systems apps.', section: 'Systems Apps' },

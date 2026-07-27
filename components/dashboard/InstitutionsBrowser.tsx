@@ -58,7 +58,7 @@ export default function InstitutionsBrowser({
           </p>
           <p className="mt-2 text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
             Enter a campus with your InTelleX identity. Schools are provisioned by the Platform
-            Team — never spun up from a button here.
+            Team - never spun up from a button here.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

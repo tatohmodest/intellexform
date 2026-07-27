@@ -116,7 +116,7 @@ export default function TutorChat() {
           ...m,
           {
             role: 'assistant',
-            content: 'Sorry — I hit a snag answering that. Please try again.',
+            content: 'Sorry - I hit a snag answering that. Please try again.',
           },
         ]);
         return;
@@ -156,7 +156,7 @@ export default function TutorChat() {
             </span>
             <h1 className="font-display text-[26px]">Your AI Tutor</h1>
             <p className="mt-2 max-w-md text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Grounded in the Intellex curriculum. Ask anything — it explains step by
+              Grounded in the Intellex curriculum. Ask anything - it explains step by
               step, links you to the exact lesson, and quizzes you when you&apos;re ready.
             </p>
             <div className="mt-8 grid w-full max-w-lg gap-2 sm:grid-cols-2">

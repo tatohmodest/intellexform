@@ -31,7 +31,7 @@ export const digitalMarketingTutorial: TutorialCourse = {
   title: 'Digital Marketing Tutorial',
   shortTitle: 'Digital Marketing',
   description:
-    'A complete digital marketing path from beginner to pro — strategy, SEO, content, social, email, ads, analytics, and real campaign projects.',
+    'A complete digital marketing path from beginner to pro - strategy, SEO, content, social, email, ads, analytics, and real campaign projects.',
   tagline: 'Attract, convert, and grow',
   audience: 'Beginners, creators, and founders ready to market products and services online',
   totalLessons: allLessons.length,

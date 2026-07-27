@@ -13,7 +13,7 @@ function base(overrides: Partial<Course> & { id: string; name: string }): Course
     originalPrice: 0,
     currentPrice: 0,
     aboutInstructor:
-      'Taught by the Intellex mentor team — working developers and designers from the Looping Binary studio.',
+      'Taught by the Intellex mentor team - working developers and designers from the Looping Binary studio.',
     courseRating: 4.9,
     courseNumberOfVotes: 360,
     courseOrigin: 'Intellex',
@@ -49,7 +49,7 @@ export const PLATFORM_COURSES: Course[] = [
     currentPrice: 9999,
     courseDuration: '9 modules',
     shortDescription:
-      'Go from static pages to full apps with a database and a live backend — the complete path, not a fragment of it.',
+      'Go from static pages to full apps with a database and a live backend - the complete path, not a fragment of it.',
     courseDetails:
       'The complete journey from zero to full-stack developer: master the frontend, the backend, databases, authentication, APIs and deployment while building real, deployable web applications.',
     prerequisites: 'No prior experience required',
@@ -72,7 +72,7 @@ export const PLATFORM_COURSES: Course[] = [
     shortDescription:
       'The most requested starting point on Intellex. Clean fundamentals now, so Data Science or automation later isn\u2019t starting over.',
     courseDetails:
-      'Learn to program with Python the right way — from variables and control flow to functions, OOP, files and automation — a foundation you can take into Data Science, AI or web development.',
+      'Learn to program with Python the right way - from variables and control flow to functions, OOP, files and automation - a foundation you can take into Data Science, AI or web development.',
     whatYouWillLearn: [
       'Python syntax and data types',
       'Control flow, loops and functions',
@@ -120,7 +120,7 @@ export const PLATFORM_COURSES: Course[] = [
     originalPrice: 8999,
     currentPrice: 5999,
     courseDuration: '6 modules',
-    shortDescription: 'The language the entire web runs on — and half of Full-Stack too.',
+    shortDescription: 'The language the entire web runs on - and half of Full-Stack too.',
     courseDetails:
       'Deep-dive into the language that powers the web: from fundamentals to closures, async/await and modern ES6+, with a mini project in every module.',
     whatYouWillLearn: ['Modern ES6+ JavaScript', 'DOM manipulation', 'Async and promises', 'Fetch and APIs'],
@@ -144,7 +144,7 @@ export const PLATFORM_COURSES: Course[] = [
     originalPrice: 12999,
     currentPrice: 8999,
     courseDuration: '8 modules',
-    shortDescription: 'MongoDB, Express, React, Node — one JavaScript stack, start to finish.',
+    shortDescription: 'MongoDB, Express, React, Node - one JavaScript stack, start to finish.',
     courseDetails:
       'Build modern, scalable apps end-to-end with the MERN stack: MongoDB, Express, React and Node.js, plus authentication and deployment.',
     whatYouWillLearn: ['React frontends', 'Express and Node APIs', 'MongoDB and Mongoose', 'JWT authentication'],
@@ -158,7 +158,7 @@ export const PLATFORM_COURSES: Course[] = [
     courseDuration: '8 modules',
     shortDescription: 'Same idea as MERN, swapped to PostgreSQL for relational data.',
     courseDetails:
-      'Build data-driven applications with PostgreSQL, Express, React and Node.js — master relational data modelling and advanced SQL.',
+      'Build data-driven applications with PostgreSQL, Express, React and Node.js - master relational data modelling and advanced SQL.',
     whatYouWillLearn: ['Relational database design', 'Advanced SQL', 'Express and Node APIs', 'React frontends'],
   }),
   base({
@@ -170,7 +170,7 @@ export const PLATFORM_COURSES: Course[] = [
     courseDuration: '9 modules',
     shortDescription: 'Where the models come from, not just how to call an API for one.',
     courseDetails:
-      'Understand machine learning from the ground up: regression, classification, model evaluation and the maths behind the models — not just calling an API.',
+      'Understand machine learning from the ground up: regression, classification, model evaluation and the maths behind the models - not just calling an API.',
     whatYouWillLearn: ['Supervised learning', 'Model evaluation', 'Scikit-learn', 'Practical ML projects'],
   }),
   base({
@@ -194,7 +194,7 @@ export const PLATFORM_COURSES: Course[] = [
     courseDuration: '6 modules',
     shortDescription: 'Get a product in front of the right people, on a real budget.',
     courseDetails:
-      'Learn to grow a product with real, measurable marketing: content, social, ads and analytics — on a budget that makes sense.',
+      'Learn to grow a product with real, measurable marketing: content, social, ads and analytics - on a budget that makes sense.',
     bestSeller: false,
     whatYouWillLearn: ['Content and social strategy', 'Paid ads basics', 'SEO fundamentals', 'Analytics and funnels'],
   }),
@@ -213,7 +213,7 @@ export const PLATFORM_COURSES: Course[] = [
   }),
   base({
     id: 'fullstack-3-weeks-ai',
-    name: 'Special Program — Build a Full-Stack App in 3 Weeks (AI-assisted)',
+    name: 'Special Program - Build a Full-Stack App in 3 Weeks (AI-assisted)',
     type: 'Special Program',
     originalPrice: 200000,
     currentPrice: 150000,
@@ -246,7 +246,7 @@ export const PLATFORM_COURSES: Course[] = [
     currentPrice: 50000,
     originalPrice: 80000,
     courseDuration: '1 weekend · self-paced',
-    shortDescription: 'Launch a real, professional WordPress website — no code — in a single weekend.',
+    shortDescription: 'Launch a real, professional WordPress website - no code - in a single weekend.',
     courseDetails:
       'A hand-picked, guided WordPress track: from hosting and themes to pages, plugins, forms and going live. We monitor your progress and hand you checklists so you actually ship a site, fast.',
     whatYouWillLearn: [
@@ -264,7 +264,7 @@ export const PLATFORM_COURSES: Course[] = [
     currentPrice: 55000,
     originalPrice: 90000,
     courseDuration: '2 weeks · self-paced',
-    shortDescription: 'Get a product in front of the right people — content, ads and analytics, fast.',
+    shortDescription: 'Get a product in front of the right people - content, ads and analytics, fast.',
     courseDetails:
       'A curated, guided path through the digital marketing skills employers and founders want now: content, social, paid ads and measuring what works. Progress-monitored with weekly guides.',
     whatYouWillLearn: [
@@ -276,13 +276,13 @@ export const PLATFORM_COURSES: Course[] = [
   }),
   base({
     id: 'web-fundamentals-guided',
-    name: 'Web Fundamentals — Guided Track',
+    name: 'Web Fundamentals - Guided Track',
     type: 'Web Development',
     selfPaced: true,
     currentPrice: 50000,
     originalPrice: 75000,
     courseDuration: '2 weeks · self-paced',
-    shortDescription: 'HTML, CSS and how the web works — hand-held, so you never get stuck.',
+    shortDescription: 'HTML, CSS and how the web works - hand-held, so you never get stuck.',
     courseDetails:
       'The fastest guided way into web development: build real, responsive pages with HTML and CSS. We pick the exact lessons for you, track your progress and unblock you with guides.',
     whatYouWillLearn: [
@@ -300,9 +300,9 @@ export const PLATFORM_COURSES: Course[] = [
     currentPrice: 50000,
     originalPrice: 70000,
     courseDuration: '10 days · self-paced',
-    shortDescription: 'Design logos, posts and brand kits people take seriously — using Canva.',
+    shortDescription: 'Design logos, posts and brand kits people take seriously - using Canva.',
     courseDetails:
-      'A guided design sprint: master Canva to produce a full brand kit — logo, colours, social templates and marketing graphics. Curated lessons with progress checks and feedback guides.',
+      'A guided design sprint: master Canva to produce a full brand kit - logo, colours, social templates and marketing graphics. Curated lessons with progress checks and feedback guides.',
     whatYouWillLearn: [
       'Canva from basics to pro',
       'Logo & brand identity design',
@@ -318,7 +318,7 @@ export const PLATFORM_COURSES: Course[] = [
     currentPrice: 55000,
     originalPrice: 85000,
     courseDuration: '2 weeks · self-paced',
-    shortDescription: 'The spreadsheet skills every job quietly requires — formulas, charts, dashboards.',
+    shortDescription: 'The spreadsheet skills every job quietly requires - formulas, charts, dashboards.',
     courseDetails:
       'A hand-picked, guided Excel/Google Sheets track that takes you from formulas to pivot tables and dashboards. We monitor progress and give you templates and cheat-sheets.',
     whatYouWillLearn: [
@@ -336,7 +336,7 @@ export const PLATFORM_COURSES: Course[] = [
     currentPrice: 60000,
     originalPrice: 95000,
     courseDuration: '10 days · self-paced',
-    shortDescription: 'Use ChatGPT and AI tools to work 10x faster — with real prompt engineering.',
+    shortDescription: 'Use ChatGPT and AI tools to work 10x faster - with real prompt engineering.',
     courseDetails:
       'A curated, guided crash course on using AI day-to-day: prompt engineering, automating tasks, writing, research and building simple AI workflows. Progress-monitored with prompt playbooks.',
     whatYouWillLearn: [
@@ -372,7 +372,7 @@ export const PLATFORM_COURSES: Course[] = [
     currentPrice: 55000,
     originalPrice: 85000,
     courseDuration: '2 weeks · self-paced',
-    shortDescription: 'Grow and manage brand pages that gain followers and clients — a real, hireable skill.',
+    shortDescription: 'Grow and manage brand pages that gain followers and clients - a real, hireable skill.',
     courseDetails:
       'A curated, guided track to becoming a social media manager: content calendars, growth tactics, scheduling tools and reporting. Progress-monitored with templates and guides.',
     whatYouWillLearn: [

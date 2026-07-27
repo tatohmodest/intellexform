@@ -31,7 +31,7 @@ export const dockerTutorial: TutorialCourse = {
   title: 'Docker Tutorial',
   shortTitle: 'Docker',
   description:
-    'A complete Docker path from beginner to pro — containers, images, Dockerfiles, Compose, networking, security, and real multi-service projects.',
+    'A complete Docker path from beginner to pro - containers, images, Dockerfiles, Compose, networking, security, and real multi-service projects.',
   tagline: 'Build, ship, and run anywhere',
   audience: 'Developers and learners ready to containerize apps and run reliable local/prod stacks',
   totalLessons: allLessons.length,

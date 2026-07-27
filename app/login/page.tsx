@@ -7,7 +7,7 @@ import { isOnboardingComplete } from '@/lib/learn/identity';
 import AuthScreen from '@/components/auth/AuthScreen';
 
 export const metadata: Metadata = {
-  title: 'Sign in — Intellex',
+  title: 'Sign in - Intellex',
   description: 'Sign in to Intellex with your LoopingBinary account.',
 };
 

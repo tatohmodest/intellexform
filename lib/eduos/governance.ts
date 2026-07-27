@@ -1,5 +1,5 @@
 /**
- * InTelleX EduOS — governance constants & golden rule.
+ * InTelleX EduOS - governance constants & golden rule.
  *
  * Golden rule: Nothing important in InTelleX is created by accident,
  * accessed without permission, or managed without accountability.

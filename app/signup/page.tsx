@@ -7,9 +7,9 @@ import { isOnboardingComplete } from '@/lib/learn/identity';
 import AuthScreen from '@/components/auth/AuthScreen';
 
 export const metadata: Metadata = {
-  title: 'Sign up — Intellex',
+  title: 'Sign up - Intellex',
   description:
-    'Create your Intellex account with LoopingBinary — self-paced courses, live mentorship and AI tutoring.',
+    'Create your Intellex account with LoopingBinary - self-paced courses, live mentorship and AI tutoring.',
 };
 
 export const dynamic = 'force-dynamic';

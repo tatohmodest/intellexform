@@ -110,7 +110,7 @@ export default async function BookReaderPage({
             </span>
             <h2 className="font-display text-[20px]">This chapter is part of the paid book</h2>
             <p className="mt-2 max-w-sm text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-              Chapter 1 is free to preview. Get the full book to keep reading — the author
+              Chapter 1 is free to preview. Get the full book to keep reading - the author
               earns directly from every sale.
             </p>
             <div className="mt-6">

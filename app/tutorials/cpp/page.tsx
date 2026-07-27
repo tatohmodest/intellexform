@@ -2,7 +2,7 @@ import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
 import { cppTutorial } from '@/lib/tutorials/cpp';
 
 export const metadata = {
-  title: 'C++ Tutorial — Intellex',
+  title: 'C++ Tutorial - Intellex',
   description: cppTutorial.description,
 };
 

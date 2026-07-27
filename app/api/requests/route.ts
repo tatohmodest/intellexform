@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       whatsapp: String(whatsapp).trim(),
       email: email ? String(email).trim() : '',
       field: topic,
-      plan: plan || (contactType === 'institution' ? 'Campus partnership' : '—'),
+      plan: plan || (contactType === 'institution' ? 'Campus partnership' : '-'),
       message: message || '',
       institutionName: institutionName ? String(institutionName).trim() : '',
       roleTitle: roleTitle ? String(roleTitle).trim() : '',

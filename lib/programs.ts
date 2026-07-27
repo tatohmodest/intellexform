@@ -136,7 +136,7 @@ export const PROGRAMS: Program[] = [
     monthlyXAF: 50000,
     registrationFee: 5000,
     description:
-      "Master Python from the very beginning to advanced concepts. The most beginner-friendly language — and a gateway to web dev, automation, and AI.",
+      "Master Python from the very beginning to advanced concepts. The most beginner-friendly language - and a gateway to web dev, automation, and AI.",
     technologies: ['Python syntax', 'OOP', 'File I/O', 'APIs & Requests', 'Standard library', 'Data structures', 'Algorithms', 'Scripting & Automation'],
     highlights: [
       'Start from absolute zero',
@@ -307,7 +307,7 @@ export const PROGRAMS: Program[] = [
     priceXAF: 35000,
     registrationFee: 5000,
     description:
-      'Design beautiful, professional websites. Master the visual layer of the web — layouts, animations, and mobile-first design.',
+      'Design beautiful, professional websites. Master the visual layer of the web - layouts, animations, and mobile-first design.',
     technologies: ['HTML5 semantic tags', 'CSS3', 'Flexbox', 'CSS Grid', 'Responsive design', 'CSS animations & transitions'],
     highlights: [
       'Pixel-perfect web design',

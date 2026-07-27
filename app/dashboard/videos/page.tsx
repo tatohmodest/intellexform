@@ -19,7 +19,7 @@ export default function VideosPage() {
         <h1 className="font-display text-[30px] leading-tight">Video Tutorials</h1>
         <p className="mt-1 max-w-xl text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
           Hand-picked, world-class free video courses that pair with your Intellex
-          tracks — watch them without ever leaving campus.
+          tracks - watch them without ever leaving campus.
         </p>
       </div>
       <VideoLibrary />

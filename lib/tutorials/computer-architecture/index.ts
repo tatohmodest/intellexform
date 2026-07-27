@@ -31,7 +31,7 @@ export const computerArchitectureTutorial: TutorialCourse = {
   title: 'Computer Architecture Tutorial',
   shortTitle: 'Computer Architecture',
   description:
-    'A complete CSE 203 path — Computer Architecture and Organization from abstraction and ISA through ALU, single-cycle and pipelined datapaths, hazards, caches, virtual memory, DMA, and multicore coherence.',
+    'A complete CSE 203 path - Computer Architecture and Organization from abstraction and ISA through ALU, single-cycle and pipelined datapaths, hazards, caches, virtual memory, DMA, and multicore coherence.',
   tagline: 'Learn how hardware executes',
   audience:
     'CS/engineering students and developers who want to bridge high-level code with processors, memory hierarchies, and parallel machines',

@@ -31,14 +31,14 @@ export const nextjsTutorial: TutorialCourse = {
   title: 'Next.js Tutorial',
   shortTitle: 'Next.js',
   description:
-    'A complete Next.js App Router path from beginner to pro — with every React skill taught inside Next.js when you need it. No separate React course required.',
+    'A complete Next.js App Router path from beginner to pro - with every React skill taught inside Next.js when you need it. No separate React course required.',
   tagline: 'Next.js first. React included.',
   audience: 'JavaScript learners ready to build real apps with Next.js',
   totalLessons: allLessons.length,
   sections: groupIntoSections(allLessons, LEVEL_SUMMARIES),
   tag: 'Full-stack',
   highlights: [
-    'Skip a separate React course — learn React inside Next.js',
+    'Skip a separate React course - learn React inside Next.js',
     'App Router, Server Components, and Server Actions',
     'Auth, database, and deployment patterns',
     'Four capstone mini-projects',

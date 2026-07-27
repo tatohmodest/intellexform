@@ -13,7 +13,7 @@ export async function GET() {
   });
 }
 
-/** POST /api/learn/books — mentors create a new draft book. */
+/** POST /api/learn/books - mentors create a new draft book. */
 export async function POST(req: NextRequest) {
   const user = getSessionUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });

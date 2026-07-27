@@ -27,7 +27,7 @@ export default async function TakeExamPage({ params }: { params: { id: string } 
         <p className="mt-2 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
           Status: {existing.status}
           {typeof existing.score === 'number'
-            ? ` · Score ${existing.score}/${existing.maxScore ?? '—'}`
+            ? ` · Score ${existing.score}/${existing.maxScore ?? '-'}`
             : ''}
         </p>
         {existing.terminatedReason && (

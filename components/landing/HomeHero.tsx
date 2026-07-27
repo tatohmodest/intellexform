@@ -15,7 +15,7 @@ const HERO_SLIDES: HeroSlide[] = [
         </em>
       </>
     ),
-    body: 'Courses, mentors, campuses, and AI on one trustworthy spine — so you actually finish what you start.',
+    body: 'Courses, mentors, campuses, and AI on one trustworthy spine - so you actually finish what you start.',
     ctaLabel: 'Enter InTelleX',
     ctaHref: '/signup',
     secondaryLabel: 'See what you get',
@@ -33,7 +33,7 @@ const HERO_SLIDES: HeroSlide[] = [
         </em>
       </>
     ),
-    body: 'Federated campuses, verified institutions, and one learner identity — without a giant shared academic database.',
+    body: 'Federated campuses, verified institutions, and one learner identity - without a giant shared academic database.',
     ctaLabel: 'Explore the network',
     ctaHref: '/network',
     secondaryLabel: 'Contact us',
@@ -52,7 +52,7 @@ const HERO_SLIDES: HeroSlide[] = [
         , not a playlist.
       </>
     ),
-    body: 'Live tutoring online or onsite — mentors are approved, accountable, and priced for real guidance.',
+    body: 'Live tutoring online or onsite - mentors are approved, accountable, and priced for real guidance.',
     ctaLabel: 'Contact us',
     ctaHref: '/contact?type=mentorship',
     secondaryLabel: 'Ways to learn',
@@ -68,7 +68,7 @@ const HERO_SLIDES: HeroSlide[] = [
         <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>
           InTelleX
         </em>{' '}
-        — and your next lesson.
+        - and your next lesson.
       </>
     ),
     body: 'Grounded in free tutorials, the live catalogue, and how this Education OS actually works.',

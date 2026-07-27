@@ -126,7 +126,7 @@ export default async function MentorStudioPage() {
           <h2 className="mb-4 font-display text-[21px]">Upcoming sessions</h2>
           {upcoming.length === 0 ? (
             <div className="rounded-2xl border border-dashed p-6 text-[13.5px]" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
-              No sessions booked yet. Students find you in the mentorship directory — a
+              No sessions booked yet. Students find you in the mentorship directory - a
               complete profile with clear skills gets booked faster.
             </div>
           ) : (
@@ -176,7 +176,7 @@ export default async function MentorStudioPage() {
             <div className="flex flex-col items-start rounded-2xl border border-dashed p-6" style={{ borderColor: 'var(--line)' }}>
               <p className="mb-4 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
                 Write once, earn forever. Publish books, cheatsheets and guides to the
-                Intellex library — free to grow your audience, or priced in XAF.
+                Intellex library - free to grow your audience, or priced in XAF.
               </p>
               <NewBookButton />
             </div>

@@ -28,7 +28,7 @@ const LEARNER_TOPICS = [
   'Digital Marketing',
   'Live mentorship',
   'Subscription plans',
-  'Not sure yet — help me choose',
+  'Not sure yet - help me choose',
 ];
 
 const INSTITUTION_INTERESTS = [
@@ -42,7 +42,7 @@ const INSTITUTION_INTERESTS = [
   'Demo / discovery call',
 ];
 
-const MENTORSHIP_MODES = ['Live tutoring — online', 'Live tutoring — onsite', 'Not sure yet'];
+const MENTORSHIP_MODES = ['Live tutoring - online', 'Live tutoring - onsite', 'Not sure yet'];
 
 type Intent = ContactType;
 
@@ -151,7 +151,7 @@ export default function ContactWizard() {
           whatsapp,
           email,
           field: field || (isMentorship ? plan || 'Live mentorship' : 'General'),
-          plan: isMentorship ? plan || field : plan || (isInstitution ? 'Campus partnership' : '—'),
+          plan: isMentorship ? plan || field : plan || (isInstitution ? 'Campus partnership' : '-'),
           message,
           institutionName,
           roleTitle,
@@ -216,7 +216,7 @@ export default function ContactWizard() {
           <h3 className="mb-2 font-display text-[24px]">Thanks, {fullName.split(' ')[0]}!</h3>
           <p className="mb-5 max-w-sm text-sm" style={{ color: 'var(--ink-soft)' }}>
             {isInstitution
-              ? 'Your institution inquiry is saved. Continue on WhatsApp with the Platform Team — or we will follow up by email.'
+              ? 'Your institution inquiry is saved. Continue on WhatsApp with the Platform Team - or we will follow up by email.'
               : 'Your message is saved. Continue on WhatsApp if you want a faster reply.'}
           </p>
           <div className="flex flex-wrap justify-center gap-3">
@@ -408,7 +408,7 @@ export default function ContactWizard() {
                         {isInstitution ? institutionName || 'Institution' : contactType}
                       </span>
                       {' · '}
-                      {field || plan || '—'}
+                      {field || plan || '-'}
                     </div>
                   </StepShell>
                 )}

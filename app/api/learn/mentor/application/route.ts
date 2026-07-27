@@ -4,7 +4,7 @@ import { getPendingMentorApplication } from '@/lib/learn/ecosystem';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/learn/mentor/apply — current user's pending mentor application. */
+/** GET /api/learn/mentor/apply - current user's pending mentor application. */
 export async function GET() {
   const user = getSessionUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });

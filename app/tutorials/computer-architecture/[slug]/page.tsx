@@ -12,9 +12,9 @@ export function generateStaticParams() {
 
 export function generateMetadata({ params }: { params: { slug: string } }) {
   const nav = getComputerArchitectureLessonNav(params.slug);
-  if (!nav) return { title: 'Lesson not found — Intellex' };
+  if (!nav) return { title: 'Lesson not found - Intellex' };
   return {
-    title: `${nav.lesson.title} — Computer Architecture Tutorial | Intellex`,
+    title: `${nav.lesson.title} - Computer Architecture Tutorial | Intellex`,
     description: nav.lesson.description,
   };
 }

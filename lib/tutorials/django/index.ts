@@ -31,7 +31,7 @@ export const djangoTutorial: TutorialCourse = {
   title: 'Django Tutorial',
   shortTitle: 'Django',
   description:
-    'A complete Django web framework path from beginner to pro — build real apps with models, views, templates, auth, and deployment. Python web development, taught step by step.',
+    'A complete Django web framework path from beginner to pro - build real apps with models, views, templates, auth, and deployment. Python web development, taught step by step.',
   tagline: 'Python web apps with Django',
   audience: 'Python learners ready to build full web applications',
   totalLessons: allLessons.length,

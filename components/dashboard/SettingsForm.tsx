@@ -90,7 +90,7 @@ export default function SettingsForm({
         <div>
           <h2 className="font-display text-[19px]">Sign out</h2>
           <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-            You&apos;ll stay signed in to LoopingBinary — this only ends your Intellex session.
+            You&apos;ll stay signed in to LoopingBinary - this only ends your Intellex session.
           </p>
         </div>
         <button onClick={logout} className="btn btn-ghost !px-6 !py-2.5 text-[13.5px]">

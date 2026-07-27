@@ -2,7 +2,7 @@ import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
 import { djangoTutorial } from '@/lib/tutorials/django';
 
 export const metadata = {
-  title: 'Django Tutorial — Intellex',
+  title: 'Django Tutorial - Intellex',
   description: djangoTutorial.description,
 };
 

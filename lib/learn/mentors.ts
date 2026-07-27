@@ -51,7 +51,7 @@ export const MENTORS: Mentor[] = [
     name: 'Amara Ndip',
     title: 'Senior Frontend Engineer',
     expertise: ['React', 'JavaScript', 'CSS', 'UI engineering'],
-    bio: 'Specialist in modern frontend — component architecture, animations, and accessible interfaces. Great for portfolio reviews and interview prep.',
+    bio: 'Specialist in modern frontend - component architecture, animations, and accessible interfaces. Great for portfolio reviews and interview prep.',
     rating: 4.8,
     sessionsCompleted: 210,
     languages: ['English'],

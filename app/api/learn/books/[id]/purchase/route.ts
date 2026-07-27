@@ -4,7 +4,7 @@ import { getBook, purchaseBook } from '@/lib/learn/ecosystem';
 
 export const dynamic = 'force-dynamic';
 
-/** POST /api/learn/books/[id]/purchase — add the book to the learner's shelf. */
+/** POST /api/learn/books/[id]/purchase - add the book to the learner's shelf. */
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
   const user = getSessionUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });

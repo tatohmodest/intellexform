@@ -15,7 +15,7 @@ export const advancedLessons: TutorialLesson[] = [
       {"type":"ul","items":["Virtual page number (VPN) + page offset","Page table maps VPN → physical frame (or fault)","Page faults invoke OS to load from disk","Protection bits: read/write/exec/user"]},
       {"type":"code","code":"virtual addr: [ VPN | offset ]\nphys addr:    [ PFN | offset ]  # offset unchanged","title":"Translation structure","language":"text"},
       {"type":"try","text":"For 4 KiB pages, how many offset bits? If VPN has 20 bits, how large is the virtual space?"},
-      {"type":"keypoints","items":["VM translates VPN to physical frame.","Page tables store the mapping + permissions.","Faults are expensive — locality still rules."]},
+      {"type":"keypoints","items":["VM translates VPN to physical frame.","Page tables store the mapping + permissions.","Faults are expensive - locality still rules."]},
     ],
   },
   {
@@ -28,7 +28,7 @@ export const advancedLessons: TutorialLesson[] = [
     minutes: 13,
     content: [
       {"type":"p","text":"A TLB caches recent VPN→PFN translations. Hit: translate in ~1 cycle. Miss: walk tables (hardware or software), then refill."},
-      {"type":"table","headers":["Event","Cost intuition"],"rows":[["TLB hit","Cheap — almost like no VM"],["TLB miss + PT hit in cache","Moderate"],["Page fault to disk","Enormous (ms)"]]},
+      {"type":"table","headers":["Event","Cost intuition"],"rows":[["TLB hit","Cheap - almost like no VM"],["TLB miss + PT hit in cache","Moderate"],["Page fault to disk","Enormous (ms)"]]},
       {"type":"tip","text":"AMAT-style reasoning extends to TLB miss rates too."},
       {"type":"try","text":"Explain why large pages (e.g., 2 MiB) can raise TLB reach."},
       {"type":"keypoints","items":["TLBs make virtual memory practical.","Misses invoke page-table walks.","Page size affects TLB coverage."]},
@@ -37,7 +37,7 @@ export const advancedLessons: TutorialLesson[] = [
   {
     slug: "memory-mapped-io",
     title: "Memory-Mapped I/O",
-    description: "Control devices by reading/writing reserved addresses — unify CPU access paths.",
+    description: "Control devices by reading/writing reserved addresses - unify CPU access paths.",
     level: "advanced",
     section: "Virtual Memory & I/O",
     order: 51,
@@ -92,7 +92,7 @@ export const advancedLessons: TutorialLesson[] = [
     order: 54,
     minutes: 18,
     content: [
-      {"type":"p","text":"Week 9 project: The DMA Controller Simulator — show that bulk transfers need not poll every word in software."},
+      {"type":"p","text":"Week 9 project: The DMA Controller Simulator - show that bulk transfers need not poll every word in software."},
       {"type":"h2","text":"Simulator entities"},
       {"type":"ul","items":["CPU (program & interrupt)","DMA engine","Device buffer","Memory array","Simple bus arbiter"]},
       {"type":"code","code":"dma.program(src=dev, dst=mem+0x1000, n=1024)\ndma.start()\n# CPU continues other work\nonInterrupt:\n  assert memSliceEquals(devBuffer)","title":"Acceptance test sketch","language":"text"},
@@ -120,7 +120,7 @@ export const advancedLessons: TutorialLesson[] = [
   {
     slug: "flynns-taxonomy",
     title: "Flynn's Taxonomy",
-    description: "Classify SISD, SIMD, MISD, and MIMD — and map them to CPUs, GPUs, and clusters.",
+    description: "Classify SISD, SIMD, MISD, and MIMD - and map them to CPUs, GPUs, and clusters.",
     level: "advanced",
     section: "Multicore & Parallelism",
     order: 56,
@@ -141,9 +141,9 @@ export const advancedLessons: TutorialLesson[] = [
     order: 57,
     minutes: 13,
     content: [
-      {"type":"p","text":"SIMD applies one operation to many data lanes. MIMD runs independent instruction streams — multicore CPUs are MIMD with shared memory."},
-      {"type":"ul","items":["DLP — data-level parallelism (SIMD/vectors)","TLP — thread-level parallelism (multicore/multi-thread)","ILP — instruction-level parallelism (pipelines/superscalar)"]},
-      {"type":"tip","text":"Great software uses all three levels carefully — compilers for ILP/SIMD, OS/runtime for threads."},
+      {"type":"p","text":"SIMD applies one operation to many data lanes. MIMD runs independent instruction streams - multicore CPUs are MIMD with shared memory."},
+      {"type":"ul","items":["DLP - data-level parallelism (SIMD/vectors)","TLP - thread-level parallelism (multicore/multi-thread)","ILP - instruction-level parallelism (pipelines/superscalar)"]},
+      {"type":"tip","text":"Great software uses all three levels carefully - compilers for ILP/SIMD, OS/runtime for threads."},
       {"type":"try","text":"Give one workload best for SIMD and one best for MIMD threads."},
       {"type":"keypoints","items":["SIMD = same op, many data.","MIMD = independent workers.","Multicore sharing raises coherence questions next."]},
     ],
@@ -159,9 +159,9 @@ export const advancedLessons: TutorialLesson[] = [
     content: [
       {"type":"p","text":"Private caches multiply the coherence problem: which core owns the latest value of a line?"},
       {"type":"h2","text":"MSI states"},
-      {"type":"ul","items":["M — Modified (dirty, unique)","S — Shared (clean, may be multi-cached)","I — Invalid"]},
+      {"type":"ul","items":["M - Modified (dirty, unique)","S - Shared (clean, may be multi-cached)","I - Invalid"]},
       {"type":"h2","text":"MESI adds Exclusive"},
-      {"type":"p","text":"E — Exclusive clean unique. Allows silent upgrade to Modified without a bus upgrade in many protocols — an optimization over MSI."},
+      {"type":"p","text":"E - Exclusive clean unique. Allows silent upgrade to Modified without a bus upgrade in many protocols - an optimization over MSI."},
       {"type":"warning","text":"Coherence ≠ synchronization. Atomics/locks still needed for higher-level races."},
       {"type":"try","text":"Walk a line from I → E → M → S across two cores with a read/write storyboard."},
       {"type":"keypoints","items":["MSI/MESI track ownership and sharing of cache lines.","Exclusive state reduces upgrade traffic.","Coherence protocols are the multicore memory backbone."]},
@@ -225,7 +225,7 @@ export const advancedLessons: TutorialLesson[] = [
     content: [
       {"type":"p","text":"More cores help only when work, memory bandwidth, and synchronization allow it. Bus contention and lock convoys can erase theoretical speedups."},
       {"type":"h2","text":"Challenge prompts"},
-      {"type":"ol","items":["A workload with P=0.95 hits a memory bandwidth wall at N=16 — why?","False sharing turns a parallel array update pathological — explain","Where does Amdahl still bite a microservice fan-out on one chip?"]},
+      {"type":"ol","items":["A workload with P=0.95 hits a memory bandwidth wall at N=16 - why?","False sharing turns a parallel array update pathological - explain","Where does Amdahl still bite a microservice fan-out on one chip?"]},
       {"type":"try","text":"Write a short “architecture memo” proposing one fix for false sharing (padding, privatization, …)."},
       {"type":"keypoints","items":["Scaling limits are often memory and sync, not ALU count.","False sharing is a coherence performance bug.","Measure before celebrating core counts."]},
     ],
@@ -242,7 +242,7 @@ export const advancedLessons: TutorialLesson[] = [
       {"type":"p","text":"Final exams weave assembly abstractions with hardware metrics. Rehearse under time pressure."},
       {"type":"ul","items":["Disassemble one R and one I instruction from fields","Translate a nested if/loop to assembly","Fill control signals for lw/sw/beq/add","Trace 10 instructions including a store and branch"]},
       {"type":"try","text":"Create a 45-minute mock exam from these bullets and take it cold."},
-      {"type":"keypoints","items":["Finals reward fluent tracing and control tables.","Connect assembly choices to datapath events.","No emulator — paper discipline wins."]},
+      {"type":"keypoints","items":["Finals reward fluent tracing and control tables.","Connect assembly choices to datapath events.","No emulator - paper discipline wins."]},
     ],
   },
   {
@@ -272,11 +272,11 @@ export const advancedLessons: TutorialLesson[] = [
     content: [
       {"type":"p","text":"Close the course by synthesizing every major artifact into one architectural story: a mini processor + memory system you can explain end-to-end."},
       {"type":"h2","text":"Portfolio packet"},
-      {"type":"ol","items":["ISA subset + disassembler notes (Native Translator)","ALU diagram + test vectors (Custom ALU)","Single-cycle blueprint + control table","Pipeline stage monitor frames + hazard detector sample","Cache configurator results + AMAT commentary","DMA or coherence sim highlight","Trade-off essay (time/space/power) — 1 page"]},
+      {"type":"ol","items":["ISA subset + disassembler notes (Native Translator)","ALU diagram + test vectors (Custom ALU)","Single-cycle blueprint + control table","Pipeline stage monitor frames + hazard detector sample","Cache configurator results + AMAT commentary","DMA or coherence sim highlight","Trade-off essay (time/space/power) - 1 page"]},
       {"type":"tip","text":"If you can teach your design to a peer without slides, you own it."},
       {"type":"note","text":"Academic integrity reminder: every mux path, register assignment, and pipeline stage you claim must be understood and justifiable. Copying assembly or circuits without comprehension fails the engineering standard."},
       {"type":"try","text":"Record a 5-minute voice memo walking from an instruction fetch to a cache hit on your design. Listen for gaps."},
-      {"type":"keypoints","items":["Synthesis proves the CLOs, not isolated facts.","Your projects become the Hardware DNA portfolio.","You now reason about how hardware executes — not only how code runs."]},
+      {"type":"keypoints","items":["Synthesis proves the CLOs, not isolated facts.","Your projects become the Hardware DNA portfolio.","You now reason about how hardware executes - not only how code runs."]},
     ],
   },
 ];

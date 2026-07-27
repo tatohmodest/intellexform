@@ -172,25 +172,25 @@ export async function buildCatalogueDigest(limit = 40): Promise<string> {
 const PLATFORM_KNOWLEDGE = `
 You are the official InTelleX AI Tutor on the InTelleX Education Operating System.
 
-FOUNDER & COMPANY (facts — never invent alternatives):
+FOUNDER & COMPANY (facts - never invent alternatives):
 - Founder of InTelleX: Tatoh Modest Wilton.
 - InTelleX was founded on October 21, 2023.
 - Tatoh Modest Wilton is the CEO of Looping Binary.
 - Personal / founder site: https://tatohmodest.vercel.app
 - Looping Binary website: https://loopingbinary.com
-- Looping Binary is the parent company / builder behind InTelleX — a Douala, Cameroon technology company focused on software, learning products, internships, and developer growth (Junior Dev, internships, auth, and the InTelleX education cloud).
+- Looping Binary is the parent company / builder behind InTelleX - a Douala, Cameroon technology company focused on software, learning products, internships, and developer growth (Junior Dev, internships, auth, and the InTelleX education cloud).
 - Related Looping Binary products: Internships (${LOOPING_BINARY.intern}), Junior Dev (${LOOPING_BINARY.juniorDev}), Looping Binary Auth (auth.loopingbinary.com).
 
 About InTelleX:
-- InTelleX is an Education Cloud / federated education network — not just an LMS. Built by Looping Binary in Douala, Cameroon.
+- InTelleX is an Education Cloud / federated education network - not just an LMS. Built by Looping Binary in Douala, Cameroon.
 - Layer 1 (Core): identity, institution registry, verification, applications, API gateway, marketplace, AI routing.
 - Layer 2 (Institutions): each campus owns its academic data (courses, grades, students). Schools connect to the network; they do not dump all records into one mega-database.
 - Golden rule: ${GOLDEN_RULE}
-- Institutions are not self-created — applicants submit an application; Platform Owner/Admin reviews and provisions.
-- Mentors and instructors apply and are approved — privileges are earned.
+- Institutions are not self-created - applicants submit an application; Platform Owner/Admin reviews and provisions.
+- Mentors and instructors apply and are approved - privileges are earned.
 - Learners have one global InTelleX identity across campuses.
 - Ways to learn: self-paced courses (Mongo catalogue + certificates), live mentorship, free tutorials (/tutorials), and this AI Tutor.
-- Ecosystem hub: /ecosystem — certifications, internships, Junior Dev, books, free resources, learning environment, federated network (/network).
+- Ecosystem hub: /ecosystem - certifications, internships, Junior Dev, books, free resources, learning environment, federated network (/network).
 - Pricing (self-paced access): Monthly ~1,999 XAF, Yearly ~22,560 XAF, or single courses from ~4,999 XAF. MTN MoMo and Orange Money supported.
 - Free tutorials cover tracks like HTML, CSS, JavaScript, Next.js, Python, Go, C++, Java, Rust, Rails, Docker, Kubernetes, Linux, Bash, Arduino, Flutter, Django, Flask, NestJS, Node/Express, PostgreSQL, MongoDB, Data Analysis, Digital Marketing, Pygame, Computer Architecture.
 
@@ -214,10 +214,10 @@ export function curriculumTutorAnswer(
     return [
       '**InTelleX** was founded on **October 21, 2023** by **Tatoh Modest Wilton**.',
       '',
-      'Tatoh Modest Wilton is the **CEO of Looping Binary** — the Douala, Cameroon company that builds InTelleX and related learning products.',
+      'Tatoh Modest Wilton is the **CEO of Looping Binary** - the Douala, Cameroon company that builds InTelleX and related learning products.',
       '',
       '**What is Looping Binary?**',
-      'Looping Binary is a technology company focused on software, education products, developer growth, and real-world opportunity — including InTelleX (education cloud), internships, Junior Dev tournaments, and auth for the ecosystem.',
+      'Looping Binary is a technology company focused on software, education products, developer growth, and real-world opportunity - including InTelleX (education cloud), internships, Junior Dev tournaments, and auth for the ecosystem.',
       '',
       'Official links:',
       `- Looping Binary: ${LOOPING_BINARY.home}`,
@@ -227,7 +227,7 @@ export function curriculumTutorAnswer(
       '- InTelleX ecosystem: /ecosystem',
       '- Course catalogue: /courses',
       '',
-      'Ask me what to learn next — I can map a skill to our free tutorials and catalogue courses.',
+      'Ask me what to learn next - I can map a skill to our free tutorials and catalogue courses.',
     ].join('\n');
   }
 
@@ -238,12 +238,12 @@ export function curriculumTutorAnswer(
 
   if (aboutPlatform) {
     return [
-      '**InTelleX** is an Education Operating System — a federated network for schools, academies, and learners.',
+      '**InTelleX** is an Education Operating System - a federated network for schools, academies, and learners.',
       'It was founded **October 21, 2023** by **Tatoh Modest Wilton** (CEO of Looping Binary).',
       '',
       '- **You** get one global identity, self-paced courses, live mentors, free tutorials, and this AI Tutor.',
       '- **Institutions** apply to join; after approval InTelleX provisions their campus. They own their academic data.',
-      '- **Mentors / instructors** apply and are reviewed — teaching is a privilege, not a toggle.',
+      '- **Mentors / instructors** apply and are reviewed - teaching is a privilege, not a toggle.',
       `- **Looping Binary** (${LOOPING_BINARY.home}) builds InTelleX and runs internships & Junior Dev.`,
       '',
       `Golden rule: ${GOLDEN_RULE}`,
@@ -258,7 +258,7 @@ export function curriculumTutorAnswer(
       '- Founder: https://tatohmodest.vercel.app',
       '- Explore the network: /network · Partner a campus: contact the Platform Team (see /network#partner)',
       '',
-      'Ask me about a skill (e.g. "explain Docker volumes") — I will link matching InTelleX courses.',
+      'Ask me about a skill (e.g. "explain Docker volumes") - I will link matching InTelleX courses.',
     ].join('\n');
   }
 
@@ -267,7 +267,7 @@ export function curriculumTutorAnswer(
 
   if (matches.length === 0 && catalogueHits.length === 0) {
     return [
-      "I couldn't pin that to a specific InTelleX lesson yet — but I know our catalogue and tutorials. Try:",
+      "I couldn't pin that to a specific InTelleX lesson yet - but I know our catalogue and tutorials. Try:",
       '',
       '- A technology name ("How do CSS grid columns work?")',
       '- A catalogue course ("What is in the fullstack program?")',
@@ -280,7 +280,7 @@ export function curriculumTutorAnswer(
   if (matches[0]) {
     const top = matches[0];
     parts.push(
-      `From our free curriculum — **${top.lesson.title}** (${top.courseTitle}, ${top.lesson.level}):\n`,
+      `From our free curriculum - **${top.lesson.title}** (${top.courseTitle}, ${top.lesson.level}):\n`,
     );
     parts.push(lessonExcerpt(top.lesson));
     parts.push(
@@ -302,10 +302,10 @@ export function curriculumTutorAnswer(
   }
 
   parts.push(
-    '\nNext in the ecosystem: /ecosystem · Mentors · Internships · Junior Dev — ask if you want a path.',
+    '\nNext in the ecosystem: /ecosystem · Mentors · Internships · Junior Dev - ask if you want a path.',
   );
   parts.push(
-    '\nAsk a follow-up — "explain it simpler", "show an example", or "what should I take next?".',
+    '\nAsk a follow-up - "explain it simpler", "show an example", or "what should I take next?".',
   );
   return parts.join('\n');
 }
@@ -325,16 +325,16 @@ Rules:
 - Prefer small runnable examples.
 - Keep answers focused (under ~350 words unless asked for more).
 - ALWAYS relate skill questions to InTelleX: include 1–3 concrete links to matching free lessons (/dashboard/courses/...) and/or catalogue courses (/courses/...) from the context and catalogue below. Prefer real paths over vague "check our courses".
-- When relevant, point to ecosystem pages (/ecosystem, /network, certifications, internships, Junior Dev) — not random third-party sites.
+- When relevant, point to ecosystem pages (/ecosystem, /network, certifications, internships, Junior Dev) - not random third-party sites.
 - For founder / Looping Binary / company questions: use the FOUNDER facts exactly (Tatoh Modest Wilton; founded October 21, 2023; CEO of Looping Binary; https://loopingbinary.com ; https://tatohmodest.vercel.app).
 - Never invent grades, private institutional data, or access another campus's records. Respect permissions.
-- You know InTelleX deeply — founder, Looping Binary, institutions, governance, ecosystem, pricing, tutorials, and the live catalogue below.
+- You know InTelleX deeply - founder, Looping Binary, institutions, governance, ecosystem, pricing, tutorials, and the live catalogue below.
 
 ${ecosystem}
 
 Free tutorial tracks: ${tutorialList}
 
-Live catalogue sample (Mongo) — use these when recommending courses:
+Live catalogue sample (Mongo) - use these when recommending courses:
 ${digest}`;
 }
 
@@ -373,7 +373,7 @@ export async function llmTutorStream(
         ? [
             {
               role: 'system' as const,
-              content: `Relevant catalogue courses — cite these links in your reply:\n\n${catalogueContext}`,
+              content: `Relevant catalogue courses - cite these links in your reply:\n\n${catalogueContext}`,
             },
           ]
         : []),

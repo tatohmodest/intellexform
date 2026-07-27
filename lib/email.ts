@@ -25,7 +25,7 @@ export async function sendAdminOtpEmail(opts: {
   await transport.sendMail({
     from: `InTelleX Admin <${from}>`,
     to: opts.to,
-    subject: `${opts.code} — InTelleX admin sign-in code`,
+    subject: `${opts.code} - InTelleX admin sign-in code`,
     text: [
       'Your InTelleX admin one-time code is:',
       '',
@@ -33,7 +33,7 @@ export async function sendAdminOtpEmail(opts: {
       '',
       'It expires in 10 minutes. If you did not request this, ignore this email.',
       '',
-      '— InTelleX · Looping Binary',
+      '- InTelleX · Looping Binary',
     ].join('\n'),
     html: `
       <div style="font-family:Georgia,serif;max-width:480px;margin:0 auto;padding:24px;color:#1a1a1a">

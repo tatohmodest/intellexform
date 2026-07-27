@@ -46,7 +46,7 @@ interface RegistrationRow {
 }
 
 function fmt(d: string) {
-  if (!d) return '—';
+  if (!d) return '-';
   return new Date(d).toLocaleDateString('en-GB', {
     day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
@@ -142,7 +142,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
               />
               <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>
                 Only allowlisted InTelleX admins receive a code. If you are already signed in with that
-                account, open /admin again — you skip OTP.
+                account, open /admin again - you skip OTP.
               </p>
             </div>
             {error && (
@@ -327,7 +327,7 @@ function Dashboard({ onLogout, adminEmail }: { onLogout: () => void; adminEmail?
               r.whatsapp,
               r.institutionName ? `${r.field} (${r.institutionName})` : r.field,
               r.plan,
-              r.message || '—',
+              r.message || '-',
               fmt(r.createdAt),
             ])}
             empty={loading ? 'Loading…' : 'No requests yet'}

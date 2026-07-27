@@ -12,9 +12,9 @@ export function generateStaticParams() {
 
 export function generateMetadata({ params }: { params: { slug: string } }) {
   const nav = getFlaskLessonNav(params.slug);
-  if (!nav) return { title: 'Lesson not found — Intellex' };
+  if (!nav) return { title: 'Lesson not found - Intellex' };
   return {
-    title: `${nav.lesson.title} — Flask Tutorial | Intellex`,
+    title: `${nav.lesson.title} - Flask Tutorial | Intellex`,
     description: nav.lesson.description,
   };
 }

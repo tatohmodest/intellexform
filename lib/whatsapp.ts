@@ -25,7 +25,7 @@ export function contactMessage(opts: {
   const type = opts.contactType || 'learner';
   const lines = [
     type === 'institution'
-      ? 'Hello InTelleX Platform Team — institution partnership inquiry from the Contact form.'
+      ? 'Hello InTelleX Platform Team - institution partnership inquiry from the Contact form.'
       : type === 'mentorship'
         ? 'Hello InTelleX! I want a live mentorship quote.'
         : 'Hello InTelleX! I reached out from the Contact form.',
@@ -39,7 +39,7 @@ export function contactMessage(opts: {
   if (opts.country) lines.push(`• Country: ${opts.country}`);
   if (opts.estimatedStudents) lines.push(`• Est. students: ${opts.estimatedStudents}`);
   lines.push(`• Interest: ${opts.field}`);
-  if (opts.plan && opts.plan !== '—') lines.push(`• Detail: ${opts.plan}`);
+  if (opts.plan && opts.plan !== '-') lines.push(`• Detail: ${opts.plan}`);
   if (opts.message && opts.message.trim()) {
     lines.push(`• Note: ${opts.message.trim()}`);
   }

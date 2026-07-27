@@ -2558,7 +2558,7 @@ export const IMPORTED_COURSES: Course[] = [
     instructor: "Scott Barrett",
     courseDetails: "Learn Data Structures & Algorithms in Java with animations that make hard concepts easy, plus dozens of coding exercises.",
     prerequisites: "Java programming knowledge",
-    whatYouWillLearn: ["Solve 100+ coding exercises to ace DSA interviews with confidence.", "Master data structures—linked lists, trees, heaps, graphs—for practical use.", "Analyze time and space complexity to optimize your coding solutions.", "Apply DSA to solve LeetCode challenges and practical coding problems.", "Think like a pro coder to tackle complex problems efficiently.", "Learn algorithms—sorting, recursion, dynamic programming—with clarity.", "Grasp DSA concepts faster with animated examples for deeper insight"],
+    whatYouWillLearn: ["Solve 100+ coding exercises to ace DSA interviews with confidence.", "Master data structures-linked lists, trees, heaps, graphs-for practical use.", "Analyze time and space complexity to optimize your coding solutions.", "Apply DSA to solve LeetCode challenges and practical coding problems.", "Think like a pro coder to tackle complex problems efficiently.", "Learn algorithms-sorting, recursion, dynamic programming-with clarity.", "Grasp DSA concepts faster with animated examples for deeper insight"],
     type: "Development",
     originalPrice: 59.99,
     currentPrice: 4000,

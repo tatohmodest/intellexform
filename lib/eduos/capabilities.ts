@@ -1,10 +1,10 @@
 /**
- * InTelleX EduIaaS — Core + Capabilities (Modules)
+ * InTelleX EduIaaS - Core + Capabilities (Modules)
  *
  * Every institution gets the Core. Capabilities unlock based on what they
  * pay for / are provisioned. Internally: modules. Externally: capabilities.
  *
- * Institutions assemble a digital campus — they don't buy a "Gold plan" story.
+ * Institutions assemble a digital campus - they don't buy a "Gold plan" story.
  */
 
 export const CORE_CAPABILITIES = [
@@ -77,7 +77,7 @@ export const MODULE_CATALOG = [
   {
     id: 'digital_library',
     name: 'Digital Library',
-    tagline: 'PDFs, notes, slides, past questions — with visibility controls.',
+    tagline: 'PDFs, notes, slides, past questions - with visibility controls.',
     includes: [
       'Institution library',
       'Instructor uploads',
@@ -120,7 +120,7 @@ export type ModuleId = (typeof MODULE_CATALOG)[number]['id'];
 
 export type CapabilityId = CoreCapabilityId | ModuleId;
 
-/** Commercial packs — provisioned by Platform Team, not self-serve. */
+/** Commercial packs - provisioned by Platform Team, not self-serve. */
 export type CapabilityPack = 'foundation' | 'professional' | 'enterprise' | 'custom';
 
 export const CAPABILITY_PACKS: Record<
@@ -133,7 +133,7 @@ export const CAPABILITY_PACKS: Record<
 > = {
   foundation: {
     name: 'Foundation',
-    summary: 'InTelleX Core — enough to run a digital campus on day one.',
+    summary: 'InTelleX Core - enough to run a digital campus on day one.',
     modules: [],
   },
   professional: {
@@ -149,7 +149,7 @@ export const CAPABILITY_PACKS: Record<
   },
   enterprise: {
     name: 'Enterprise',
-    summary: 'Full campus stack — live teaching, career, community, marketplace, research.',
+    summary: 'Full campus stack - live teaching, career, community, marketplace, research.',
     modules: MODULE_CATALOG.map((m) => m.id),
   },
 };
@@ -177,7 +177,7 @@ export type CampusNavItem = {
   roles?: Array<'student' | 'instructor' | 'owner' | 'member' | 'admin'>;
 };
 
-/** Dynamic campus navigation — only Core + enabled modules appear. */
+/** Dynamic campus navigation - only Core + enabled modules appear. */
 export function campusNavItems(opts: {
   slug: string;
   role: string;

@@ -7,7 +7,7 @@ export const PLATFORM_CONTACT = {
   phoneDisplay: '+237 650 318 856',
   whatsappNumber: WHATSAPP_NUMBER,
   whatsappInstitutionMessage:
-    'Hello InTelleX Platform Team — we want to register our institution on the InTelleX network. Please share the onboarding process.',
+    'Hello InTelleX Platform Team - we want to register our institution on the InTelleX network. Please share the onboarding process.',
 } as const;
 
 export function institutionWhatsappLink(): string {

@@ -1,6 +1,6 @@
 /**
  * Granular capability catalog.
- * Roles are collections of these permissions — never monolithic module access.
+ * Roles are collections of these permissions - never monolithic module access.
  */
 
 export const PERMISSIONS = [
@@ -121,7 +121,7 @@ export function permissionsFor(role: string): Permission[] {
   return [...(ROLE_PERMISSIONS[role] ?? [])];
 }
 
-/** AI must inherit the caller's permissions — never escalate. */
+/** AI must inherit the caller's permissions - never escalate. */
 export function aiMay(role: string, permission: Permission): boolean {
   return hasPermission(role, permission);
 }

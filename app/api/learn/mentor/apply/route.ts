@@ -15,7 +15,7 @@ function isCloudinaryUrl(url: string): boolean {
 }
 
 /**
- * POST /api/learn/mentor/apply — submit a mentor *application*.
+ * POST /api/learn/mentor/apply - submit a mentor *application*.
  * Mentorship is not toggled on; Platform admins approve after reviewing
  * CV, government ID (front/back), and intro video.
  */

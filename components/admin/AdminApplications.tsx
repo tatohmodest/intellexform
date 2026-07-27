@@ -33,7 +33,7 @@ type MentorApp = {
 };
 
 function fmt(d?: string) {
-  if (!d) return '—';
+  if (!d) return '-';
   return new Date(d).toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'short',
@@ -118,7 +118,7 @@ export default function AdminApplications() {
         <div>
           <h2 className="font-display text-[22px]">Mentor applications</h2>
           <p className="text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
-            Review CV, ID, and intro video — approve to grant Mentor Studio access.
+            Review CV, ID, and intro video - approve to grant Mentor Studio access.
           </p>
         </div>
         <button type="button" onClick={load} className="btn btn-ghost !py-2 text-[13px]">
@@ -201,7 +201,7 @@ function ApplicationCard({
             <StatusPill status={app.status} />
           </div>
           <p className="mt-0.5 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
-            {app.title} · {(app.expertise ?? []).join(', ') || '—'}
+            {app.title} · {(app.expertise ?? []).join(', ') || '-'}
           </p>
           <p className="mt-1 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
             {app.email || 'No email'} · {fmt(app.createdAt)} ·{' '}

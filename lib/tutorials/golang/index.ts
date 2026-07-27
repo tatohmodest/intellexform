@@ -31,7 +31,7 @@ export const golangTutorial: TutorialCourse = {
   title: 'Go (Golang) Tutorial',
   shortTitle: 'Golang',
   description:
-    'A complete Go programming path from beginner to pro — syntax, concurrency, APIs, databases, testing, and real projects. Clear, practical, section by section.',
+    'A complete Go programming path from beginner to pro - syntax, concurrency, APIs, databases, testing, and real projects. Clear, practical, section by section.',
   tagline: 'Simple, fast, production-ready Go',
   audience: 'Beginners to developers ready to build backend services and tools in Go',
   totalLessons: allLessons.length,

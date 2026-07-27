@@ -38,7 +38,7 @@ const INTENTS: {
   {
     id: 'learn',
     title: 'Learn',
-    body: 'Courses, mentors, AI tutor, and certificates — your personal InTelleX passport.',
+    body: 'Courses, mentors, AI tutor, and certificates - your personal InTelleX passport.',
     icon: BookOpen,
   },
   {
@@ -58,7 +58,7 @@ const JOIN_PATHS: {
   {
     id: 'intellex',
     title: 'Continue with InTelleX',
-    body: 'Enter the InTelleX learning platform — courses, mentorship, and AI.',
+    body: 'Enter the InTelleX learning platform - courses, mentorship, and AI.',
     icon: Compass,
   },
   {
@@ -70,7 +70,7 @@ const JOIN_PATHS: {
   {
     id: 'both',
     title: 'Both',
-    body: 'Access InTelleX and your institution — switch workspaces anytime.',
+    body: 'Access InTelleX and your institution - switch workspaces anytime.',
     icon: Sparkles,
   },
 ];
@@ -264,11 +264,11 @@ export default function IdentityOnboarding({ firstName }: { firstName: string })
         <h1 className="font-display text-[32px] leading-tight sm:text-[36px]">{title}</h1>
         <p className="mt-2 max-w-lg text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
           {step === 'intent' &&
-            'You are creating an InTelleX identity — not a university account. Campuses become affiliations on this passport.'}
+            'You are creating an InTelleX identity - not a university account. Campuses become affiliations on this passport.'}
           {step === 'path' &&
-            'This personalizes your home. You can switch between InTelleX and any campus you verify — same login.'}
+            'This personalizes your home. You can switch between InTelleX and any campus you verify - same login.'}
           {step === 'search' &&
-            'Find your campus on the network. Academic records stay with them — InTelleX only stores the affiliation.'}
+            'Find your campus on the network. Academic records stay with them - InTelleX only stores the affiliation.'}
           {step === 'verify' &&
             'Credentials are checked with your institution. InTelleX never keeps your campus password.'}
         </p>
@@ -384,7 +384,7 @@ export default function IdentityOnboarding({ firstName }: { firstName: string })
                       router.replace(intent === 'teach' ? '/dashboard/mentor' : '/dashboard')
                     }
                   >
-                    Skip for now — go to InTelleX
+                    Skip for now - go to InTelleX
                   </button>
                 )}
               </div>
@@ -424,7 +424,7 @@ export default function IdentityOnboarding({ firstName }: { firstName: string })
                     className="form-input"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Checked by your institution — not stored here"
+                    placeholder="Checked by your institution - not stored here"
                   />
                 </div>
                 <button

@@ -6,10 +6,10 @@
  *   - the success page trusts the redirect and confirms the order
  *
  * Env:
- *   PAYUNIT_API_USER, PAYUNIT_API_PASSWORD, PAYUNIT_API_KEY  — credentials
- *   PAYUNIT_MODE        — "test" | "live" (default "test")
- *   PAYUNIT_BASE_URL    — optional override for the PayUnit gateway host
- *   PAYUNIT_CALLBACK_URL / APP_PUBLIC_URL — public HTTPS base for callbacks
+ *   PAYUNIT_API_USER, PAYUNIT_API_PASSWORD, PAYUNIT_API_KEY  - credentials
+ *   PAYUNIT_MODE        - "test" | "live" (default "test")
+ *   PAYUNIT_BASE_URL    - optional override for the PayUnit gateway host
+ *   PAYUNIT_CALLBACK_URL / APP_PUBLIC_URL - public HTTPS base for callbacks
  */
 
 // Public, documented PayUnit gateway host (developer.payunit.net).

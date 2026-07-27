@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   }
   const topic = String(body.topic ?? '').trim().slice(0, 140) || `Mentorship with ${mentor.name}`;
 
-  // Channel is the Agora room name — unique per booking.
+  // Channel is the Agora room name - unique per booking.
   const channel = `mx-${mentor.id}-${crypto.randomBytes(4).toString('hex')}`;
 
   try {

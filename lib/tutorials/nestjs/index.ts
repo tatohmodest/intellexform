@@ -8,7 +8,7 @@ const LEVEL_SUMMARIES = {
   beginner: {
     ...LEVEL_META.beginner,
     summary:
-      'Install NestJS, learn modules, controllers, providers, DI, DTOs, and your first REST APIs — with TypeScript taught as you need it.',
+      'Install NestJS, learn modules, controllers, providers, DI, DTOs, and your first REST APIs - with TypeScript taught as you need it.',
   },
   intermediate: {
     ...LEVEL_META.intermediate,
@@ -31,14 +31,14 @@ export const nestjsTutorial: TutorialCourse = {
   title: 'NestJS Tutorial',
   shortTitle: 'NestJS',
   description:
-    'A complete NestJS path from beginner to pro — modules, DI, REST APIs, auth, databases, testing, and real backend projects. TypeScript included as you need it.',
+    'A complete NestJS path from beginner to pro - modules, DI, REST APIs, auth, databases, testing, and real backend projects. TypeScript included as you need it.',
   tagline: 'Structured Node backends with NestJS',
   audience: 'Node/JavaScript developers ready for scalable, production NestJS APIs',
   totalLessons: allLessons.length,
   sections: groupIntoSections(allLessons, LEVEL_SUMMARIES),
   tag: 'Backend',
   highlights: [
-    'TypeScript taught inside NestJS — no separate TS course required',
+    'TypeScript taught inside NestJS - no separate TS course required',
     'Modules, DI, controllers, providers, and pipes',
     'Auth, databases, testing, and OpenAPI',
     'Capstone projects you can ship',

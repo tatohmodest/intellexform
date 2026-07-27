@@ -54,7 +54,7 @@ async function main() {
       enrollmentPolicy: "PUBLIC_REQUEST",
       institutionType: "ACADEMY",
       description:
-        "Africa's education operating system — courses, mentorship, certifications, and communities.",
+        "Africa's education operating system - courses, mentorship, certifications, and communities.",
       featuresEnabled: [
         "courses",
         "mentorship",
@@ -80,7 +80,7 @@ async function main() {
       customizationLevel: "BRANDED",
       deploymentModel: "SHARED_SAAS",
       description:
-        "Africa's education operating system — courses, mentorship, certifications, and communities.",
+        "Africa's education operating system - courses, mentorship, certifications, and communities.",
       website: "https://www.intellex.study",
       email: "intellex@loopingbinary.com",
       country: "Cameroon",
@@ -97,7 +97,7 @@ async function main() {
     },
   });
 
-  // Exactly one Platform Owner — highest authority on the network.
+  // Exactly one Platform Owner - highest authority on the network.
   const platformOwner = await prisma.user.upsert({
     where: { email: "owner@intellex.study" },
     update: {
@@ -197,21 +197,21 @@ async function main() {
   // Platform-curated YouTube recommendations by field (not tutor inventory)
   const youtubeRecs = [
     {
-      title: "full stack web development — freeCodeCamp",
+      title: "full stack web development - freeCodeCamp",
       url: "https://www.youtube.com/watch?v=nu_pCVPKzTk",
       fieldTags: ["programming", "web-development", "fullstack"],
       difficulty: Difficulty.BEGINNER,
       durationMin: 240,
     },
     {
-      title: "Python for Everybody — freeCodeCamp",
+      title: "Python for Everybody - freeCodeCamp",
       url: "https://www.youtube.com/watch?v=8DvywoWv6fI",
       fieldTags: ["programming", "python"],
       difficulty: Difficulty.BEGINNER,
       durationMin: 840,
     },
     {
-      title: "SQL Tutorial — freeCodeCamp",
+      title: "SQL Tutorial - freeCodeCamp",
       url: "https://www.youtube.com/watch?v=HXV3zeQKqGY",
       fieldTags: ["programming", "databases", "data-analysis"],
       difficulty: Difficulty.BEGINNER,
@@ -326,7 +326,7 @@ async function main() {
       categoryId: programming.id,
       slug: "javascript-essentials",
       title: "JavaScript Essentials",
-      subtitle: "From variables to async — a tutor-authored handbook",
+      subtitle: "From variables to async - a tutor-authored handbook",
       description:
         "A practical JavaScript handbook written by InTelleX tutors. Preview chapter free; full book priced in XAF.",
       fieldTags: ["programming", "javascript"],

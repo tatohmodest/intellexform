@@ -42,7 +42,7 @@ export default function CookieConsent() {
           </span>
           <p className="text-[13.5px] leading-relaxed" style={{ color: 'rgba(251,248,240,0.82)' }}>
             We use cookies to keep you signed in, remember your choices, and understand how the
-            academy is used — so we can keep making it better. See our{' '}
+            academy is used - so we can keep making it better. See our{' '}
             <a href="#" className="underline" style={{ color: 'var(--green)' }}>cookie policy</a>.
           </p>
         </div>
