@@ -11,7 +11,7 @@ import {
 import {
   INTRO_VIDEO_CONSTRAINTS,
   INTRO_VIDEO_MAX_SECONDS,
-  compressIntroVideo,
+  INTRO_VIDEO_MIN_SECONDS,
   createIntroRecorder,
 } from '@/lib/learn/compressVideo';
 
@@ -19,6 +19,12 @@ type Props = {
   onReady: (blob: Blob | null, durationSec: number) => void;
   value: Blob | null;
 };
+
+function fmtClock(total: number) {
+  const mm = String(Math.floor(total / 60)).padStart(1, '0');
+  const ss = String(total % 60).padStart(2, '0');
+  return `${mm}:${ss}`;
+}
 
 export default function IntroVideoRecorder({ onReady, value }: Props) {
   const previewRef = useRef<HTMLVideoElement>(null);
@@ -77,6 +83,18 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
     onReady(null, 0);
     setSeconds(0);
     setSizeLabel('');
+    setError('');
+  }
+
+  function finishRecorder() {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setRecording(false);
+    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+      recorderRef.current.stop();
+    }
   }
 
   async function startRecording() {
@@ -87,22 +105,33 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
     const stream = streamRef.current;
     if (!stream) return;
 
+    // Clear any prior clip before a new take.
+    onReady(null, 0);
     chunksRef.current = [];
     const recorder = createIntroRecorder(stream);
     recorderRef.current = recorder;
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) chunksRef.current.push(e.data);
     };
-    recorder.onstop = async () => {
+    recorder.onstop = () => {
       setBusy(true);
       try {
         const duration = secondsRef.current;
-        const raw = new Blob(chunksRef.current, { type: recorder.mimeType || 'video/webm' });
-        const { blob, bytesAfter } = await compressIntroVideo(raw);
-        setSizeLabel(`${(bytesAfter / (1024 * 1024)).toFixed(2)} MB`);
-        onReady(blob, duration);
+        if (duration < INTRO_VIDEO_MIN_SECONDS) {
+          setError(`Intro video must be at least ${INTRO_VIDEO_MIN_SECONDS} seconds.`);
+          onReady(null, 0);
+          return;
+        }
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'video/webm' });
+        if (!blob.size) {
+          setError('Recording was empty. Please try again.');
+          onReady(null, 0);
+          return;
+        }
+        setSizeLabel(`${(blob.size / (1024 * 1024)).toFixed(2)} MB`);
+        onReady(blob, Math.min(duration, INTRO_VIDEO_MAX_SECONDS));
       } catch {
-        setError('Could not process the recording. Please try again.');
+        setError('Could not save the recording. Please try again.');
         onReady(null, 0);
       } finally {
         setBusy(false);
@@ -119,31 +148,21 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
       const next = secondsRef.current;
       setSeconds(next);
       if (next >= INTRO_VIDEO_MAX_SECONDS) {
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-        setRecording(false);
-        if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-          recorderRef.current.stop();
-        }
+        finishRecorder();
       }
     }, 1000);
   }
 
   function stopRecording() {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
+    if (secondsRef.current < INTRO_VIDEO_MIN_SECONDS) {
+      setError(`Keep recording — at least ${INTRO_VIDEO_MIN_SECONDS} seconds required (max ${INTRO_VIDEO_MAX_SECONDS}s).`);
+      return;
     }
-    setRecording(false);
-    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-      recorderRef.current.stop();
-    }
+    setError('');
+    finishRecorder();
   }
 
-  const mm = String(Math.floor(seconds / 60)).padStart(1, '0');
-  const ss = String(seconds % 60).padStart(2, '0');
+  const canStop = seconds >= INTRO_VIDEO_MIN_SECONDS;
 
   return (
     <div className="space-y-4">
@@ -171,14 +190,14 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
         {recording && (
           <div className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/60 px-3 py-1.5 text-[12.5px] font-semibold text-white">
             <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-            {mm}:{ss} / 1:00
+            {fmtClock(seconds)} / {fmtClock(INTRO_VIDEO_MAX_SECONDS)}
           </div>
         )}
       </div>
 
       <p className="text-[13px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-        Record up to <strong>1 minute</strong> introducing who you are and what you teach.
-        We compress the clip before upload so it stays sharp without filling storage.
+        Record <strong>{INTRO_VIDEO_MIN_SECONDS}–{INTRO_VIDEO_MAX_SECONDS} seconds</strong> introducing
+        who you are and what you teach.
         {sizeLabel ? ` Current clip: ${sizeLabel}.` : ''}
       </p>
 
@@ -200,8 +219,16 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
           </button>
         )}
         {recording && (
-          <button type="button" onClick={stopRecording} className="btn !py-2.5 text-[13px]" style={{ background: 'rgba(220,38,38,0.12)', color: '#b91c1c' }}>
-            <Square size={14} className="fill-current" /> Stop
+          <button
+            type="button"
+            onClick={stopRecording}
+            disabled={!canStop}
+            className="btn !py-2.5 text-[13px] disabled:opacity-50"
+            style={{ background: 'rgba(220,38,38,0.12)', color: '#b91c1c' }}
+            title={canStop ? 'Stop recording' : `Record at least ${INTRO_VIDEO_MIN_SECONDS}s`}
+          >
+            <Square size={14} className="fill-current" />
+            {canStop ? 'Stop' : `Stop in ${INTRO_VIDEO_MIN_SECONDS - seconds}s`}
           </button>
         )}
         {value && !recording && (
@@ -211,7 +238,7 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
         )}
         {busy && (
           <span className="inline-flex items-center gap-2 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-            <Loader2 size={14} className="animate-spin" /> Compressing video…
+            <Loader2 size={14} className="animate-spin" /> Saving recording…
           </span>
         )}
       </div>

@@ -145,6 +145,7 @@ export async function compressIntroVideo(input: Blob): Promise<{
   }
 }
 
+export const INTRO_VIDEO_MIN_SECONDS = 30;
 export const INTRO_VIDEO_MAX_SECONDS = 60;
 export const INTRO_VIDEO_CONSTRAINTS: MediaStreamConstraints = {
   audio: true,
