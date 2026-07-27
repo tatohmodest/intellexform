@@ -1,5 +1,6 @@
 /** Lightweight tutorial links for client nav - no lesson content imports. */
 export const TUTORIAL_NAV = [
+  { href: '/tutorials/computer-architecture', label: 'Computer Architecture', tag: 'CS Foundations' },
   { href: '/tutorials/html', label: 'HTML', tag: 'Frontend' },
   { href: '/tutorials/css', label: 'CSS', tag: 'Frontend' },
   { href: '/tutorials/javascript', label: 'JavaScript', tag: 'Frontend' },

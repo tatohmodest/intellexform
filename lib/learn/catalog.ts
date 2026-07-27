@@ -3,7 +3,7 @@ import type { TutorialCourse, TutorialLesson } from '@/lib/tutorials/types';
 
 /**
  * The dashboard "self-paced course" catalog is built from the platform's
- * full tutorial library (17 tracks, hundreds of real lessons), enriched with
+ * full tutorial library (18 tracks, hundreds of real lessons), enriched with
  * display metadata for a course-card experience.
  */
 
@@ -22,6 +22,7 @@ export interface CatalogTrack {
 }
 
 const TRACK_META: Record<string, { color: string; icon: string }> = {
+  'computer-architecture': { color: '#0f766e', icon: '🖥️' },
   html: { color: '#e44d26', icon: '🧱' },
   css: { color: '#2965f1', icon: '🎨' },
   javascript: { color: '#f0db4f', icon: '⚡' },

@@ -63,9 +63,15 @@ import {
   getAllCssLessons,
   getCssLessonNav,
 } from './css';
+import {
+  computerArchitectureTutorial,
+  getAllComputerArchitectureLessons,
+  getComputerArchitectureLessonNav,
+} from './computer-architecture';
 import type { TutorialCourse, TutorialLesson } from './types';
 
 export const TUTORIALS: TutorialCourse[] = [
+  computerArchitectureTutorial,
   htmlTutorial,
   cssTutorial,
   javascriptTutorial,
@@ -107,6 +113,7 @@ export function getTutorialLessons(courseSlug: string): TutorialLesson[] {
   if (courseSlug === 'pygame') return getAllPygameLessons();
   if (courseSlug === 'html') return getAllHtmlLessons();
   if (courseSlug === 'css') return getAllCssLessons();
+  if (courseSlug === 'computer-architecture') return getAllComputerArchitectureLessons();
   return [];
 }
 
@@ -128,6 +135,7 @@ export function getTutorialLessonNav(courseSlug: string, lessonSlug: string) {
   if (courseSlug === 'pygame') return getPygameLessonNav(lessonSlug);
   if (courseSlug === 'html') return getHtmlLessonNav(lessonSlug);
   if (courseSlug === 'css') return getCssLessonNav(lessonSlug);
+  if (courseSlug === 'computer-architecture') return getComputerArchitectureLessonNav(lessonSlug);
   return null;
 }
 
@@ -136,6 +144,7 @@ export function getFirstLessonSlug(course: TutorialCourse): string | undefined {
 }
 
 export {
+  computerArchitectureTutorial,
   htmlTutorial,
   cssTutorial,
   javascriptTutorial,
