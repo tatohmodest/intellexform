@@ -1,0 +1,82 @@
+[
+  {
+    "slug": "cpp",
+    "varName": "cppTutorial",
+    "pascal": "Cpp",
+    "shortTitle": "C++",
+    "tag": "Systems",
+    "color": "#00599C",
+    "logo": "/tech/cpp.png",
+    "total": 65
+  },
+  {
+    "slug": "java",
+    "varName": "javaTutorial",
+    "pascal": "Java",
+    "shortTitle": "Java",
+    "tag": "Backend",
+    "color": "#EA2D2E",
+    "logo": "/tech/java.jpg",
+    "total": 65
+  },
+  {
+    "slug": "arduino",
+    "varName": "arduinoTutorial",
+    "pascal": "Arduino",
+    "shortTitle": "Arduino",
+    "tag": "Embedded",
+    "color": "#00878F",
+    "logo": "/tech/arduino.png",
+    "total": 65
+  },
+  {
+    "slug": "kubernetes",
+    "varName": "kubernetesTutorial",
+    "pascal": "Kubernetes",
+    "shortTitle": "Kubernetes",
+    "tag": "DevOps",
+    "color": "#326CE5",
+    "logo": "/tech/kubernetes.svg",
+    "total": 65
+  },
+  {
+    "slug": "rust",
+    "varName": "rustTutorial",
+    "pascal": "Rust",
+    "shortTitle": "Rust",
+    "tag": "Systems",
+    "color": "#DEA584",
+    "logo": "/tech/rust.jpg",
+    "total": 65
+  },
+  {
+    "slug": "ruby-on-rails",
+    "varName": "rubyOnRailsTutorial",
+    "pascal": "RubyOnRails",
+    "shortTitle": "Ruby on Rails",
+    "tag": "Full-stack",
+    "color": "#CC0000",
+    "logo": "/tech/ruby.png",
+    "total": 65
+  },
+  {
+    "slug": "linux-administration",
+    "varName": "linuxAdministrationTutorial",
+    "pascal": "LinuxAdministration",
+    "shortTitle": "Linux Administration",
+    "tag": "DevOps",
+    "color": "#FCC624",
+    "logo": "/tech/linux.jpg",
+    "total": 65
+  },
+  {
+    "slug": "bash-scripting",
+    "varName": "bashScriptingTutorial",
+    "pascal": "BashScripting",
+    "shortTitle": "Bash Scripting",
+    "tag": "DevOps",
+    "color": "#4EAA25",
+    "logo": "/tech/bash.jpg",
+    "total": 65
+  }
+]

@@ -43,9 +43,17 @@ export default function Footer() {
             <Link href="/tutorials/digital-marketing" className="mb-2 block text-sm text-paper/80">Digital Marketing tutorial</Link>
             <Link href="/tutorials/golang" className="mb-2 block text-sm text-paper/80">Go (Golang) tutorial</Link>
             <Link href="/tutorials/docker" className="mb-2 block text-sm text-paper/80">Docker tutorial</Link>
+            <Link href="/tutorials/kubernetes" className="mb-2 block text-sm text-paper/80">Kubernetes tutorial</Link>
+            <Link href="/tutorials/linux-administration" className="mb-2 block text-sm text-paper/80">Linux Administration tutorial</Link>
+            <Link href="/tutorials/bash-scripting" className="mb-2 block text-sm text-paper/80">Bash Scripting tutorial</Link>
             <Link href="/tutorials/nodejs-express" className="mb-2 block text-sm text-paper/80">Node.js & Express tutorial</Link>
             <Link href="/tutorials/nestjs" className="mb-2 block text-sm text-paper/80">NestJS tutorial</Link>
             <Link href="/tutorials/pygame" className="mb-2 block text-sm text-paper/80">Pygame tutorial</Link>
+            <Link href="/tutorials/cpp" className="mb-2 block text-sm text-paper/80">C++ tutorial</Link>
+            <Link href="/tutorials/java" className="mb-2 block text-sm text-paper/80">Java tutorial</Link>
+            <Link href="/tutorials/rust" className="mb-2 block text-sm text-paper/80">Rust tutorial</Link>
+            <Link href="/tutorials/ruby-on-rails" className="mb-2 block text-sm text-paper/80">Ruby on Rails tutorial</Link>
+            <Link href="/tutorials/arduino" className="mb-2 block text-sm text-paper/80">Arduino tutorial</Link>
             <Link href="/certifications" className="mb-2 block text-sm text-paper/80">Certificates</Link>
             <Link href="/#pricing" className="mb-2 block text-sm text-paper/80">Pricing</Link>
             <Link href="/#testimonials" className="mb-2 block text-sm text-paper/80">Student stories</Link>

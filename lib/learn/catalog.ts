@@ -4,7 +4,7 @@ import { TRACK_LOGOS } from '@/lib/techLogos';
 
 /**
  * The dashboard "self-paced course" catalog is built from the platform's
- * full tutorial library (18 tracks, hundreds of real lessons), enriched with
+ * full tutorial library (26 tracks, hundreds of real lessons), enriched with
  * display metadata for a course-card experience.
  */
 
@@ -42,6 +42,14 @@ const TRACK_META: Record<string, { color: string }> = {
   'data-analysis': { color: '#7c3aed' },
   'digital-marketing': { color: '#f59e0b' },
   pygame: { color: '#0d7377' },
+  cpp: { color: '#00599C' },
+  java: { color: '#EA2D2E' },
+  arduino: { color: '#00878F' },
+  kubernetes: { color: '#326CE5' },
+  rust: { color: '#DEA584' },
+  'ruby-on-rails': { color: '#CC0000' },
+  'linux-administration': { color: '#FCC624' },
+  'bash-scripting': { color: '#4EAA25' },
 };
 
 function toTrack(course: TutorialCourse): CatalogTrack {
