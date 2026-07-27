@@ -355,6 +355,9 @@ model User {
   twoFactorEnabled Boolean   @default(false)
   lastLoginAt      DateTime?
   birthday         DateTime?
+  /// Platform ban - blocks teaching / withdrawals / sensitive actions.
+  bannedAt         DateTime?
+  banReason        String?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -392,6 +395,8 @@ model User {
   mediaSaves           MediaSave[]
   currentInstitutionId String?
   currentInstitution   Institution?        @relation("CurrentInstitution", fields: [currentInstitutionId], references: [id], onDelete: SetNull)
+  withdrawalRequests   WithdrawalRequest[] @relation("WithdrawalRequester")
+  reviewedWithdrawals  WithdrawalRequest[] @relation("WithdrawalReviewer")
 
   ownedInstitutions         Institution[]              @relation("InstitutionOwner")
   institutionApplications   InstitutionApplication[]   @relation("InstitutionApplicant")
@@ -411,6 +416,7 @@ model User {
   @@index([fieldOfInterest])
   @@index([createdAt])
   @@index([globalRole])
+  @@index([bannedAt])
 }
 
 model Account {
@@ -511,6 +517,10 @@ model Institution {
   syncPolicy         Json                       @default("{\"publicProfile\":true,\"publicCourses\":true,\"publicCertificates\":true,\"grades\":false,\"finance\":false}")
   settings           Json                       @default("{}")
   featuresEnabled    String[]                   @default([])
+  /// Commercial capability pack: foundation | professional | enterprise | custom
+  capabilityPack     String                     @default("foundation")
+  /// Explicit module ids beyond Core (wins when pack is custom or overridden).
+  enabledModules     String[]                   @default([])
   provisionedAt      DateTime?
   provisionedById    String?
   createdAt          DateTime                   @default(now())
@@ -538,12 +548,14 @@ model Institution {
   instructorApplications InstructorApplication[]
   verificationRequests CrossInstitutionVerification[]
   federationLink  InstitutionFederationLink?
+  withdrawalRequests WithdrawalRequest[]
 
   @@index([visibility])
   @@index([isPlatformHome])
   @@index([status])
   @@index([verified])
   @@index([ownerUserId])
+  @@index([capabilityPack])
 }
 
 model InstitutionMembership {
@@ -554,6 +566,9 @@ model InstitutionMembership {
   title         String?
   departmentId  String?
   isActive      Boolean        @default(true)
+  /// Soft-ban from this campus only.
+  suspendedAt   DateTime?
+  suspendReason String?
   joinedAt      DateTime       @default(now())
   invitedById   String?
   metadata      Json           @default("{}")
@@ -565,6 +580,7 @@ model InstitutionMembership {
   @@unique([institutionId, userId])
   @@index([userId])
   @@index([role])
+  @@index([suspendedAt])
 }
 
 model Department {
@@ -1379,6 +1395,31 @@ model Review {
 
   @@unique([userId, courseId])
   @@index([courseId])
+}
+
+/// Instructor / institution payout request. Platform Admin validates against
+/// wallet balance / marketplace earnings before approve + payoutRef.
+model WithdrawalRequest {
+  id            String    @id @default(cuid())
+  institutionId String?
+  userId        String
+  amountCents   Int
+  currency      String    @default("XAF")
+  status        String    @default("pending")
+  note          String?
+  payoutRef     String?
+  reviewedById  String?
+  reviewedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  institution Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  user        User         @relation("WithdrawalRequester", fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy  User?        @relation("WithdrawalReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+  @@index([institutionId, createdAt])
 }
 
 // ─────────────────────────────────────────────

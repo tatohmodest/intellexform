@@ -4,14 +4,23 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   RefreshCw, Search, Lock, LogOut, ShieldCheck, Mail,
   Users, MessageSquare, ShoppingBag, BookOpen, GraduationCap, ClipboardCheck,
+  LayoutDashboard,
 } from 'lucide-react';
 import { formatXAF } from '@/lib/format';
 import AdminCourses from '@/components/admin/AdminCourses';
 import AdminLearning from '@/components/admin/AdminLearning';
 import AdminApplications from '@/components/admin/AdminApplications';
+import PlatformControlPlane from '@/components/admin/PlatformControlPlane';
 import BrandLogo from '@/components/BrandLogo';
 
-type Tab = 'learning' | 'applications' | 'requests' | 'orders' | 'registrations' | 'courses';
+type Tab =
+  | 'platform'
+  | 'learning'
+  | 'applications'
+  | 'requests'
+  | 'orders'
+  | 'registrations'
+  | 'courses';
 
 interface RequestRow {
   _id: string;
@@ -218,7 +227,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
 }
 
 function Dashboard({ onLogout, adminEmail }: { onLogout: () => void; adminEmail?: string }) {
-  const [tab, setTab] = useState<Tab>('learning');
+  const [tab, setTab] = useState<Tab>('platform');
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [registrations, setRegistrations] = useState<RegistrationRow[]>([]);
@@ -259,12 +268,13 @@ function Dashboard({ onLogout, adminEmail }: { onLogout: () => void; adminEmail?
   const fReg = registrations.filter((r) => `${r.fullName} ${r.email} ${r.program}`.toLowerCase().includes(q));
 
   const TABS: { id: Tab; label: string; icon: typeof Users; count: number | null }[] = [
+    { id: 'platform', label: 'Platform', icon: LayoutDashboard, count: null },
     { id: 'learning', label: 'Learning', icon: GraduationCap, count: null },
-    { id: 'applications', label: 'Applications', icon: ClipboardCheck, count: null },
+    { id: 'applications', label: 'Mongo apps', icon: ClipboardCheck, count: null },
     { id: 'requests', label: 'Requests', icon: MessageSquare, count: requests.length },
     { id: 'orders', label: 'Orders', icon: ShoppingBag, count: orders.length },
     { id: 'registrations', label: 'Registrations', icon: Users, count: registrations.length },
-    { id: 'courses', label: 'Courses', icon: BookOpen, count: null },
+    { id: 'courses', label: 'Catalogue', icon: BookOpen, count: null },
   ];
 
   return (
@@ -274,18 +284,20 @@ function Dashboard({ onLogout, adminEmail }: { onLogout: () => void; adminEmail?
           <div className="flex items-center gap-3">
             <BrandLogo href="/" height={28} variant="full" />
             <div>
-              <h1 className="font-display text-lg font-bold">Admin</h1>
+              <h1 className="font-display text-lg font-bold">Platform Admin</h1>
               <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>
                 {adminEmail ? `${adminEmail} · ` : ''}
-                {loading ? 'Loading…' : `${requests.length} requests · ${orders.length} orders · ${registrations.length} registrations`}
+                Supabase control plane · {loading ? 'Loading…' : `${requests.length} contact · ${orders.length} Mongo orders`}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--ink-soft)' }} />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" className="form-input w-56 pl-9" />
-            </div>
+            {tab !== 'platform' ? (
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--ink-soft)' }} />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" className="form-input w-56 pl-9" />
+              </div>
+            ) : null}
             <button onClick={loadData} className="btn btn-ghost" style={{ padding: '9px 16px' }}>
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
             </button>
@@ -294,12 +306,12 @@ function Dashboard({ onLogout, adminEmail }: { onLogout: () => void; adminEmail?
             </button>
           </div>
         </div>
-        <div className="mx-auto flex max-w-7xl gap-1 px-6">
+        <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-6">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className="flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors"
+              className="flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors"
               style={{
                 borderColor: tab === t.id ? 'var(--green-deep)' : 'transparent',
                 color: tab === t.id ? 'var(--green-deep)' : 'var(--ink-soft)',
@@ -315,6 +327,7 @@ function Dashboard({ onLogout, adminEmail }: { onLogout: () => void; adminEmail?
       </div>
 
       <div className="mx-auto max-w-7xl px-6 py-8">
+        {tab === 'platform' && <PlatformControlPlane />}
         {tab === 'learning' && <AdminLearning />}
         {tab === 'applications' && <AdminApplications />}
         {tab === 'requests' && (

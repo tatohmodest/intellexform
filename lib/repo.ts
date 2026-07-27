@@ -1,8 +1,6 @@
 import { ObjectId } from 'mongodb';
 import clientPromise from '@/lib/mongodb';
 import { Course, ContactRequest, Order } from '@/lib/types';
-import { PLATFORM_COURSES } from '@/lib/data/platformCourses';
-import { IMPORTED_COURSES } from '@/lib/data/importedCourses';
 
 const DB_NAME = 'intellex';
 
@@ -11,51 +9,21 @@ export async function getDb() {
   return client.db(DB_NAME);
 }
 
-/** The full catalogue as defined in code (platform programs first). */
-export function allSeedCourses(): Course[] {
-  return [...PLATFORM_COURSES, ...IMPORTED_COURSES];
-}
-
 /**
- * Seed the `courses` collection from the code-defined catalogue if it is empty.
- * Idempotent: only inserts when the collection has no documents.
+ * Live Mongo catalogue only - no static / imported seed fallback.
+ * Courses are created by admins or instructors, not auto-seeded from mock files.
  */
-export async function ensureCoursesSeeded() {
-  const db = await getDb();
-  const col = db.collection('courses');
-  const count = await col.countDocuments();
-  if (count === 0) {
-    await col.insertMany(allSeedCourses() as unknown as Record<string, unknown>[]);
-    await col.createIndex({ slug: 1 }, { unique: true }).catch(() => {});
-    return;
-  }
-  // Add-only sync: insert any newly-added Intellex-curated (platform) courses
-  // that aren't in an already-seeded collection. Never overwrites admin edits.
-  const slugs = PLATFORM_COURSES.map((c) => c.slug);
-  const existing = await col
-    .find({ slug: { $in: slugs } }, { projection: { slug: 1 } })
-    .toArray();
-  const have = new Set(existing.map((d) => (d as unknown as { slug: string }).slug));
-  const missing = PLATFORM_COURSES.filter((c) => !have.has(c.slug));
-  if (missing.length) {
-    await col.insertMany(missing as unknown as Record<string, unknown>[]);
-  }
-}
-
 export async function getAllCourses(): Promise<Course[]> {
   try {
-    await ensureCoursesSeeded();
     const db = await getDb();
     const docs = await db
       .collection('courses')
       .find({}, { projection: { _id: 0 } })
       .toArray();
-    if (docs.length) return docs as unknown as Course[];
-    return allSeedCourses();
+    return docs as unknown as Course[];
   } catch (err) {
-    // Never hard-fail the catalogue: fall back to the code-defined courses.
-    console.error('getAllCourses fell back to static seed:', err);
-    return allSeedCourses();
+    console.error('getAllCourses failed:', err);
+    return [];
   }
 }
 
@@ -66,7 +34,6 @@ export async function getFeaturedCourses(): Promise<Course[]> {
 
 /** Admin view: full catalogue including the Mongo `_id` (as string) for editing. */
 export async function getAllCoursesAdmin(): Promise<(Course & { _id: string })[]> {
-  await ensureCoursesSeeded();
   const db = await getDb();
   const docs = await db.collection('courses').find({}).sort({ featured: -1, name: 1 }).toArray();
   return docs.map((d) => ({ ...(d as unknown as Course), _id: d._id.toString() }));
@@ -90,16 +57,14 @@ export async function deleteCourseById(id: string) {
 
 export async function getCourseBySlug(slug: string): Promise<Course | null> {
   try {
-    await ensureCoursesSeeded();
     const db = await getDb();
     const doc = await db
       .collection('courses')
       .findOne({ slug }, { projection: { _id: 0 } });
-    if (doc) return doc as unknown as Course;
-    return allSeedCourses().find((c) => c.slug === slug) ?? null;
+    return (doc as unknown as Course) ?? null;
   } catch (err) {
-    console.error('getCourseBySlug fell back to static seed:', err);
-    return allSeedCourses().find((c) => c.slug === slug) ?? null;
+    console.error('getCourseBySlug failed:', err);
+    return null;
   }
 }
 
