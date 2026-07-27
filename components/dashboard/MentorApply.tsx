@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import IntroVideoRecorder from '@/components/dashboard/IntroVideoRecorder';
+import { MAX_MENTOR_DOC_BYTES, prepareImageForUpload } from '@/lib/compressImage';
 import { INTRO_VIDEO_MAX_SECONDS, INTRO_VIDEO_MIN_SECONDS } from '@/lib/learn/compressVideo';
 import { uploadMentorAsset } from '@/lib/learn/mentorUpload';
 
@@ -196,8 +197,13 @@ export default function MentorApply() {
         return;
       }
       setSubmitted(true);
-    } catch {
-      setError('Upload failed. Check your connection and try again.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      setError(
+        msg === 'file_too_large'
+          ? 'Each file must be 10 MB or smaller.'
+          : 'Upload failed. Check your connection and try again.',
+      );
     } finally {
       setBusy(false);
       setUploadLabel('');
@@ -455,13 +461,15 @@ export default function MentorApply() {
               <div className="space-y-4">
                 <h2 className="font-display text-[22px]">Upload your CV or resume</h2>
                 <p className="text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-                  PDF preferred. Admins review this before granting tutor access.
+                  PDF preferred (images also fine). Up to 10 MB.
                 </p>
                 <FileDrop
-                  accept=".pdf,.doc,.docx,application/pdf"
+                  accept=".pdf,.doc,.docx,application/pdf,image/*"
                   label="Drop CV here or browse"
                   file={resumeFile}
                   onFile={setResumeFile}
+                  optimizeImage
+                  onError={setError}
                 />
               </div>
             )}
@@ -470,7 +478,7 @@ export default function MentorApply() {
               <div className="space-y-5">
                 <h2 className="font-display text-[22px]">Government ID</h2>
                 <p className="text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-                  Upload clear photos of the front and back of your national ID or passport bio page.
+                  Front and back of your national ID or passport bio page. Up to 10 MB each.
                 </p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <FileDrop
@@ -479,6 +487,8 @@ export default function MentorApply() {
                     file={idFront}
                     onFile={setIdFront}
                     preview
+                    optimizeImage
+                    onError={setError}
                   />
                   <FileDrop
                     accept="image/*"
@@ -486,6 +496,8 @@ export default function MentorApply() {
                     file={idBack}
                     onFile={setIdBack}
                     preview
+                    optimizeImage
+                    onError={setError}
                   />
                 </div>
               </div>
@@ -589,14 +601,20 @@ function FileDrop({
   file,
   onFile,
   preview,
+  optimizeImage,
+  onError,
 }: {
   accept: string;
   label: string;
   file: File | null;
   onFile: (f: File | null) => void;
   preview?: boolean;
+  /** Shrink large photos client-side while keeping them sharp (max 10 MB in). */
+  optimizeImage?: boolean;
+  onError?: (msg: string) => void;
 }) {
   const [hover, setHover] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [thumb, setThumb] = useState<string | null>(null);
 
   useEffect(() => {
@@ -609,6 +627,31 @@ function FileDrop({
     return () => URL.revokeObjectURL(url);
   }, [file, preview]);
 
+  async function takeFile(raw: File | null) {
+    if (!raw) {
+      onFile(null);
+      return;
+    }
+    if (raw.size > MAX_MENTOR_DOC_BYTES) {
+      onError?.('File must be 10 MB or smaller.');
+      return;
+    }
+    onError?.('');
+    if (!optimizeImage || !raw.type.startsWith('image/')) {
+      onFile(raw);
+      return;
+    }
+    setBusy(true);
+    try {
+      const prepared = await prepareImageForUpload(raw, { maxEdge: 1600, quality: 0.88 });
+      onFile(prepared);
+    } catch {
+      onFile(raw);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <label
       className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed px-4 py-8 text-center transition-colors"
@@ -616,6 +659,7 @@ function FileDrop({
         borderColor: hover ? 'var(--green-deep)' : 'var(--line)',
         background: hover ? 'rgba(0,179,105,0.04)' : 'transparent',
         minHeight: 160,
+        opacity: busy ? 0.7 : 1,
       }}
       onDragOver={(e) => {
         e.preventDefault();
@@ -625,11 +669,12 @@ function FileDrop({
       onDrop={(e) => {
         e.preventDefault();
         setHover(false);
-        const f = e.dataTransfer.files?.[0];
-        if (f) onFile(f);
+        void takeFile(e.dataTransfer.files?.[0] ?? null);
       }}
     >
-      {thumb ? (
+      {busy ? (
+        <Loader2 size={22} className="animate-spin" style={{ color: 'var(--green-deep)' }} />
+      ) : thumb ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={thumb} alt="" className="mb-2 max-h-28 rounded-lg object-contain" />
       ) : (
@@ -645,7 +690,11 @@ function FileDrop({
         type="file"
         accept={accept}
         className="hidden"
-        onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+        disabled={busy}
+        onChange={(e) => {
+          void takeFile(e.target.files?.[0] ?? null);
+          e.target.value = '';
+        }}
       />
     </label>
   );
