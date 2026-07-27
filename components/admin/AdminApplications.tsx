@@ -145,6 +145,7 @@ export default function AdminApplications() {
                 busy={busyId === app.id}
                 onApprove={() => act(app.id, 'approve')}
                 onReject={() => act(app.id, 'reject')}
+                onError={setError}
               />
             ))}
           </div>
@@ -155,7 +156,7 @@ export default function AdminApplications() {
         <Section title={`Resolved (${others.length})`}>
           <div className="space-y-4">
             {others.map((app) => (
-              <ApplicationCard key={app.id} app={app} busy={false} />
+              <ApplicationCard key={app.id} app={app} busy={false} onError={setError} />
             ))}
           </div>
         </Section>
@@ -186,13 +187,66 @@ function ApplicationCard({
   busy,
   onApprove,
   onReject,
+  onError,
 }: {
   app: MentorApp;
   busy: boolean;
   onApprove?: () => void;
   onReject?: () => void;
+  onError?: (msg: string) => void;
 }) {
+  const [dlBusy, setDlBusy] = useState(false);
   const pending = app.status === 'submitted' || app.status === 'under_review';
+
+  async function downloadResume() {
+    if (!app.resumeUrl) return;
+    setDlBusy(true);
+    onError?.('');
+    try {
+      const res = await fetch(`/api/admin/applications/${app.id}/resume`, {
+        credentials: 'same-origin',
+        cache: 'no-store',
+      });
+      const contentType = res.headers.get('content-type') || '';
+
+      // Never save JSON error payloads as "the CV".
+      if (!res.ok || contentType.includes('application/json')) {
+        const data = await res.json().catch(() => ({}));
+        onError?.(
+          typeof data.error === 'string'
+            ? `Could not download CV (${data.error}).`
+            : 'Could not download CV. Try again.',
+        );
+        return;
+      }
+
+      const blob = await res.blob();
+      if (!blob.size || blob.type.includes('json')) {
+        onError?.('Could not download CV — file was empty or invalid.');
+        return;
+      }
+
+      const cd = res.headers.get('content-disposition') || '';
+      const matched = cd.match(/filename="([^"]+)"/i);
+      const filename =
+        matched?.[1] ||
+        `cv-${(app.name || 'applicant').replace(/\s+/g, '-').toLowerCase()}.pdf`;
+
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      onError?.('Could not download CV. Check your connection and try again.');
+    } finally {
+      setDlBusy(false);
+    }
+  }
+
   return (
     <article className="rounded-2xl border p-5" style={{ borderColor: 'var(--line)' }}>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -241,13 +295,26 @@ function ApplicationCard({
       )}
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <DocLink
-          href={app.resumeUrl ? `/api/admin/applications/${app.id}/resume` : undefined}
-          icon={Download}
-          label="Download CV"
-          download
-          filename={`cv-${(app.name || 'applicant').replace(/\s+/g, '-').toLowerCase()}`}
-        />
+        {app.resumeUrl ? (
+          <button
+            type="button"
+            onClick={downloadResume}
+            disabled={dlBusy}
+            className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors hover:border-[var(--green-deep)] disabled:opacity-60"
+            style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+          >
+            {dlBusy ? (
+              <Loader2 size={12} className="animate-spin" style={{ color: 'var(--green-deep)' }} />
+            ) : (
+              <Download size={12} style={{ color: 'var(--green-deep)' }} />
+            )}
+            Download CV
+          </button>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] opacity-50" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
+            <Download size={12} /> CV missing
+          </span>
+        )}
         <DocLink href={app.idFrontUrl} icon={CreditCard} label="ID front" />
         <DocLink href={app.idBackUrl} icon={CreditCard} label="ID back" />
         <DocLink href={app.introVideoUrl} icon={Video} label="Intro video" />
@@ -286,36 +353,16 @@ function DocLink({
   href,
   icon: Icon,
   label,
-  download,
-  filename,
 }: {
   href?: string;
   icon: LucideIcon;
   label: string;
-  /** Prefer download over opening in a new tab (used for resumes). */
-  download?: boolean;
-  filename?: string;
 }) {
   if (!href) {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] opacity-50" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
         <Icon size={12} /> {label} missing
       </span>
-    );
-  }
-
-  if (download) {
-    return (
-      <a
-        href={href}
-        download={filename || true}
-        className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors hover:border-[var(--green-deep)]"
-        style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
-      >
-        <Icon size={12} style={{ color: 'var(--green-deep)' }} />
-        {label}
-        <Download size={11} style={{ color: 'var(--ink-soft)' }} />
-      </a>
     );
   }
 
