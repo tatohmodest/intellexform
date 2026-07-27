@@ -1,31 +1,48 @@
 import Link from 'next/link';
+import { BRAND_LOGO_FULL, BRAND_LOGO_MARK, BRAND_NAME } from '@/lib/brand';
 
-/** InTelleX wordmark image — use instead of plain text "Intellex" branding. */
+type BrandLogoVariant = 'full' | 'mark';
+
+/**
+ * InTelleX brand mark.
+ * - `full`: homepage header wordmark (`/logo.png`)
+ * - `mark`: compact icon when the wordmark cannot fit
+ */
 export default function BrandLogo({
   href = '/',
   height = 32,
   className = '',
   priority = false,
+  variant = 'full',
+  onClick,
 }: {
   href?: string | null;
   height?: number;
   className?: string;
   priority?: boolean;
+  variant?: BrandLogoVariant;
+  onClick?: () => void;
 }) {
+  const src = variant === 'mark' ? BRAND_LOGO_MARK : BRAND_LOGO_FULL;
   const img = (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/logo.png"
-      alt="InTelleX"
+      src={src}
+      alt={BRAND_NAME}
       className={`w-auto ${className}`}
-      style={{ height }}
+      style={{ height, width: variant === 'mark' ? height : 'auto' }}
       {...(priority ? { fetchPriority: 'high' as const } : {})}
     />
   );
 
   if (!href) return img;
   return (
-    <Link href={href} className="inline-flex shrink-0 items-center" aria-label="InTelleX home">
+    <Link
+      href={href}
+      className="inline-flex shrink-0 items-center"
+      aria-label={`${BRAND_NAME} home`}
+      onClick={onClick}
+    >
       {img}
     </Link>
   );
