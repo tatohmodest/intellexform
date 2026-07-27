@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { BookOpen, Check, Clock, GraduationCap } from 'lucide-react';
 import EnrollButton from '@/components/dashboard/EnrollButton';
 import TrackLogo from '@/components/TrackLogo';
+import { getTrackLogo } from '@/lib/techLogos';
 
 export type CourseListItem = {
   slug: string;
@@ -119,13 +120,14 @@ export default function CoursesBrowser({
 
 function CourseTrackCard({ track: t }: { track: CourseListItem }) {
   const hours = Math.max(1, Math.round(t.totalMinutes / 60));
+  const logoSrc = getTrackLogo(t.slug);
 
   return (
     <article
       className="group flex h-full min-w-0 flex-col overflow-hidden border bg-paper transition-shadow hover:shadow-card"
       style={{ borderColor: 'var(--line)' }}
     >
-      {/* Course cover */}
+      {/* Cover: color wash + big low-opacity logo watermark on the left */}
       <Link href={`/dashboard/courses/${t.slug}`} className="relative block aspect-[16/10] overflow-hidden">
         <div
           className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.03]"
@@ -134,17 +136,21 @@ function CourseTrackCard({ track: t }: { track: CourseListItem }) {
           }}
         />
         <div
-          className="absolute inset-0 opacity-30"
+          className="absolute inset-0 opacity-25"
           style={{
             background:
-              'radial-gradient(ellipse 70% 60% at 80% 20%, rgba(255,255,255,0.35), transparent 55%)',
+              'radial-gradient(ellipse 70% 60% at 85% 15%, rgba(255,255,255,0.4), transparent 55%)',
           }}
         />
-        <div className="absolute inset-0 flex items-center justify-center p-6">
-          <span className="flex h-[72px] w-[72px] items-center justify-center bg-white/95 shadow-sm sm:h-20 sm:w-20">
-            <TrackLogo slug={t.slug} color={t.color} size={48} className="!rounded-none" />
-          </span>
-        </div>
+        {logoSrc ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={logoSrc}
+            alt=""
+            aria-hidden
+            className="pointer-events-none absolute -left-6 bottom-[-18%] h-[125%] w-auto max-w-[78%] object-contain opacity-[0.16] brightness-0 invert sm:-left-4 sm:opacity-[0.2]"
+          />
+        ) : null}
         <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
           <span className="bg-white/95 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--ink)]">
             {t.tag}
@@ -165,15 +171,25 @@ function CourseTrackCard({ track: t }: { track: CourseListItem }) {
         )}
       </Link>
 
-      {/* Course body */}
+      {/* Body: tiny circular logo beside the course name */}
       <div className="flex min-w-0 flex-1 flex-col gap-2 p-4 sm:p-5">
         <Link href={`/dashboard/courses/${t.slug}`} className="min-w-0">
-          <h3 className="font-display text-[18px] font-semibold leading-snug line-clamp-2 transition-opacity group-hover:opacity-80 sm:text-[20px]">
-            {t.title}
-          </h3>
-          <p className="mt-1.5 line-clamp-2 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-            {t.tagline}
-          </p>
+          <div className="flex items-start gap-2.5">
+            <span
+              className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border sm:h-10 sm:w-10"
+              style={{ borderColor: 'var(--line)', background: '#fff' }}
+            >
+              <TrackLogo slug={t.slug} color={t.color} size={26} className="!rounded-full !bg-transparent" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h3 className="font-display text-[17px] font-semibold leading-snug line-clamp-2 transition-opacity group-hover:opacity-80 sm:text-[19px]">
+                {t.title}
+              </h3>
+              <p className="mt-1 line-clamp-2 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                {t.tagline}
+              </p>
+            </div>
+          </div>
         </Link>
 
         <div
