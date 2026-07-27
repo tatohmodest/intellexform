@@ -4,7 +4,6 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  Sparkles,
   Video,
   Bot,
   BookOpen,
@@ -12,6 +11,7 @@ import {
   Flame,
   ArrowRight,
 } from 'lucide-react';
+import BrandLogo from '@/components/BrandLogo';
 
 const ERROR_MESSAGES: Record<string, string> = {
   oauth_not_configured:
@@ -59,12 +59,12 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
             'radial-gradient(1200px 600px at -10% -10%, rgba(0,179,105,0.35), transparent 60%), radial-gradient(900px 500px at 110% 110%, rgba(74,144,226,0.3), transparent 60%), #0C1116',
         }}
       >
-        <Link href="/" className="flex items-center gap-2 text-white">
-          <span className="font-display text-[22px] font-semibold">Intellex</span>
+        <div className="flex items-center gap-2.5">
+          <BrandLogo href="/" height={30} className="brightness-0 invert" />
           <span className="mono rounded-full border border-white/20 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.14em] text-white/70">
             Learning
           </span>
-        </Link>
+        </div>
 
         <div>
           <motion.h1
@@ -124,12 +124,11 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
           transition={{ duration: 0.4 }}
           className="w-full max-w-[420px]"
         >
-          <Link href="/" className="mb-10 flex items-center gap-2 lg:hidden">
-            <span className="font-display text-[20px] font-semibold">Intellex</span>
-          </Link>
+          <div className="mb-10 lg:hidden">
+            <BrandLogo href="/" height={28} />
+          </div>
 
           <div className="tab mb-4 inline-flex items-center gap-1.5">
-            <Sparkles size={11} />
             {isSignup ? 'Create your account' : 'Welcome back'}
           </div>
           <h2 className="font-display text-[30px] leading-tight">

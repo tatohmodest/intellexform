@@ -59,7 +59,9 @@ export default async function LibraryPage() {
                   className="flex aspect-[3/4] flex-col items-center justify-center rounded-xl p-3 text-center text-white shadow-book transition-transform hover:-translate-y-1"
                   style={{ background: `linear-gradient(160deg, ${b.coverColor}, ${b.coverColor}cc)` }}
                 >
-                  <span className="text-[28px]">{b.coverEmoji}</span>
+                  <span className="font-display text-[28px] font-semibold">
+                    {(b.title || 'B').charAt(0).toUpperCase()}
+                  </span>
                   <span className="mt-2 line-clamp-3 font-display text-[12px] leading-snug">{b.title}</span>
                 </div>
               </Link>
@@ -90,7 +92,9 @@ export default async function LibraryPage() {
                         className="flex aspect-[3/4] w-[92px] flex-col items-center justify-center rounded-lg p-2 text-center text-white"
                         style={{ background: `linear-gradient(160deg, ${b.coverColor}, ${b.coverColor}cc)` }}
                       >
-                        <span className="text-[22px]">{b.coverEmoji}</span>
+                        <span className="font-display text-[22px] font-semibold">
+                          {(b.title || 'B').charAt(0).toUpperCase()}
+                        </span>
                       </div>
                     </Link>
                     <div className="flex min-w-0 flex-1 flex-col">

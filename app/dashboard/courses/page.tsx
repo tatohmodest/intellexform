@@ -5,6 +5,7 @@ import { getSessionUser } from '@/lib/auth/getUser';
 import { getEnrollments, getProgress } from '@/lib/learn/repo';
 import { getCatalog, getNextLesson } from '@/lib/learn/catalog';
 import EnrollButton from '@/components/dashboard/EnrollButton';
+import TrackLogo from '@/components/TrackLogo';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,12 +59,7 @@ export default async function CoursesPage() {
                   style={{ borderColor: 'var(--line)' }}
                 >
                   <Link href={`/dashboard/courses/${t.slug}`} className="mb-4 flex items-center gap-3">
-                    <span
-                      className="flex h-11 w-11 items-center justify-center rounded-xl text-[20px]"
-                      style={{ background: `${t.color}18` }}
-                    >
-                      {t.icon}
-                    </span>
+                    <TrackLogo slug={t.slug} color={t.color} size={44} />
                     <div className="min-w-0">
                       <div className="truncate text-[15px] font-semibold">{t.shortTitle}</div>
                       <div className="mono text-[11px] uppercase tracking-[0.1em]" style={{ color: 'var(--ink-soft)' }}>
@@ -121,12 +117,7 @@ export default async function CoursesPage() {
                 style={{ borderColor: 'var(--line)' }}
               >
                 <Link href={firstHref} className="mb-3 flex items-center gap-3">
-                  <span
-                    className="flex h-11 w-11 items-center justify-center rounded-xl text-[20px]"
-                    style={{ background: `${t.color}18` }}
-                  >
-                    {t.icon}
-                  </span>
+                  <TrackLogo slug={t.slug} color={t.color} size={44} />
                   <div className="min-w-0">
                     <div className="truncate text-[15px] font-semibold">{t.shortTitle}</div>
                     <div className="mono text-[11px] uppercase tracking-[0.1em]" style={{ color: 'var(--ink-soft)' }}>

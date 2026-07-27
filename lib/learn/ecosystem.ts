@@ -337,7 +337,7 @@ export async function createBook(opts: {
     description: '',
     category: 'Programming',
     coverColor: '#00b369',
-    coverEmoji: '📘',
+    coverEmoji: 'B',
     priceXAF: 0,
     chapters: [{ title: 'Chapter 1', content: '' }],
     published: false,
@@ -487,7 +487,7 @@ export async function createInstitution(opts: {
     tagline: opts.tagline.slice(0, 140),
     about: opts.about.slice(0, 2000),
     color: /^#[0-9a-fA-F]{6}$/.test(opts.color) ? opts.color : '#00b369',
-    emoji: opts.emoji.slice(0, 4) || '🎓',
+    emoji: opts.emoji.slice(0, 4) || '',
     visibility: opts.visibility === 'private' ? 'private' : 'public',
     ownerId: opts.ownerId,
     ownerName: opts.ownerName,
@@ -650,7 +650,7 @@ async function seedIntellexInstitution(db: Awaited<ReturnType<typeof getDb>>) {
     about:
       'Intellex is the founding institution of the ecosystem — public courses, mentorship, certifications, career programs and communities. Other schools, academies and companies can open their own campus and run it alongside Intellex.',
     color: '#00b369',
-    emoji: '🟢',
+    emoji: '',
     visibility: 'public',
     ownerId: 'system',
     ownerName: 'Intellex',
@@ -669,7 +669,7 @@ const SEED_BOOKS: Array<
       'A practical companion to the Intellex web tracks — how the pieces fit together, how to structure projects, and how to think like a working developer.',
     category: 'Programming',
     coverColor: '#00b369',
-    coverEmoji: '🧭',
+    coverEmoji: 'G',
     chapters: [
       {
         title: 'How the web actually works',
@@ -695,7 +695,7 @@ const SEED_BOOKS: Array<
       'The fastest reference for the Intellex Python track: core syntax, data structures, comprehensions, file handling and the patterns you will use every single day.',
     category: 'Programming',
     coverColor: '#3572A5',
-    coverEmoji: '🐍',
+    coverEmoji: 'P',
     chapters: [
       {
         title: 'Core syntax at a glance',
@@ -721,7 +721,7 @@ const SEED_BOOKS: Array<
       'How to go from learning to earning: building proof of skill, positioning yourself, finding your first clients or job, and growing once you are in.',
     category: 'Career',
     coverColor: '#7c3aed',
-    coverEmoji: '🚀',
+    coverEmoji: 'R',
     chapters: [
       {
         title: 'Proof beats promises',

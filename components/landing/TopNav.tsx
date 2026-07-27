@@ -102,9 +102,9 @@ export default function TopNav() {
       >
         <div className="mx-auto flex w-full max-w-[1140px] items-center justify-between gap-3 overflow-visible px-5 py-3 sm:gap-4 sm:px-6 sm:py-4 md:pl-12">
           <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
-            <Link href="/" className="flex shrink-0 items-center" aria-label="Intellex home" onClick={() => setOpen(false)}>
+            <Link href="/" className="flex shrink-0 items-center" aria-label="InTelleX home" onClick={() => setOpen(false)}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/image.png" alt="Intellex" className="h-8 w-auto sm:h-9" />
+              <img src="/logo.png" alt="InTelleX" className="h-8 w-auto sm:h-9" />
             </Link>
             <HeaderSearch />
           </div>
@@ -249,7 +249,7 @@ export default function TopNav() {
           >
             <div className="flex items-center justify-between border-b px-5 py-3" style={{ borderColor: 'var(--line)' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/image.png" alt="Intellex" className="h-8 w-auto" />
+              <img src="/logo.png" alt="InTelleX" className="h-8 w-auto" />
               <button
                 className="flex h-10 w-10 items-center justify-center rounded-full"
                 style={{ background: 'var(--paper-dim)' }}

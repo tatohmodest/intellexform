@@ -159,8 +159,11 @@ export default async function MentorStudioPage() {
                   className="flex items-center gap-3.5 rounded-2xl border p-4 transition-shadow hover:shadow-card"
                   style={{ borderColor: 'var(--line)' }}
                 >
-                  <span className="flex h-12 w-10 shrink-0 items-center justify-center rounded-lg text-[18px]" style={{ background: `${b.coverColor}1c` }}>
-                    {b.coverEmoji}
+                  <span
+                    className="flex h-12 w-10 shrink-0 items-center justify-center rounded-lg font-display text-[16px] font-semibold"
+                    style={{ background: `${b.coverColor}1c`, color: b.coverColor }}
+                  >
+                    {(b.title || 'B').charAt(0).toUpperCase()}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[14px] font-semibold">{b.title}</div>

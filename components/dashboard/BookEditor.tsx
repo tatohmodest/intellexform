@@ -17,7 +17,6 @@ import type { BookView } from '@/lib/learn/ecosystem';
 
 const CATEGORIES = ['Programming', 'Data & AI', 'Design', 'Marketing', 'Career', 'Business', 'Other'];
 const COLORS = ['#00b369', '#4a90e2', '#7c3aed', '#e0234e', '#f59e0b', '#0C1116'];
-const EMOJIS = ['📘', '📗', '📙', '🧭', '🐍', '⚡', '🚀', '🎨', '📊', '💼'];
 
 export default function BookEditor({ book }: { book: BookView }) {
   const router = useRouter();
@@ -26,7 +25,6 @@ export default function BookEditor({ book }: { book: BookView }) {
   const [description, setDescription] = useState(book.description);
   const [category, setCategory] = useState(book.category);
   const [coverColor, setCoverColor] = useState(book.coverColor);
-  const [coverEmoji, setCoverEmoji] = useState(book.coverEmoji);
   const [priceXAF, setPriceXAF] = useState(book.priceXAF);
   const [chapters, setChapters] = useState(book.chapters);
   const [published, setPublished] = useState(book.published);
@@ -47,7 +45,7 @@ export default function BookEditor({ book }: { book: BookView }) {
           description,
           category,
           coverColor,
-          coverEmoji,
+          coverEmoji: (title || 'B').charAt(0).toUpperCase(),
           priceXAF,
           chapters,
           published: nextPublished ?? published,
@@ -96,7 +94,9 @@ export default function BookEditor({ book }: { book: BookView }) {
             className="flex aspect-[3/4] w-full max-w-[180px] flex-col items-center justify-center rounded-2xl p-4 text-center text-white shadow-book"
             style={{ background: `linear-gradient(160deg, ${coverColor}, ${coverColor}cc)` }}
           >
-            <span className="text-[40px]">{coverEmoji}</span>
+            <span className="font-display text-[42px] font-semibold leading-none opacity-95">
+              {(title || 'B').charAt(0).toUpperCase()}
+            </span>
             <span className="mt-3 line-clamp-3 font-display text-[15px] leading-snug">{title || 'Untitled'}</span>
           </div>
           <div className="mt-3 flex flex-wrap gap-1.5">
@@ -108,18 +108,6 @@ export default function BookEditor({ book }: { book: BookView }) {
                 style={{ background: c, borderColor: coverColor === c ? 'var(--ink)' : 'transparent' }}
                 aria-label={`Cover color ${c}`}
               />
-            ))}
-          </div>
-          <div className="mt-2 flex flex-wrap gap-1">
-            {EMOJIS.map((e) => (
-              <button
-                key={e}
-                onClick={() => setCoverEmoji(e)}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-[15px]"
-                style={{ background: coverEmoji === e ? 'var(--paper-dim)' : 'transparent' }}
-              >
-                {e}
-              </button>
             ))}
           </div>
         </div>

@@ -8,7 +8,6 @@ import { Building2, Check, Loader2, Plus, Users, X } from 'lucide-react';
 import type { InstitutionDoc } from '@/lib/learn/ecosystem';
 
 const COLORS = ['#00b369', '#4a90e2', '#7c3aed', '#e0234e', '#f59e0b', '#0C1116'];
-const EMOJIS = ['🎓', '🏫', '🏛️', '🚀', '💼', '🧠', '🌍', '⚡'];
 
 export default function InstitutionsBrowser({
   institutions,
@@ -24,7 +23,6 @@ export default function InstitutionsBrowser({
   const [tagline, setTagline] = useState('');
   const [about, setAbout] = useState('');
   const [color, setColor] = useState('#00b369');
-  const [emoji, setEmoji] = useState('🎓');
   const [visibility, setVisibility] = useState<'public' | 'private'>('public');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -38,7 +36,7 @@ export default function InstitutionsBrowser({
       const res = await fetch('/api/learn/institutions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, tagline, about, color, emoji, visibility }),
+        body: JSON.stringify({ name, tagline, about, color, emoji: '', visibility }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -87,10 +85,10 @@ export default function InstitutionsBrowser({
               <div className="p-5">
                 <div className="mb-3 flex items-center gap-3.5">
                   <span
-                    className="flex h-12 w-12 items-center justify-center rounded-2xl text-[22px]"
-                    style={{ background: `${inst.color}18` }}
+                    className="flex h-12 w-12 items-center justify-center rounded-2xl font-display text-[18px] font-semibold"
+                    style={{ background: `${inst.color}18`, color: inst.color }}
                   >
-                    {inst.emoji}
+                    {(inst.name || 'I').charAt(0).toUpperCase()}
                   </span>
                   <div className="min-w-0 flex-1">
                     <Link href={`/dashboard/institutions/${inst.slug}`}>
@@ -177,37 +175,19 @@ export default function InstitutionsBrowser({
               <label className="mb-1.5 block text-[13px] font-semibold">About</label>
               <textarea className="form-input mb-4" rows={3} placeholder="What do you teach? Who is it for?" value={about} onChange={(e) => setAbout(e.target.value)} />
 
-              <div className="mb-4 grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-1.5 block text-[13px] font-semibold">Brand color</label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {COLORS.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => setColor(c)}
-                        className="h-7 w-7 rounded-full border-2"
-                        style={{ background: c, borderColor: color === c ? 'var(--ink)' : 'transparent' }}
-                        aria-label={`Color ${c}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-[13px] font-semibold">Crest</label>
-                  <div className="flex flex-wrap gap-1">
-                    {EMOJIS.map((e) => (
-                      <button
-                        key={e}
-                        type="button"
-                        onClick={() => setEmoji(e)}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-[17px]"
-                        style={{ background: emoji === e ? 'var(--paper-dim)' : 'transparent' }}
-                      >
-                        {e}
-                      </button>
-                    ))}
-                  </div>
+              <div className="mb-4">
+                <label className="mb-1.5 block text-[13px] font-semibold">Brand color</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setColor(c)}
+                      className="h-7 w-7 rounded-full border-2"
+                      style={{ background: c, borderColor: color === c ? 'var(--ink)' : 'transparent' }}
+                      aria-label={`Color ${c}`}
+                    />
+                  ))}
                 </div>
               </div>
 

@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       tagline: String(body.tagline ?? '').trim(),
       about: String(body.about ?? '').trim(),
       color: String(body.color ?? '#00b369'),
-      emoji: String(body.emoji ?? '🎓'),
+      emoji: String(body.emoji ?? ''),
       visibility: body.visibility === 'private' ? 'private' : 'public',
       ownerId: user.uid,
       ownerName: user.name,

@@ -6,6 +6,7 @@ import { getEnrollments, getProgress } from '@/lib/learn/repo';
 import { getCatalogTrack, getNextLesson } from '@/lib/learn/catalog';
 import { getTutorial } from '@/lib/tutorials';
 import EnrollButton from '@/components/dashboard/EnrollButton';
+import TrackLogo from '@/components/TrackLogo';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,12 +49,7 @@ export default async function CourseDetailPage({
         style={{ borderColor: 'var(--line)', background: `linear-gradient(135deg, ${track.color}10, transparent 55%)` }}
       >
         <div className="flex flex-wrap items-start gap-5">
-          <span
-            className="flex h-16 w-16 items-center justify-center rounded-2xl text-[30px]"
-            style={{ background: `${track.color}1c` }}
-          >
-            {track.icon}
-          </span>
+          <TrackLogo slug={track.slug} color={track.color} size={64} className="rounded-2xl" />
           <div className="min-w-0 flex-1">
             <div className="mono mb-1 text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
               {track.tag} · Self-paced

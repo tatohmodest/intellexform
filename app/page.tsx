@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Sparkles, Gauge, Compass, Globe, Video, BadgeCheck, Users, Award } from 'lucide-react';
+import { Gauge, Compass, Globe, Video, BadgeCheck, Users, Award } from 'lucide-react';
 import { getAllCourses } from '@/lib/repo';
 import { formatXAF } from '@/lib/format';
 import TopNav from '@/components/landing/TopNav';
@@ -215,7 +215,7 @@ export default async function HomePage() {
               <div className="grid items-center gap-8 p-7 sm:p-10 lg:grid-cols-[1.1fr_0.9fr]">
                 <div>
                   <div className="mb-3 inline-flex items-center gap-2 rounded-full px-3 py-1 font-mono text-[11px] uppercase tracking-[0.1em]" style={{ background: 'rgba(0,179,105,0.22)', color: '#9AFFC8' }}>
-                    <Sparkles size={12} /> Special cohort
+                    Special cohort
                   </div>
                   <h3 className="mb-3 font-display text-[24px] leading-tight sm:text-[30px]">{special.name}</h3>
                   <p className="mb-6 max-w-[480px] text-[14.5px] leading-relaxed" style={{ color: 'rgba(251,248,240,0.78)' }}>

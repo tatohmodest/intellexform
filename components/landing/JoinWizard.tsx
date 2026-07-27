@@ -3,7 +3,8 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  ArrowLeft, ArrowRight, Check, Loader2, MessageCircle, Sparkles, PartyPopper,
+  ArrowLeft, ArrowRight, Check, Loader2, MessageCircle, PartyPopper,
+  User, Phone, Target, CreditCard, MessageSquare,
 } from 'lucide-react';
 
 const FIELDS = [
@@ -187,7 +188,7 @@ export default function JoinWizard() {
                 className="flex h-full flex-col"
               >
                 {step === 0 && (
-                  <StepShell emoji="👋" kicker="Let's begin" title="First, what should we call you?">
+                  <StepShell icon={User} kicker="Let's begin" title="First, what should we call you?">
                     <input
                       autoFocus
                       className="form-input text-lg"
@@ -200,7 +201,7 @@ export default function JoinWizard() {
                 )}
 
                 {step === 1 && (
-                  <StepShell emoji="📱" kicker={`Nice to meet you, ${fullName.split(' ')[0] || 'friend'}`} title="What's your WhatsApp number?">
+                  <StepShell icon={Phone} kicker={`Nice to meet you, ${fullName.split(' ')[0] || 'friend'}`} title="What's your WhatsApp number?">
                     <input
                       autoFocus
                       type="tel"
@@ -215,7 +216,7 @@ export default function JoinWizard() {
                 )}
 
                 {step === 2 && (
-                  <StepShell emoji="🎯" kicker="Pick your path" title="What do you want to learn?">
+                  <StepShell icon={Target} kicker="Pick your path" title="What do you want to learn?">
                     <div className="grid max-h-[230px] gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
                       {FIELDS.map((f) => (
                         <OptionCard key={f} label={f} selected={field === f} onClick={() => pick('field', f)} />
@@ -225,7 +226,7 @@ export default function JoinWizard() {
                 )}
 
                 {step === 3 && (
-                  <StepShell emoji="💳" kicker="Almost there" title="How do you want to learn it?">
+                  <StepShell icon={CreditCard} kicker="Almost there" title="How do you want to learn it?">
                     <div className="grid max-h-[230px] gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
                       {PLANS.map((p) => (
                         <OptionCard key={p} label={p} selected={plan === p} onClick={() => pick('plan', p)} />
@@ -235,7 +236,7 @@ export default function JoinWizard() {
                 )}
 
                 {step === 4 && (
-                  <StepShell emoji="🚀" kicker="Last one" title="Anything you'd like us to know?">
+                  <StepShell icon={MessageSquare} kicker="Last one" title="Anything you'd like us to know?">
                     <textarea
                       autoFocus
                       className="form-input"
@@ -285,12 +286,27 @@ export default function JoinWizard() {
   );
 }
 
-function StepShell({ emoji, kicker, title, children }: { emoji: string; kicker: string; title: string; children: React.ReactNode }) {
+function StepShell({
+  icon: Icon,
+  kicker,
+  title,
+  children,
+}: {
+  icon: typeof User;
+  kicker: string;
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex h-full flex-col">
-      <div className="mb-1 text-[26px]">{emoji}</div>
-      <div className="mb-1 flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em]" style={{ color: 'var(--green-deep)' }}>
-        <Sparkles size={12} /> {kicker}
+      <div
+        className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl"
+        style={{ background: 'rgba(0,179,105,0.1)', color: 'var(--green-deep)' }}
+      >
+        <Icon size={20} />
+      </div>
+      <div className="mb-1 font-mono text-[11px] uppercase tracking-[0.14em]" style={{ color: 'var(--green-deep)' }}>
+        {kicker}
       </div>
       <h3 className="mb-4 font-display text-[22px] leading-snug sm:text-[24px]">{title}</h3>
       <div className="flex-1">{children}</div>

@@ -21,6 +21,7 @@ import {
   Building2,
   GraduationCap,
 } from 'lucide-react';
+import BrandLogo from '@/components/BrandLogo';
 
 export interface ShellUser {
   name: string;
@@ -132,9 +133,7 @@ export default function DashboardShell({
   const sidebarInner = (
     <>
       <div className="mb-8 flex items-center gap-2 px-2">
-        <Link href="/" className="font-display text-[20px] font-semibold">
-          Intellex
-        </Link>
+        <BrandLogo href="/" height={28} />
         <span className="mono rounded-full border px-2 py-0.5 text-[9.5px] uppercase tracking-[0.14em]" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
           Learn
         </span>
@@ -208,7 +207,7 @@ export default function DashboardShell({
         </button>
 
         <div className="lg:hidden">
-          <span className="font-display text-[17px] font-semibold">Intellex</span>
+          <BrandLogo href="/" height={26} />
         </div>
 
         <div className="ml-auto flex items-center gap-2.5 sm:gap-4">

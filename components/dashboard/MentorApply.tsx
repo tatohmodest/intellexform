@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { GraduationCap, Loader2, Plus, Sparkles, X } from 'lucide-react';
+import { GraduationCap, Loader2, Plus, X } from 'lucide-react';
 
 const DAYS = ['Today', 'Tomorrow', 'In 2 days', 'In 3 days', 'In 4 days', 'In 5 days', 'In 6 days'];
 
@@ -220,7 +220,7 @@ export default function MentorApply() {
         )}
 
         <button type="submit" disabled={busy} className="btn btn-primary w-full !py-3.5 text-[14px]">
-          {busy ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+          {busy ? <Loader2 size={16} className="animate-spin" /> : <GraduationCap size={16} />}
           Open my Mentor Studio
         </button>
       </form>

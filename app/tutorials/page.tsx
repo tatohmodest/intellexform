@@ -2,7 +2,9 @@ import Link from 'next/link';
 import { ArrowRight, BookOpen, Clock, Layers } from 'lucide-react';
 import TopNav from '@/components/landing/TopNav';
 import Footer from '@/components/landing/Footer';
+import TrackLogo from '@/components/TrackLogo';
 import { TUTORIALS, getFirstLessonSlug } from '@/lib/tutorials';
+import { getCatalogTrack } from '@/lib/learn/catalog';
 
 export const metadata = {
   title: 'Tutorials - Intellex',
@@ -39,6 +41,7 @@ export default function TutorialsHubPage() {
         <div className="wrap">
           <div className="grid gap-5">
             {TUTORIALS.map((course) => {
+              const track = getCatalogTrack(course.slug);
               const beginnerCount = course.sections
                 .filter((s) => s.level === 'beginner')
                 .reduce((n, s) => n + s.lessons.length, 0);
@@ -70,6 +73,11 @@ export default function TutorialsHubPage() {
                   <div className="grid lg:grid-cols-[1.4fr_0.9fr]">
                     <div className="p-7 sm:p-9">
                       <div className="mb-3 flex flex-wrap items-center gap-2">
+                        <TrackLogo
+                          slug={course.slug}
+                          color={track?.color}
+                          size={40}
+                        />
                         <span className="tab">{course.tag || 'Tutorial'}</span>
                         <span className="pill">{course.totalLessons} lessons</span>
                       </div>

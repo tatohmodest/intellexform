@@ -7,6 +7,7 @@ import { getCatalogTrack } from '@/lib/learn/catalog';
 import { getTutorial, getTutorialLessons } from '@/lib/tutorials';
 import LessonBlocks from '@/components/tutorials/LessonBlocks';
 import LessonActions from '@/components/dashboard/LessonActions';
+import TrackLogo from '@/components/TrackLogo';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,12 +43,7 @@ export default async function LessonPlayerPage({
             href={`/dashboard/courses/${params.slug}`}
             className="flex items-center gap-2.5"
           >
-            <span
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-[16px]"
-              style={{ background: `${track.color}18` }}
-            >
-              {track.icon}
-            </span>
+            <TrackLogo slug={track.slug} color={track.color} size={36} className="rounded-lg" />
             <div className="min-w-0">
               <div className="truncate text-[13.5px] font-semibold">{track.shortTitle}</div>
               <div className="text-[11.5px]" style={{ color: 'var(--ink-soft)' }}>

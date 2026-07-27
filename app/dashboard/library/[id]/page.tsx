@@ -46,7 +46,9 @@ export default async function BookReaderPage({
             className="mx-auto flex aspect-[3/4] w-[110px] flex-col items-center justify-center rounded-xl p-3 text-center text-white shadow-book"
             style={{ background: `linear-gradient(160deg, ${book.coverColor}, ${book.coverColor}cc)` }}
           >
-            <span className="text-[26px]">{book.coverEmoji}</span>
+            <span className="font-display text-[26px] font-semibold">
+              {(book.title || 'B').charAt(0).toUpperCase()}
+            </span>
             <span className="mt-2 line-clamp-3 font-display text-[11.5px] leading-snug">{book.title}</span>
           </div>
           <div className="mt-3 text-center text-[12px]" style={{ color: 'var(--ink-soft)' }}>

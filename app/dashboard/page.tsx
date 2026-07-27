@@ -11,7 +11,6 @@ import {
   GraduationCap,
   PlayCircle,
   Plus,
-  Sparkles,
   Video,
   Zap,
 } from 'lucide-react';
@@ -23,6 +22,7 @@ import {
   getProgress,
 } from '@/lib/learn/repo';
 import { getCatalog, getCatalogTrack, getNextLesson } from '@/lib/learn/catalog';
+import TrackLogo from '@/components/TrackLogo';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,7 +97,6 @@ export default async function DashboardOverview() {
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="tab mb-2 inline-flex items-center gap-1.5">
-            <Sparkles size={11} />
             Your learning HQ
           </div>
           <h1 className="font-display text-[30px] leading-tight sm:text-[34px]">
@@ -184,12 +183,7 @@ export default async function DashboardOverview() {
                 style={{ borderColor: 'var(--line)' }}
               >
                 <div className="mb-4 flex items-center gap-3">
-                  <span
-                    className="flex h-11 w-11 items-center justify-center rounded-xl text-[20px]"
-                    style={{ background: `${track.color}18` }}
-                  >
-                    {track.icon}
-                  </span>
+                  <TrackLogo slug={track.slug} color={track.color} size={44} />
                   <div className="min-w-0">
                     <div className="truncate text-[15px] font-semibold">{track.shortTitle}</div>
                     <div className="mono text-[11px] uppercase tracking-[0.1em]" style={{ color: 'var(--ink-soft)' }}>
@@ -321,12 +315,7 @@ export default async function DashboardOverview() {
                 className="flex items-center gap-3.5 rounded-2xl border p-4 transition-shadow hover:shadow-card"
                 style={{ borderColor: 'var(--line)' }}
               >
-                <span
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[18px]"
-                  style={{ background: `${t.color}18` }}
-                >
-                  {t.icon}
-                </span>
+                <TrackLogo slug={t.slug} color={t.color} size={40} />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-[14px] font-semibold">{t.shortTitle}</div>
                   <div className="flex items-center gap-2 text-[12px]" style={{ color: 'var(--ink-soft)' }}>

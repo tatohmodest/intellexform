@@ -14,6 +14,7 @@ import {
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getBookings, getEnrollments, getLearner, getProgress } from '@/lib/learn/repo';
 import { getCatalogTrack } from '@/lib/learn/catalog';
+import TrackLogo from '@/components/TrackLogo';
 
 export const dynamic = 'force-dynamic';
 
@@ -187,7 +188,7 @@ export default async function AchievementsPage() {
               style={{ borderColor: 'rgba(0,179,105,0.3)', background: 'rgba(0,179,105,0.04)' }}
             >
               <div className="mb-3 flex items-center justify-between">
-                <span className="text-[26px]">{c.icon}</span>
+                <TrackLogo slug={c.slug} color={c.color} size={44} />
                 <Award size={20} style={{ color: 'var(--green-deep)' }} />
               </div>
               <div className="font-display text-[18px]">{c.title}</div>

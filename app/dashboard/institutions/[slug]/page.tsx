@@ -55,8 +55,11 @@ export default async function CampusPage({ params }: { params: { slug: string } 
         <div className="p-7 sm:p-9">
           <div className="flex flex-wrap items-center justify-between gap-5">
             <div className="flex items-center gap-4">
-              <span className="flex h-16 w-16 items-center justify-center rounded-2xl text-[30px]" style={{ background: 'rgba(255,255,255,0.14)' }}>
-                {inst.emoji}
+              <span
+                className="flex h-16 w-16 items-center justify-center rounded-2xl font-display text-[26px] font-semibold"
+                style={{ background: 'rgba(255,255,255,0.14)' }}
+              >
+                {(inst.name || 'I').charAt(0).toUpperCase()}
               </span>
               <div>
                 <h1 className="font-display text-[28px] leading-tight">{inst.name}</h1>

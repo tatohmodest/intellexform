@@ -3,7 +3,9 @@ import { ArrowRight, Clock, Play } from 'lucide-react';
 import TopNav from '@/components/landing/TopNav';
 import Footer from '@/components/landing/Footer';
 import TutorialSidebar from '@/components/tutorials/TutorialSidebar';
+import TrackLogo from '@/components/TrackLogo';
 import type { TutorialCourse } from '@/lib/tutorials/types';
+import { getCatalogTrack } from '@/lib/learn/catalog';
 
 const LEVEL_STYLE: Record<string, { label: string; color: string; bg: string }> = {
   beginner: { label: 'Beginner', color: 'var(--green-deep)', bg: 'rgba(0,179,105,0.10)' },
@@ -19,6 +21,7 @@ export default function TutorialCourseView({
   eyebrow: string;
 }) {
   const first = course.sections[0]?.lessons[0];
+  const track = getCatalogTrack(course.slug);
 
   return (
     <>
@@ -36,7 +39,10 @@ export default function TutorialCourseView({
             }}
           >
             <div className="max-w-[760px]">
-              <div className="tab mb-3 sm:mb-4">{eyebrow}</div>
+              <div className="mb-4 flex items-center gap-3">
+                <TrackLogo slug={course.slug} color={track?.color} size={48} />
+                <div className="tab mb-0">{eyebrow}</div>
+              </div>
               <h1 className="mb-3 break-words font-display text-[28px] leading-[1.1] sm:text-[36px] md:text-[42px]">
                 {course.title}
               </h1>
