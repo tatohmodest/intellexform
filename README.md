@@ -1,13 +1,13 @@
 # Intellex Early Access Platform
 
-A full Next.js 14 registration platform for Intellex — with dynamic PDF invoice generation, curriculum guide, and animated registration flow.
+A full Next.js 14 registration platform for Intellex - with dynamic PDF invoice generation, curriculum guide, and animated registration flow.
 
 ## What's included
 
-- **Landing page** (`/`) — Early access hero, stats, program showcase, and CTA
-- **Registration page** (`/register`) — Full animated form with validation
-- **Dynamic Invoice PDF** — Auto-filled with the registrant's form data, program, and payment details
-- **Curriculum PDF** — 8-page program guide covering all programs, pricing, learning modes, and enrollment steps
+- **Landing page** (`/`) - Early access hero, stats, program showcase, and CTA
+- **Registration page** (`/register`) - Full animated form with validation
+- **Dynamic Invoice PDF** - Auto-filled with the registrant's form data, program, and payment details
+- **Curriculum PDF** - 8-page program guide covering all programs, pricing, learning modes, and enrollment steps
 - **11 programs** pre-configured (6 full programs + 5 modules)
 
 ## Tech Stack
@@ -42,10 +42,10 @@ npm start
 ## Customization
 
 ### Update payment details
-Edit `components/InvoicePDF.tsx` — search for the payment section (lines with MTN/Orange).
+Edit `components/InvoicePDF.tsx` - search for the payment section (lines with MTN/Orange).
 
 ### Change program prices or content
-Edit `lib/programs.ts` — all programs, prices, curricula, and registration fees are here.
+Edit `lib/programs.ts` - all programs, prices, curricula, and registration fees are here.
 
 ### Update contact info / WhatsApp
 Search for `650318856` or `wa.me` across the codebase to update the WhatsApp number.
@@ -92,4 +92,4 @@ Deploy to [Vercel](https://vercel.com) in one command:
 npx vercel
 ```
 
-Or push to GitHub and connect to Vercel — it auto-detects Next.js.
+Or push to GitHub and connect to Vercel - it auto-detects Next.js.

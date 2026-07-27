@@ -9,7 +9,7 @@ export const COOKIE_NAME = 'intellex_admin';
 /** @deprecated Password login replaced by email OTP + learner session. */
 export const DEFAULT_PASSWORD = 'modestwilton';
 
-/** Platform owners — only these emails may open /admin. */
+/** Platform owners - only these emails may open /admin. */
 export const DEFAULT_ADMIN_EMAILS = [
   'modestwilton@gmail.com',
   'tatohmodest@gmail.com',

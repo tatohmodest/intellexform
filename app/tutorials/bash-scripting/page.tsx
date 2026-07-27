@@ -2,7 +2,7 @@ import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
 import { bashScriptingTutorial } from '@/lib/tutorials/bash-scripting';
 
 export const metadata = {
-  title: 'Bash Scripting Tutorial — Intellex',
+  title: 'Bash Scripting Tutorial - Intellex',
   description: bashScriptingTutorial.description,
 };
 

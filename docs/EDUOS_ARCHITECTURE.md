@@ -1,12 +1,12 @@
-# InTelleX EduOS — Governance & Federated Architecture
+# InTelleX EduOS - Governance & Federated Architecture
 
 > **Golden rule:** Nothing important in InTelleX is created by accident, accessed without permission, or managed without accountability. Every institution, role, resource, and action has a clear owner, a defined approval process, and auditable permissions.
 
-InTelleX is **education infrastructure** — an Education Cloud / Education Operating System. Institutions **connect to the network**; they do not dump all academic data into one giant multi-tenant sack.
+InTelleX is **education infrastructure** - an Education Cloud / Education Operating System. Institutions **connect to the network**; they do not dump all academic data into one giant multi-tenant sack.
 
 ## Two layers
 
-### Layer 1 — InTelleX Core
+### Layer 1 - InTelleX Core
 
 Owns only what belongs to the network:
 
@@ -20,7 +20,7 @@ Owns only what belongs to the network:
 
 **Academic records do not live here.**
 
-### Layer 2 — Institution infrastructure
+### Layer 2 - Institution infrastructure
 
 Each campus owns:
 
@@ -28,7 +28,7 @@ Each campus owns:
 - Grades, attendance, exams
 - Finance, research, internal announcements
 
-Deployment options (provisioned by Platform Owner / Admin — never by end users):
+Deployment options (provisioned by Platform Owner / Admin - never by end users):
 
 | Model | Meaning |
 |-------|---------|
@@ -66,7 +66,7 @@ Capabilities are defined in `lib/eduos/permissions.ts`. Roles are collections of
 
 ## Institution isolation
 
-An admin of Institution A must never view or mutate Institution B’s students, courses, analytics, or private announcements. Cross-institution needs go through the **API gateway** as verification requests — never direct database access.
+An admin of Institution A must never view or mutate Institution B’s students, courses, analytics, or private announcements. Cross-institution needs go through the **API gateway** as verification requests - never direct database access.
 
 ## AI inherits permissions
 

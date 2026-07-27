@@ -31,7 +31,7 @@ export const mongodbTutorial: TutorialCourse = {
   title: 'MongoDB Tutorial',
   shortTitle: 'MongoDB',
   description:
-    'A complete MongoDB path from beginner to pro — documents, queries, aggregation, schema design, and connecting MongoDB to Node.js, Express, Flask, Django, and Next.js.',
+    'A complete MongoDB path from beginner to pro - documents, queries, aggregation, schema design, and connecting MongoDB to Node.js, Express, Flask, Django, and Next.js.',
   tagline: 'Documents + real app connections',
   audience: 'Beginners to developers building flexible data-backed apps',
   totalLessons: allLessons.length,

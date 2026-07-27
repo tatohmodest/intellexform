@@ -31,7 +31,7 @@ export const flaskTutorial: TutorialCourse = {
   title: 'Flask Tutorial',
   shortTitle: 'Flask',
   description:
-    'A complete Flask path from beginner to pro — lightweight Python web apps with routes, Jinja, SQLAlchemy, auth, APIs, and deployment.',
+    'A complete Flask path from beginner to pro - lightweight Python web apps with routes, Jinja, SQLAlchemy, auth, APIs, and deployment.',
   tagline: 'Lightweight Python web with Flask',
   audience: 'Python learners who want flexible, from-scratch web apps',
   totalLessons: allLessons.length,

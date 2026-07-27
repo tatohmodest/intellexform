@@ -214,7 +214,7 @@ export default function MentorApply() {
         <GraduationCap className="mx-auto mb-4" size={32} style={{ color: 'var(--green-deep)' }} />
         <h1 className="font-display text-[24px]">Application under review</h1>
         <p className="mx-auto mt-2 max-w-md text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-          Thanks — your CV, ID, and intro video are with InTelleX admins.
+          Thanks - your CV, ID, and intro video are with InTelleX admins.
           Mentor Studio unlocks only after approval. Nothing important is toggled on by accident.
         </p>
         <button type="button" onClick={() => router.push('/dashboard')} className="btn btn-primary mt-6 !py-2.5 text-[13.5px]">
@@ -237,8 +237,8 @@ export default function MentorApply() {
         </span>
         <h1 className="font-display text-[28px] leading-tight">Apply to mentor</h1>
         <p className="mx-auto mt-2 max-w-md text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Mentorship is a privilege. Complete this short onboarding — profile, documents, and a
-          1-minute intro — then wait for InTelleX admin approval.
+          Mentorship is a privilege. Complete this short onboarding - profile, documents, and a
+          1-minute intro - then wait for InTelleX admin approval.
         </p>
       </div>
 
@@ -501,14 +501,14 @@ export default function MentorApply() {
                   <ReviewRow label="Title" value={title} />
                   <ReviewRow label="Skills" value={expertise.join(', ')} />
                   <ReviewRow label="Price" value={`${priceXAF.toLocaleString()} XAF · ${sessionMinutes} min`} />
-                  <ReviewRow label="CV" value={resumeFile ? `${resumeFile.name} (${fmtBytes(resumeFile.size)})` : '—'} />
-                  <ReviewRow label="ID" value={idFront && idBack ? 'Front + back attached' : '—'} />
+                  <ReviewRow label="CV" value={resumeFile ? `${resumeFile.name} (${fmtBytes(resumeFile.size)})` : '-'} />
+                  <ReviewRow label="ID" value={idFront && idBack ? 'Front + back attached' : '-'} />
                   <ReviewRow
                     label="Intro video"
                     value={
                       videoBlob
                         ? `${videoSeconds || '≤60'}s · ${fmtBytes(videoBlob.size)}`
-                        : '—'
+                        : '-'
                     }
                   />
                 </ul>

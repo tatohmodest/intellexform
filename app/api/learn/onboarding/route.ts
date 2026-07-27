@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/** GET — current onboarding / identity snapshot. */
+/** GET - current onboarding / identity snapshot. */
 export async function GET() {
   const user = getSessionUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });

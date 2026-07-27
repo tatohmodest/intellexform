@@ -3,7 +3,7 @@
 ## Cursor Cloud specific instructions
 
 ### What this is
-Single Next.js 14 (App Router, TypeScript) app — the "Intellex Early Access Platform". It has a landing page (`/`), a registration form (`/register`) that persists to MongoDB via `POST /api/register`, and an email-OTP admin dashboard (`/admin`) backed by `/api/admin/*` routes. Standard scripts live in `package.json` (`dev`, `build`, `start`, `lint`).
+Single Next.js 14 (App Router, TypeScript) app - the "Intellex Early Access Platform". It has a landing page (`/`), a registration form (`/register`) that persists to MongoDB via `POST /api/register`, and an email-OTP admin dashboard (`/admin`) backed by `/api/admin/*` routes. Standard scripts live in `package.json` (`dev`, `build`, `start`, `lint`).
 
 ### Required runtime dependencies (non-obvious)
 - **MongoDB is required to run the app at all.** `lib/mongodb.ts` throws at import time if `MONGODB_URL` is unset, so any API route (and the admin/register pages) will 500 without a reachable MongoDB. A local `mongod` is installed; start it (it is not managed by systemd here) with:
@@ -26,5 +26,5 @@ Password login is disabled. DB name is `intellex`; OTP codes live in `admin_otps
 ### Notes
 - App serves on port 3000 (`npm run dev`).
 - The README is outdated: it claims "no server required", but the app in fact needs MongoDB + API routes.
-- `SUPABASE_*` env vars in `.env` are dead config — not referenced anywhere.
+- `SUPABASE_*` env vars in `.env` are dead config - not referenced anywhere.
 - There is no automated test suite; verify changes via `npm run lint`, `npm run build`, and the `/register` → `/admin` flow.

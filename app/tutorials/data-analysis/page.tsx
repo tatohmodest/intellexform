@@ -2,7 +2,7 @@ import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
 import { dataAnalysisTutorial } from '@/lib/tutorials/data-analysis';
 
 export const metadata = {
-  title: 'Data Analysis Tutorial — Intellex',
+  title: 'Data Analysis Tutorial - Intellex',
   description: dataAnalysisTutorial.description,
 };
 

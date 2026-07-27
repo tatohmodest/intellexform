@@ -4,7 +4,7 @@ import { MENTORS, type Mentor, type MentorSlot } from '@/lib/learn/mentors';
 import type { ContentVisibility, InstitutionAuthMethod } from '@/lib/learn/identity';
 
 /**
- * Ecosystem data layer — roles, mentor profiles, the book library &
+ * Ecosystem data layer - roles, mentor profiles, the book library &
  * publishing portal, and institutions (the multi-tenant "EduOS" foundation).
  *
  * All collections are created explicitly with indexes by
@@ -209,7 +209,7 @@ export interface MentorApplicationDoc {
 }
 
 /**
- * Mentorship is a privilege — applications enter a review queue.
+ * Mentorship is a privilege - applications enter a review queue.
  * Role is NOT granted until a Platform/Institution admin approves.
  * Applicants must attach CV, ID (front/back), and a short intro video.
  */
@@ -825,7 +825,7 @@ export interface InstitutionDoc {
    * Modules (capabilities) unlock from pack or explicit enabledModules.
    */
   capabilityPack?: 'foundation' | 'professional' | 'enterprise' | 'custom';
-  /** Explicit module ids beyond Core — wins over pack when set. */
+  /** Explicit module ids beyond Core - wins over pack when set. */
   enabledModules?: string[];
   branding?: {
     primaryColor?: string;
@@ -869,7 +869,7 @@ export async function createInstitution(opts: {
   ownerId: string;
   ownerName: string;
 }): Promise<{ slug: string } | { error: string }> {
-  // Internal provisioning path only — public users must submitInstitutionApplication().
+  // Internal provisioning path only - public users must submitInstitutionApplication().
   await ensureLearnCollections();
   const db = await getDb();
   const slug = slugify(opts.name);
@@ -990,7 +990,7 @@ export async function searchInstitutions(query: string, limit = 20): Promise<Ins
 
 /**
  * Verify a student against an institution's auth method.
- * Credentials are forwarded to the campus (or accepted in demo mode) —
+ * Credentials are forwarded to the campus (or accepted in demo mode) -
  * InTelleX never stores the campus password.
  */
 export async function verifyInstitutionStudent(opts: {
@@ -1054,7 +1054,7 @@ export async function verifyInstitutionStudent(opts: {
       studentId: matricule,
       department: 'General',
       program: 'Enrolled student',
-      year: '—',
+      year: '-',
     };
   }
 
@@ -1191,7 +1191,7 @@ async function seedIntellexInstitution(db: Awaited<ReturnType<typeof getDb>>) {
       name: 'InTelleX',
       tagline: 'The home campus of the InTelleX learning ecosystem',
       about:
-        'InTelleX is the founding institution of the ecosystem — public courses, mentorship, certifications, career programs and communities. Other schools, academies and companies can open their own campus and run it alongside InTelleX.',
+        'InTelleX is the founding institution of the ecosystem - public courses, mentorship, certifications, career programs and communities. Other schools, academies and companies can open their own campus and run it alongside InTelleX.',
       color: '#00b369',
       emoji: '',
       visibility: 'public',
@@ -1234,7 +1234,7 @@ async function seedIntellexInstitution(db: Awaited<ReturnType<typeof getDb>>) {
       slug: 'university-of-buea',
       name: 'University of Buea',
       tagline: 'Knowledge with wisdom',
-      about: 'Public university in Buea, Cameroon — affiliate with your matricule to enter the campus workspace.',
+      about: 'Public university in Buea, Cameroon - affiliate with your matricule to enter the campus workspace.',
       color: '#1f5fa8',
       authMethod: 'matricule',
       country: 'Cameroon',
@@ -1264,7 +1264,7 @@ async function seedIntellexInstitution(db: Awaited<ReturnType<typeof getDb>>) {
       slug: 'seven-advanced-academy',
       name: 'Seven Advanced Academy',
       tagline: 'Skills that ship',
-      about: 'Professional academy for builders — join with your student ID to access academy courses and announcements.',
+      about: 'Professional academy for builders - join with your student ID to access academy courses and announcements.',
       color: '#c2570a',
       authMethod: 'matricule',
       country: 'Cameroon',
@@ -1309,7 +1309,7 @@ const SEED_BOOKS: Array<
     title: 'The Intellex Web Developer Handbook',
     subtitle: 'From your first HTML tag to a deployed product',
     description:
-      'A practical companion to the Intellex web tracks — how the pieces fit together, how to structure projects, and how to think like a working developer.',
+      'A practical companion to the Intellex web tracks - how the pieces fit together, how to structure projects, and how to think like a working developer.',
     category: 'Programming',
     coverColor: '#00b369',
     coverEmoji: 'G',
@@ -1317,7 +1317,7 @@ const SEED_BOOKS: Array<
       {
         title: 'How the web actually works',
         content:
-          'Every website you visit is a conversation between two computers.\n\nYour browser (the client) asks a server for a page. The server answers with **HTML** (structure), **CSS** (style) and **JavaScript** (behaviour). Everything else — frameworks, databases, APIs — exists to make that conversation richer.\n\nKey ideas:\n- A URL is an address, DNS is the phonebook that resolves it.\n- HTTP is the language of the request/response cycle.\n- The browser builds a DOM from HTML and paints it to the screen.\n\n```text\nBrowser ──request──▶ Server\nBrowser ◀─response── Server (HTML + CSS + JS)\n```\n\nWhen you understand this loop, every technology you learn afterwards has a place to live in your mental model.',
+          'Every website you visit is a conversation between two computers.\n\nYour browser (the client) asks a server for a page. The server answers with **HTML** (structure), **CSS** (style) and **JavaScript** (behaviour). Everything else - frameworks, databases, APIs - exists to make that conversation richer.\n\nKey ideas:\n- A URL is an address, DNS is the phonebook that resolves it.\n- HTTP is the language of the request/response cycle.\n- The browser builds a DOM from HTML and paints it to the screen.\n\n```text\nBrowser ──request──▶ Server\nBrowser ◀─response── Server (HTML + CSS + JS)\n```\n\nWhen you understand this loop, every technology you learn afterwards has a place to live in your mental model.',
       },
       {
         title: 'Structuring your first real project',
@@ -1343,17 +1343,17 @@ const SEED_BOOKS: Array<
       {
         title: 'Core syntax at a glance',
         content:
-          'Variables, types and control flow — the 20% of Python you use 80% of the time.\n\n```python\nname = "Ada"            # str\nage = 36                 # int\nskills = ["ml", "math"] # list\nprofile = {"name": name, "age": age}  # dict\n\nif age >= 18:\n    print(f"{name} is an adult")\n\nfor skill in skills:\n    print(skill.upper())\n```\n\nRemember: indentation *is* syntax in Python. Four spaces, always.',
+          'Variables, types and control flow - the 20% of Python you use 80% of the time.\n\n```python\nname = "Ada"            # str\nage = 36                 # int\nskills = ["ml", "math"] # list\nprofile = {"name": name, "age": age}  # dict\n\nif age >= 18:\n    print(f"{name} is an adult")\n\nfor skill in skills:\n    print(skill.upper())\n```\n\nRemember: indentation *is* syntax in Python. Four spaces, always.',
       },
       {
         title: 'Comprehensions and slicing',
         content:
-          'Pythonic code is compact without being cryptic.\n\n```python\nnums = [1, 2, 3, 4, 5, 6]\n\nevens = [n for n in nums if n % 2 == 0]      # [2, 4, 6]\nsquares = {n: n * n for n in nums}            # dict comprehension\nfirst_three = nums[:3]                        # [1, 2, 3]\nreversed_all = nums[::-1]                     # [6, 5, 4, 3, 2, 1]\n```\n\nIf a comprehension needs more than one condition and one transform, use a regular loop — readability wins.',
+          'Pythonic code is compact without being cryptic.\n\n```python\nnums = [1, 2, 3, 4, 5, 6]\n\nevens = [n for n in nums if n % 2 == 0]      # [2, 4, 6]\nsquares = {n: n * n for n in nums}            # dict comprehension\nfirst_three = nums[:3]                        # [1, 2, 3]\nreversed_all = nums[::-1]                     # [6, 5, 4, 3, 2, 1]\n```\n\nIf a comprehension needs more than one condition and one transform, use a regular loop - readability wins.',
       },
       {
         title: 'Files, errors and the standard library',
         content:
-          'The patterns you will reach for daily:\n\n```python\nfrom pathlib import Path\nimport json\n\n# Read and write files safely\ndata = json.loads(Path("config.json").read_text())\n\ntry:\n    value = data["missing_key"]\nexcept KeyError:\n    value = "default"\n\nPath("output.txt").write_text("done\\n")\n```\n\nExplore `collections`, `itertools`, and `datetime` before installing a package — the standard library probably already solves it.',
+          'The patterns you will reach for daily:\n\n```python\nfrom pathlib import Path\nimport json\n\n# Read and write files safely\ndata = json.loads(Path("config.json").read_text())\n\ntry:\n    value = data["missing_key"]\nexcept KeyError:\n    value = "default"\n\nPath("output.txt").write_text("done\\n")\n```\n\nExplore `collections`, `itertools`, and `datetime` before installing a package - the standard library probably already solves it.',
       },
     ],
   },
@@ -1369,12 +1369,12 @@ const SEED_BOOKS: Array<
       {
         title: 'Proof beats promises',
         content:
-          'Nobody hires potential they cannot see.\n\nYour portfolio is your proof. Three focused projects beat thirty tutorials:\n1. **A clone** — proves you can execute (rebuild a real product screen).\n2. **A tool** — proves you can think (solve a problem you actually have).\n3. **A collaboration** — proves you can work with others (contribute or pair up).\n\nEach project needs: a live link, a clear README, and a short write-up of decisions you made. That write-up is what interviewers actually read.',
+          'Nobody hires potential they cannot see.\n\nYour portfolio is your proof. Three focused projects beat thirty tutorials:\n1. **A clone** - proves you can execute (rebuild a real product screen).\n2. **A tool** - proves you can think (solve a problem you actually have).\n3. **A collaboration** - proves you can work with others (contribute or pair up).\n\nEach project needs: a live link, a clear README, and a short write-up of decisions you made. That write-up is what interviewers actually read.',
       },
       {
         title: 'Positioning and the first opportunity',
         content:
-          'The market does not reward the most skilled — it rewards the most legible.\n\nMake yourself easy to say yes to:\n- One sentence bio: "I build X for Y using Z."\n- A LinkedIn/GitHub that matches that sentence.\n- Evidence pinned at the top.\n\nFirst opportunities rarely come from job boards. They come from:\n- People who watched you learn in public.\n- Small businesses near you with real problems.\n- Communities where you consistently helped others.\n\nDo work worth talking about, then talk about it.',
+          'The market does not reward the most skilled - it rewards the most legible.\n\nMake yourself easy to say yes to:\n- One sentence bio: "I build X for Y using Z."\n- A LinkedIn/GitHub that matches that sentence.\n- Evidence pinned at the top.\n\nFirst opportunities rarely come from job boards. They come from:\n- People who watched you learn in public.\n- Small businesses near you with real problems.\n- Communities where you consistently helped others.\n\nDo work worth talking about, then talk about it.',
       },
     ],
   },

@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/learn/institutions/[slug]/affiliate
- * Credentials verified against the campus path — InTelleX stores affiliation only.
+ * Credentials verified against the campus path - InTelleX stores affiliation only.
  */
 export async function POST(
   req: NextRequest,

@@ -94,7 +94,7 @@ export async function compressIntroVideo(input: Blob): Promise<{
         combined = new MediaStream([...canvasStream.getVideoTracks(), audio]);
       }
     } catch {
-      /* no audio track — still fine for compression */
+      /* no audio track - still fine for compression */
     }
 
     const mimeType = pickMime();

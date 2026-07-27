@@ -31,7 +31,7 @@ export const dataAnalysisTutorial: TutorialCourse = {
   title: 'Data Analysis Tutorial',
   shortTitle: 'Data Analysis',
   description:
-    'A complete data analysis path from beginner to pro — Python, pandas, NumPy, visualization, SQL, and real projects. Learn the analyst toolkit section by section.',
+    'A complete data analysis path from beginner to pro - Python, pandas, NumPy, visualization, SQL, and real projects. Learn the analyst toolkit section by section.',
   tagline: 'From messy data to clear insights',
   audience: 'Beginners to aspiring analysts and developers who want to work with real datasets',
   totalLessons: allLessons.length,
@@ -41,7 +41,7 @@ export const dataAnalysisTutorial: TutorialCourse = {
     'pandas, NumPy, and clean analysis workflows',
     'Visualization, EDA, and SQL for analysts',
     'Reproducible projects and portfolio work',
-    'One clear idea per lesson — no fluff',
+    'One clear idea per lesson - no fluff',
   ],
 };
 

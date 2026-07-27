@@ -35,15 +35,15 @@ export async function POST(req: NextRequest) {
     const doc = await otps.findOne({ email });
 
     if (!doc?.codeHash || !doc.expiresAt) {
-      return NextResponse.json({ error: 'No code pending — request a new one.' }, { status: 400 });
+      return NextResponse.json({ error: 'No code pending - request a new one.' }, { status: 400 });
     }
     if (new Date(doc.expiresAt).getTime() < Date.now()) {
       await otps.deleteOne({ email });
-      return NextResponse.json({ error: 'Code expired — request a new one.' }, { status: 400 });
+      return NextResponse.json({ error: 'Code expired - request a new one.' }, { status: 400 });
     }
     if ((doc.attempts ?? 0) >= ADMIN_OTP.maxAttempts) {
       await otps.deleteOne({ email });
-      return NextResponse.json({ error: 'Too many attempts — request a new code.' }, { status: 429 });
+      return NextResponse.json({ error: 'Too many attempts - request a new code.' }, { status: 429 });
     }
 
     const valid = await verifyOtpCode(code, String(doc.codeHash));

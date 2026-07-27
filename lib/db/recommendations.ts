@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 
 /**
  * Platform-curated YouTube / external media recommendations based on learner field.
- * Tutor-authored paid books live in the Book model — not here.
+ * Tutor-authored paid books live in the Book model - not here.
  */
 export async function getRecommendedMediaForField(
   fieldOfInterest?: string | null,

@@ -5,7 +5,7 @@ import { getDb } from '@/lib/repo';
 export const dynamic = 'force-dynamic';
 
 /**
- * GET /api/admin/applications — pending institution & mentor applications.
+ * GET /api/admin/applications - pending institution & mentor applications.
  * Platform review queue for the governance workflow.
  */
 export async function GET(req: NextRequest) {

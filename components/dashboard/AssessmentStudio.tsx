@@ -353,7 +353,7 @@ export default function AssessmentStudio({
                     <Sparkles size={16} style={{ color: accent }} /> Instructor AI assist
                   </div>
                   <p className="mb-3 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                    Your AI helps you design questions — you stay in control of the final paper.
+                    Your AI helps you design questions - you stay in control of the final paper.
                   </p>
                   <div className="flex gap-2">
                     <input
@@ -491,7 +491,7 @@ export default function AssessmentStudio({
                           <div className="font-semibold">{s.studentName}</div>
                           <div className="font-mono text-[10px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
                             {s.status}
-                            {typeof s.score === 'number' ? ` · ${s.score}/${s.maxScore ?? '—'}` : ''}
+                            {typeof s.score === 'number' ? ` · ${s.score}/${s.maxScore ?? '-'}` : ''}
                           </div>
                         </div>
                       </div>

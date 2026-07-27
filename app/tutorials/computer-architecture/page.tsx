@@ -2,7 +2,7 @@ import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
 import { computerArchitectureTutorial } from '@/lib/tutorials/computer-architecture';
 
 export const metadata = {
-  title: 'Computer Architecture Tutorial — Intellex',
+  title: 'Computer Architecture Tutorial - Intellex',
   description: computerArchitectureTutorial.description,
 };
 

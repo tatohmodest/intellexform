@@ -3,9 +3,9 @@
  *
  * Identity is global. Permissions are contextual. Data is local.
  *
- * Users belong to InTelleX — not to universities.
+ * Users belong to InTelleX - not to universities.
  * Institutions are affiliations on one passport, like GitHub orgs.
- * Institutions are never self-created — Platform Team onboards them.
+ * Institutions are never self-created - Platform Team onboards them.
  */
 
 export type PrimaryIntent = 'learn' | 'teach';
@@ -28,7 +28,7 @@ export interface Affiliation {
   institutionName: string;
   role: AffiliationRole;
   status: AffiliationStatus;
-  /** External campus id (e.g. matricule) — never a password. */
+  /** External campus id (e.g. matricule) - never a password. */
   externalStudentId?: string | null;
   department?: string | null;
   faculty?: string | null;
@@ -43,7 +43,7 @@ export interface Affiliation {
 }
 
 /**
- * UI context — switching contexts never creates a new account.
+ * UI context - switching contexts never creates a new account.
  */
 export type ContextKind =
   | 'personal'

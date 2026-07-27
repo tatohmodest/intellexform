@@ -2,10 +2,10 @@
  * Federated education architecture.
  *
  * InTelleX is not a centralized database for all schools.
- * It is a federated education network — AWS for Education.
+ * It is a federated education network - AWS for Education.
  *
- * Layer 1 — Core: registry, identity, trust, discovery, verification, AI routing.
- * Layer 2 — Institution: academic records stay with the owning campus.
+ * Layer 1 - Core: registry, identity, trust, discovery, verification, AI routing.
+ * Layer 2 - Institution: academic records stay with the owning campus.
  */
 
 export const FEDERATION_LAYERS = {
@@ -93,7 +93,7 @@ export const DEPLOYMENT_CHOICES: Record<
   },
 };
 
-/** Institutions never talk DB-to-DB — only through the gateway. */
+/** Institutions never talk DB-to-DB - only through the gateway. */
 export function federationPath(fromInstitutionId: string, toInstitutionId: string) {
   return {
     from: fromInstitutionId,

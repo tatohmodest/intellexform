@@ -78,7 +78,7 @@ export default function AssignmentSubmitClient({
       {submission?.status === 'graded' ? (
         <div className="mt-8 border p-5" style={{ borderColor: 'var(--line)' }}>
           <p className="font-display text-[22px]">
-            Marked · {submission.score}/{submission.maxScore ?? '—'}
+            Marked · {submission.score}/{submission.maxScore ?? '-'}
           </p>
           {submission.feedback && (
             <p className="mt-2 text-[14px]" style={{ color: 'var(--ink-soft)' }}>

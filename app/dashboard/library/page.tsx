@@ -30,7 +30,7 @@ export default async function LibraryPage() {
           </div>
           <h1 className="font-display text-[30px] leading-tight">Library</h1>
           <p className="mt-1 max-w-xl text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-            Books, handbooks and cheatsheets — written by Intellex and by mentors across
+            Books, handbooks and cheatsheets - written by Intellex and by mentors across
             the ecosystem. Free to read or priced by the author.
           </p>
         </div>

@@ -1,5 +1,5 @@
 /**
- * Curated YouTube tutorial library — hand-picked, high-quality, free video
+ * Curated YouTube tutorial library - hand-picked, high-quality, free video
  * courses that complement the Intellex tracks. Embedded with youtube-nocookie.
  */
 
@@ -37,12 +37,12 @@ export const VIDEO_TUTORIALS: VideoTutorial[] = [
     category: 'Web Development',
     duration: '4h',
     level: 'Beginner',
-    description: 'Everything you need to write your first real web pages — elements, forms, semantic HTML and accessibility.',
+    description: 'Everything you need to write your first real web pages - elements, forms, semantic HTML and accessibility.',
   },
   {
     id: 'css-full',
     youtubeId: 'OXGznpKZ_sA',
-    title: 'CSS Full Course — Zero to Hero',
+    title: 'CSS Full Course - Zero to Hero',
     channel: 'freeCodeCamp',
     category: 'Web Development',
     duration: '11h',
@@ -52,12 +52,12 @@ export const VIDEO_TUTORIALS: VideoTutorial[] = [
   {
     id: 'js-full',
     youtubeId: 'PkZNo7MFNFg',
-    title: 'Learn JavaScript — Full Course for Beginners',
+    title: 'Learn JavaScript - Full Course for Beginners',
     channel: 'freeCodeCamp',
     category: 'JavaScript',
     duration: '3.5h',
     level: 'Beginner',
-    description: 'The classic JavaScript foundation course — variables, functions, objects, arrays and ES6.',
+    description: 'The classic JavaScript foundation course - variables, functions, objects, arrays and ES6.',
   },
   {
     id: 'js-dom',
@@ -72,7 +72,7 @@ export const VIDEO_TUTORIALS: VideoTutorial[] = [
   {
     id: 'react-course',
     youtubeId: 'bMknfKXIFA8',
-    title: 'React Course — Beginner Tutorial',
+    title: 'React Course - Beginner Tutorial',
     channel: 'freeCodeCamp',
     category: 'Web Development',
     duration: '12h',
@@ -92,12 +92,12 @@ export const VIDEO_TUTORIALS: VideoTutorial[] = [
   {
     id: 'python-full',
     youtubeId: 'rfscVS0vtbw',
-    title: 'Learn Python — Full Course for Beginners',
+    title: 'Learn Python - Full Course for Beginners',
     channel: 'freeCodeCamp',
     category: 'Python',
     duration: '4.5h',
     level: 'Beginner',
-    description: 'The most-watched Python course on the internet — syntax, functions, and your first programs.',
+    description: 'The most-watched Python course on the internet - syntax, functions, and your first programs.',
   },
   {
     id: 'python-oop',
@@ -112,12 +112,12 @@ export const VIDEO_TUTORIALS: VideoTutorial[] = [
   {
     id: 'node-express',
     youtubeId: 'Oe421EPjeBE',
-    title: 'Node.js and Express.js — Full Course',
+    title: 'Node.js and Express.js - Full Course',
     channel: 'freeCodeCamp',
     category: 'Backend',
     duration: '8h',
     level: 'Intermediate',
-    description: 'Build real REST APIs with Node and Express — routing, middleware, MongoDB and deployment.',
+    description: 'Build real REST APIs with Node and Express - routing, middleware, MongoDB and deployment.',
   },
   {
     id: 'django-course',
@@ -132,12 +132,12 @@ export const VIDEO_TUTORIALS: VideoTutorial[] = [
   {
     id: 'sql-course',
     youtubeId: 'HXV3zeQKqGY',
-    title: 'SQL Tutorial — Full Database Course',
+    title: 'SQL Tutorial - Full Database Course',
     channel: 'freeCodeCamp',
     category: 'Databases',
     duration: '4h',
     level: 'Beginner',
-    description: 'Relational databases from scratch — queries, joins, keys and database design.',
+    description: 'Relational databases from scratch - queries, joins, keys and database design.',
   },
   {
     id: 'mongodb-course',
@@ -147,7 +147,7 @@ export const VIDEO_TUTORIALS: VideoTutorial[] = [
     category: 'Databases',
     duration: '1h',
     level: 'Beginner',
-    description: 'Documents, collections, CRUD and aggregation — NoSQL fundamentals fast.',
+    description: 'Documents, collections, CRUD and aggregation - NoSQL fundamentals fast.',
   },
   {
     id: 'docker-course',
@@ -157,7 +157,7 @@ export const VIDEO_TUTORIALS: VideoTutorial[] = [
     category: 'DevOps',
     duration: '2h',
     level: 'Beginner',
-    description: 'Containers explained properly — images, volumes, networks and docker-compose.',
+    description: 'Containers explained properly - images, volumes, networks and docker-compose.',
   },
   {
     id: 'git-course',
@@ -167,7 +167,7 @@ export const VIDEO_TUTORIALS: VideoTutorial[] = [
     category: 'DevOps',
     duration: '1h',
     level: 'Beginner',
-    description: 'Version control every developer must know — commits, branches, merges and pull requests.',
+    description: 'Version control every developer must know - commits, branches, merges and pull requests.',
   },
   {
     id: 'ml-course',
@@ -187,7 +187,7 @@ export const VIDEO_TUTORIALS: VideoTutorial[] = [
     category: 'Data & AI',
     duration: '10h',
     level: 'Intermediate',
-    description: 'NumPy, pandas, visualization and real datasets — the full data analysis toolkit.',
+    description: 'NumPy, pandas, visualization and real datasets - the full data analysis toolkit.',
   },
   {
     id: 'flutter-course',

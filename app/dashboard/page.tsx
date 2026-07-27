@@ -104,9 +104,9 @@ export default async function DashboardOverview() {
           </h1>
           <p className="mt-1 text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
             {streak > 0
-              ? `You're on a ${streak}-day streak — keep the fire alive.`
+              ? `You're on a ${streak}-day streak - keep the fire alive.`
               : 'Complete one lesson today to start a new streak.'}{' '}
-            One identity — switch campuses from the context menu
+            One identity - switch campuses from the context menu
             {learner?.affiliations?.length
               ? ` · affiliated with ${learner.affiliations.map((a) => a.institutionName).join(', ')}`
               : ''}
@@ -167,7 +167,7 @@ export default async function DashboardOverview() {
             </span>
             <h3 className="font-display text-[19px]">Your journey starts here</h3>
             <p className="mt-1 max-w-sm text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-              Enroll in your first self-paced track — 17 courses with hundreds of
+              Enroll in your first self-paced track - 17 courses with hundreds of
               hands-on lessons are waiting.
             </p>
             <Link href="/dashboard/courses" className="btn btn-primary mt-5 !py-3 text-[14px]">
@@ -211,7 +211,7 @@ export default async function DashboardOverview() {
                   {next ? (
                     <span className="truncate">Next: {next.title}</span>
                   ) : (
-                    <span>Course complete — review it</span>
+                    <span>Course complete - review it</span>
                   )}
                 </div>
               </Link>
@@ -249,7 +249,7 @@ export default async function DashboardOverview() {
                 <div>
                   <h3 className="text-[15.5px] font-semibold">No sessions booked yet</h3>
                   <p className="mt-1 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                    Book a 1-on-1 with a mentor — live HD video, screen sharing, and a
+                    Book a 1-on-1 with a mentor - live HD video, screen sharing, and a
                     plan tailored to where you are.
                   </p>
                   <Link

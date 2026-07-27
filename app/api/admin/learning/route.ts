@@ -5,7 +5,7 @@ import { getAdminLearningOverview } from '@/lib/learn/ecosystem';
 export const dynamic = 'force-dynamic';
 
 /**
- * GET /api/admin/learning — platform-wide learning overview for admins:
+ * GET /api/admin/learning - platform-wide learning overview for admins:
  * every collection with live counts, plus recent learners, enrollments,
  * mentorship bookings, published books and institutions.
  */

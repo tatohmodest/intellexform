@@ -36,7 +36,7 @@ export default async function MentorshipPage() {
         <h1 className="font-display text-[30px] leading-tight">Mentorship</h1>
         <p className="mt-1 max-w-xl text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
           Book live sessions with practitioners who&apos;ve shipped real products. HD video,
-          screen sharing and a plan tailored to you — right inside your dashboard.
+          screen sharing and a plan tailored to you - right inside your dashboard.
         </p>
       </div>
 

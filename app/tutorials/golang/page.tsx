@@ -2,7 +2,7 @@ import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
 import { golangTutorial } from '@/lib/tutorials/golang';
 
 export const metadata = {
-  title: 'Go (Golang) Tutorial — Intellex',
+  title: 'Go (Golang) Tutorial - Intellex',
   description: golangTutorial.description,
 };
 

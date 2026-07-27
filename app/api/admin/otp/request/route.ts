@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email required' }, { status: 400 });
     }
     if (!isAdminEmail(email)) {
-      // Same message — don't reveal allowlist.
+      // Same message - don't reveal allowlist.
       return NextResponse.json(
         { error: 'This email is not authorized for admin access.' },
         { status: 403 },

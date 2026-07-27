@@ -3,7 +3,7 @@ import { getSessionUser } from '@/lib/auth/getUser';
 import { isLLMConfigured } from '@/lib/learn/tutor';
 
 /**
- * Instructor AI — helps draft exam / assignment questions.
+ * Instructor AI - helps draft exam / assignment questions.
  */
 export async function POST(req: NextRequest) {
   const session = getSessionUser();
@@ -32,10 +32,10 @@ type ("structural"), prompt, points, hint (tip about submitting via Google Drive
             type: 'mcq',
             prompt: `${topic}: which statement is most accurate? (Q${i + 1})`,
             options: [
-              'Option A — incomplete',
-              'Option B — best answer',
-              'Option C — unrelated',
-              'Option D — partially true',
+              'Option A - incomplete',
+              'Option B - best answer',
+              'Option C - unrelated',
+              'Option D - partially true',
             ],
             correctIndex: 1,
             points: 2,
@@ -54,7 +54,7 @@ type ("structural"), prompt, points, hint (tip about submitting via Google Drive
     return NextResponse.json({
       questions: scaffold(),
       source: 'scaffold',
-      note: 'OpenAI key not configured — scaffold returned. Edit before publishing.',
+      note: 'OpenAI key not configured - scaffold returned. Edit before publishing.',
     });
   }
 
@@ -94,7 +94,7 @@ type ("structural"), prompt, points, hint (tip about submitting via Google Drive
     return NextResponse.json({
       questions: scaffold(),
       source: 'scaffold',
-      note: 'AI failed — scaffold returned. Edit before publishing.',
+      note: 'AI failed - scaffold returned. Edit before publishing.',
     });
   }
 }

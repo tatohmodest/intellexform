@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/learn/institutions/[slug]/profile
- * First verified campus visit — complete institution-facing profile fields.
+ * First verified campus visit - complete institution-facing profile fields.
  */
 export async function POST(
   req: NextRequest,

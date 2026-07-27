@@ -10,7 +10,7 @@ import type {
 import { PERSONAL_CONTEXT } from '@/lib/learn/identity';
 
 /**
- * Learner data layer — global InTelleX identity, enrollments, progress,
+ * Learner data layer - global InTelleX identity, enrollments, progress,
  * mentorship bookings, XP and streaks. Affiliations attach campuses to the
  * same passport; they never create a second account.
  */
@@ -153,7 +153,7 @@ export async function updateLearnerSettings(
   await db.collection('learners').updateOne({ lbId }, { $set: patch });
 }
 
-/** Complete first-run onboarding — identity stays global; intent only personalizes. */
+/** Complete first-run onboarding - identity stays global; intent only personalizes. */
 export async function completeLearnerOnboarding(
   lbId: string,
   opts: {

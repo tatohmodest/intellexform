@@ -62,7 +62,7 @@ export default function CampusProfileComplete({
           <div>
             <h2 className="font-display text-[22px]">Complete your {institutionName} profile</h2>
             <p className="mt-1 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              First verified visit — a few campus details. Your global InTelleX identity stays the same.
+              First verified visit - a few campus details. Your global InTelleX identity stays the same.
             </p>
           </div>
         </div>

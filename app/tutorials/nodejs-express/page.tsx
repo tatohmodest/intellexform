@@ -2,7 +2,7 @@ import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
 import { nodejsExpressTutorial } from '@/lib/tutorials/nodejs-express';
 
 export const metadata = {
-  title: 'Node.js & Express Tutorial — Intellex',
+  title: 'Node.js & Express Tutorial - Intellex',
   description: nodejsExpressTutorial.description,
 };
 

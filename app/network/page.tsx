@@ -17,7 +17,7 @@ import {
 } from '@/lib/contact';
 
 export const metadata = {
-  title: 'Institution Network — InTelleX',
+  title: 'Institution Network - InTelleX',
   description:
     'Build your digital campus with InTelleX: Core infrastructure plus modular capabilities for learning, AI, library, career, and more.',
 };
@@ -36,7 +36,7 @@ export default function NetworkPage() {
             </h1>
             <p className="text-[16px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
               One platform. Unlimited configurations. Every institution receives the InTelleX Core,
-              then unlocks capabilities — not gold tiers — based on how they teach, learn, and grow.
+              then unlocks capabilities - not gold tiers - based on how they teach, learn, and grow.
               Dashboards stay clean because people only see what their campus actually owns.
             </p>
           </Reveal>
@@ -49,7 +49,7 @@ export default function NetworkPage() {
             {
               icon: Network,
               title: 'Core layer',
-              body: 'Identity, verification, discovery, API gateway, marketplace, AI — never grades or private exams.',
+              body: 'Identity, verification, discovery, API gateway, marketplace, AI - never grades or private exams.',
             },
             {
               icon: Building2,
@@ -80,8 +80,8 @@ export default function NetworkPage() {
             </h2>
             <p className="mt-3 text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
               Institutions subscribe to capabilities, not software versions. Start with Foundation
-              (Core), grow into Professional or Enterprise, or assemble a custom set — online classes,
-              AI tutor, digital library, career portal — provisioned by the Platform Team.
+              (Core), grow into Professional or Enterprise, or assemble a custom set - online classes,
+              AI tutor, digital library, career portal - provisioned by the Platform Team.
             </p>
           </div>
 
@@ -155,7 +155,7 @@ export default function NetworkPage() {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/contact?type=institution" className="btn btn-primary">
-              Contact us — partner form
+              Contact us - partner form
             </Link>
             <a href={institutionMailto()} className="btn btn-ghost">
               <Mail size={15} /> {PLATFORM_CONTACT.email}

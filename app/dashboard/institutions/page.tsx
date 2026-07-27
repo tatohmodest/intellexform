@@ -26,7 +26,7 @@ export default async function InstitutionsPage() {
           network
         </h1>
         <p className="mt-4 max-w-[420px] text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-          One InTelleX identity. Many campuses. Pick where you study or teach — without another
+          One InTelleX identity. Many campuses. Pick where you study or teach - without another
           account.
         </p>
       </header>

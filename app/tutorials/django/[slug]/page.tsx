@@ -12,9 +12,9 @@ export function generateStaticParams() {
 
 export function generateMetadata({ params }: { params: { slug: string } }) {
   const nav = getDjangoLessonNav(params.slug);
-  if (!nav) return { title: 'Lesson not found — Intellex' };
+  if (!nav) return { title: 'Lesson not found - Intellex' };
   return {
-    title: `${nav.lesson.title} — Django Tutorial | Intellex`,
+    title: `${nav.lesson.title} - Django Tutorial | Intellex`,
     description: nav.lesson.description,
   };
 }

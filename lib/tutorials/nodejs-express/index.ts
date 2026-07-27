@@ -31,7 +31,7 @@ export const nodejsExpressTutorial: TutorialCourse = {
   title: 'Node.js & Express Tutorial',
   shortTitle: 'Node.js & Express',
   description:
-    'A complete Node.js and Express path from beginner to pro — modules, APIs, auth, databases, testing, and real backend projects.',
+    'A complete Node.js and Express path from beginner to pro - modules, APIs, auth, databases, testing, and real backend projects.',
   tagline: 'Backend JavaScript that ships',
   audience: 'JavaScript learners ready to build real backend APIs and services',
   totalLessons: allLessons.length,

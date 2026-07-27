@@ -28,7 +28,7 @@ export const javascriptTutorial: TutorialCourse = {
   title: 'JavaScript Tutorial',
   shortTitle: 'JavaScript',
   description:
-    'A complete frontend JavaScript path from absolute beginner to advanced — section by section, with clear explanations, examples, and practice prompts.',
+    'A complete frontend JavaScript path from absolute beginner to advanced - section by section, with clear explanations, examples, and practice prompts.',
   tagline: 'Frontend JavaScript, beginner to pro',
   audience: 'Complete beginners to intermediate developers ready to go advanced',
   totalLessons: allLessons.length,
@@ -38,7 +38,7 @@ export const javascriptTutorial: TutorialCourse = {
     'Clear explanations with real browser examples',
     'Practice prompts after every lesson',
     'Capstone mini-projects at the end',
-    'No fluff — one idea per section',
+    'No fluff - one idea per section',
   ],
 };
 

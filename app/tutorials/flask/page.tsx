@@ -2,7 +2,7 @@ import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
 import { flaskTutorial } from '@/lib/tutorials/flask';
 
 export const metadata = {
-  title: 'Flask Tutorial — Intellex',
+  title: 'Flask Tutorial - Intellex',
   description: flaskTutorial.description,
 };
 

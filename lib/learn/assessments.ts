@@ -170,7 +170,7 @@ export async function createAssessment(opts: {
     instructions: '',
     studentTips:
       opts.kind === 'assignment'
-        ? 'Upload your work to Google Drive or Google Docs → Share → Anyone with the link (viewer) → paste the link here. Your instructor opens it inside InTelleX — you do not need to email files.'
+        ? 'Upload your work to Google Drive or Google Docs → Share → Anyone with the link (viewer) → paste the link here. Your instructor opens it inside InTelleX - you do not need to email files.'
         : 'This exam is one question at a time. You cannot go back. Leaving this tab or window ends the exam.',
     questions: [],
     durationMinutes: opts.kind === 'exam' ? 60 : null,

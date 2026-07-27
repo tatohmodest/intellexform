@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 }
 
 /**
- * POST /api/learn/institutions — institutions are not self-created.
+ * POST /api/learn/institutions - institutions are not self-created.
  * Direct partners to the Platform Team contact path.
  */
 export async function POST() {

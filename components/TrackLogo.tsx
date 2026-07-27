@@ -7,7 +7,7 @@ const FALLBACK_ICONS: Record<string, typeof Cpu> = {
 };
 
 /**
- * Renders a course/tutorial brand logo (image) — never an emoji.
+ * Renders a course/tutorial brand logo (image) - never an emoji.
  */
 export default function TrackLogo({
   slug,

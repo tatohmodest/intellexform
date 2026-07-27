@@ -14,7 +14,7 @@ const KINDS: ContextKind[] = [
 ];
 
 /**
- * POST /api/learn/context — switch workspace context (same identity).
+ * POST /api/learn/context - switch workspace context (same identity).
  * body: { kind, institutionSlug? }
  */
 export async function POST(req: NextRequest) {

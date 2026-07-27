@@ -6,7 +6,7 @@ import { BRAND_LOGO_MARK } from '@/lib/brand';
 export const metadata: Metadata = {
   title: 'Intellex - Learn at your pace, on your terms',
   description:
-    'Intellex is where you actually finish what you start — self-paced courses, live mentors, and an AI tutor that studies a book so it can teach it to you, one level at a time. Built in Cameroon.',
+    'Intellex is where you actually finish what you start - self-paced courses, live mentors, and an AI tutor that studies a book so it can teach it to you, one level at a time. Built in Cameroon.',
   keywords: [
     'Intellex',
     'tech education',
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     apple: [{ url: BRAND_LOGO_MARK }],
   },
   openGraph: {
-    title: 'Intellex — Learn at your pace, on your terms',
+    title: 'Intellex - Learn at your pace, on your terms',
     description:
       'Self-paced courses, live mentors, and an AI tutor. Skills to income, one level at a time.',
     type: 'website',

@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
         notifyUrl,
         productName: course.name,
         productImage: course.courseImage || undefined,
-        about: course.shortDescription || `Intellex — ${course.name}`,
+        about: course.shortDescription || `Intellex - ${course.name}`,
         meta: { courseSlug: course.slug, fullName, whatsapp },
       });
       transactionUrl = redirectUrl;

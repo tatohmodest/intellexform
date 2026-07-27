@@ -31,7 +31,7 @@ export const postgresqlTutorial: TutorialCourse = {
   title: 'PostgreSQL Tutorial',
   shortTitle: 'PostgreSQL',
   description:
-    'A complete PostgreSQL path from beginner to pro — SQL, schema design, performance, and connecting Postgres to Node.js, Express, Flask, Django, and Next.js.',
+    'A complete PostgreSQL path from beginner to pro - SQL, schema design, performance, and connecting Postgres to Node.js, Express, Flask, Django, and Next.js.',
   tagline: 'SQL + real app connections',
   audience: 'Beginners to developers shipping apps with a real database',
   totalLessons: allLessons.length,

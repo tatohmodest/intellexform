@@ -8,7 +8,7 @@ import BrandLogo from '@/components/BrandLogo';
 import { PLATFORM_CONTACT } from '@/lib/contact';
 
 export const metadata = {
-  title: 'Contact — InTelleX',
+  title: 'Contact - InTelleX',
   description:
     'Contact InTelleX for learning questions, mentorship quotes, or institution partnership inquiries.',
 };
@@ -29,7 +29,7 @@ export default function ContactPage() {
               Talk to the InTelleX team
             </h1>
             <p className="text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Learners, mentors, and institutions use this form. Tell us who you are — we save your
+              Learners, mentors, and institutions use this form. Tell us who you are - we save your
               message and can continue the conversation on WhatsApp. To start learning right away,{' '}
               <Link href="/signup" className="font-semibold" style={{ color: 'var(--green-deep)' }}>
                 sign up
@@ -39,15 +39,15 @@ export default function ContactPage() {
             <ul className="mt-6 space-y-2.5 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
               <li>
                 <span className="font-semibold" style={{ color: 'var(--ink)' }}>Learners</span>
-                {' — '}plans, courses, AI tutor questions
+                {' - '}plans, courses, AI tutor questions
               </li>
               <li>
                 <span className="font-semibold" style={{ color: 'var(--ink)' }}>Institutions</span>
-                {' — '}campus partnership & capability provisioning
+                {' - '}campus partnership & capability provisioning
               </li>
               <li>
                 <span className="font-semibold" style={{ color: 'var(--ink)' }}>Mentorship</span>
-                {' — '}live online or onsite quotes
+                {' - '}live online or onsite quotes
               </li>
             </ul>
             <p className="mt-6 text-[13px]" style={{ color: 'var(--ink-soft)' }}>

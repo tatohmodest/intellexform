@@ -51,7 +51,7 @@ function MockInner() {
           Cancel payment
         </button>
         <p className="mt-4 text-center text-[11px]" style={{ color: 'var(--ink-soft)' }}>
-          Sandbox checkout — shown because PayUnit API keys aren&apos;t configured yet. Add them to enable
+          Sandbox checkout - shown because PayUnit API keys aren&apos;t configured yet. Add them to enable
           real MoMo / Orange / card payments.
         </p>
       </div>

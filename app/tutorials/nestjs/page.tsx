@@ -2,7 +2,7 @@ import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
 import { nestjsTutorial } from '@/lib/tutorials/nestjs';
 
 export const metadata = {
-  title: 'NestJS Tutorial — Intellex',
+  title: 'NestJS Tutorial - Intellex',
   description: nestjsTutorial.description,
 };
 

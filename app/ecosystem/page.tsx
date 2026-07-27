@@ -7,7 +7,7 @@ import BrandLogo from '@/components/BrandLogo';
 import { ECOSYSTEM } from '@/lib/ecosystem';
 
 export const metadata = {
-  title: 'Ecosystem — InTelleX',
+  title: 'Ecosystem - InTelleX',
   description:
     'The InTelleX Education OS ecosystem: certifications, internships, Junior Dev, books, resources, learning environment, and the federated institution network.',
 };
@@ -32,7 +32,7 @@ export default function EcosystemHubPage() {
       href: '/tutorials',
       tab: 'Tutorials',
       title: 'Free tutorials',
-      short: '26 beginner-to-pro tracks — HTML to Kubernetes, C++, Rust, and more.',
+      short: '26 beginner-to-pro tracks - HTML to Kubernetes, C++, Rust, and more.',
       body: '',
       image: '/eco_resources.webp',
       alt: 'Tutorials',
@@ -53,7 +53,7 @@ export default function EcosystemHubPage() {
               How InTelleX fits together
             </h1>
             <p className="text-[16px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Learning, campuses, mentorship, careers, and AI — one Education Operating System,
+              Learning, campuses, mentorship, careers, and AI - one Education Operating System,
               not a pile of disconnected products.
             </p>
           </Reveal>

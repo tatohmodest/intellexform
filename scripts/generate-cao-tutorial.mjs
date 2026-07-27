@@ -39,14 +39,14 @@ const beginnerLessons = [
     slug: 'welcome-to-computer-architecture',
     title: 'Welcome to Computer Architecture',
     description:
-      'Meet CSE 203 — why hardware DNA matters for every software engineer, and how this InTelleX path is organized.',
+      'Meet CSE 203 - why hardware DNA matters for every software engineer, and how this InTelleX path is organized.',
     level: 'beginner',
     section: 'Course Orientation',
     order: 1,
     minutes: 12,
     content: blocks(
       p('Computer Architecture and Organization (CSE 203) teaches the structural and logical frameworks that turn high-level code into electronic execution. At InTelleX, this path follows a university-grade curriculum: Instruction Set Architecture, ALU design, single-cycle and pipelined datapaths, hazards, caches, virtual memory, I/O, and multicore systems.'),
-      p('The goal is not memorizing jargon. You will learn to think in clock cycles, instruction-level parallelism, and memory locality — so you can explain why a program is slow, and what hardware choices set the performance ceiling.'),
+      p('The goal is not memorizing jargon. You will learn to think in clock cycles, instruction-level parallelism, and memory locality - so you can explain why a program is slow, and what hardware choices set the performance ceiling.'),
       h2('What you will master'),
       ul([
         'Translate high-level constructs into RISC-V / MIPS-style assembly',
@@ -65,12 +65,12 @@ const beginnerLessons = [
         ],
       ),
       note('Required textbook mindset: Computer Organization and Design (Patterson & Hennessy), RISC-V or MIPS edition. Tools: Venus (RISC-V) or MARS (MIPS), plus Logisim-Evolution for digital logic.'),
-      tip('Professionalism here means architectural optimization. A design that wastes clock cycles or ignores hazards fails the engineering standard — even if it "works."'),
+      tip('Professionalism here means architectural optimization. A design that wastes clock cycles or ignores hazards fails the engineering standard - even if it "works."'),
       tryIt('Write one sentence: "I want to understand how my code becomes electrical signals on silicon." Keep it as your north star for this course.'),
       keypoints([
         'Architecture bridges abstract software and physical hardware.',
         'This path mirrors CSE 203 across ISA, datapath, pipeline, memory, and multicore.',
-        'You will reason in cycles, hazards, and locality — not only in source code.',
+        'You will reason in cycles, hazards, and locality - not only in source code.',
         'Tools: Venus/MARS for assembly, Logisim for digital logic.',
       ]),
     ),
@@ -85,20 +85,20 @@ const beginnerLessons = [
     order: 2,
     minutes: 11,
     content: blocks(
-      p('CSE 203 uses active learning. Every week you practice tracing, measuring, and redesigning — not only reading theory.'),
+      p('CSE 203 uses active learning. Every week you practice tracing, measuring, and redesigning - not only reading theory.'),
       h2('Signature activities'),
       ul([
-        'Assembly Duel — manually trace registers and memory without an IDE',
-        'Bottleneck Audit — find pipeline stalls in compiled assembly and reschedule instructions',
-        'Hardware Visualization Labs — follow data through datapath diagrams / Logisim',
-        'Clock-Cycle Stress Test — feed complex instruction streams into a datapath and find where hazards break timing',
+        'Assembly Duel - manually trace registers and memory without an IDE',
+        'Bottleneck Audit - find pipeline stalls in compiled assembly and reschedule instructions',
+        'Hardware Visualization Labs - follow data through datapath diagrams / Logisim',
+        'Clock-Cycle Stress Test - feed complex instruction streams into a datapath and find where hazards break timing',
       ]),
       h2('Recommended toolchain'),
       code(
-        `Venus (RISC-V)   — browser/desktop assembler & simulator
-MARS (MIPS)     — classic MIPS assembler & runtime
-Logisim-Evol.   — combinational & sequential circuit design
-Pencil + paper  — still the best tool for pipeline timing charts`,
+        `Venus (RISC-V)   - browser/desktop assembler & simulator
+MARS (MIPS)     - classic MIPS assembler & runtime
+Logisim-Evol.   - combinational & sequential circuit design
+Pencil + paper  - still the best tool for pipeline timing charts`,
         'Tool stack',
         'text',
       ),
@@ -131,9 +131,9 @@ Pencil + paper  — still the best tool for pipeline timing charts`,
     order: 3,
     minutes: 12,
     content: blocks(
-      p('Every modern computer is built around a small set of functional components: processor (CPU), memory, and I/O — connected by buses. Two foundational organization models are Von Neumann and Harvard.'),
+      p('Every modern computer is built around a small set of functional components: processor (CPU), memory, and I/O - connected by buses. Two foundational organization models are Von Neumann and Harvard.'),
       h2('Von Neumann (stored-program)'),
-      p('Instructions and data share the same memory space and typically the same bus path to the CPU. This is flexible and simple, but contention between instruction fetch and data access can limit bandwidth — the classic "Von Neumann bottleneck."'),
+      p('Instructions and data share the same memory space and typically the same bus path to the CPU. This is flexible and simple, but contention between instruction fetch and data access can limit bandwidth - the classic "Von Neumann bottleneck."'),
       code(
         `CPU  <──bus──>  Unified Memory
                  [instructions + data]`,
@@ -151,7 +151,7 @@ Pencil + paper  — still the best tool for pipeline timing charts`,
           ['Common in', 'General-purpose CPUs (conceptually)', 'DSPs, MCUs, caches as modified Harvard'],
         ],
       ),
-      tip('Modern CPUs look Von Neumann at the ISA level but often use Harvard-style split caches (I-cache / D-cache) — a modified Harvard design.'),
+      tip('Modern CPUs look Von Neumann at the ISA level but often use Harvard-style split caches (I-cache / D-cache) - a modified Harvard design.'),
       tryIt('Draw both organizations on paper. Label where a load instruction would travel in each model.'),
       keypoints([
         'Von Neumann stores instructions and data in one address space.',
@@ -170,7 +170,7 @@ Pencil + paper  — still the best tool for pipeline timing charts`,
     order: 4,
     minutes: 11,
     content: blocks(
-      p('Software engineers usually live at high levels of abstraction. Architects must see every layer beneath — because each layer hides costs that show up as CPI, stalls, and energy.'),
+      p('Software engineers usually live at high levels of abstraction. Architects must see every layer beneath - because each layer hides costs that show up as CPI, stalls, and energy.'),
       h2('The abstraction tower'),
       ol([
         'Problem / algorithm',
@@ -203,7 +203,7 @@ add  x5, x10, x11         // assembly (RISC-V style)
     slug: 'iron-law-of-performance',
     title: 'The Iron Law of Performance',
     description:
-      'Master CPU time = Instruction Count × CPI × Clock Period — and what each term really means.',
+      'Master CPU time = Instruction Count × CPI × Clock Period - and what each term really means.',
     level: 'beginner',
     section: 'Architecture of Abstraction',
     order: 5,
@@ -394,7 +394,7 @@ CPI_eff = 0.5*1 + 0.2*5 + 0.1*4 + 0.2*2 = 2.3`,
           ['Examples', 'MIPS, RISC-V, ARM (RISC roots)', 'x86 legacy surface'],
         ],
       ),
-      tip('Modern high-performance x86 cores translate CISC ops into RISC-like micro-ops internally — CISC outside, RISC-like inside.'),
+      tip('Modern high-performance x86 cores translate CISC ops into RISC-like micro-ops internally - CISC outside, RISC-like inside.'),
       tryIt('Argue in three sentences why a teaching course prefers RISC for pipeline labs.'),
       keypoints([
         'RISC favors simplicity and pipeline-friendly instructions.',
@@ -416,22 +416,22 @@ CPI_eff = 0.5*1 + 0.2*5 + 0.1*4 + 0.2*2 = 2.3`,
       p('Registers are the fastest storage the ISA exposes. Most ALU ops work on register operands; memory is accessed via loads and stores.'),
       h2('RISC-V register sketch (user-level)'),
       code(
-        `x0  (zero)  — hardwired 0
-x1  (ra)    — return address
-x2  (sp)    — stack pointer
-x5–x7 / x28–x31 — temporaries (t0–t6)
-x8–x9 / x18–x27 — saved (s0–s11)
-x10–x17 — arguments / return (a0–a7)`,
+        `x0  (zero)  - hardwired 0
+x1  (ra)    - return address
+x2  (sp)    - stack pointer
+x5–x7 / x28–x31 - temporaries (t0–t6)
+x8–x9 / x18–x27 - saved (s0–s11)
+x10–x17 - arguments / return (a0–a7)`,
         'Common RISC-V ABI names',
         'text',
       ),
       h2('Operand kinds'),
       ul([
-        'Register — value already in the register file',
-        'Immediate — constant encoded in the instruction',
-        'Memory — address computed, then load/store',
+        'Register - value already in the register file',
+        'Immediate - constant encoded in the instruction',
+        'Memory - address computed, then load/store',
       ]),
-      warning('x0 is always zero. Writing to it is discarded — a useful architectural trick.'),
+      warning('x0 is always zero. Writing to it is discarded - a useful architectural trick.'),
       tryIt('Write a 4-instruction RISC-V-style sequence that computes y = (a + b) - c using only registers.'),
       keypoints([
         'Registers dominate ALU operand access.',
@@ -450,7 +450,7 @@ x10–x17 — arguments / return (a0–a7)`,
     order: 11,
     minutes: 14,
     content: blocks(
-      p('RISC-V keeps encodings regular so hardware decode stays simple — essential for pipelined control.'),
+      p('RISC-V keeps encodings regular so hardware decode stays simple - essential for pipelined control.'),
       h2('Core formats you must know'),
       table(
         ['Format', 'Typical use', 'Key fields'],
@@ -471,7 +471,7 @@ beq  rs1, rs2, label  # B-Type branch`,
         'Assembly ↔ format mapping',
         'asm',
       ),
-      note('Immediate bits are often scrambled in the encoding to keep register fields in fixed positions — a hardware-friendly choice.'),
+      note('Immediate bits are often scrambled in the encoding to keep register fields in fixed positions - a hardware-friendly choice.'),
       tryIt('For `lw x5, 8(x10)`, name the format and which register is base vs destination.'),
       keypoints([
         'R/I/S/B/U/J formats cover common RISC-V ops.',
@@ -500,9 +500,9 @@ sw rs2, offset(rs1)`,
         'asm',
       ),
       ul([
-        'Register indirect — offset 0',
-        'Displacement — nonzero offset (struct fields, stack slots)',
-        'PC-relative — branches and some data references',
+        'Register indirect - offset 0',
+        'Displacement - nonzero offset (struct fields, stack slots)',
+        'PC-relative - branches and some data references',
       ]),
       warning('Misaligned accesses may trap or be slow depending on the implementation. Prefer naturally aligned loads/stores.'),
       tryIt('Given `sp = 0x1000`, what address does `lw x5, 12(sp)` access?'),
@@ -523,7 +523,7 @@ sw rs2, offset(rs1)`,
     order: 13,
     minutes: 15,
     content: blocks(
-      p('Hand translation builds ISA fluency. Aim for O(1) waste — no redundant loads, no dead moves.'),
+      p('Hand translation builds ISA fluency. Aim for O(1) waste - no redundant loads, no dead moves.'),
       h2('Example: sum an array'),
       code(
         `// C
@@ -563,7 +563,7 @@ done:
     slug: 'assembly-duel-register-tracing',
     title: 'Lab: The Assembly Duel',
     description:
-      'Manually trace register state and memory contents step-by-step — no emulator crutches.',
+      'Manually trace register state and memory contents step-by-step - no emulator crutches.',
     level: 'beginner',
     section: 'Instruction Set Architecture',
     order: 14,
@@ -585,7 +585,7 @@ done:
         'Update only the destination the instruction defines',
         'For loads/stores, compute the effective address explicitly',
         'Branches: decide taken/not-taken before updating PC',
-        'Never skip a row — silent mistakes hide here',
+        'Never skip a row - silent mistakes hide here',
       ]),
       tryIt('Trace this sequence on paper starting with all regs 0, x10=0x200: addi x5,x0,3; slli x6,x5,2; add x7,x5,x6; sw x7,0(x10); lw x8,0(x10).'),
       keypoints([
@@ -646,7 +646,7 @@ done:
     order: 16,
     minutes: 12,
     content: blocks(
-      p('Before building ALUs, nail number representation. Hardware does not know "integers" — it knows bit patterns and rules.'),
+      p('Before building ALUs, nail number representation. Hardware does not know "integers" - it knows bit patterns and rules.'),
       h2('Two\'s complement'),
       ul([
         'Positive numbers look like unsigned',
@@ -695,10 +695,10 @@ Subtraction:
       ),
       h2('Logic & shifts'),
       ul([
-        'AND / OR / XOR — bitwise parallel gates',
-        'Logical shift — fill with zeros',
-        'Arithmetic shift right — sign-extend',
-        'Rotate — optional; not always in base ISA',
+        'AND / OR / XOR - bitwise parallel gates',
+        'Logical shift - fill with zeros',
+        'Arithmetic shift right - sign-extend',
+        'Rotate - optional; not always in base ISA',
       ]),
       tip('Shifters can be barrel shifters (fast, more hardware) or iterative (cheap, slower).'),
       tryIt('Compute 0b0110_1100 AND 0b1010_1010 and a logical shift left by 2.'),
@@ -713,7 +713,7 @@ Subtraction:
     slug: 'carry-lookahead-adders',
     title: 'Carry-Lookahead Adders',
     description:
-      'Design faster addition with generate/propagate signals — escape the ripple-carry bottleneck.',
+      'Design faster addition with generate/propagate signals - escape the ripple-carry bottleneck.',
     level: 'beginner',
     section: 'ALU & Binary Logic',
     order: 18,
@@ -998,8 +998,8 @@ const intermediateLessons = [
       p('Pipelining is the assembly line of processors. Multiple instructions occupy different stages at once, raising instruction throughput.'),
       h2('Latency vs throughput'),
       ul([
-        'Latency — time for one instruction end-to-end (may stay similar)',
-        'Throughput — instructions finished per unit time (rises with pipeline)',
+        'Latency - time for one instruction end-to-end (may stay similar)',
+        'Throughput - instructions finished per unit time (rises with pipeline)',
       ]),
       code(
         `Ideal speedup ≈ number of stages
@@ -1013,7 +1013,7 @@ Reality: hazards, uneven stages, overhead → less than ideal`,
       keypoints([
         'Pipelining overlaps ILP in time.',
         'Throughput gains are the main win.',
-        'Hazards will tax ideal speedup — next weeks.',
+        'Hazards will tax ideal speedup - next weeks.',
       ]),
     ),
   }),
@@ -1065,7 +1065,7 @@ Reality: hazards, uneven stages, overhead → less than ideal`,
     order: 28,
     minutes: 12,
     content: blocks(
-      p('Performance math returns — now with stall cycles baked into effective CPI.'),
+      p('Performance math returns - now with stall cycles baked into effective CPI.'),
       code(
         `CPI_pipeline ≈ 1 + stall_cycles_per_instruction
 Speedup ≈ (CPI_nonpipe × T_nonpipe) / (CPI_pipe × T_pipe)
@@ -1093,7 +1093,7 @@ Often T_pipe < T_nonpipe because each stage is shorter.`,
     order: 29,
     minutes: 15,
     content: blocks(
-      p('Plot instructions vs time (cycle numbers). Each instruction occupies one stage cell per cycle — the classic pipeline diagram.'),
+      p('Plot instructions vs time (cycle numbers). Each instruction occupies one stage cell per cycle - the classic pipeline diagram.'),
       code(
         `Cycle:  1   2   3   4   5   6   7
 I1:    IF  ID  EX  MEM WB
@@ -1127,7 +1127,7 @@ I3:            IF  ID  EX  MEM WB`,
     order: 30,
     minutes: 16,
     content: blocks(
-      p('Week 5 project: The Stage Monitor — a UI or console renderer for pipeline occupancy.'),
+      p('Week 5 project: The Stage Monitor - a UI or console renderer for pipeline occupancy.'),
       h2('Features'),
       ul([
         'Show five stage slots each cycle',
@@ -1198,7 +1198,7 @@ onClock():
         'Translate a 5-line C fragment in under 8 minutes',
         'Complete a full register trace for 8 instructions',
       ]),
-      warning('Do not rely on an emulator during drill — exams will not.'),
+      warning('Do not rely on an emulator during drill - exams will not.'),
       tryIt('Pick prior Assembly Duel exercises and redo them cold.'),
       keypoints([
         'Speed and accuracy both matter on exams.',
@@ -1274,14 +1274,14 @@ onClock():
       table(
         ['Hazard', 'Meaning', 'In 5-stage in-order?'],
         [
-          ['RAW', 'Read After Write (true dependence)', 'Yes — primary concern'],
+          ['RAW', 'Read After Write (true dependence)', 'Yes - primary concern'],
           ['WAR', 'Write After Read (anti)', 'Mostly avoided by fixed WB timing'],
           ['WAW', 'Write After Write (output)', 'Mostly avoided in simple pipelines'],
         ],
       ),
       code(
         `add  x5, x1, x2
-sub  x8, x5, x3   # RAW on x5 — needs x5 from add`,
+sub  x8, x5, x3   # RAW on x5 - needs x5 from add`,
         'Classic RAW',
         'asm',
       ),
@@ -1303,7 +1303,7 @@ sub  x8, x5, x3   # RAW on x5 — needs x5 from add`,
     order: 36,
     minutes: 12,
     content: blocks(
-      p('Control hazards occur because the next PC depends on an earlier instruction’s outcome — often known late (EX stage compare).'),
+      p('Control hazards occur because the next PC depends on an earlier instruction’s outcome - often known late (EX stage compare).'),
       ul([
         'Fetched instructions after a branch may be wrong-path',
         'Must squash (flush) or prevent fetch until resolved',
@@ -1336,7 +1336,7 @@ sub x6, x5, x3   # forward x5 from EX/MEM → ALU input`,
         'asm',
       ),
       h2('What forwarding cannot fix alone'),
-      p('A load followed immediately by a use needs the memory stage result — typically still requires a one-cycle load-use stall plus forwarding.'),
+      p('A load followed immediately by a use needs the memory stage result - typically still requires a one-cycle load-use stall plus forwarding.'),
       tip('Draw forwarding paths on your datapath diagram; exams love those arrows.'),
       tryIt('Show with a pipeline chart how forwarding removes a stall between add and sub.'),
       keypoints([
@@ -1478,7 +1478,7 @@ add t4, t3, t2`,
     slug: 'principle-of-locality',
     title: 'Principle of Locality',
     description:
-      'Explain temporal and spatial locality — the reason caches and hierarchies work.',
+      'Explain temporal and spatial locality - the reason caches and hierarchies work.',
     level: 'intermediate',
     section: 'Memory Hierarchy',
     order: 42,
@@ -1504,7 +1504,7 @@ add t4, t3, t2`,
     slug: 'cache-direct-mapped',
     title: 'Direct-Mapped Caches',
     description:
-      'Map addresses to a single set: tag, index, offset — and compute hits/misses.',
+      'Map addresses to a single set: tag, index, offset - and compute hits/misses.',
     level: 'intermediate',
     section: 'Memory Hierarchy',
     order: 43,
@@ -1519,8 +1519,8 @@ Hit if valid && tag matches at index.`,
         'text',
       ),
       h2('Conflict misses'),
-      p('Two active blocks that map to the same index thrash each other — even if the cache is mostly empty. Associativity (next lesson) reduces this.'),
-      tryIt('For an 8-line cache with 4-word blocks, find index/offset/tag bit counts for 32-bit addresses (word-addressed carefully — state assumptions).'),
+      p('Two active blocks that map to the same index thrash each other - even if the cache is mostly empty. Associativity (next lesson) reduces this.'),
+      tryIt('For an 8-line cache with 4-word blocks, find index/offset/tag bit counts for 32-bit addresses (word-addressed carefully - state assumptions).'),
       keypoints([
         'Direct-mapped: one place for each block.',
         'Index selects line; tag identifies identity.',
@@ -1575,8 +1575,8 @@ Hit if valid && tag matches at index.`,
         ],
       ),
       ul([
-        'Write-allocate — bring block in on write miss',
-        'No-write-allocate — write around to lower level',
+        'Write-allocate - bring block in on write miss',
+        'No-write-allocate - write around to lower level',
       ]),
       tryIt('Pick a write-back + write-allocate cache. Describe steps for a store miss.'),
       keypoints([
@@ -1590,7 +1590,7 @@ Hit if valid && tag matches at index.`,
     slug: 'amat-and-miss-rates',
     title: 'AMAT & Miss Rate Analysis',
     description:
-      'Compute Average Memory Access Time from hit time, miss rate, and miss penalty — including multilevel caches.',
+      'Compute Average Memory Access Time from hit time, miss rate, and miss penalty - including multilevel caches.',
     level: 'intermediate',
     section: 'Memory Hierarchy',
     order: 46,
@@ -1707,7 +1707,7 @@ phys addr:    [ PFN | offset ]  # offset unchanged`,
       keypoints([
         'VM translates VPN to physical frame.',
         'Page tables store the mapping + permissions.',
-        'Faults are expensive — locality still rules.',
+        'Faults are expensive - locality still rules.',
       ]),
     ),
   }),
@@ -1725,7 +1725,7 @@ phys addr:    [ PFN | offset ]  # offset unchanged`,
       table(
         ['Event', 'Cost intuition'],
         [
-          ['TLB hit', 'Cheap — almost like no VM'],
+          ['TLB hit', 'Cheap - almost like no VM'],
           ['TLB miss + PT hit in cache', 'Moderate'],
           ['Page fault to disk', 'Enormous (ms)'],
         ],
@@ -1743,7 +1743,7 @@ phys addr:    [ PFN | offset ]  # offset unchanged`,
     slug: 'memory-mapped-io',
     title: 'Memory-Mapped I/O',
     description:
-      'Control devices by reading/writing reserved addresses — unify CPU access paths.',
+      'Control devices by reading/writing reserved addresses - unify CPU access paths.',
     level: 'advanced',
     section: 'Virtual Memory & I/O',
     order: 51,
@@ -1830,7 +1830,7 @@ LOAD  DEVICE_DATA`,
     order: 54,
     minutes: 18,
     content: blocks(
-      p('Week 9 project: The DMA Controller Simulator — show that bulk transfers need not poll every word in software.'),
+      p('Week 9 project: The DMA Controller Simulator - show that bulk transfers need not poll every word in software.'),
       h2('Simulator entities'),
       ul(['CPU (program & interrupt)', 'DMA engine', 'Device buffer', 'Memory array', 'Simple bus arbiter']),
       code(
@@ -1883,7 +1883,7 @@ N = number of processors`,
     slug: 'flynns-taxonomy',
     title: 'Flynn\'s Taxonomy',
     description:
-      'Classify SISD, SIMD, MISD, and MIMD — and map them to CPUs, GPUs, and clusters.',
+      'Classify SISD, SIMD, MISD, and MIMD - and map them to CPUs, GPUs, and clusters.',
     level: 'advanced',
     section: 'Multicore & Parallelism',
     order: 56,
@@ -1917,13 +1917,13 @@ N = number of processors`,
     order: 57,
     minutes: 13,
     content: blocks(
-      p('SIMD applies one operation to many data lanes. MIMD runs independent instruction streams — multicore CPUs are MIMD with shared memory.'),
+      p('SIMD applies one operation to many data lanes. MIMD runs independent instruction streams - multicore CPUs are MIMD with shared memory.'),
       ul([
-        'DLP — data-level parallelism (SIMD/vectors)',
-        'TLP — thread-level parallelism (multicore/multi-thread)',
-        'ILP — instruction-level parallelism (pipelines/superscalar)',
+        'DLP - data-level parallelism (SIMD/vectors)',
+        'TLP - thread-level parallelism (multicore/multi-thread)',
+        'ILP - instruction-level parallelism (pipelines/superscalar)',
       ]),
-      tip('Great software uses all three levels carefully — compilers for ILP/SIMD, OS/runtime for threads.'),
+      tip('Great software uses all three levels carefully - compilers for ILP/SIMD, OS/runtime for threads.'),
       tryIt('Give one workload best for SIMD and one best for MIMD threads.'),
       keypoints([
         'SIMD = same op, many data.',
@@ -1945,12 +1945,12 @@ N = number of processors`,
       p('Private caches multiply the coherence problem: which core owns the latest value of a line?'),
       h2('MSI states'),
       ul([
-        'M — Modified (dirty, unique)',
-        'S — Shared (clean, may be multi-cached)',
-        'I — Invalid',
+        'M - Modified (dirty, unique)',
+        'S - Shared (clean, may be multi-cached)',
+        'I - Invalid',
       ]),
       h2('MESI adds Exclusive'),
-      p('E — Exclusive clean unique. Allows silent upgrade to Modified without a bus upgrade in many protocols — an optimization over MSI.'),
+      p('E - Exclusive clean unique. Allows silent upgrade to Modified without a bus upgrade in many protocols - an optimization over MSI.'),
       warning('Coherence ≠ synchronization. Atomics/locks still needed for higher-level races.'),
       tryIt('Walk a line from I → E → M → S across two cores with a read/write storyboard.'),
       keypoints([
@@ -2054,8 +2054,8 @@ N = number of processors`,
       p('More cores help only when work, memory bandwidth, and synchronization allow it. Bus contention and lock convoys can erase theoretical speedups.'),
       h2('Challenge prompts'),
       ol([
-        'A workload with P=0.95 hits a memory bandwidth wall at N=16 — why?',
-        'False sharing turns a parallel array update pathological — explain',
+        'A workload with P=0.95 hits a memory bandwidth wall at N=16 - why?',
+        'False sharing turns a parallel array update pathological - explain',
         'Where does Amdahl still bite a microservice fan-out on one chip?',
       ]),
       tryIt('Write a short “architecture memo” proposing one fix for false sharing (padding, privatization, …).'),
@@ -2087,7 +2087,7 @@ N = number of processors`,
       keypoints([
         'Finals reward fluent tracing and control tables.',
         'Connect assembly choices to datapath events.',
-        'No emulator — paper discipline wins.',
+        'No emulator - paper discipline wins.',
       ]),
     ),
   }),
@@ -2137,7 +2137,7 @@ N = number of processors`,
         'Pipeline stage monitor frames + hazard detector sample',
         'Cache configurator results + AMAT commentary',
         'DMA or coherence sim highlight',
-        'Trade-off essay (time/space/power) — 1 page',
+        'Trade-off essay (time/space/power) - 1 page',
       ]),
       tip('If you can teach your design to a peer without slides, you own it.'),
       note('Academic integrity reminder: every mux path, register assignment, and pipeline stage you claim must be understood and justifiable. Copying assembly or circuits without comprehension fails the engineering standard.'),
@@ -2145,7 +2145,7 @@ N = number of processors`,
       keypoints([
         'Synthesis proves the CLOs, not isolated facts.',
         'Your projects become the Hardware DNA portfolio.',
-        'You now reason about how hardware executes — not only how code runs.',
+        'You now reason about how hardware executes - not only how code runs.',
       ]),
     ),
   }),

@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 
 /**
- * Learner session — stateless HMAC-signed cookie (same pattern as the admin
+ * Learner session - stateless HMAC-signed cookie (same pattern as the admin
  * session in lib/adminAuth.ts, but for LoopingBinary learner accounts).
  */
 

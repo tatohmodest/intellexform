@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ appId, channel, uid, token: null });
   }
 
-  const expireSeconds = 2 * 60 * 60; // 2h — covers the longest session
+  const expireSeconds = 2 * 60 * 60; // 2h - covers the longest session
   const token = RtcTokenBuilder.buildTokenWithUid(
     appId,
     appCertificate,

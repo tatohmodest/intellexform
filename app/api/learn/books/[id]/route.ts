@@ -12,7 +12,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   return NextResponse.json({ book });
 }
 
-/** PATCH /api/learn/books/[id] — the author edits/publishes their book. */
+/** PATCH /api/learn/books/[id] - the author edits/publishes their book. */
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const user = getSessionUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });

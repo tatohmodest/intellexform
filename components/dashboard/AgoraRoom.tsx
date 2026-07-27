@@ -84,7 +84,7 @@ export default function AgoraRoom({
         if (!res.ok) {
           throw new Error(
             data.error === 'agora_not_configured'
-              ? 'Live video is not configured yet — add NEXT_PUBLIC_AGORA_APP_ID (and AGORA_APP_CERTIFICATE) to the environment.'
+              ? 'Live video is not configured yet - add NEXT_PUBLIC_AGORA_APP_ID (and AGORA_APP_CERTIFICATE) to the environment.'
               : 'Could not get access to the video room.',
           );
         }

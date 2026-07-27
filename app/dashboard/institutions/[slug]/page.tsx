@@ -176,7 +176,7 @@ export default async function CampusPage({
             <div className="border-t pt-5" style={{ borderColor: 'var(--line)' }}>
               <h3 className="mb-2 font-display text-[18px]">Home campus</h3>
               <p className="text-[13px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                Intellex is the founding institution of the ecosystem — its courses,
+                Intellex is the founding institution of the ecosystem - its courses,
                 mentors, library and AI tutor are available to every member.
               </p>
               <Link href="/dashboard/courses" className="mt-3 inline-block text-[13px] font-semibold" style={{ color: 'var(--green-deep)' }}>

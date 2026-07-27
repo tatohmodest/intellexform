@@ -81,7 +81,7 @@ export default function MentorDirectory({
         const data = await res.json().catch(() => ({}));
         setError(
           data.error === 'db_unavailable'
-            ? 'Could not save your booking — database unavailable. Try again shortly.'
+            ? 'Could not save your booking - database unavailable. Try again shortly.'
             : 'Could not create the booking. Please try again.',
         );
         return;
@@ -305,7 +305,7 @@ export default function MentorDirectory({
                 Confirm booking
               </button>
               <p className="mt-3 text-center text-[11.5px]" style={{ color: 'var(--ink-soft)' }}>
-                You&apos;ll join the session from your dashboard — live HD video powered by Agora.
+                You&apos;ll join the session from your dashboard - live HD video powered by Agora.
               </p>
             </motion.div>
           </motion.div>

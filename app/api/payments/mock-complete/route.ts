@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOrderByTransaction, updateOrderStatus } from '@/lib/repo';
 
 /**
- * Mock payment completion — only valid for orders created against the sandbox
+ * Mock payment completion - only valid for orders created against the sandbox
  * checkout (gateway === 'mock'). Live PayUnit orders are settled via the gateway.
  */
 export async function POST(req: NextRequest) {

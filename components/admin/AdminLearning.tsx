@@ -14,7 +14,7 @@ interface Overview {
 }
 
 function fmt(d?: string) {
-  if (!d) return '—';
+  if (!d) return '-';
   return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
@@ -84,7 +84,7 @@ export default function AdminLearning() {
   if (!data) {
     return (
       <div className="py-20 text-center text-sm" style={{ color: 'var(--ink-soft)' }}>
-        Could not load learning data — is MONGODB_URL configured?
+        Could not load learning data - is MONGODB_URL configured?
       </div>
     );
   }
@@ -123,7 +123,7 @@ export default function AdminLearning() {
         head={['NAME', 'EMAIL', 'ROLES', 'XP', 'STREAK', 'LAST LOGIN']}
         rows={data.recentLearners.map((l) => [
           l.name,
-          l.email || '—',
+          l.email || '-',
           (l.roles ?? ['student']).join(', '),
           String(l.xp ?? 0),
           String(l.streakCount ?? 0),
@@ -146,7 +146,7 @@ export default function AdminLearning() {
           b.topic,
           b.mentorName,
           fmt(b.scheduledAt),
-          b.priceXAF ? `${b.priceXAF.toLocaleString()} XAF` : '—',
+          b.priceXAF ? `${b.priceXAF.toLocaleString()} XAF` : '-',
           b.status,
         ])}
         empty="No mentorship bookings yet."

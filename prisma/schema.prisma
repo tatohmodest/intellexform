@@ -1,4 +1,4 @@
-// InTelleX EduOS — federated education operating system
+// InTelleX EduOS - federated education operating system
 //
 // Golden rule: Nothing important is created by accident, accessed without
 // permission, or managed without accountability. Every institution, role,
@@ -6,7 +6,7 @@
 //
 // Architecture:
 // - Layer 1 (Core): identity, institution registry, applications, API gateway
-//   metadata, global search index — NOT academic records.
+//   metadata, global search index - NOT academic records.
 // - Layer 2 (Institution): each campus owns its academic data (shared SaaS
 //   row isolation today; dedicated DB / customer-hosted / hybrid when provisioned).
 //
@@ -34,7 +34,7 @@ enum GlobalRole {
   PLATFORM_OWNER
 }
 
-/// Campus membership roles — least privilege. Hierarchy of authority lives
+/// Campus membership roles - least privilege. Hierarchy of authority lives
 /// in lib/eduos/permissions.ts; this enum is the persisted label only.
 enum MembershipRole {
   GUEST
@@ -485,9 +485,9 @@ model Institution {
   visibility         InstitutionVisibility      @default(PRIVATE)
   customizationLevel CustomizationLevel         @default(DEFAULT)
   deploymentModel    DeploymentModel            @default(SHARED_SAAS)
-  /// Lifecycle — PENDING until Platform Owner/Admin provisions.
+  /// Lifecycle - PENDING until Platform Owner/Admin provisions.
   status             InstitutionLifecycleStatus @default(PENDING)
-  /// Verified badge — only after platform approval.
+  /// Verified badge - only after platform approval.
   verified           Boolean                    @default(false)
   verifiedAt         DateTime?
   /// Exactly one owner; transfer requires OwnershipTransfer workflow.
@@ -1148,7 +1148,7 @@ model BookPurchase {
 }
 
 /// Platform-curated recommendations (YouTube, external books/articles) by learner field.
-/// Not tutor-uploaded inventory — tutors sell via Book.
+/// Not tutor-uploaded inventory - tutors sell via Book.
 model MediaRecommendation {
   id            String    @id @default(cuid())
   institutionId String?
@@ -1539,7 +1539,7 @@ model AuditLog {
 }
 
 // ─────────────────────────────────────────────
-// Governance — applications, invitations, ownership
+// Governance - applications, invitations, ownership
 // ─────────────────────────────────────────────
 
 /// Prospective institution. Never creates an Institution until APPROVED + provisioned.
@@ -1632,7 +1632,7 @@ model MentorApplication {
   @@index([applicantId])
 }
 
-/// Teachers/staff are invited — institutions cannot silently claim users.
+/// Teachers/staff are invited - institutions cannot silently claim users.
 model StaffInvitation {
   id            String         @id @default(cuid())
   institutionId String
@@ -1714,7 +1714,7 @@ model SensitiveActionConfirmation {
 }
 
 // ─────────────────────────────────────────────
-// Federation — Core registry vs institution infra
+// Federation - Core registry vs institution infra
 // ─────────────────────────────────────────────
 
 /// Layer-2 connection metadata for an activated institution.
@@ -1724,7 +1724,7 @@ model InstitutionFederationLink {
   deploymentModel DeploymentModel
   databaseHost    String?
   databaseName    String?
-  /// Never store raw secrets — hash or vault reference only.
+  /// Never store raw secrets - hash or vault reference only.
   credentialRef   String?
   callbackUrl     String?
   healthStatus    String          @default("unknown")
@@ -1736,7 +1736,7 @@ model InstitutionFederationLink {
   institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
 }
 
-/// Directory entry only — never a copy of academic records.
+/// Directory entry only - never a copy of academic records.
 model GlobalStudentDirectory {
   id                 String   @id @default(cuid())
   globalUserId       String   @unique
@@ -1751,7 +1751,7 @@ model GlobalStudentDirectory {
   @@index([displayName])
 }
 
-/// Cross-institution verification via API gateway — never direct DB access.
+/// Cross-institution verification via API gateway - never direct DB access.
 model CrossInstitutionVerification {
   id                   String                     @id @default(cuid())
   requesterUserId      String

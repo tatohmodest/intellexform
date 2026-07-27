@@ -19,7 +19,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   state_mismatch: 'Your sign-in session expired. Please try again.',
   missing_code: 'LoopingBinary did not return an authorization code. Please try again.',
   exchange_failed: 'We could not verify your LoopingBinary account. Please try again.',
-  access_denied: 'You cancelled the sign-in. No worries — try again whenever you are ready.',
+  access_denied: 'You cancelled the sign-in. No worries - try again whenever you are ready.',
 };
 
 function LoopingBinaryMark({ size = 20 }: { size?: number }) {
@@ -112,7 +112,7 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
 
         <div className="flex items-center gap-2 text-[12.5px] text-white/50">
           <ShieldCheck size={14} />
-          Secured by LoopingBinary Auth — OAuth 2.0, no passwords stored on Intellex.
+          Secured by LoopingBinary Auth - OAuth 2.0, no passwords stored on Intellex.
         </div>
       </div>
 
@@ -136,8 +136,8 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
           </h2>
           <p className="mt-2 text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
             {isSignup
-              ? 'One click with your LoopingBinary account — no forms, no passwords.'
-              : 'Pick up right where you left off — courses, mentors and your AI tutor.'}
+              ? 'One click with your LoopingBinary account - no forms, no passwords.'
+              : 'Pick up right where you left off - courses, mentors and your AI tutor.'}
           </p>
 
           {error && (

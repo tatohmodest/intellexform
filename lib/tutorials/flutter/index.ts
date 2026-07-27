@@ -31,14 +31,14 @@ export const flutterTutorial: TutorialCourse = {
   title: 'Flutter Tutorial',
   shortTitle: 'Flutter',
   description:
-    'A complete Flutter path from beginner to pro — with every essential Dart skill taught inside Flutter when you need it. No separate Dart course required.',
+    'A complete Flutter path from beginner to pro - with every essential Dart skill taught inside Flutter when you need it. No separate Dart course required.',
   tagline: 'Flutter first. Dart included.',
   audience: 'Beginners to developers ready to ship cross-platform apps',
   totalLessons: allLessons.length,
   sections: groupIntoSections(allLessons, LEVEL_SUMMARIES),
   tag: 'Mobile',
   highlights: [
-    'Skip a separate Dart course — learn Dart inside Flutter',
+    'Skip a separate Dart course - learn Dart inside Flutter',
     'Widgets, layouts, navigation, and forms done right',
     'State, APIs, storage, animations, and Firebase basics',
     'Capstone apps you can put in a portfolio',

@@ -1,6 +1,6 @@
 /**
  * Official / brand tech logos for catalog tracks.
- * Stored under /public/tech — no emoji icons in the product UI.
+ * Stored under /public/tech - no emoji icons in the product UI.
  */
 export const TRACK_LOGOS: Record<string, string> = {
   html: '/tech/html.png',
