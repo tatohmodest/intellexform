@@ -87,7 +87,8 @@ async function main() {
     },
   });
 
-  for (const [index, name] of CATEGORIES.entries()) {
+  for (let index = 0; index < CATEGORIES.length; index++) {
+    const name = CATEGORIES[index];
     const slug = slugify(name);
     await prisma.category.upsert({
       where: {
@@ -169,7 +170,8 @@ async function main() {
     },
   ];
 
-  for (const [i, rec] of youtubeRecs.entries()) {
+  for (let i = 0; i < youtubeRecs.length; i++) {
+    const rec = youtubeRecs[i];
     const existing = await prisma.mediaRecommendation.findFirst({
       where: { url: rec.url, institutionId: intellex.id },
     });
