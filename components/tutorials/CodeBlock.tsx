@@ -54,8 +54,11 @@ export default function CodeBlock({
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
-      <pre className="overflow-x-auto p-4 text-[13.5px] leading-[1.65]" style={{ background: '#0C1116', color: '#E8EEF5' }}>
-        <code className="font-mono">{code}</code>
+      <pre
+        className="max-w-full overflow-x-auto p-3 text-[12.5px] leading-[1.65] sm:p-4 sm:text-[13.5px]"
+        style={{ background: '#0C1116', color: '#E8EEF5' }}
+      >
+        <code className="font-mono whitespace-pre">{code}</code>
       </pre>
     </div>
   );

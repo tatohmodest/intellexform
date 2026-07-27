@@ -52,7 +52,7 @@ export default function LessonBlocks({ blocks }: { blocks: ContentBlock[] }) {
             return (
               <h2
                 key={i}
-                className="mb-3 mt-9 border-b pb-2 font-display text-[24px] leading-tight first:mt-0"
+                className="mb-3 mt-8 break-words border-b pb-2 font-display text-[20px] leading-tight first:mt-0 sm:mt-9 sm:text-[24px]"
                 style={{ borderColor: 'var(--line)' }}
               >
                 {block.text}
@@ -92,8 +92,12 @@ export default function LessonBlocks({ blocks }: { blocks: ContentBlock[] }) {
             return <Callout key={i} tone="try" label="Try it yourself" text={block.text} icon={<FlaskConical size={14} />} />;
           case 'table':
             return (
-              <div key={i} className="my-5 overflow-x-auto rounded-xl border" style={{ borderColor: 'var(--line)' }}>
-                <table className="w-full min-w-[420px] border-collapse text-left text-[14px]">
+              <div
+                key={i}
+                className="my-5 -mx-1 overflow-x-auto rounded-xl border sm:mx-0"
+                style={{ borderColor: 'var(--line)' }}
+              >
+                <table className="w-full min-w-[320px] border-collapse text-left text-[13px] sm:min-w-[420px] sm:text-[14px]">
                   <thead style={{ background: 'var(--paper-dim)' }}>
                     <tr>
                       {block.headers.map((h) => (

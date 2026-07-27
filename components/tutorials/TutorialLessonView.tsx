@@ -32,14 +32,18 @@ export default function TutorialLessonView({
   return (
     <>
       <TopNav />
-      <div className="flex min-h-[calc(100vh-57px)]">
-        <TutorialSidebar course={course} activeSlug={lesson.slug} />
+      <div className="flex min-h-[calc(100vh-57px)] flex-col overflow-x-hidden lg:flex-row">
+        <TutorialSidebar
+          course={course}
+          activeSlug={lesson.slug}
+          activeTitle={lesson.title}
+        />
 
-        <main className="min-w-0 flex-1 px-5 py-8 sm:px-8 sm:py-10 lg:px-12">
-          <div className="mx-auto max-w-[720px]">
+        <main className="min-w-0 w-full flex-1 px-4 py-6 sm:px-6 sm:py-8 md:px-8 lg:px-12 lg:py-10">
+          <div className="mx-auto w-full max-w-[720px]">
             <Link
               href={`/tutorials/${course.slug}`}
-              className="mb-5 inline-flex items-center gap-1.5 text-[13px] font-medium"
+              className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-medium sm:mb-5"
               style={{ color: 'var(--ink-soft)' }}
             >
               <ArrowLeft size={14} /> Curriculum
@@ -65,8 +69,10 @@ export default function TutorialLessonView({
               </span>
             </div>
 
-            <h1 className="mb-3 font-display text-[30px] leading-[1.12] sm:text-[38px]">{lesson.title}</h1>
-            <p className="mb-8 text-[16px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+            <h1 className="mb-3 break-words font-display text-[26px] leading-[1.15] sm:text-[32px] md:text-[38px]">
+              {lesson.title}
+            </h1>
+            <p className="mb-6 text-[15px] leading-relaxed sm:mb-8 sm:text-[16px]" style={{ color: 'var(--ink-soft)' }}>
               {lesson.description}
             </p>
 
