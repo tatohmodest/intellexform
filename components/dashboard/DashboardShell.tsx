@@ -106,7 +106,7 @@ function NavLinks({
           }
         >
           <GraduationCap size={17} strokeWidth={mentorActive ? 2.4 : 2} />
-          {isMentor ? 'Mentor Studio' : 'Become a mentor'}
+          {isMentor ? 'Mentor Studio' : 'Apply to mentor'}
         </Link>
       </div>
     </nav>

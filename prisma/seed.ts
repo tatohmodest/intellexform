@@ -48,6 +48,11 @@ async function main() {
       isPlatformHome: true,
       primaryColor: "#00B369",
       visibility: "PUBLIC",
+      status: "ACTIVE",
+      verified: true,
+      verifiedAt: new Date(),
+      enrollmentPolicy: "PUBLIC_REQUEST",
+      institutionType: "ACADEMY",
       description:
         "Africa's education operating system — courses, mentorship, certifications, and communities.",
       featuresEnabled: [
@@ -67,6 +72,11 @@ async function main() {
       isPlatformHome: true,
       primaryColor: "#00B369",
       visibility: "PUBLIC",
+      status: "ACTIVE",
+      verified: true,
+      verifiedAt: new Date(),
+      enrollmentPolicy: "PUBLIC_REQUEST",
+      institutionType: "ACADEMY",
       customizationLevel: "BRANDED",
       deploymentModel: "SHARED_SAAS",
       description:
@@ -84,6 +94,59 @@ async function main() {
         "wallet",
         "affiliates",
       ],
+    },
+  });
+
+  // Exactly one Platform Owner — highest authority on the network.
+  const platformOwner = await prisma.user.upsert({
+    where: { email: "owner@intellex.study" },
+    update: {
+      name: "InTelleX Platform Owner",
+      globalRole: "PLATFORM_OWNER",
+      currentInstitutionId: intellex.id,
+    },
+    create: {
+      email: "owner@intellex.study",
+      name: "InTelleX Platform Owner",
+      globalRole: "PLATFORM_OWNER",
+      currentInstitutionId: intellex.id,
+    },
+  });
+
+  await prisma.institution.update({
+    where: { id: intellex.id },
+    data: {
+      ownerUserId: platformOwner.id,
+      provisionedAt: new Date(),
+      provisionedById: platformOwner.id,
+    },
+  });
+
+  await prisma.institutionMembership.upsert({
+    where: {
+      institutionId_userId: {
+        institutionId: intellex.id,
+        userId: platformOwner.id,
+      },
+    },
+    update: { role: "INSTITUTION_OWNER", isActive: true },
+    create: {
+      institutionId: intellex.id,
+      userId: platformOwner.id,
+      role: "INSTITUTION_OWNER",
+      title: "Platform Owner",
+    },
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      action: "ADMIN",
+      actorId: platformOwner.id,
+      institutionId: intellex.id,
+      entityType: "Institution",
+      entityId: intellex.id,
+      summary: "Seeded platform home campus and Platform Owner",
+      metadata: { source: "prisma/seed.ts" },
     },
   });
 

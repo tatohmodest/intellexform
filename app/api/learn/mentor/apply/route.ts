@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/getUser';
-import { becomeMentor } from '@/lib/learn/ecosystem';
+import { submitMentorApplication } from '@/lib/learn/ecosystem';
 import type { MentorSlot } from '@/lib/learn/mentors';
 
 export const dynamic = 'force-dynamic';
 
-/** POST /api/learn/mentor/apply — upgrade the account with the mentor role. */
+/**
+ * POST /api/learn/mentor/apply — submit a mentor *application*.
+ * Mentorship is not toggled on; Platform/Institution admins approve after review.
+ */
 export async function POST(req: NextRequest) {
   const user = getSessionUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
@@ -35,19 +38,30 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await becomeMentor({
+    const result = await submitMentorApplication({
       lbId: user.uid,
       name: user.name,
+      email: user.email,
       title,
       bio,
       expertise,
       priceXAF: Number.isFinite(priceXAF) ? priceXAF : 0,
       sessionMinutes,
       slots,
+      linkedinUrl: String(body.linkedinUrl ?? '').trim() || undefined,
+      githubUrl: String(body.githubUrl ?? '').trim() || undefined,
+      portfolioUrl: String(body.portfolioUrl ?? '').trim() || undefined,
     });
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({
+      ok: true,
+      pending: true,
+      applicationId: result.applicationId,
+      status: result.status,
+      message:
+        'Mentor application submitted. You will receive mentor access after review and approval.',
+    });
   } catch (err) {
-    console.error('becomeMentor failed:', err);
+    console.error('submitMentorApplication failed:', err);
     return NextResponse.json({ error: 'db_unavailable' }, { status: 503 });
   }
 }

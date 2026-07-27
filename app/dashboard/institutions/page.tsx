@@ -24,9 +24,8 @@ export default async function InstitutionsPage() {
         </div>
         <h1 className="font-display text-[30px] leading-tight">Institutions</h1>
         <p className="mt-1 max-w-2xl text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Intellex is one campus in a connected education ecosystem. Schools, academies
-          and companies open their own campus here — one account, every institution
-          you belong to.
+          InTelleX is a federated education network. Public verified campuses appear here.
+          Opening a campus requires an application and platform provisioning — not a self-serve create button.
         </p>
       </div>
 

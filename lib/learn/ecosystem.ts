@@ -171,6 +171,53 @@ export async function becomeMentor(opts: {
   await grantRole(opts.lbId, 'mentor', opts.name);
 }
 
+/**
+ * Mentorship is a privilege — applications enter a review queue.
+ * Role is NOT granted until a Platform/Institution admin approves.
+ */
+export async function submitMentorApplication(opts: {
+  lbId: string;
+  name: string;
+  email?: string;
+  title: string;
+  expertise: string[];
+  bio: string;
+  priceXAF: number;
+  sessionMinutes: number;
+  slots: MentorSlot[];
+  linkedinUrl?: string;
+  githubUrl?: string;
+  portfolioUrl?: string;
+}): Promise<{ applicationId: string; status: 'submitted' }> {
+  await ensureLearnCollections();
+  const db = await getDb();
+  const existing = await db.collection('mentor_applications').findOne({
+    lbId: opts.lbId,
+    status: { $in: ['submitted', 'under_review'] },
+  });
+  if (existing) {
+    return { applicationId: String(existing._id), status: 'submitted' };
+  }
+  const res = await db.collection('mentor_applications').insertOne({
+    lbId: opts.lbId,
+    name: opts.name,
+    email: opts.email ?? null,
+    title: opts.title.slice(0, 90),
+    expertise: opts.expertise.slice(0, 8),
+    bio: opts.bio.slice(0, 2000),
+    priceXAF: Math.max(0, Math.min(opts.priceXAF, 1_000_000)),
+    sessionMinutes: opts.sessionMinutes,
+    slots: opts.slots.slice(0, 10),
+    linkedinUrl: opts.linkedinUrl ?? null,
+    githubUrl: opts.githubUrl ?? null,
+    portfolioUrl: opts.portfolioUrl ?? null,
+    status: 'submitted',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+  return { applicationId: res.insertedId.toString(), status: 'submitted' };
+}
+
 export async function getMentorProfile(lbId: string): Promise<MentorProfileDoc | null> {
   try {
     const db = await getDb();
@@ -475,6 +522,7 @@ export async function createInstitution(opts: {
   ownerId: string;
   ownerName: string;
 }): Promise<{ slug: string } | { error: string }> {
+  // Internal provisioning path only — public users must submitInstitutionApplication().
   await ensureLearnCollections();
   const db = await getDb();
   const slug = slugify(opts.name);
@@ -503,6 +551,59 @@ export async function createInstitution(opts: {
     joinedAt: new Date(),
   });
   return { slug };
+}
+
+/**
+ * Institutions are not created by clicking a button.
+ * Applications enter a platform review queue (Shopify/GitHub Org style).
+ */
+export async function submitInstitutionApplication(opts: {
+  name: string;
+  tagline: string;
+  about: string;
+  color: string;
+  visibility: 'public' | 'private';
+  applicantId: string;
+  applicantName: string;
+  applicantEmail?: string;
+  website?: string;
+  country?: string;
+  institutionType?: string;
+  estimatedStudents?: number;
+  requestedDeployment?: string;
+}): Promise<{ applicationId: string; status: 'submitted' } | { error: string }> {
+  await ensureLearnCollections();
+  const db = await getDb();
+  const name = opts.name.slice(0, 80).trim();
+  if (name.length < 3) return { error: 'invalid_name' };
+  const slugRequested = slugify(name);
+  const pending = await db.collection('institution_applications').findOne({
+    applicantId: opts.applicantId,
+    status: { $in: ['submitted', 'under_review'] },
+  });
+  if (pending) {
+    return { applicationId: String(pending._id), status: 'submitted' };
+  }
+  const res = await db.collection('institution_applications').insertOne({
+    name,
+    slugRequested,
+    tagline: opts.tagline.slice(0, 140),
+    about: opts.about.slice(0, 2000),
+    color: /^#[0-9a-fA-F]{6}$/.test(opts.color) ? opts.color : '#00b369',
+    visibility: opts.visibility === 'private' ? 'private' : 'public',
+    website: opts.website?.slice(0, 200) ?? null,
+    country: opts.country?.slice(0, 80) ?? null,
+    institutionType: opts.institutionType ?? 'OTHER',
+    estimatedStudents: opts.estimatedStudents ?? null,
+    requestedDeployment: opts.requestedDeployment ?? 'MANAGED_CLOUD',
+    applicantId: opts.applicantId,
+    applicantName: opts.applicantName,
+    applicantEmail: opts.applicantEmail ?? null,
+    status: 'submitted',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+  return { applicationId: res.insertedId.toString(), status: 'submitted' };
 }
 
 export async function listPublicInstitutions(): Promise<InstitutionDoc[]> {

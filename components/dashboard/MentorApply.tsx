@@ -19,6 +19,7 @@ export default function MentorApply() {
   ]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [submitted, setSubmitted] = useState(false);
 
   function addSkill() {
     const s = skillInput.trim();
@@ -43,14 +44,30 @@ export default function MentorApply() {
         setError(
           data.error === 'missing_fields'
             ? 'Please fill in your title, bio, at least one skill and one availability slot.'
-            : 'Could not create your mentor profile. Please try again.',
+            : 'Could not submit your application. Please try again.',
         );
         return;
       }
-      router.refresh();
+      setSubmitted(true);
     } finally {
       setBusy(false);
     }
+  }
+
+  if (submitted) {
+    return (
+      <div className="mx-auto max-w-[560px] rounded-3xl border px-6 py-12 text-center" style={{ borderColor: 'var(--line)' }}>
+        <GraduationCap className="mx-auto mb-4" size={32} style={{ color: 'var(--green-deep)' }} />
+        <h1 className="font-display text-[24px]">Application submitted</h1>
+        <p className="mx-auto mt-2 max-w-md text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+          Mentorship is reviewed before access is granted. You will unlock Mentor Studio
+          after approval — nothing important is toggled on by accident.
+        </p>
+        <button type="button" onClick={() => router.push('/dashboard')} className="btn btn-primary mt-6 !py-2.5 text-[13.5px]">
+          Back to dashboard
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -62,10 +79,10 @@ export default function MentorApply() {
         >
           <GraduationCap size={30} />
         </span>
-        <h1 className="font-display text-[28px] leading-tight">Teach on Intellex</h1>
+        <h1 className="font-display text-[28px] leading-tight">Apply to mentor</h1>
         <p className="mx-auto mt-2 max-w-md text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Open your Mentor Studio: run paid 1-on-1 sessions over live video, publish and
-          sell books in the library, and build your reputation across the ecosystem.
+          Mentorship is a privilege. Submit your experience for review — you receive
+          Mentor Studio access only after approval and a verified mentor badge.
         </p>
       </div>
 
@@ -221,7 +238,7 @@ export default function MentorApply() {
 
         <button type="submit" disabled={busy} className="btn btn-primary w-full !py-3.5 text-[14px]">
           {busy ? <Loader2 size={16} className="animate-spin" /> : <GraduationCap size={16} />}
-          Open my Mentor Studio
+          Submit mentor application
         </button>
       </form>
     </div>
