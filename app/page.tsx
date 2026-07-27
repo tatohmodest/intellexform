@@ -22,11 +22,6 @@ import Reveal from '@/components/Reveal';
 import HomeHero from '@/components/landing/HomeHero';
 import HeroCard from '@/components/landing/HeroCard';
 import { ECOSYSTEM, LOOPING_BINARY } from '@/lib/ecosystem';
-import { MODULE_CATALOG } from '@/lib/eduos/capabilities';
-import {
-  PLATFORM_CONTACT,
-  institutionMailto,
-} from '@/lib/contact';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,8 +58,8 @@ const WAYS = [
 const VALUE_PILLARS = [
   {
     icon: Network,
-    title: 'Education infrastructure as a service',
-    body: 'Every institution gets InTelleX Core, then unlocks capabilities — digital learning, AI, library, career — based on what they need. One platform, unlimited configurations.',
+    title: 'Education infrastructure, not another app',
+    body: 'InTelleX is built as an Education Operating System. Schools plug into a trusted network for identity, discovery, verification, AI, and marketplace — while keeping ownership of their academic data.',
   },
   {
     icon: ShieldCheck,
@@ -188,50 +183,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Build your digital campus — capabilities */}
-      <section id="capabilities" className="border-t py-16 sm:py-20" style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}>
-        <div className="wrap">
-          <Reveal className="mb-10 max-w-[720px]">
-            <div className="tab mb-3">For institutions</div>
-            <h2 className="mb-3 text-[26px] leading-[1.12] sm:text-[34px]">
-              Build your digital campus
-            </h2>
-            <p className="text-[15.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Start with the InTelleX Core — portal, branding, students, teachers, courses,
-              calendar, announcements, and basic analytics. Then activate the capabilities your
-              institution needs. You are not buying a gold plan. You are assembling how you teach,
-              learn, and grow.
-            </p>
-          </Reveal>
-
-          <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {MODULE_CATALOG.map((m) => (
-              <div
-                key={m.id}
-                className="rounded-[18px] border bg-paper p-5"
-                style={{ borderColor: 'var(--line)' }}
-              >
-                <h3 className="font-display text-[17px]">{m.name}</h3>
-                <p className="mt-1.5 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                  {m.tagline}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <Link href="/network#capabilities" className="btn btn-primary">
-              See how campuses assemble
-            </Link>
-            <a href={institutionMailto()} className="btn btn-ghost">
-              Contact Platform Team · {PLATFORM_CONTACT.email}
-            </a>
-          </div>
-        </div>
-      </section>
-
       {/* Ecosystem */}
-      <section id="ecosystem" className="border-t py-16 sm:py-20" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
+      <section id="ecosystem" className="border-t py-16 sm:py-20" style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}>
         <div className="wrap">
           <Reveal className="mb-10 max-w-[680px]">
             <div className="tab mb-3">The ecosystem</div>
@@ -664,11 +617,11 @@ export default async function HomePage() {
                 <BadgeCheck size={14} /> Education infrastructure
               </div>
               <h2 className="font-display text-[26px] leading-tight sm:text-[32px]">
-                Ready to build your digital campus?
+                Ready to plug into the network?
               </h2>
               <p className="mt-2 text-[14.5px] leading-relaxed" style={{ color: 'rgba(251,248,240,0.75)' }}>
                 Learners start with free tutorials today. Institutions partner with our Platform Team —
-                Core plus the capabilities you choose. Never self-serve campus creation.
+                curated, provisioned, never self-serve. Mentors earn their place.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">

@@ -4,24 +4,6 @@ import HeroCarousel, { type HeroSlide } from '@/components/landing/HeroCarousel'
 
 const HERO_SLIDES: HeroSlide[] = [
   {
-    id: 'eduiaas',
-    image: '/hero_illustration.webp',
-    alt: 'Build your digital campus with InTelleX',
-    headline: (
-      <>
-        Build your{' '}
-        <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>
-          digital campus
-        </em>{' '}
-        with InTelleX.
-      </>
-    ),
-    body: 'Education infrastructure as a service — Core for every institution, then unlock the capabilities you need: learning, live teaching, AI, library, career, and more.',
-    ctaLabel: 'Enter InTelleX',
-    secondaryLabel: 'Assemble a campus',
-    secondaryHref: '/network#capabilities',
-  },
-  {
     id: 'eduos',
     image: '/hero_illustration.webp',
     alt: 'InTelleX Education Operating System',
@@ -83,10 +65,10 @@ const HERO_SLIDES: HeroSlide[] = [
         <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>
           InTelleX
         </em>{' '}
-        — and your campus.
+        — and your next lesson.
       </>
     ),
-    body: 'Institution-scoped knowledge boundaries: private materials stay private. Public resources strengthen the whole network.',
+    body: 'Grounded in free tutorials, the live catalogue, and how this Education OS actually works.',
     ctaLabel: 'Try AI Tutor',
     secondaryLabel: 'Browse courses',
     secondaryHref: '/courses',
