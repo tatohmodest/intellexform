@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
-import { verifySessionToken, COOKIE_NAME } from '@/lib/adminAuth';
+import { assertAdmin } from '@/lib/adminAuth';
 import {
   approveMentorApplication,
   rejectMentorApplication,
@@ -16,8 +16,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  const token = req.cookies.get(COOKIE_NAME)?.value;
-  if (!token || !verifySessionToken(token)) {
+  if (!assertAdmin(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

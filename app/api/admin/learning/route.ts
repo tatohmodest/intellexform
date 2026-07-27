@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionToken, COOKIE_NAME } from '@/lib/adminAuth';
+import { assertAdmin } from '@/lib/adminAuth';
 import { getAdminLearningOverview } from '@/lib/learn/ecosystem';
 
 export const dynamic = 'force-dynamic';
@@ -10,8 +10,7 @@ export const dynamic = 'force-dynamic';
  * mentorship bookings, published books and institutions.
  */
 export async function GET(req: NextRequest) {
-  const token = req.cookies.get(COOKIE_NAME)?.value;
-  if (!token || !verifySessionToken(token)) {
+  if (!assertAdmin(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
