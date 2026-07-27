@@ -132,8 +132,9 @@ export default function DashboardShell({
 
   const sidebarInner = (
     <>
-      <div className="mb-8 flex items-center gap-2 px-2">
-        <BrandLogo href="/" height={28} />
+      <div className="mb-8 flex items-center gap-2.5 px-2">
+        {/* Same wordmark as the homepage header */}
+        <BrandLogo href="/" height={32} variant="full" />
         <span className="mono rounded-full border px-2 py-0.5 text-[9.5px] uppercase tracking-[0.14em]" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
           Learn
         </span>
@@ -206,8 +207,9 @@ export default function DashboardShell({
           {mobileOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
 
+        {/* Compact icon — full wordmark does not fit the mobile top bar */}
         <div className="lg:hidden">
-          <BrandLogo href="/" height={26} />
+          <BrandLogo href="/" height={30} variant="mark" />
         </div>
 
         <div className="ml-auto flex items-center gap-2.5 sm:gap-4">

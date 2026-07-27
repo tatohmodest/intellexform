@@ -8,6 +8,7 @@ import {
 import { formatXAF } from '@/lib/format';
 import AdminCourses from '@/components/admin/AdminCourses';
 import AdminLearning from '@/components/admin/AdminLearning';
+import BrandLogo from '@/components/BrandLogo';
 
 type Tab = 'learning' | 'requests' | 'orders' | 'registrations' | 'courses';
 
@@ -76,11 +77,11 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
     <div className="flex min-h-screen items-center justify-center px-4" style={{ background: 'var(--paper)' }}>
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: 'var(--amber-soft)' }}>
-            <ShieldCheck size={26} style={{ color: 'var(--green-deep)' }} />
+          <div className="mx-auto mb-4 flex justify-center">
+            <BrandLogo href={null} height={48} variant="mark" />
           </div>
           <h1 className="font-display text-2xl font-bold">Admin Access</h1>
-          <p className="mt-1 text-sm" style={{ color: 'var(--ink-soft)' }}>Intellex · Dashboard</p>
+          <p className="mt-1 text-sm" style={{ color: 'var(--ink-soft)' }}>InTelleX · Dashboard</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-5 rounded-[20px] border p-8" style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}>
           <div className="space-y-1.5">
@@ -162,11 +163,14 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     <div className="min-h-screen" style={{ background: 'var(--paper)' }}>
       <div className="sticky top-0 z-40 border-b backdrop-blur" style={{ borderColor: 'var(--line)', background: 'rgba(251,248,240,0.9)' }}>
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-4">
-          <div>
-            <h1 className="font-display text-lg font-bold">Intellex Admin</h1>
-            <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>
-              {loading ? 'Loading…' : `${requests.length} requests · ${orders.length} orders · ${registrations.length} registrations`}
-            </p>
+          <div className="flex items-center gap-3">
+            <BrandLogo href="/" height={28} variant="full" />
+            <div>
+              <h1 className="font-display text-lg font-bold">Admin</h1>
+              <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>
+                {loading ? 'Loading…' : `${requests.length} requests · ${orders.length} orders · ${registrations.length} registrations`}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
