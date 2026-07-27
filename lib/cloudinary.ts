@@ -119,12 +119,16 @@ export function signMediaUpload(opts: {
 
   const transformation =
     opts.kind === 'avatar'
-      ? 'c_fill,w_512,h_512,q_auto:good,f_auto'
+      ? // Face-aware crop, sharp but compact delivery format
+        'c_fill,g_auto,w_512,h_512,q_auto:good,f_auto'
       : opts.kind === 'logo'
-        ? 'c_limit,w_800,h_800,q_auto:good,f_auto'
+        ? // Keep logos crisp; cap edge so 10MB uploads land light
+          'c_limit,w_1000,h_1000,q_auto:good,f_auto'
         : opts.kind === 'cover'
-          ? 'c_fill,w_1600,h_640,q_auto:good,f_auto'
-          : 'c_limit,w_1600,q_auto:good,f_auto';
+          ? // Wide banner — dimension limit does most of the size cut
+            'c_fill,g_auto,w_1920,h_768,q_auto:good,f_auto'
+          : // Course / book art
+            'c_limit,w_1800,q_auto:good,f_auto';
 
   const paramsToSign: Record<string, string | number> = {
     timestamp,

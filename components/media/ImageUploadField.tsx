@@ -5,6 +5,7 @@ import { ImagePlus, Loader2, Trash2, Upload } from 'lucide-react';
 import type { MediaUploadKind } from '@/lib/cloudinary';
 import { uploadMediaAsset } from '@/lib/mediaUpload';
 import { extractDominantColor } from '@/lib/imageColor';
+import { MAX_IMAGE_UPLOAD_BYTES } from '@/lib/compressImage';
 
 export default function ImageUploadField({
   label,
@@ -40,8 +41,8 @@ export default function ImageUploadField({
       setError('Choose an image (JPG, PNG, WebP, GIF).');
       return;
     }
-    if (file.size > 8 * 1024 * 1024) {
-      setError('Keep images under 8MB.');
+    if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+      setError('Keep images under 10MB. We compress them automatically to keep quality.');
       return;
     }
     setBusy(true);
@@ -146,7 +147,8 @@ export default function ImageUploadField({
         </p>
       ) : (
         <p className="mt-1 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-          Uploads go to Cloudinary; the generated link is what we store.
+          Uploads go to Cloudinary (max 10MB). We shrink large files while keeping them sharp; the
+          generated link is what we store.
           {autoColor ? ' We also sample a brand color from the image.' : ''}
         </p>
       )}

@@ -87,7 +87,7 @@ function InlineText({ text }: { text: string }) {
                   <code
                     key={ti}
                     className="mono rounded px-1.5 py-0.5 text-[12.5px]"
-                    style={{ background: 'rgba(129, 212, 250, 0.14)', color: '#0277bd' }}
+                    style={{ background: 'rgba(47, 111, 173, 0.10)', color: '#1f5fa8' }}
                   >
                     {tok.slice(1, -1)}
                   </code>

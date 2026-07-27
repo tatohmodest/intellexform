@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, Loader2, LogOut, Save, Upload } from 'lucide-react';
 import { uploadMediaAsset } from '@/lib/mediaUpload';
+import { MAX_IMAGE_UPLOAD_BYTES } from '@/lib/compressImage';
 
 type Prefs = {
   locale: string;
@@ -48,8 +49,8 @@ export default function SettingsForm({
       setError('Choose an image file (JPG, PNG, WebP).');
       return;
     }
-    if (file.size > 8 * 1024 * 1024) {
-      setError('Keep profile photos under 8MB.');
+    if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+      setError('Keep profile photos under 10MB. We compress them automatically.');
       return;
     }
     setUploading(true);
@@ -148,7 +149,8 @@ export default function SettingsForm({
               {uploading ? `Uploading ${uploadPct}%` : 'Upload photo'}
             </button>
             <p className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-              Photos upload to Cloudinary — we store the generated link (not a giant data URL).
+              Photos upload to Cloudinary (max 10MB) — we compress large files and store the
+              generated link.
             </p>
           </div>
         </div>
