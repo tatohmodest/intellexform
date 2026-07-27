@@ -1,11 +1,16 @@
 import Link from 'next/link';
-import { Building2, Lock, Network, ShieldCheck, Waypoints } from 'lucide-react';
+import { Building2, Lock, Mail, MessageCircle, Network, ShieldCheck } from 'lucide-react';
 import TopNav from '@/components/landing/TopNav';
 import Footer from '@/components/landing/Footer';
 import Reveal from '@/components/Reveal';
 import BrandLogo from '@/components/BrandLogo';
 import { GOLDEN_RULE } from '@/lib/eduos/governance';
 import { DEPLOYMENT_CHOICES } from '@/lib/eduos/federation';
+import {
+  PLATFORM_CONTACT,
+  institutionMailto,
+  institutionWhatsappLink,
+} from '@/lib/contact';
 
 export const metadata = {
   title: 'Institution Network — InTelleX',
@@ -23,11 +28,12 @@ export default function NetworkPage() {
           <Reveal className="max-w-[720px]">
             <div className="tab mb-3">Federated network</div>
             <h1 className="mb-4 text-[32px] leading-[1.08] sm:text-[44px]">
-              Institutions plug in. They don&apos;t surrender their database.
+              Many digital campuses. One education network.
             </h1>
             <p className="text-[16px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              InTelleX is the Education Cloud: identity, verification, discovery, AI routing, and governance.
-              Academic records stay with each campus — Shared SaaS, managed cloud, customer-hosted, or hybrid.
+              InTelleX is not one LMS with many schools bolted on. It is a curated ecosystem of
+              independent campuses connected by shared identity, trust, and opportunity — while each
+              institution keeps its branding, academic data, and authority.
             </p>
           </Reveal>
         </div>
@@ -39,7 +45,7 @@ export default function NetworkPage() {
             {
               icon: Network,
               title: 'Core layer',
-              body: 'Registry, auth, applications, API gateway, marketplace, global search — never grades or private exams.',
+              body: 'Identity, verification, discovery, API gateway, marketplace, AI — never grades or private exams.',
             },
             {
               icon: Building2,
@@ -78,18 +84,36 @@ export default function NetworkPage() {
         </div>
       </section>
 
-      <section className="py-12 sm:py-16">
+      <section id="partner" className="scroll-mt-24 py-12 sm:py-16">
         <div className="wrap max-w-[720px]">
           <ShieldCheck size={28} style={{ color: 'var(--green-deep)' }} />
-          <h2 className="mt-4 font-display text-[24px]">Golden rule</h2>
+          <h2 className="mt-4 font-display text-[24px] sm:text-[28px]">
+            Bring your institution to InTelleX
+          </h2>
           <p className="mt-3 text-[15.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+            There is no self-serve “create institution” button. Want your university, academy, or
+            training center on the network? Contact the InTelleX Platform Team. We help you register,
+            connect systems, configure auth, customize branding, provision your environment, and
+            train administrators.
+          </p>
+          <p className="mt-4 text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
             {GOLDEN_RULE}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/dashboard/institutions" className="btn btn-primary">
-              <Waypoints size={15} /> Apply to open a campus
+            <a href={institutionMailto()} className="btn btn-primary">
+              <Mail size={15} /> {PLATFORM_CONTACT.email}
+            </a>
+            <a
+              href={institutionWhatsappLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-ghost"
+            >
+              <MessageCircle size={15} /> WhatsApp {PLATFORM_CONTACT.phoneDisplay}
+            </a>
+            <Link href="/ecosystem" className="btn btn-ghost">
+              Back to ecosystem
             </Link>
-            <Link href="/ecosystem" className="btn btn-ghost">Back to ecosystem</Link>
           </div>
         </div>
       </section>

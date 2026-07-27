@@ -622,6 +622,7 @@ export interface InstitutionDoc {
   about: string;
   color: string;
   emoji: string;
+  logoUrl?: string | null;
   visibility: 'public' | 'private';
   /** How this campus authenticates students when they affiliate. */
   authMethod?: InstitutionAuthMethod;
@@ -639,6 +640,8 @@ export interface InstitutionPostDoc {
   authorName: string;
   title: string;
   body: string;
+  /** private = campus only · network = partners · public = all InTelleX learners */
+  visibility?: 'private' | 'network' | 'public';
   createdAt: Date;
 }
 
@@ -925,6 +928,7 @@ export async function createInstitutionPost(opts: {
   authorName: string;
   title: string;
   body: string;
+  visibility?: 'private' | 'network' | 'public';
 }) {
   const db = await getDb();
   await db.collection('institution_posts').insertOne({
@@ -933,6 +937,7 @@ export async function createInstitutionPost(opts: {
     authorName: opts.authorName,
     title: opts.title.slice(0, 140),
     body: opts.body.slice(0, 4000),
+    visibility: opts.visibility ?? 'private',
     createdAt: new Date(),
   });
 }

@@ -6,14 +6,13 @@ import {
   verifyInstitutionStudent,
 } from '@/lib/learn/ecosystem';
 import { upsertAffiliation } from '@/lib/learn/repo';
-import type { Affiliation } from '@/lib/learn/identity';
+import type { Affiliation, AffiliationRole } from '@/lib/learn/identity';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/learn/institutions/[slug]/affiliate
- * Affinity verification: matricule/password go to the campus auth path —
- * InTelleX only stores the resulting affiliation on the global identity.
+ * Credentials verified against the campus path — InTelleX stores affiliation only.
  */
 export async function POST(
   req: NextRequest,
@@ -30,6 +29,8 @@ export async function POST(
 
   const body = await req.json().catch(() => ({}));
   const method = institution.authMethod ?? 'open';
+  const role: AffiliationRole =
+    body.role === 'instructor' ? 'instructor' : method === 'open' ? 'member' : 'student';
 
   try {
     if (method === 'open') {
@@ -37,8 +38,9 @@ export async function POST(
       const affiliation: Affiliation = {
         institutionSlug: slug,
         institutionName: institution.name,
-        role: 'member',
+        role,
         status: 'verified',
+        profileComplete: true,
         joinedAt: new Date(),
         verifiedAt: new Date(),
       };
@@ -46,6 +48,7 @@ export async function POST(
       return NextResponse.json({
         ok: true,
         affiliation,
+        needsProfileComplete: false,
         activeContext: learner?.activeContext,
         redirectTo: `/dashboard/institutions/${slug}`,
       });
@@ -66,21 +69,25 @@ export async function POST(
     const affiliation: Affiliation = {
       institutionSlug: slug,
       institutionName: institution.name,
-      role: 'student',
+      role,
       status: 'verified',
       externalStudentId: verified.studentId,
       department: verified.department ?? null,
       faculty: verified.faculty ?? null,
       program: verified.program ?? null,
       year: verified.year ?? null,
+      profileComplete: false,
       joinedAt: new Date(),
       verifiedAt: new Date(),
     };
     const learner = await upsertAffiliation(user.uid, affiliation);
+    const saved = (learner?.affiliations ?? []).find((a) => a.institutionSlug === slug);
+    const needsProfileComplete = !saved?.profileComplete;
 
     return NextResponse.json({
       ok: true,
-      affiliation,
+      affiliation: saved ?? affiliation,
+      needsProfileComplete,
       activeContext: learner?.activeContext,
       redirectTo: `/dashboard/institutions/${slug}`,
     });

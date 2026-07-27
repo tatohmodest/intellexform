@@ -162,12 +162,11 @@ export async function completeLearnerOnboarding(
   },
 ): Promise<LearnerDoc | null> {
   const db = await getDb();
+  const path = opts.joinPath === 'exploring' ? 'intellex' : opts.joinPath;
   const activeContext: ActiveContext =
-    opts.primaryIntent === 'teach'
+    opts.primaryIntent === 'teach' && path === 'intellex'
       ? { kind: 'teaching', institutionSlug: null }
-      : opts.primaryIntent === 'institution'
-        ? { kind: 'personal', institutionSlug: null }
-        : PERSONAL_CONTEXT;
+      : PERSONAL_CONTEXT;
 
   await db.collection('learners').updateOne(
     { lbId },
@@ -175,7 +174,7 @@ export async function completeLearnerOnboarding(
       $set: {
         onboardingComplete: true,
         primaryIntent: opts.primaryIntent,
-        joinPath: opts.joinPath ?? null,
+        joinPath: path ?? null,
         activeContext,
         updatedAt: new Date(),
       },
@@ -203,8 +202,14 @@ export async function upsertAffiliation(
   const db = await getDb();
   const learner = await getLearner(lbId);
   const existing = learner?.affiliations ?? [];
+  const prior = existing.find((a) => a.institutionSlug === affiliation.institutionSlug);
+  const merged: Affiliation = {
+    ...prior,
+    ...affiliation,
+    profileComplete: affiliation.profileComplete ?? prior?.profileComplete ?? false,
+  };
   const without = existing.filter((a) => a.institutionSlug !== affiliation.institutionSlug);
-  const affiliations = [...without, affiliation];
+  const affiliations = [...without, merged];
   await db.collection('learners').updateOne(
     { lbId },
     {
@@ -217,6 +222,39 @@ export async function upsertAffiliation(
         updatedAt: new Date(),
       },
     },
+  );
+  return getLearner(lbId);
+}
+
+export async function completeCampusProfile(
+  lbId: string,
+  institutionSlug: string,
+  patch: {
+    program?: string;
+    year?: string;
+    emergencyContact?: string;
+    photoUrl?: string;
+    department?: string;
+  },
+): Promise<LearnerDoc | null> {
+  const learner = await getLearner(lbId);
+  const existing = learner?.affiliations ?? [];
+  const idx = existing.findIndex((a) => a.institutionSlug === institutionSlug);
+  if (idx < 0) return null;
+  const next = [...existing];
+  next[idx] = {
+    ...next[idx],
+    program: patch.program?.trim() || next[idx].program || null,
+    year: patch.year?.trim() || next[idx].year || null,
+    emergencyContact: patch.emergencyContact?.trim() || next[idx].emergencyContact || null,
+    photoUrl: patch.photoUrl?.trim() || next[idx].photoUrl || null,
+    department: patch.department?.trim() || next[idx].department || null,
+    profileComplete: true,
+  };
+  const db = await getDb();
+  await db.collection('learners').updateOne(
+    { lbId },
+    { $set: { affiliations: next, updatedAt: new Date() } },
   );
   return getLearner(lbId);
 }

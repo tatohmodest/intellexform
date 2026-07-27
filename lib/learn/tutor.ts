@@ -256,7 +256,7 @@ export function curriculumTutorAnswer(
       `- Internships: ${LOOPING_BINARY.intern}`,
       `- Junior Dev: ${LOOPING_BINARY.juniorDev}`,
       '- Founder: https://tatohmodest.vercel.app',
-      '- Apply for a campus: /dashboard/institutions',
+      '- Explore the network: /network · Partner a campus: contact the Platform Team (see /network#partner)',
       '',
       'Ask me about a skill (e.g. "explain Docker volumes") — I will link matching InTelleX courses.',
     ].join('\n');
