@@ -8,26 +8,57 @@ export function buildWhatsappLink(message: string, number: string = WHATSAPP_NUM
 }
 
 /**
- * Pre-written WhatsApp message for a registration / enrollment interest request.
+ * Pre-written WhatsApp message for a contact / inquiry from the Contact form.
  */
+export function contactMessage(opts: {
+  contactType?: string;
+  fullName: string;
+  field: string;
+  plan: string;
+  message?: string;
+  email?: string;
+  institutionName?: string;
+  roleTitle?: string;
+  country?: string;
+  estimatedStudents?: string;
+}): string {
+  const type = opts.contactType || 'learner';
+  const lines = [
+    type === 'institution'
+      ? 'Hello InTelleX Platform Team — institution partnership inquiry from the Contact form.'
+      : type === 'mentorship'
+        ? 'Hello InTelleX! I want a live mentorship quote.'
+        : 'Hello InTelleX! I reached out from the Contact form.',
+    '',
+    `• Type: ${type}`,
+    `• Name: ${opts.fullName}`,
+  ];
+  if (opts.email) lines.push(`• Email: ${opts.email}`);
+  if (opts.institutionName) lines.push(`• Institution: ${opts.institutionName}`);
+  if (opts.roleTitle) lines.push(`• Role: ${opts.roleTitle}`);
+  if (opts.country) lines.push(`• Country: ${opts.country}`);
+  if (opts.estimatedStudents) lines.push(`• Est. students: ${opts.estimatedStudents}`);
+  lines.push(`• Interest: ${opts.field}`);
+  if (opts.plan && opts.plan !== '—') lines.push(`• Detail: ${opts.plan}`);
+  if (opts.message && opts.message.trim()) {
+    lines.push(`• Note: ${opts.message.trim()}`);
+  }
+  if (type === 'institution') {
+    lines.push('', 'Please share the campus onboarding process and next steps.');
+  } else if (type === 'learner') {
+    lines.push('', 'I already have (or will create) an InTelleX account via Sign up.');
+  }
+  return lines.join('\n');
+}
+
+/** @deprecated use contactMessage */
 export function registrationMessage(opts: {
   fullName: string;
   field: string;
   plan: string;
   message?: string;
 }): string {
-  const lines = [
-    'Hello Intellex! I just registered my interest on the platform.',
-    '',
-    `• Name: ${opts.fullName}`,
-    `• Field: ${opts.field}`,
-    `• Plan: ${opts.plan}`,
-  ];
-  if (opts.message && opts.message.trim()) {
-    lines.push(`• Note: ${opts.message.trim()}`);
-  }
-  lines.push('', 'Please send me the payment details (MTN MoMo / Orange Money) to get started.');
-  return lines.join('\n');
+  return contactMessage({ ...opts, contactType: 'learner' });
 }
 
 /**

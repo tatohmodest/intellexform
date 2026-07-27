@@ -88,16 +88,24 @@ export interface Testimonial {
 }
 
 /**
- * A contact / enrollment request created from the register form. Stored in the
- * `requests` collection and surfaced in the admin dashboard. The user is also
- * redirected to WhatsApp with a pre-written message of these choices.
+ * A contact / inquiry created from the Contact form. Stored in the
+ * `requests` collection and surfaced in the admin dashboard. The user can
+ * continue on WhatsApp with a pre-written message of these choices.
  */
+export type ContactType = 'learner' | 'institution' | 'mentorship' | 'other';
+
 export interface ContactRequest {
+  contactType?: ContactType;
   fullName: string;
   whatsapp: string;
+  email?: string;
   field: string;
   plan: string;
   message?: string;
+  institutionName?: string;
+  roleTitle?: string;
+  country?: string;
+  estimatedStudents?: string;
   createdAt: Date;
 }
 

@@ -44,5 +44,5 @@ export const EXPLORE_NAV = [
   { href: '/books', label: 'Books', desc: 'AI-powered book learning' },
   { href: '/resources', label: 'Free resources', desc: 'Guides and checklists' },
   { href: '/learning', label: 'Learning environment', desc: 'Finish what you start' },
-  { href: '/register', label: 'Register', desc: 'Join the platform' },
+  { href: '/contact', label: 'Contact us', desc: 'Learners, mentors & institutions' },
 ] as const;

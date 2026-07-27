@@ -154,7 +154,10 @@ export default function NetworkPage() {
             {GOLDEN_RULE}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <a href={institutionMailto()} className="btn btn-primary">
+            <Link href="/contact?type=institution" className="btn btn-primary">
+              Contact us — partner form
+            </Link>
+            <a href={institutionMailto()} className="btn btn-ghost">
               <Mail size={15} /> {PLATFORM_CONTACT.email}
             </a>
             <a
@@ -165,9 +168,6 @@ export default function NetworkPage() {
             >
               <MessageCircle size={15} /> WhatsApp {PLATFORM_CONTACT.phoneDisplay}
             </a>
-            <Link href="/ecosystem" className="btn btn-ghost">
-              Back to ecosystem
-            </Link>
           </div>
         </div>
       </section>

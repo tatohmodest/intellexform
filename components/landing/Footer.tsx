@@ -85,7 +85,7 @@ export default function Footer() {
               WhatsApp
             </a>
             <a href="mailto:tatohmodest@gmail.com" className="mb-2 block text-sm text-paper/80">Email</a>
-            <Link href="/register" className="mb-2 block text-sm text-paper/80">Register</Link>
+            <Link href="/contact" className="mb-2 block text-sm text-paper/80">Contact us</Link>
             <a href="https://loopingbinary.com" target="_blank" rel="noopener noreferrer" className="mb-2 block text-sm text-paper/80">
               Looping Binary
             </a>

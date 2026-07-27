@@ -15,11 +15,14 @@ type Tab = 'learning' | 'applications' | 'requests' | 'orders' | 'registrations'
 
 interface RequestRow {
   _id: string;
+  contactType?: string;
   fullName: string;
   whatsapp: string;
+  email?: string;
   field: string;
   plan: string;
   message?: string;
+  institutionName?: string;
   createdAt: string;
 }
 interface OrderRow {
@@ -247,7 +250,11 @@ function Dashboard({ onLogout, adminEmail }: { onLogout: () => void; adminEmail?
   }
 
   const q = search.toLowerCase();
-  const fReq = requests.filter((r) => `${r.fullName} ${r.field} ${r.plan} ${r.whatsapp}`.toLowerCase().includes(q));
+  const fReq = requests.filter((r) =>
+    `${r.contactType || ''} ${r.fullName} ${r.field} ${r.plan} ${r.whatsapp} ${r.institutionName || ''} ${r.email || ''}`
+      .toLowerCase()
+      .includes(q),
+  );
   const fOrd = orders.filter((o) => `${o.fullName} ${o.courseName} ${o.whatsapp}`.toLowerCase().includes(q));
   const fReg = registrations.filter((r) => `${r.fullName} ${r.email} ${r.program}`.toLowerCase().includes(q));
 
@@ -312,9 +319,16 @@ function Dashboard({ onLogout, adminEmail }: { onLogout: () => void; adminEmail?
         {tab === 'applications' && <AdminApplications />}
         {tab === 'requests' && (
           <Table
-            head={['#', 'NAME', 'WHATSAPP', 'FIELD', 'PLAN', 'MESSAGE', 'CREATED']}
+            head={['#', 'TYPE', 'NAME', 'WHATSAPP', 'FIELD / CAMPUS', 'PLAN', 'MESSAGE', 'CREATED']}
             rows={fReq.map((r, i) => [
-              String(i + 1), r.fullName, r.whatsapp, r.field, r.plan, r.message || '—', fmt(r.createdAt),
+              String(i + 1),
+              r.contactType || 'learner',
+              r.fullName,
+              r.whatsapp,
+              r.institutionName ? `${r.field} (${r.institutionName})` : r.field,
+              r.plan,
+              r.message || '—',
+              fmt(r.createdAt),
             ])}
             empty={loading ? 'Loading…' : 'No requests yet'}
           />
