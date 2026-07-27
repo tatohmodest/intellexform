@@ -200,6 +200,11 @@ export function campusNavItems(opts: {
         : 'My courses',
       href: `${base}?tab=courses`,
     },
+    {
+      id: 'assignments',
+      label: 'Exams & work',
+      href: `${base}?tab=assignments`,
+    },
   ];
   if (hasModule(opts.modules, 'live_teaching')) {
     items.push({
@@ -207,14 +212,6 @@ export function campusNavItems(opts: {
       label: 'Live classes',
       href: `${base}?tab=live`,
       module: 'live_teaching',
-    });
-  }
-  if (hasModule(opts.modules, 'assessment')) {
-    items.push({
-      id: 'assignments',
-      label: 'Assignments',
-      href: `${base}?tab=assignments`,
-      module: 'assessment',
     });
   }
   if (hasModule(opts.modules, 'digital_library')) {

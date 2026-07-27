@@ -23,6 +23,7 @@ import {
 import { AnnouncementComposer } from '@/components/dashboard/CampusActions';
 import MarkdownLite from '@/components/dashboard/MarkdownLite';
 import CampusCoursesPanel from '@/components/dashboard/CampusCoursesPanel';
+import CampusAssessmentsPanel from '@/components/dashboard/CampusAssessmentsPanel';
 
 type Post = {
   id: string;
@@ -170,16 +171,7 @@ export default function CampusCapabilityView({
       )}
 
       {active === 'assignments' && (
-        <CapabilityPanel
-          icon={BookOpen}
-          title="Assignments"
-          accent={accent}
-          body={
-            isStaff
-              ? 'Create quizzes, exams, and rubrics. Auto-grading and submissions are part of the Assessment capability.'
-              : 'Submit assignments and view results for courses on this campus.'
-          }
-        />
+        <CampusAssessmentsPanel slug={slug} accent={accent} isStaff={isStaff} />
       )}
 
       {active === 'library' && (
