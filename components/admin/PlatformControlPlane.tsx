@@ -18,6 +18,7 @@ import {
   Shield,
 } from 'lucide-react';
 import { CAPABILITY_PACKS, MODULE_CATALOG, type CapabilityPack } from '@/lib/eduos/capabilities';
+import { COMMERCIAL_PLANS, type CommercialPlanId } from '@/lib/eduos/plans';
 import { formatXAF } from '@/lib/format';
 
 type Section =
@@ -27,6 +28,7 @@ type Section =
   | 'finance'
   | 'governance'
   | 'connections'
+  | 'onboarding'
   | 'catalogue';
 
 function fmt(d: string | Date | null | undefined) {
@@ -108,6 +110,7 @@ export default function PlatformControlPlane() {
   const [finance, setFinance] = useState<Record<string, unknown> | null>(null);
   const [governance, setGovernance] = useState<Record<string, unknown> | null>(null);
   const [connections, setConnections] = useState<Record<string, unknown> | null>(null);
+  const [onboarding, setOnboarding] = useState<Record<string, unknown> | null>(null);
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -134,6 +137,7 @@ export default function PlatformControlPlane() {
       if (section === 'finance') setFinance(await apiGet('finance'));
       if (section === 'governance') setGovernance(await apiGet('governance'));
       if (section === 'connections') setConnections(await apiGet('connections'));
+      if (section === 'onboarding') setOnboarding(await apiGet('onboarding_invites'));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load');
     } finally {
@@ -189,6 +193,7 @@ export default function PlatformControlPlane() {
     { id: 'finance', label: 'Finance', icon: Wallet },
     { id: 'governance', label: 'Applications', icon: ClipboardCheck },
     { id: 'connections', label: 'Connections', icon: Network },
+    { id: 'onboarding', label: 'Onboarding', icon: ClipboardCheck },
     { id: 'catalogue', label: 'Catalogue', icon: Trash2 },
   ];
 
@@ -384,6 +389,9 @@ export default function PlatformControlPlane() {
                 onStatus={async (status) => {
                   await run('update_institution', { id: selectedInst.id, status });
                 }}
+                onBrand={async (fields) => {
+                  await run('update_institution', { id: selectedInst.id, ...fields });
+                }}
                 onSuspendMember={async (membershipId, suspend) => {
                   await run('suspend_membership', { membershipId, suspend });
                 }}
@@ -478,6 +486,19 @@ export default function PlatformControlPlane() {
 
       {section === 'connections' && connections ? (
         <ConnectionsPanel data={connections} />
+      ) : null}
+
+      {section === 'onboarding' ? (
+        <OnboardingInvitesPanel
+          data={onboarding}
+          busy={busy}
+          onCreate={async (payload) => {
+            const r = await run('create_onboarding_invite', payload);
+            setOnboarding(await apiGet('onboarding_invites'));
+            return r;
+          }}
+          onRefresh={load}
+        />
       ) : null}
 
       {section === 'catalogue' ? (
@@ -612,6 +633,7 @@ function InstitutionDetail({
   onProvision,
   onUpdatePack,
   onStatus,
+  onBrand,
   onSuspendMember,
 }: {
   inst: Record<string, unknown>;
@@ -619,6 +641,7 @@ function InstitutionDetail({
   onProvision: () => Promise<unknown>;
   onUpdatePack: (pack: CapabilityPack, modules: string[]) => Promise<unknown>;
   onStatus: (status: string) => Promise<unknown>;
+  onBrand: (fields: Record<string, string | null>) => Promise<unknown>;
   onSuspendMember: (membershipId: string, suspend: boolean) => Promise<unknown>;
 }) {
   const [pack, setPack] = useState<CapabilityPack>(
@@ -627,10 +650,18 @@ function InstitutionDetail({
   const [modules, setModules] = useState<string[]>(
     (inst.enabledModules as string[]) || (inst.resolvedModules as string[]) || [],
   );
+  const [logoUrl, setLogoUrl] = useState(String(inst.logoUrl || ''));
+  const [coverUrl, setCoverUrl] = useState(String(inst.coverUrl || ''));
+  const [primaryColor, setPrimaryColor] = useState(String(inst.primaryColor || '#00b369'));
+  const [description, setDescription] = useState(String(inst.description || ''));
 
   useEffect(() => {
     setPack((inst.capabilityPack as CapabilityPack) || 'foundation');
     setModules((inst.enabledModules as string[]) || (inst.resolvedModules as string[]) || []);
+    setLogoUrl(String(inst.logoUrl || ''));
+    setCoverUrl(String(inst.coverUrl || ''));
+    setPrimaryColor(String(inst.primaryColor || '#00b369'));
+    setDescription(String(inst.description || ''));
   }, [inst]);
 
   const memberships = (inst.memberships as Array<Record<string, unknown>>) || [];
@@ -676,7 +707,54 @@ function InstitutionDetail({
         <Stat label="Courses" value={(inst._count as { courses?: number })?.courses ?? courses.length} />
       </div>
 
-      <div className="space-y-2 rounded-xl border p-4" style={{ borderColor: 'var(--line)' }}>
+      <div className="space-y-2 overflow-hidden rounded-xl border p-4" style={{ borderColor: 'var(--line)' }}>
+        <h4 className="font-semibold">Branding (logo & cover)</h4>
+        <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>
+          Customize how this campus appears - especially the InTelleX home campus.
+        </p>
+        <input
+          className="form-input !rounded-none"
+          placeholder="Logo image URL"
+          value={logoUrl}
+          onChange={(e) => setLogoUrl(e.target.value)}
+        />
+        <input
+          className="form-input !rounded-none"
+          placeholder="Cover image URL"
+          value={coverUrl}
+          onChange={(e) => setCoverUrl(e.target.value)}
+        />
+        <input
+          className="form-input !rounded-none"
+          placeholder="Primary color #00b369"
+          value={primaryColor}
+          onChange={(e) => setPrimaryColor(e.target.value)}
+        />
+        <textarea
+          className="form-input !rounded-none"
+          rows={3}
+          placeholder="About / description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+        <button
+          type="button"
+          className="btn btn-primary !rounded-none"
+          disabled={busy}
+          onClick={() =>
+            onBrand({
+              logoUrl: logoUrl || null,
+              coverUrl: coverUrl || null,
+              primaryColor,
+              description,
+            })
+          }
+        >
+          Save branding
+        </button>
+      </div>
+
+      <div className="space-y-2 overflow-hidden rounded-xl border p-4" style={{ borderColor: 'var(--line)' }}>
         <div className="flex items-center gap-2">
           <Shield size={14} />
           <h4 className="font-semibold">Capability pack</h4>
@@ -690,19 +768,20 @@ function InstitutionDetail({
           <option value="custom">Custom modules</option>
         </select>
         {pack === 'custom' ? (
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid max-w-full gap-2 overflow-hidden sm:grid-cols-2">
             {MODULE_CATALOG.map((m) => {
               const on = modules.includes(m.id);
               return (
-                <label key={m.id} className="flex items-start gap-2 text-sm">
+                <label key={m.id} className="flex min-w-0 items-start gap-2 text-sm">
                   <input
                     type="checkbox"
+                    className="mt-1 shrink-0"
                     checked={on}
                     onChange={() =>
                       setModules((prev) => (on ? prev.filter((x) => x !== m.id) : [...prev, m.id]))
                     }
                   />
-                  <span>
+                  <span className="min-w-0 break-words">
                     <span className="font-medium">{m.name}</span>
                     <span className="block text-xs" style={{ color: 'var(--ink-soft)' }}>
                       {m.tagline}
@@ -1073,6 +1152,129 @@ function ConnectionsPanel({ data }: { data: Record<string, unknown> }) {
               {fmt(a.createdAt as string)}
             </div>
           ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OnboardingInvitesPanel({
+  data,
+  busy,
+  onCreate,
+  onRefresh,
+}: {
+  data: Record<string, unknown> | null;
+  busy: boolean;
+  onCreate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+  onRefresh: () => Promise<void>;
+}) {
+  const [email, setEmail] = useState('');
+  const [plan, setPlan] = useState<CommercialPlanId>('builder');
+  const [lastUrl, setLastUrl] = useState('');
+  const invites = ((data?.invites as Array<Record<string, unknown>>) || []);
+
+  return (
+    <div className="space-y-6">
+      <div className="max-w-xl space-y-3 border p-5" style={{ borderColor: 'var(--line)' }}>
+        <h3 className="font-display text-lg font-semibold">Generate onboarding link</h3>
+        <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
+          Assign a plan to a specific email. They sign in with that address, pick allowed
+          capabilities, and we provision their campus. Plans: Starter, Builder, Pro, Enterprise,
+          Institution.
+        </p>
+        <input
+          className="form-input !rounded-none"
+          placeholder="partner@school.edu"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <select
+          className="form-input !rounded-none"
+          value={plan}
+          onChange={(e) => setPlan(e.target.value as CommercialPlanId)}
+        >
+          {(Object.keys(COMMERCIAL_PLANS) as CommercialPlanId[]).map((id) => (
+            <option key={id} value={id}>
+              {COMMERCIAL_PLANS[id].name} - {COMMERCIAL_PLANS[id].summary}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className="btn btn-primary !rounded-none"
+          disabled={busy || !email.includes('@')}
+          onClick={async () => {
+            const r = await onCreate({ email, plan });
+            setLastUrl(String(r.url || ''));
+            await onRefresh();
+          }}
+        >
+          Create invite link
+        </button>
+        {lastUrl ? (
+          <p className="break-all text-sm" style={{ color: 'var(--green-deep)' }}>
+            Share: {lastUrl}
+          </p>
+        ) : null}
+      </div>
+
+      <div>
+        <h3 className="mb-3 font-semibold">Recent invites</h3>
+        <div className="overflow-x-auto border" style={{ borderColor: 'var(--line)' }}>
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ background: 'var(--paper-dim)' }}>
+                {['Email', 'Plan', 'Status', 'Expires', 'Link'].map((h) => (
+                  <th key={h} className="px-3 py-2 text-left text-xs" style={{ color: 'var(--ink-soft)' }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {invites.map((inv) => (
+                <tr key={String(inv.token || inv.id)} className="border-t" style={{ borderColor: 'var(--line)' }}>
+                  <td className="px-3 py-2">{String(inv.email)}</td>
+                  <td className="px-3 py-2">{String(inv.plan)}</td>
+                  <td className="px-3 py-2">{String(inv.status)}</td>
+                  <td className="px-3 py-2">{fmt(inv.expiresAt as string)}</td>
+                  <td className="px-3 py-2 font-mono text-xs">
+                    /onboard/{String(inv.token).slice(0, 10)}…
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {invites.length === 0 ? (
+            <p className="p-4 text-sm" style={{ color: 'var(--ink-soft)' }}>
+              No invites yet.
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="border p-5" style={{ borderColor: 'var(--line)' }}>
+        <h3 className="mb-2 font-display text-lg font-semibold">Plan map (pinpoint later)</h3>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {(Object.keys(COMMERCIAL_PLANS) as CommercialPlanId[]).map((id) => {
+            const p = COMMERCIAL_PLANS[id];
+            return (
+              <div key={id} className="min-w-0 border p-3" style={{ borderColor: 'var(--line)' }}>
+                <p className="font-semibold">{p.name}</p>
+                <p className="mt-1 break-words text-xs" style={{ color: 'var(--ink-soft)' }}>
+                  {p.summary}
+                </p>
+                <ul className="mt-2 list-inside list-disc text-xs" style={{ color: 'var(--ink-soft)' }}>
+                  {p.highlights.map((h) => (
+                    <li key={h} className="break-words">
+                      {h}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

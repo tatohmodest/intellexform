@@ -35,6 +35,14 @@ export interface LearnerDoc {
   /** YYYY-MM-DD of the last day the learner did something. */
   lastActiveDay: string | null;
   weeklyGoalMinutes: number;
+  /** Preferences - locale, notifications, motion. */
+  preferences?: {
+    locale?: string;
+    emailNotifications?: boolean;
+    sessionReminders?: boolean;
+    reducedMotion?: boolean;
+    marketingEmails?: boolean;
+  };
   createdAt: Date;
   lastLoginAt: Date;
 }
@@ -147,10 +155,22 @@ export async function getLearner(lbId: string): Promise<LearnerDoc | null> {
 
 export async function updateLearnerSettings(
   lbId: string,
-  patch: Partial<Pick<LearnerDoc, 'name' | 'weeklyGoalMinutes'>>,
+  patch: Partial<
+    Pick<LearnerDoc, 'name' | 'weeklyGoalMinutes' | 'avatar' | 'preferences'>
+  >,
 ) {
   const db = await getDb();
-  await db.collection('learners').updateOne({ lbId }, { $set: patch });
+  const $set: Record<string, unknown> = {};
+  if (patch.name !== undefined) $set.name = patch.name;
+  if (patch.weeklyGoalMinutes !== undefined) $set.weeklyGoalMinutes = patch.weeklyGoalMinutes;
+  if (patch.avatar !== undefined) $set.avatar = patch.avatar;
+  if (patch.preferences !== undefined) {
+    for (const [k, v] of Object.entries(patch.preferences)) {
+      $set[`preferences.${k}`] = v;
+    }
+  }
+  if (Object.keys($set).length === 0) return;
+  await db.collection('learners').updateOne({ lbId }, { $set });
 }
 
 /** Complete first-run onboarding - identity stays global; intent only personalizes. */

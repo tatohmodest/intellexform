@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { getDb } from '@/lib/repo';
-import { MENTORS, type Mentor, type MentorSlot } from '@/lib/learn/mentors';
+import { type Mentor, type MentorSlot } from '@/lib/learn/mentors';
 import type { ContentVisibility, InstitutionAuthMethod } from '@/lib/learn/identity';
 
 /**
@@ -378,16 +378,15 @@ export async function updateMentorProfile(
   await db.collection('mentor_profiles').updateOne({ lbId }, { $set: patch });
 }
 
-/** Full mentor directory: seed mentors + live mentor profiles. */
+/** Live mentor / instructor directory only - no mock seed profiles. */
 export async function getAllMentors(): Promise<Mentor[]> {
-  let dynamic: Mentor[] = [];
   try {
     const db = await getDb();
     const docs = await db
       .collection('mentor_profiles')
       .find({ active: true }, { projection: { _id: 0 } })
       .toArray();
-    dynamic = (docs as unknown as MentorProfileDoc[]).map((d) => ({
+    return (docs as unknown as MentorProfileDoc[]).map((d) => ({
       id: d.lbId,
       name: d.name,
       title: d.title,
@@ -401,12 +400,11 @@ export async function getAllMentors(): Promise<Mentor[]> {
       accent: d.accent,
       initials: d.initials,
       slots: d.slots,
+      avatarUrl: (d as { avatarUrl?: string }).avatarUrl,
     }));
   } catch {
-    /* directory still works from seed */
+    return [];
   }
-  const dynamicIds = new Set(dynamic.map((m) => m.id));
-  return [...dynamic, ...MENTORS.filter((m) => !dynamicIds.has(m.id))];
 }
 
 export async function findMentor(id: string): Promise<Mentor | null> {
@@ -815,6 +813,7 @@ export interface InstitutionDoc {
   about: string;
   color: string;
   emoji: string;
+  coverUrl?: string | null;
   logoUrl?: string | null;
   visibility: 'public' | 'private';
   /** How this campus authenticates students when they affiliate. */
@@ -1184,6 +1183,20 @@ export async function getAdminLearningOverview() {
 // ── Seeds ─────────────────────────────────────────────────────────────────────
 
 async function seedIntellexInstitution(db: Awaited<ReturnType<typeof getDb>>) {
+  // Remove demo campuses that were previously auto-seeded.
+  await db.collection('institutions').deleteMany({
+    slug: {
+      $in: [
+        'university-of-buea',
+        'saint-monica-university',
+        'seven-advanced-academy',
+      ],
+    },
+    ownerId: 'system',
+  });
+
+  // Ensure the home InTelleX campus exists - Platform Admin customizes it.
+  // Never overwrite branding/copy once an admin has set fields.
   const exists = await db.collection('institutions').findOne({ slug: 'intellex' });
   if (!exists) {
     await db.collection('institutions').insertOne({
@@ -1191,9 +1204,11 @@ async function seedIntellexInstitution(db: Awaited<ReturnType<typeof getDb>>) {
       name: 'InTelleX',
       tagline: 'The home campus of the InTelleX learning ecosystem',
       about:
-        'InTelleX is the founding institution of the ecosystem - public courses, mentorship, certifications, career programs and communities. Other schools, academies and companies can open their own campus and run it alongside InTelleX.',
+        'InTelleX is the founding institution of the ecosystem - public courses, mentorship, certifications, career programs and communities. Other schools, academies and companies join via Platform onboarding.',
       color: '#00b369',
       emoji: '',
+      logoUrl: null,
+      coverUrl: null,
       visibility: 'public',
       authMethod: 'open',
       country: 'Cameroon',
@@ -1204,101 +1219,20 @@ async function seedIntellexInstitution(db: Awaited<ReturnType<typeof getDb>>) {
       memberCount: 0,
       createdAt: new Date(),
     });
-  } else {
-    const patch: Record<string, unknown> = {};
-    if (!exists.authMethod) {
-      patch.authMethod = 'open';
-      patch.country = exists.country ?? 'Cameroon';
-    }
-    if (!exists.capabilityPack) {
-      patch.capabilityPack = 'enterprise';
-      patch.enabledModules = exists.enabledModules ?? [];
-    }
-    if (Object.keys(patch).length) {
-      await db.collection('institutions').updateOne({ slug: 'intellex' }, { $set: patch });
-    }
+    return;
   }
 
-  const demos: Array<{
-    slug: string;
-    name: string;
-    tagline: string;
-    about: string;
-    color: string;
-    authMethod: string;
-    country: string;
-    capabilityPack: 'foundation' | 'professional' | 'enterprise' | 'custom';
-    enabledModules: string[];
-  }> = [
-    {
-      slug: 'university-of-buea',
-      name: 'University of Buea',
-      tagline: 'Knowledge with wisdom',
-      about: 'Public university in Buea, Cameroon - affiliate with your matricule to enter the campus workspace.',
-      color: '#1f5fa8',
-      authMethod: 'matricule',
-      country: 'Cameroon',
-      capabilityPack: 'professional',
-      enabledModules: [],
-    },
-    {
-      slug: 'saint-monica-university',
-      name: 'Saint Monica University',
-      tagline: 'Faith · Excellence · Service',
-      about: 'Private university campus on the InTelleX network. Students verify with matricule; academic records stay with Saint Monica.',
-      color: '#7c3aed',
-      authMethod: 'matricule',
-      country: 'Cameroon',
-      capabilityPack: 'custom',
-      enabledModules: [
-        'digital_learning',
-        'assessment',
-        'ai_learning',
-        'digital_library',
-        'live_teaching',
-        'research',
-        'intellex_resources',
-      ],
-    },
-    {
-      slug: 'seven-advanced-academy',
-      name: 'Seven Advanced Academy',
-      tagline: 'Skills that ship',
-      about: 'Professional academy for builders - join with your student ID to access academy courses and announcements.',
-      color: '#c2570a',
-      authMethod: 'matricule',
-      country: 'Cameroon',
-      capabilityPack: 'foundation',
-      enabledModules: [],
-    },
-  ];
-
-  for (const d of demos) {
-    const found = await db.collection('institutions').findOne({ slug: d.slug });
-    if (found) {
-      const patch: Record<string, unknown> = {};
-      if (!found.authMethod) {
-        patch.authMethod = d.authMethod;
-        patch.country = d.country;
-      }
-      if (!found.capabilityPack) {
-        patch.capabilityPack = d.capabilityPack;
-        patch.enabledModules = d.enabledModules;
-      }
-      if (Object.keys(patch).length) {
-        await db.collection('institutions').updateOne({ slug: d.slug }, { $set: patch });
-      }
-      continue;
-    }
-    await db.collection('institutions').insertOne({
-      ...d,
-      emoji: '',
-      visibility: 'public',
-      ownerId: 'system',
-      ownerName: 'InTelleX Network',
-      memberCount: 0,
-      createdAt: new Date(),
-    });
+  const patch: Record<string, unknown> = {};
+  if (!exists.authMethod) {
+    patch.authMethod = 'open';
+    patch.country = exists.country ?? 'Cameroon';
+  }
+  if (!exists.capabilityPack) {
+    patch.capabilityPack = 'enterprise';
+    patch.enabledModules = exists.enabledModules ?? [];
+  }
+  if (Object.keys(patch).length) {
+    await db.collection('institutions').updateOne({ slug: 'intellex' }, { $set: patch });
   }
 }
 

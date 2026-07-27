@@ -61,23 +61,29 @@ export default function CampusCapabilityView({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b pb-4" style={{ borderColor: 'var(--line)' }}>
+      <div className="min-w-0 overflow-hidden border-b pb-4" style={{ borderColor: 'var(--line)' }}>
         <span className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
           {packLabel(pack as 'foundation')} · Core included
         </span>
-        {modules.slice(0, 5).map((id) => {
-          const meta = MODULE_CATALOG.find((m) => m.id === id);
-          return (
-            <span key={id} className="text-[12.5px] font-semibold" style={{ color: accent }}>
-              {meta?.name ?? id}
+        <div className="mt-2 flex max-w-full flex-wrap gap-2">
+          {modules.slice(0, 8).map((id) => {
+            const meta = MODULE_CATALOG.find((m) => m.id === id);
+            return (
+              <span
+                key={id}
+                className="max-w-full break-words text-[12px] font-semibold sm:text-[12.5px]"
+                style={{ color: accent }}
+              >
+                {meta?.name ?? id}
+              </span>
+            );
+          })}
+          {modules.length > 8 && (
+            <span className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+              +{modules.length - 8} more
             </span>
-          );
-        })}
-        {modules.length > 5 && (
-          <span className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-            +{modules.length - 5} more
-          </span>
-        )}
+          )}
+        </div>
       </div>
 
       <nav className="-mx-1 flex gap-5 overflow-x-auto border-b" style={{ borderColor: 'var(--line)' }}>

@@ -3,3 +3,4 @@ export * from './permissions';
 export * from './federation';
 export * from './audit';
 export * from './capabilities';
+export * from './plans';

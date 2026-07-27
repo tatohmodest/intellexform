@@ -13,21 +13,25 @@ export default async function SettingsPage() {
   const learner = await getLearner(session.uid);
 
   return (
-    <div className="mx-auto max-w-[760px]">
-      <div className="mb-8">
-        <div className="tab mb-2 inline-flex items-center gap-1.5">
-          <Settings size={11} />
+    <div className="mx-auto max-w-[760px] overflow-x-hidden">
+      <header className="mb-10 border-b pb-8" style={{ borderColor: 'var(--line)' }}>
+        <p className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: 'var(--ink-soft)' }}>
           Account
-        </div>
-        <h1 className="font-display text-[30px] leading-tight">Settings</h1>
-      </div>
+        </p>
+        <h1 className="mt-2 font-display text-[32px] leading-[0.95] tracking-tight sm:text-[36px]">
+          Settings
+        </h1>
+        <p className="mt-3 max-w-md text-[15px]" style={{ color: 'var(--ink-soft)' }}>
+          Customize your profile, preferences, and how InTelleX reaches you.
+        </p>
+      </header>
 
       <div
-        className="mb-8 flex flex-wrap items-center gap-4 rounded-2xl border p-5"
-        style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}
+        className="mb-10 flex flex-wrap items-center gap-4 border-b pb-8"
+        style={{ borderColor: 'var(--line)' }}
       >
         <span
-          className="flex h-10 w-10 items-center justify-center rounded-xl"
+          className="flex h-10 w-10 items-center justify-center"
           style={{ background: 'rgba(0,179,105,0.12)', color: 'var(--green-deep)' }}
         >
           <ShieldCheck size={19} />
@@ -53,6 +57,8 @@ export default async function SettingsPage() {
       <SettingsForm
         initialName={learner?.name ?? session.name}
         initialWeeklyGoal={learner?.weeklyGoalMinutes ?? 150}
+        initialAvatar={learner?.avatar}
+        initialPreferences={learner?.preferences}
       />
     </div>
   );

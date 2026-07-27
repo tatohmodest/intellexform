@@ -12,6 +12,7 @@ import { JoinCampusButton } from '@/components/dashboard/CampusActions';
 import CampusProfileComplete from '@/components/dashboard/CampusProfileComplete';
 import CampusCapabilityView from '@/components/dashboard/CampusCapabilityView';
 import {
+  getModuleMeta,
   resolveCampusModules,
   type ModuleId,
 } from '@/lib/eduos/capabilities';
@@ -34,15 +35,16 @@ export default async function CampusPage({
   const membership = await getMembership(params.slug, session.uid);
   if (inst.visibility === 'private' && !membership) {
     return (
-      <div className="mx-auto flex max-w-[520px] flex-col items-center rounded-3xl border p-10 text-center" style={{ borderColor: 'var(--line)' }}>
-        <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: 'var(--paper-dim)', color: 'var(--ink-soft)' }}>
+      <div className="mx-auto flex max-w-[520px] flex-col items-center border p-8 text-center sm:p-10" style={{ borderColor: 'var(--line)' }}>
+        <span className="mb-4 flex h-14 w-14 items-center justify-center" style={{ background: 'var(--paper-dim)', color: 'var(--ink-soft)' }}>
           <Lock size={24} />
         </span>
         <h1 className="font-display text-[22px]">This campus is private</h1>
         <p className="mt-2 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-          {inst.name} is invite-only. Ask an administrator of the institution to add you.
+          {inst.name} is invite-only. Ask an administrator of the institution to add you, or use an
+          onboarding / enrollment link from the Platform Team.
         </p>
-        <Link href="/dashboard/institutions" className="btn btn-ghost mt-6 !py-2.5 text-[13.5px]">
+        <Link href="/dashboard/institutions" className="btn btn-ghost mt-6 !rounded-none !py-2.5 text-[13.5px]">
           Back to institutions
         </Link>
       </div>
@@ -77,37 +79,76 @@ export default async function CampusPage({
     affiliation?.role ||
     (membership === 'owner' ? 'owner' : membership ? 'member' : 'viewer');
   const tab = searchParams?.tab || 'home';
+  const cover = inst.coverUrl || null;
+  const logo = inst.logoUrl || null;
+  const accent = inst.color || '#00b369';
 
   return (
-    <div className="mx-auto max-w-[960px]">
+    <div className="mx-auto max-w-[960px] overflow-x-hidden px-0">
       {showProfileComplete && (
         <CampusProfileComplete
           slug={inst.slug}
           institutionName={inst.name}
-          accent={inst.color}
+          accent={accent}
         />
       )}
-      <Link href="/dashboard/institutions" className="mb-6 inline-flex items-center gap-1.5 text-[13.5px] font-semibold" style={{ color: 'var(--ink-soft)' }}>
+      <Link
+        href="/dashboard/institutions"
+        className="mb-6 inline-flex items-center gap-1.5 px-1 text-[13.5px] font-semibold"
+        style={{ color: 'var(--ink-soft)' }}
+      >
         <ArrowLeft size={14} /> Institutions
       </Link>
 
-      <div
-        className="mb-8 text-white"
-        style={{
-          background: `linear-gradient(120deg, ${inst.color} 0%, #0C1116 72%)`,
-        }}
-      >
-        <div className="p-7 sm:p-9">
-          <div className="flex flex-wrap items-end justify-between gap-5">
-            <div>
-              <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55">
-                Digital campus · Powered by InTelleX
-              </p>
-              <h1 className="font-display text-[36px] leading-[0.95] tracking-tight sm:text-[44px]">
+      {/* Full-bleed campus hero: cover or gradient */}
+      <header className="relative mb-8 overflow-hidden text-white">
+        {cover ? (
+          <div className="absolute inset-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={cover} alt="" className="h-full w-full object-cover" />
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `linear-gradient(120deg, ${accent}cc 0%, #0C1116e6 70%)`,
+              }}
+            />
+          </div>
+        ) : (
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(120deg, ${accent} 0%, #0C1116 72%)`,
+            }}
+          />
+        )}
+        <div className="relative p-6 sm:p-9">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0 flex-1">
+              <div className="mb-4 flex items-center gap-3">
+                {logo ? (
+                  <span
+                    className="relative h-14 w-14 shrink-0 overflow-hidden border border-white/25 bg-white/10 sm:h-16 sm:w-16"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={logo} alt={`${inst.name} logo`} className="h-full w-full object-contain p-1" />
+                  </span>
+                ) : (
+                  <span
+                    className="flex h-14 w-14 shrink-0 items-center justify-center font-display text-[22px] font-bold sm:h-16 sm:w-16"
+                    style={{ background: 'rgba(255,255,255,0.12)' }}
+                  >
+                    {(inst.name || 'I').charAt(0)}
+                  </span>
+                )}
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/55 sm:text-[11px]">
+                  Digital campus · Powered by InTelleX
+                </p>
+              </div>
+              <h1 className="break-words font-display text-[32px] leading-[0.95] tracking-tight sm:text-[44px]">
                 {inst.name}
               </h1>
-              <p className="mt-3 max-w-xl text-[15px] text-white/75">{inst.tagline}</p>
-              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] uppercase tracking-[0.12em] text-white/55">
+              <p className="mt-3 max-w-xl text-[14px] text-white/75 sm:text-[15px]">{inst.tagline}</p>
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10px] uppercase tracking-[0.12em] text-white/55 sm:text-[11px]">
                 <span className="flex items-center gap-1">
                   <Users size={12} /> {inst.memberCount.toLocaleString()} members
                 </span>
@@ -120,17 +161,19 @@ export default async function CampusPage({
                 {affiliation?.role && <span>{affiliation.role}</span>}
               </div>
             </div>
-            <JoinCampusButton slug={inst.slug} isMember={Boolean(membership)} />
+            <div className="shrink-0">
+              <JoinCampusButton slug={inst.slug} isMember={Boolean(membership)} />
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
       <div className="grid gap-8 lg:grid-cols-5">
-        <div className="lg:col-span-3">
+        <div className="min-w-0 lg:col-span-3">
           <CampusCapabilityView
             slug={inst.slug}
             institutionName={inst.name}
-            accent={inst.color || '#00b369'}
+            accent={accent}
             pack={inst.capabilityPack || 'foundation'}
             modules={modules}
             role={role}
@@ -140,10 +183,10 @@ export default async function CampusPage({
           />
         </div>
 
-        <aside className="space-y-8 lg:col-span-2">
+        <aside className="min-w-0 space-y-8 lg:col-span-2">
           <div className="border-t pt-5" style={{ borderColor: 'var(--line)' }}>
             <h3 className="mb-2 font-display text-[18px]">About</h3>
-            <p className="text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+            <p className="break-words text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
               {inst.about || inst.tagline || 'This institution has not written an about section yet.'}
             </p>
             <div className="mt-4 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
@@ -154,7 +197,7 @@ export default async function CampusPage({
             </div>
           </div>
 
-          <div className="border-t pt-5" style={{ borderColor: 'var(--line)' }}>
+          <div className="overflow-hidden border-t pt-5" style={{ borderColor: 'var(--line)' }}>
             <h3 className="mb-2 font-display text-[18px]">Capabilities</h3>
             <p className="mb-3 text-[13px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
               Every campus starts with InTelleX Core. Additional capabilities are provisioned by the Platform Team.
@@ -164,10 +207,19 @@ export default async function CampusPage({
                 Foundation · Core campus management only.
               </p>
             ) : (
-              <ul className="space-y-1.5 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
-                {modules.map((m) => (
-                  <li key={m}>{m.replace(/_/g, ' ')}</li>
-                ))}
+              <ul className="flex flex-wrap gap-2">
+                {modules.map((m) => {
+                  const meta = getModuleMeta(m);
+                  return (
+                    <li
+                      key={m}
+                      className="max-w-full break-words border px-2.5 py-1 text-[11.5px] font-semibold leading-snug"
+                      style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+                    >
+                      {meta?.name ?? m.replace(/_/g, ' ')}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
@@ -176,11 +228,11 @@ export default async function CampusPage({
             <div className="border-t pt-5" style={{ borderColor: 'var(--line)' }}>
               <h3 className="mb-2 font-display text-[18px]">Home campus</h3>
               <p className="text-[13px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                Intellex is the founding institution of the ecosystem - its courses,
-                mentors, library and AI tutor are available to every member.
+                InTelleX is the founding campus - branding, courses, and capabilities are managed by
+                Platform Admin. Customize logo, cover, and pack from /admin.
               </p>
               <Link href="/dashboard/courses" className="mt-3 inline-block text-[13px] font-semibold" style={{ color: 'var(--green-deep)' }}>
-                Browse Intellex courses →
+                Browse InTelleX courses →
               </Link>
             </div>
           )}

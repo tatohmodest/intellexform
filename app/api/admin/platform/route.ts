@@ -18,6 +18,11 @@ import {
   setUserBan,
   updateInstitution,
 } from '@/lib/admin/platform';
+import {
+  createOnboardingInvite,
+  listOnboardingInvites,
+} from '@/lib/admin/onboardingInvites';
+import { COMMERCIAL_PLANS, type CommercialPlanId } from '@/lib/eduos/plans';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,6 +78,11 @@ export async function GET(req: NextRequest) {
         return NextResponse.json(await listConnections());
       case 'governance':
         return NextResponse.json(await listGovernanceQueue());
+      case 'onboarding_invites':
+        return NextResponse.json({
+          invites: await listOnboardingInvites(),
+          plans: COMMERCIAL_PLANS,
+        });
       default:
         return NextResponse.json({ error: 'Unknown resource' }, { status: 400 });
     }
@@ -162,6 +172,24 @@ export async function POST(req: NextRequest) {
       }
       case 'purge_all_catalogue': {
         return NextResponse.json(await purgeAllMongoCatalogue());
+      }
+      case 'create_onboarding_invite': {
+        if (!body.email || !body.plan) {
+          return NextResponse.json({ error: 'email and plan required' }, { status: 400 });
+        }
+        const invite = await createOnboardingInvite({
+          email: body.email,
+          plan: body.plan as CommercialPlanId,
+          allowedModules: body.allowedModules,
+          note: body.note,
+          actorEmail: email,
+          expiresInDays: body.expiresInDays,
+        });
+        const origin = req.nextUrl.origin;
+        return NextResponse.json({
+          ...invite,
+          url: `${origin}/onboard/${invite.token}`,
+        });
       }
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 });

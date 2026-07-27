@@ -67,6 +67,8 @@ async function mirrorInstitutionToMongo(inst: {
   enabledModules: string[];
   status: string;
   ownerUserId: string | null;
+  logoUrl?: string | null;
+  coverUrl?: string | null;
 }) {
   try {
     const db = await getDb();
@@ -93,6 +95,8 @@ async function mirrorInstitutionToMongo(inst: {
           about: inst.description || '',
           color: inst.primaryColor || '#00b369',
           emoji: '',
+          logoUrl: inst.logoUrl ?? null,
+          coverUrl: inst.coverUrl ?? null,
           visibility: inst.visibility === 'PUBLIC' ? 'public' : 'private',
           capabilityPack: inst.capabilityPack,
           enabledModules: modules,
@@ -428,6 +432,8 @@ export async function updateInstitution(
     deploymentModel?: string;
     primaryColor?: string;
     visibility?: 'PUBLIC' | 'PRIVATE';
+    logoUrl?: string | null;
+    coverUrl?: string | null;
     actorEmail?: string;
   },
 ) {
@@ -447,6 +453,8 @@ export async function updateInstitution(
   }
   if (patch.primaryColor !== undefined) data.primaryColor = patch.primaryColor;
   if (patch.visibility !== undefined) data.visibility = patch.visibility;
+  if (patch.logoUrl !== undefined) data.logoUrl = patch.logoUrl;
+  if (patch.coverUrl !== undefined) data.coverUrl = patch.coverUrl;
   if (patch.deploymentModel !== undefined) {
     data.deploymentModel = patch.deploymentModel as never;
   }

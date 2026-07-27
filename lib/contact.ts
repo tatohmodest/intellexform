@@ -2,8 +2,8 @@ import { buildWhatsappLink, WHATSAPP_NUMBER } from '@/lib/whatsapp';
 
 /** Public contact for curated institution onboarding (never self-serve create). */
 export const PLATFORM_CONTACT = {
-  email: 'intellex@loopingbinary.com',
-  emailAlt: 'tatohmodest@gmail.com',
+  email: 'loopingbinary@gmail.com',
+  emailAlt: 'intellex@loopingbinary.com',
   phoneDisplay: '+237 650 318 856',
   whatsappNumber: WHATSAPP_NUMBER,
   whatsappInstitutionMessage:

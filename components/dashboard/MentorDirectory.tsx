@@ -151,74 +151,80 @@ export default function MentorDirectory({
         </section>
       )}
 
-      {/* Mentor grid */}
+      {/* Instructor directory - editorial rows */}
       <section>
-        <h2 className="mb-4 font-display text-[21px]">Meet your mentors</h2>
-        <div className="grid gap-4 md:grid-cols-2">
-          {mentors.map((m) => (
-            <div
-              key={m.id}
-              className="flex flex-col rounded-2xl border p-5 transition-shadow hover:shadow-card"
-              style={{ borderColor: 'var(--line)' }}
-            >
-              <div className="mb-3 flex items-start gap-3.5">
-                <span
-                  className="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl p-3 text-[16px] font-bold text-white"
-                  style={{ background: m.accent, height: 52, width: 52 }}
-                >
-                  {m.initials}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[15.5px] font-semibold">{m.name}</div>
-                  <div className="text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
-                    {m.title}
-                  </div>
-                  <div className="mt-1 flex items-center gap-3 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-                    <span className="flex items-center gap-1 font-semibold" style={{ color: '#b7791f' }}>
-                      <Star size={12} fill="currentColor" /> {m.rating}
-                    </span>
-                    <span>{m.sessionsCompleted} sessions</span>
-                    <span className="flex items-center gap-1">
-                      <Globe2 size={11} /> {m.languages.join(', ')}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <p className="mb-3 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                {m.bio}
-              </p>
-              <div className="mb-4 flex flex-wrap gap-1.5">
-                {m.expertise.map((e) => (
-                  <span
-                    key={e}
-                    className="rounded-full px-2.5 py-1 text-[11.5px] font-medium"
-                    style={{ background: 'var(--paper-dim)', color: 'var(--ink-soft)' }}
-                  >
-                    {e}
-                  </span>
-                ))}
-              </div>
-              <div className="mt-auto flex items-center justify-between">
-                <div>
-                  <span className="font-display text-[18px]">{m.priceXAF.toLocaleString()} XAF</span>
-                  <span className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-                    {' '}/ {m.sessionMinutes} min
-                  </span>
-                </div>
-                <button
-                  className="btn btn-primary !px-5 !py-2.5 text-[13px]"
-                  onClick={() => {
-                    setBooking(m);
-                    setSlotIdx(0);
-                    setError(null);
+        <div className="mb-4 border-b pb-3" style={{ borderColor: 'var(--line)' }}>
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
+            Directory
+          </p>
+          <h2 className="font-display text-[22px]">Meet your instructors</h2>
+        </div>
+        <ul className="divide-y" style={{ borderColor: 'var(--line)' }}>
+          {mentors.map((m, index) => (
+            <li key={m.id} className="group">
+              <div className="grid gap-5 py-8 sm:grid-cols-[88px_1fr_auto] sm:items-center sm:gap-8">
+                <Link
+                  href={`/dashboard/mentorship/${m.id}`}
+                  className="relative flex h-[88px] w-[88px] items-end overflow-hidden"
+                  style={{
+                    background: `linear-gradient(145deg, ${m.accent} 0%, ${m.accent}88 45%, #0C1116 100%)`,
                   }}
                 >
-                  Book session
-                </button>
+                  {m.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={m.avatarUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                  ) : (
+                    <span className="relative z-[1] p-3 font-display text-[28px] leading-none text-white/95">
+                      {m.initials}
+                    </span>
+                  )}
+                  <span className="absolute right-2 top-2 font-mono text-[10px] text-white/55">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                </Link>
+                <div className="min-w-0">
+                  <Link
+                    href={`/dashboard/mentorship/${m.id}`}
+                    className="font-display text-[22px] leading-tight transition-opacity group-hover:opacity-80 sm:text-[26px]"
+                  >
+                    {m.name}
+                  </Link>
+                  <p className="mt-1 max-w-[540px] text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                    {m.title}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
+                    <span className="inline-flex items-center gap-1">
+                      <Star size={11} /> {m.rating}
+                    </span>
+                    <span>{m.sessionsCompleted} sessions</span>
+                    <span>{m.priceXAF.toLocaleString()} XAF / {m.sessionMinutes} min</span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 sm:flex-col sm:items-stretch lg:flex-row">
+                  <Link
+                    href={`/dashboard/mentorship/${m.id}`}
+                    className="inline-flex items-center justify-center gap-1.5 border px-4 py-2.5 text-[13px] font-semibold"
+                    style={{ borderColor: 'var(--ink)', color: 'var(--ink)' }}
+                  >
+                    View profile
+                  </Link>
+                  <button
+                    type="button"
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-[13px] font-semibold text-white"
+                    style={{ background: m.accent || 'var(--ink)' }}
+                    onClick={() => {
+                      setBooking(m);
+                      setSlotIdx(0);
+                      setError(null);
+                    }}
+                  >
+                    Book session
+                  </button>
+                </div>
               </div>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </section>
 
       {/* Booking modal */}
