@@ -4,13 +4,14 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   Check,
   CreditCard,
+  Download,
   ExternalLink,
-  FileText,
   Loader2,
   RefreshCw,
   UserCheck,
   Video,
   X,
+  type LucideIcon,
 } from 'lucide-react';
 
 type MentorApp = {
@@ -240,7 +241,13 @@ function ApplicationCard({
       )}
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <DocLink href={app.resumeUrl} icon={FileText} label="CV / Resume" />
+        <DocLink
+          href={app.resumeUrl}
+          icon={Download}
+          label="Download CV"
+          download
+          filename={`cv-${(app.name || 'applicant').replace(/\s+/g, '-').toLowerCase()}`}
+        />
         <DocLink href={app.idFrontUrl} icon={CreditCard} label="ID front" />
         <DocLink href={app.idBackUrl} icon={CreditCard} label="ID back" />
         <DocLink href={app.introVideoUrl} icon={Video} label="Intro video" />
@@ -275,14 +282,36 @@ function StatusPill({ status }: { status: string }) {
   );
 }
 
+/** Force Cloudinary delivery to download instead of opening in the browser. */
+function attachmentUrl(url: string, filename?: string): string {
+  try {
+    const u = new URL(url);
+    if (!u.hostname.includes('cloudinary.com')) return url;
+    if (!u.pathname.includes('/upload/')) return url;
+    const flag = filename
+      ? `fl_attachment:${encodeURIComponent(filename.replace(/[^\w.-]+/g, '_'))}`
+      : 'fl_attachment';
+    if (u.pathname.includes('/fl_attachment')) return u.toString();
+    u.pathname = u.pathname.replace('/upload/', `/upload/${flag}/`);
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 function DocLink({
   href,
   icon: Icon,
   label,
+  download,
+  filename,
 }: {
   href?: string;
-  icon: typeof FileText;
+  icon: LucideIcon;
   label: string;
+  /** Prefer download over opening in a new tab (used for resumes). */
+  download?: boolean;
+  filename?: string;
 }) {
   if (!href) {
     return (
@@ -291,6 +320,23 @@ function DocLink({
       </span>
     );
   }
+
+  if (download) {
+    const hrefDownload = attachmentUrl(href, filename);
+    return (
+      <a
+        href={hrefDownload}
+        download={filename || true}
+        className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors hover:border-[var(--green-deep)]"
+        style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+      >
+        <Icon size={12} style={{ color: 'var(--green-deep)' }} />
+        {label}
+        <Download size={11} style={{ color: 'var(--ink-soft)' }} />
+      </a>
+    );
+  }
+
   return (
     <a
       href={href}
