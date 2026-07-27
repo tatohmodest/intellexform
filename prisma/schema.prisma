@@ -1,5 +1,16 @@
-// InTelleX EduOS — multi-tenant education operating system
-// Shared SaaS Postgres (Supabase). Tenant isolation via institutionId.
+// InTelleX EduOS — federated education operating system
+//
+// Golden rule: Nothing important is created by accident, accessed without
+// permission, or managed without accountability. Every institution, role,
+// resource, and action has a clear owner, approval process, and audit trail.
+//
+// Architecture:
+// - Layer 1 (Core): identity, institution registry, applications, API gateway
+//   metadata, global search index — NOT academic records.
+// - Layer 2 (Institution): each campus owns its academic data (shared SaaS
+//   row isolation today; dedicated DB / customer-hosted / hybrid when provisioned).
+//
+// See docs/EDUOS_ARCHITECTURE.md and lib/eduos/.
 
 generator client {
   provider = "prisma-client-js"
@@ -15,16 +26,23 @@ datasource db {
 // Enums
 // ─────────────────────────────────────────────
 
+/// Platform-wide authority (InTelleX Core). Exactly one PLATFORM_OWNER.
 enum GlobalRole {
   USER
-  PLATFORM_ADMIN
   SUPPORT
+  PLATFORM_ADMIN
+  PLATFORM_OWNER
 }
 
+/// Campus membership roles — least privilege. Hierarchy of authority lives
+/// in lib/eduos/permissions.ts; this enum is the persisted label only.
 enum MembershipRole {
+  GUEST
   STUDENT
+  TEACHING_ASSISTANT
   INSTRUCTOR
   MENTOR
+  DEPARTMENT_ADMIN
   ORG_ADMIN
   INSTITUTION_OWNER
   STAFF
@@ -41,10 +59,81 @@ enum CustomizationLevel {
   ENTERPRISE
 }
 
+/// How the institution's Layer-2 infrastructure is hosted.
 enum DeploymentModel {
   SHARED_SAAS
+  MANAGED_CLOUD
   DEDICATED_DB
+  CUSTOMER_HOSTED
+  HYBRID
   EXTERNAL_SIS
+}
+
+/// Lifecycle of an institution in the network (never silently ACTIVE).
+enum InstitutionLifecycleStatus {
+  PENDING
+  PROVISIONING
+  ACTIVE
+  SUSPENDED
+  REJECTED
+  ARCHIVED
+}
+
+enum EnrollmentPolicyType {
+  PUBLIC_OPEN
+  PUBLIC_REQUEST
+  INVITE_ONLY
+  DOMAIN_BASED
+  CODE_BASED
+  MIXED
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  NEEDS_INFO
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+enum InstitutionType {
+  UNIVERSITY
+  ACADEMY
+  COMPANY
+  NGO
+  SCHOOL
+  BOOTCAMP
+  GOVERNMENT
+  OTHER
+}
+
+enum MentorTier {
+  COMMUNITY
+  PROFESSIONAL
+  SENIOR
+  INDUSTRY_EXPERT
+}
+
+enum VerificationRequestStatus {
+  PENDING
+  VERIFIED
+  NOT_FOUND
+  ACCESS_DENIED
+  CONSENT_REQUIRED
+  UNDER_REVIEW
+}
+
+enum SensitiveActionKind {
+  DELETE_COURSE
+  REMOVE_INSTRUCTOR
+  TRANSFER_OWNERSHIP
+  DELETE_DEPARTMENT
+  CHANGE_BILLING
+  SUSPEND_INSTITUTION
+  PROVISION_INSTITUTION
+  ISSUE_API_CREDENTIALS
 }
 
 enum CourseStatus {
@@ -229,6 +318,15 @@ enum AuditAction {
   GRADE
   EXPORT
   ADMIN
+  APPROVE
+  REJECT
+  PROVISION
+  TRANSFER
+  SUSPEND
+  VERIFY
+  INVITE
+  REVOKE
+  SENSITIVE
 }
 
 // ─────────────────────────────────────────────
@@ -295,8 +393,24 @@ model User {
   currentInstitutionId String?
   currentInstitution   Institution?        @relation("CurrentInstitution", fields: [currentInstitutionId], references: [id], onDelete: SetNull)
 
+  ownedInstitutions         Institution[]              @relation("InstitutionOwner")
+  institutionApplications   InstitutionApplication[]   @relation("InstitutionApplicant")
+  reviewedInstApplications  InstitutionApplication[]   @relation("InstitutionAppReviewer")
+  instructorApplications    InstructorApplication[]    @relation("InstructorApplicant")
+  reviewedInstructorApps    InstructorApplication[]    @relation("InstructorAppReviewer")
+  mentorApplications        MentorApplication[]        @relation("MentorApplicant")
+  reviewedMentorApps        MentorApplication[]        @relation("MentorAppReviewer")
+  sentInvitations           StaffInvitation[]          @relation("InvitationSender")
+  receivedInvitations       StaffInvitation[]          @relation("InvitationRecipient")
+  ownershipTransfersFrom    OwnershipTransfer[]        @relation("OwnershipFrom")
+  ownershipTransfersTo      OwnershipTransfer[]        @relation("OwnershipTo")
+  sensitiveConfirmations    SensitiveActionConfirmation[]
+  verificationRequestsOut   CrossInstitutionVerification[] @relation("VerificationRequester")
+  verificationRequestsIn    CrossInstitutionVerification[] @relation("VerificationResponder")
+
   @@index([fieldOfInterest])
   @@index([createdAt])
+  @@index([globalRole])
 }
 
 model Account {
@@ -358,29 +472,51 @@ model Profile {
 }
 
 model Institution {
-  id                 String                 @id @default(cuid())
-  slug               String                 @unique
+  id                 String                     @id @default(cuid())
+  slug               String                     @unique
   name               String
   description        String?
   logoUrl            String?
   coverUrl           String?
-  primaryColor       String                 @default("#00B369")
+  primaryColor       String                     @default("#00B369")
   secondaryColor     String?
-  customDomain       String?                @unique
-  subdomain          String?                @unique
-  visibility         InstitutionVisibility  @default(PUBLIC)
-  customizationLevel CustomizationLevel     @default(DEFAULT)
-  deploymentModel    DeploymentModel        @default(SHARED_SAAS)
-  isPlatformHome     Boolean                @default(false)
+  customDomain       String?                    @unique
+  subdomain          String?                    @unique
+  visibility         InstitutionVisibility      @default(PRIVATE)
+  customizationLevel CustomizationLevel         @default(DEFAULT)
+  deploymentModel    DeploymentModel            @default(SHARED_SAAS)
+  /// Lifecycle — PENDING until Platform Owner/Admin provisions.
+  status             InstitutionLifecycleStatus @default(PENDING)
+  /// Verified badge — only after platform approval.
+  verified           Boolean                    @default(false)
+  verifiedAt         DateTime?
+  /// Exactly one owner; transfer requires OwnershipTransfer workflow.
+  ownerUserId        String?
+  institutionType    InstitutionType?
+  enrollmentPolicy   EnrollmentPolicyType       @default(INVITE_ONLY)
+  allowedEmailDomains String[]                  @default([])
+  accreditationNote  String?
+  estimatedStudents  Int?
+  address            String?
+  isPlatformHome     Boolean                    @default(false)
   website            String?
   email              String?
   country            String?
   city               String?
-  settings           Json                   @default("{}")
-  featuresEnabled    String[]               @default([])
-  createdAt          DateTime               @default(now())
-  updatedAt          DateTime               @updatedAt
+  /// Layer-2 federation: optional external base URL + hashed API credential.
+  federationBaseUrl  String?
+  apiClientId        String?                    @unique
+  apiKeyHash         String?
+  /// What the institution chooses to sync to Core (public profile, courses…).
+  syncPolicy         Json                       @default("{\"publicProfile\":true,\"publicCourses\":true,\"publicCertificates\":true,\"grades\":false,\"finance\":false}")
+  settings           Json                       @default("{}")
+  featuresEnabled    String[]                   @default([])
+  provisionedAt      DateTime?
+  provisionedById    String?
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
 
+  owner           User?                   @relation("InstitutionOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
   memberships     InstitutionMembership[]
   departments     Department[]
   categories      Category[]
@@ -396,9 +532,18 @@ model Institution {
   mediaItems      MediaRecommendation[]
   currentUsers    User[]                  @relation("CurrentInstitution")
   auditLogs       AuditLog[]
+  enrollmentCodes EnrollmentCode[]
+  staffInvitations StaffInvitation[]
+  ownershipTransfers OwnershipTransfer[]
+  instructorApplications InstructorApplication[]
+  verificationRequests CrossInstitutionVerification[]
+  federationLink  InstitutionFederationLink?
 
   @@index([visibility])
   @@index([isPlatformHome])
+  @@index([status])
+  @@index([verified])
+  @@index([ownerUserId])
 }
 
 model InstitutionMembership {
@@ -797,21 +942,29 @@ model Submission {
 // ─────────────────────────────────────────────
 
 model MentorProfile {
-  id              String   @id @default(cuid())
-  userId          String   @unique
+  id              String     @id @default(cuid())
+  userId          String     @unique
   headline        String?
   bio             String?
-  expertise       String[] @default([])
-  hourlyRateXaf   Int      @default(0)
-  currency        String   @default("XAF")
-  isAccepting     Boolean  @default(true)
-  ratingAvg       Float    @default(0)
-  ratingCount     Int      @default(0)
-  totalSessions   Int      @default(0)
-  availability    Json     @default("{}")
+  expertise       String[]   @default([])
+  hourlyRateXaf   Int        @default(0)
+  currency        String     @default("XAF")
+  tier            MentorTier @default(COMMUNITY)
+  verified        Boolean    @default(false)
+  verifiedAt      DateTime?
+  isAccepting     Boolean    @default(true)
+  ratingAvg       Float      @default(0)
+  ratingCount     Int        @default(0)
+  totalSessions   Int        @default(0)
+  availability    Json       @default("{}")
   meetingProvider LiveProvider @default(GOOGLE_MEET)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  linkedinUrl     String?
+  githubUrl       String?
+  portfolioUrl    String?
+  resumeUrl       String?
+  languages       String[]   @default([])
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   sessions MentorshipSession[]
@@ -1370,6 +1523,7 @@ model AuditLog {
   action        AuditAction
   entityType    String?
   entityId      String?
+  summary       String?
   ip            String?
   userAgent     String?
   metadata      Json        @default("{}")
@@ -1381,4 +1535,241 @@ model AuditLog {
   @@index([institutionId, createdAt])
   @@index([actorId])
   @@index([entityType, entityId])
+  @@index([action, createdAt])
+}
+
+// ─────────────────────────────────────────────
+// Governance — applications, invitations, ownership
+// ─────────────────────────────────────────────
+
+/// Prospective institution. Never creates an Institution until APPROVED + provisioned.
+model InstitutionApplication {
+  id                   String            @id @default(cuid())
+  applicantId          String
+  name                 String
+  slugRequested        String?
+  institutionType      InstitutionType   @default(OTHER)
+  officialEmail        String
+  emailDomain          String?
+  website              String?
+  country              String?
+  address              String?
+  contactPhone         String?
+  logoUrl              String?
+  description          String?
+  accreditationStatus  String?
+  estimatedStudents    Int?
+  requestedDeployment  DeploymentModel   @default(MANAGED_CLOUD)
+  status               ApplicationStatus @default(SUBMITTED)
+  reviewerId           String?
+  reviewNotes          String?
+  reviewedAt           DateTime?
+  provisionedInstitutionId String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  applicant User  @relation("InstitutionApplicant", fields: [applicantId], references: [id], onDelete: Cascade)
+  reviewer  User? @relation("InstitutionAppReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([applicantId])
+}
+
+model InstructorApplication {
+  id            String            @id @default(cuid())
+  applicantId   String
+  institutionId String
+  biography     String
+  experience    String?
+  portfolioUrl  String?
+  certifications String[]         @default([])
+  expertise     String[]          @default([])
+  sampleContent String?
+  status        ApplicationStatus @default(SUBMITTED)
+  reviewerId    String?
+  reviewNotes   String?
+  reviewedAt    DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  applicant   User        @relation("InstructorApplicant", fields: [applicantId], references: [id], onDelete: Cascade)
+  reviewer    User?       @relation("InstructorAppReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@index([institutionId, status])
+  @@index([applicantId])
+}
+
+model MentorApplication {
+  id              String            @id @default(cuid())
+  applicantId     String
+  institutionId   String?
+  title           String
+  bio             String
+  experience      String?
+  expertise       String[]          @default([])
+  linkedinUrl     String?
+  githubUrl       String?
+  portfolioUrl    String?
+  resumeUrl       String?
+  teachingExperience String?
+  languages       String[]          @default([])
+  availability    Json              @default("{}")
+  requestedTier   MentorTier        @default(COMMUNITY)
+  priceXaf        Int               @default(0)
+  sessionMinutes  Int               @default(45)
+  status          ApplicationStatus @default(SUBMITTED)
+  reviewerId      String?
+  reviewNotes     String?
+  reviewedAt      DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  applicant User  @relation("MentorApplicant", fields: [applicantId], references: [id], onDelete: Cascade)
+  reviewer  User? @relation("MentorAppReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([applicantId])
+}
+
+/// Teachers/staff are invited — institutions cannot silently claim users.
+model StaffInvitation {
+  id            String         @id @default(cuid())
+  institutionId String
+  email         String
+  role          MembershipRole
+  departmentId  String?
+  courseIds     String[]       @default([])
+  permissions   String[]       @default([])
+  tokenHash     String         @unique
+  invitedById   String
+  recipientId   String?
+  acceptedAt    DateTime?
+  revokedAt     DateTime?
+  expiresAt     DateTime
+  createdAt     DateTime       @default(now())
+
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  invitedBy   User        @relation("InvitationSender", fields: [invitedById], references: [id], onDelete: Cascade)
+  recipient   User?       @relation("InvitationRecipient", fields: [recipientId], references: [id], onDelete: SetNull)
+
+  @@index([institutionId, email])
+  @@index([expiresAt])
+}
+
+model EnrollmentCode {
+  id            String    @id @default(cuid())
+  institutionId String
+  code          String
+  label         String?
+  maxUses       Int?
+  usedCount     Int       @default(0)
+  expiresAt     DateTime?
+  departmentId  String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@unique([institutionId, code])
+  @@index([code])
+}
+
+model OwnershipTransfer {
+  id            String            @id @default(cuid())
+  institutionId String
+  fromUserId    String
+  toUserId      String
+  status        ApplicationStatus @default(SUBMITTED)
+  dualApproved  Boolean           @default(false)
+  platformApproved Boolean        @default(false)
+  completedAt   DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  fromUser    User        @relation("OwnershipFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser      User        @relation("OwnershipTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@index([institutionId, status])
+}
+
+/// Password / 2FA / dual-approval gate for destructive actions.
+model SensitiveActionConfirmation {
+  id          String             @id @default(cuid())
+  actorId     String
+  kind        SensitiveActionKind
+  entityType  String
+  entityId    String
+  confirmedAt DateTime?
+  expiresAt   DateTime
+  dualActorId String?
+  metadata    Json               @default("{}")
+  createdAt   DateTime           @default(now())
+
+  actor User @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([actorId, kind])
+  @@index([expiresAt])
+}
+
+// ─────────────────────────────────────────────
+// Federation — Core registry vs institution infra
+// ─────────────────────────────────────────────
+
+/// Layer-2 connection metadata for an activated institution.
+model InstitutionFederationLink {
+  id              String          @id @default(cuid())
+  institutionId   String          @unique
+  deploymentModel DeploymentModel
+  databaseHost    String?
+  databaseName    String?
+  /// Never store raw secrets — hash or vault reference only.
+  credentialRef   String?
+  callbackUrl     String?
+  healthStatus    String          @default("unknown")
+  lastHealthAt    DateTime?
+  activatedAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+}
+
+/// Directory entry only — never a copy of academic records.
+model GlobalStudentDirectory {
+  id                 String   @id @default(cuid())
+  globalUserId       String   @unique
+  displayName        String?
+  verifiedIdentity   Boolean  @default(false)
+  accountStatus      String   @default("active")
+  institutionIds     String[] @default([])
+  publicCertificateIds String[] @default([])
+  updatedAt          DateTime @updatedAt
+  createdAt          DateTime @default(now())
+
+  @@index([displayName])
+}
+
+/// Cross-institution verification via API gateway — never direct DB access.
+model CrossInstitutionVerification {
+  id                   String                     @id @default(cuid())
+  requesterUserId      String
+  requesterInstitutionId String?
+  targetInstitutionId  String
+  subjectGlobalUserId  String
+  purpose              String
+  status               VerificationRequestStatus  @default(PENDING)
+  responsePayload      Json                       @default("{}")
+  respondedById        String?
+  respondedAt          DateTime?
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
+
+  requester User         @relation("VerificationRequester", fields: [requesterUserId], references: [id], onDelete: Cascade)
+  responder User?        @relation("VerificationResponder", fields: [respondedById], references: [id], onDelete: SetNull)
+  target    Institution  @relation(fields: [targetInstitutionId], references: [id], onDelete: Cascade)
+
+  @@index([targetInstitutionId, status])
+  @@index([subjectGlobalUserId])
 }
