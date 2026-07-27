@@ -1,34 +1,24 @@
-import { notFound } from 'next/navigation';
-import TutorialLessonView from '@/components/tutorials/TutorialLessonView';
-import {
-  getAllArduinoLessons,
-  getArduinoLessonNav,
-  arduinoTutorial,
-} from '@/lib/tutorials/arduino';
+import { getTutorial, getTutorialLessons, getTutorialLessonNav } from '@/lib/tutorials';
+import GatedTutorialLesson from '@/components/tutorials/GatedTutorialLesson';
+
+const COURSE_SLUG = 'arduino';
+
+export const dynamic = 'force-dynamic';
 
 export function generateStaticParams() {
-  return getAllArduinoLessons().map((lesson) => ({ slug: lesson.slug }));
+  return getTutorialLessons(COURSE_SLUG).map((lesson) => ({ slug: lesson.slug }));
 }
 
 export function generateMetadata({ params }: { params: { slug: string } }) {
-  const nav = getArduinoLessonNav(params.slug);
-  if (!nav) return { title: 'Lesson not found - Intellex' };
+  const course = getTutorial(COURSE_SLUG);
+  const nav = getTutorialLessonNav(COURSE_SLUG, params.slug);
+  if (!nav || !course) return { title: 'Lesson not found - Intellex' };
   return {
-    title: `${nav.lesson.title} - Arduino Tutorial | Intellex`,
+    title: `${nav.lesson.title} - ${course.shortTitle} Tutorial | Intellex`,
     description: nav.lesson.description,
   };
 }
 
-export default function LessonPage({ params }: { params: { slug: string } }) {
-  const nav = getArduinoLessonNav(params.slug);
-  if (!nav) notFound();
-  return (
-    <TutorialLessonView
-      course={arduinoTutorial}
-      lesson={nav.lesson}
-      prev={nav.prev}
-      next={nav.next}
-      index={nav.index}
-    />
-  );
+export default function TutorialLessonRoute({ params }: { params: { slug: string } }) {
+  return <GatedTutorialLesson courseSlug={COURSE_SLUG} lessonSlug={params.slug} />;
 }

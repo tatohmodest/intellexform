@@ -189,12 +189,13 @@ About InTelleX:
 - Institutions are not self-created - applicants submit an application; Platform Owner/Admin reviews and provisions.
 - Mentors and instructors apply and are approved - privileges are earned.
 - Learners have one global InTelleX identity across campuses.
-- Ways to learn: self-paced courses (Mongo catalogue + certificates), live mentorship, free tutorials (/tutorials), and this AI Tutor.
+- Ways to learn: self-paced courses (Mongo catalogue + certificates), live mentorship, tutorials (/tutorials — free or payable per admin pricing), and this AI Tutor.
 - Ecosystem hub: /ecosystem - certifications, internships, Junior Dev, books, free resources, learning environment, federated network (/network).
 - Pricing (self-paced access): Monthly ~1,999 XAF, Yearly ~22,560 XAF, or single courses from ~4,999 XAF. MTN MoMo and Orange Money supported.
-- Free tutorials cover tracks like HTML, CSS, JavaScript, Next.js, Python, Go, C++, Java, Rust, Rails, Docker, Kubernetes, Linux, Bash, Arduino, Flutter, Django, Flask, NestJS, Node/Express, PostgreSQL, MongoDB, Data Analysis, Digital Marketing, Pygame, Computer Architecture.
+- Tutorial tracks include HTML, CSS, JavaScript, React, Next.js, Python, Go, C++, Java, Rust, Rails, Docker, Kubernetes, Linux, Bash, Arduino, Flutter, Django, Flask, NestJS, Node/Express, PostgreSQL, MongoDB, Data Analysis, Digital Marketing, Pygame, Computer Architecture.
 
-When teaching a skill, ALWAYS relate the answer to InTelleX: cite matching free tutorial lessons (/dashboard/courses/...) and catalogue courses (/courses/...), and when useful mention ecosystem next steps (/ecosystem, internships, Junior Dev, mentorship).
+When teaching a skill, ALWAYS relate the answer to InTelleX: cite matching tutorial lessons (/dashboard/courses/...) and catalogue courses (/courses/...), and when useful mention ecosystem next steps (/ecosystem, internships, Junior Dev, mentorship).
+Use fenced code blocks with a language tag (js, jsx, tsx, python, bash, html, css) so the UI can syntax-highlight your examples. Include colorful path links like /tutorials/react or /dashboard/courses/react/what-is-react.
 When asked about the founder, Looping Binary, or company history, use the facts above and include the official links.
 `.trim();
 
@@ -227,7 +228,7 @@ export function curriculumTutorAnswer(
       '- InTelleX ecosystem: /ecosystem',
       '- Course catalogue: /courses',
       '',
-      'Ask me what to learn next - I can map a skill to our free tutorials and catalogue courses.',
+      'Ask me what to learn next - I can map a skill to our tutorials and catalogue courses.',
     ].join('\n');
   }
 
@@ -241,7 +242,7 @@ export function curriculumTutorAnswer(
       '**InTelleX** is an Education Operating System - a federated network for schools, academies, and learners.',
       'It was founded **October 21, 2023** by **Tatoh Modest Wilton** (CEO of Looping Binary).',
       '',
-      '- **You** get one global identity, self-paced courses, live mentors, free tutorials, and this AI Tutor.',
+      '- **You** get one global identity, self-paced courses, live mentors, tutorials, and this AI Tutor.',
       '- **Institutions** apply to join; after approval InTelleX provisions their campus. They own their academic data.',
       '- **Mentors / instructors** apply and are reviewed - teaching is a privilege, not a toggle.',
       `- **Looping Binary** (${LOOPING_BINARY.home}) builds InTelleX and runs internships & Junior Dev.`,
@@ -250,7 +251,7 @@ export function curriculumTutorAnswer(
       '',
       'Explore our ecosystem:',
       '- Catalogue: /courses',
-      '- Free tutorials: /tutorials',
+      '- Tutorials: /tutorials (includes React and 25+ other tracks)',
       '- Ecosystem hub: /ecosystem',
       '- Federated network: /network',
       `- Internships: ${LOOPING_BINARY.intern}`,

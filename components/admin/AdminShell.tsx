@@ -15,6 +15,7 @@ import {
   GraduationCap,
   MessageSquare,
   ShoppingBag,
+  Tags,
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 
@@ -26,6 +27,7 @@ const NAV = [
   { href: '/admin/applications', label: 'Applications', icon: ClipboardCheck },
   { href: '/admin/onboarding', label: 'Onboarding', icon: ClipboardCheck },
   { href: '/admin/connections', label: 'Connections', icon: Network },
+  { href: '/admin/content', label: 'Content pricing', icon: Tags },
   { href: '/admin/catalogue', label: 'Catalogue', icon: Trash2 },
   { href: '/admin/legacy/learning', label: 'Learning', icon: GraduationCap },
   { href: '/admin/legacy/requests', label: 'Requests', icon: MessageSquare },

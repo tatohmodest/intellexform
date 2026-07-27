@@ -1,35 +1,24 @@
-import { notFound } from 'next/navigation';
-import TutorialLessonView from '@/components/tutorials/TutorialLessonView';
-import {
-  getAllFlutterLessons,
-  getFlutterLessonNav,
-  flutterTutorial,
-} from '@/lib/tutorials/flutter';
+import { getTutorial, getTutorialLessons, getTutorialLessonNav } from '@/lib/tutorials';
+import GatedTutorialLesson from '@/components/tutorials/GatedTutorialLesson';
+
+const COURSE_SLUG = 'flutter';
+
+export const dynamic = 'force-dynamic';
 
 export function generateStaticParams() {
-  return getAllFlutterLessons().map((lesson) => ({ slug: lesson.slug }));
+  return getTutorialLessons(COURSE_SLUG).map((lesson) => ({ slug: lesson.slug }));
 }
 
 export function generateMetadata({ params }: { params: { slug: string } }) {
-  const nav = getFlutterLessonNav(params.slug);
-  if (!nav) return { title: 'Lesson not found - Intellex' };
+  const course = getTutorial(COURSE_SLUG);
+  const nav = getTutorialLessonNav(COURSE_SLUG, params.slug);
+  if (!nav || !course) return { title: 'Lesson not found - Intellex' };
   return {
-    title: `${nav.lesson.title} - Flutter Tutorial | Intellex`,
+    title: `${nav.lesson.title} - ${course.shortTitle} Tutorial | Intellex`,
     description: nav.lesson.description,
   };
 }
 
-export default function FlutterLessonPage({ params }: { params: { slug: string } }) {
-  const nav = getFlutterLessonNav(params.slug);
-  if (!nav) notFound();
-
-  return (
-    <TutorialLessonView
-      course={flutterTutorial}
-      lesson={nav.lesson}
-      prev={nav.prev}
-      next={nav.next}
-      index={nav.index}
-    />
-  );
+export default function TutorialLessonRoute({ params }: { params: { slug: string } }) {
+  return <GatedTutorialLesson courseSlug={COURSE_SLUG} lessonSlug={params.slug} />;
 }

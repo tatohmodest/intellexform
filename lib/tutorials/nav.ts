@@ -4,6 +4,7 @@ export const TUTORIAL_NAV = [
   { href: '/tutorials/html', label: 'HTML', tag: 'Frontend' },
   { href: '/tutorials/css', label: 'CSS', tag: 'Frontend' },
   { href: '/tutorials/javascript', label: 'JavaScript', tag: 'Frontend' },
+  { href: '/tutorials/react', label: 'React', tag: 'Frontend' },
   { href: '/tutorials/nextjs', label: 'Next.js', tag: 'Full-stack' },
   { href: '/tutorials/nodejs-express', label: 'Node.js & Express', tag: 'Backend' },
   { href: '/tutorials/nestjs', label: 'NestJS', tag: 'Backend' },
@@ -30,7 +31,7 @@ export const TUTORIAL_NAV = [
 
 export const LEARN_NAV = [
   { href: '/courses', label: 'All courses', desc: 'Browse the full catalogue' },
-  { href: '/tutorials', label: 'Free tutorials', desc: 'Step-by-step learning paths' },
+  { href: '/tutorials', label: 'Tutorials', desc: 'Step-by-step learning paths' },
   { href: '/certifications', label: 'Certificates', desc: 'Certification tracks' },
   { href: '/junior-dev', label: 'Junior Dev', desc: 'Career pathway program' },
   { href: '/#learn', label: 'Ways to learn', desc: 'Self-paced, live, AI tutor' },

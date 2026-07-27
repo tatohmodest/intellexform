@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
+import HighlightedCode from '@/components/HighlightedCode';
 
 export default function CodeBlock({
   code,
@@ -58,7 +59,7 @@ export default function CodeBlock({
         className="max-w-full overflow-x-auto p-3 text-[12.5px] leading-[1.65] sm:p-4 sm:text-[13.5px]"
         style={{ background: '#0C1116', color: '#E8EEF5' }}
       >
-        <code className="font-mono whitespace-pre">{code}</code>
+        <HighlightedCode code={code} language={language} />
       </pre>
     </div>
   );

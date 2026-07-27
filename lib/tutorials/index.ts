@@ -64,6 +64,11 @@ import {
   getCssLessonNav,
 } from './css';
 import {
+  reactTutorial,
+  getAllReactLessons,
+  getReactLessonNav,
+} from './react';
+import {
   computerArchitectureTutorial,
   getAllComputerArchitectureLessons,
   getComputerArchitectureLessonNav,
@@ -115,6 +120,7 @@ export const TUTORIALS: TutorialCourse[] = [
   htmlTutorial,
   cssTutorial,
   javascriptTutorial,
+  reactTutorial,
   nextjsTutorial,
   pythonTutorial,
   djangoTutorial,
@@ -145,6 +151,7 @@ export function getTutorial(slug: string): TutorialCourse | undefined {
 
 export function getTutorialLessons(courseSlug: string): TutorialLesson[] {
   if (courseSlug === 'javascript') return getAllJsLessons();
+  if (courseSlug === 'react') return getAllReactLessons();
   if (courseSlug === 'nextjs') return getAllNextLessons();
   if (courseSlug === 'python') return getAllPythonLessons();
   if (courseSlug === 'django') return getAllDjangoLessons();
@@ -175,6 +182,7 @@ export function getTutorialLessons(courseSlug: string): TutorialLesson[] {
 
 export function getTutorialLessonNav(courseSlug: string, lessonSlug: string) {
   if (courseSlug === 'javascript') return getJsLessonNav(lessonSlug);
+  if (courseSlug === 'react') return getReactLessonNav(lessonSlug);
   if (courseSlug === 'nextjs') return getNextLessonNav(lessonSlug);
   if (courseSlug === 'python') return getPythonLessonNav(lessonSlug);
   if (courseSlug === 'django') return getDjangoLessonNav(lessonSlug);
@@ -212,6 +220,7 @@ export {
   htmlTutorial,
   cssTutorial,
   javascriptTutorial,
+  reactTutorial,
   nextjsTutorial,
   pythonTutorial,
   djangoTutorial,

@@ -6,6 +6,7 @@ export const TRACK_LOGOS: Record<string, string> = {
   html: '/tech/html.png',
   css: '/tech/css.png',
   javascript: '/tech/javascript.png',
+  react: '/tech/react.svg',
   nextjs: '/tech/nextjs.png',
   'nodejs-express': '/tech/nodejs.gif',
   nestjs: '/tech/nestjs.svg',

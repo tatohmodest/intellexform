@@ -28,6 +28,7 @@ const TRACK_META: Record<string, { color: string }> = {
   html: { color: '#e44d26' },
   css: { color: '#2965f1' },
   javascript: { color: '#f0db4f' },
+  react: { color: '#61dafb' },
   nextjs: { color: '#0C1116' },
   'nodejs-express': { color: '#68a063' },
   nestjs: { color: '#e0234e' },

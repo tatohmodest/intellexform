@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Bot, Loader2, Send, Sparkles, User } from 'lucide-react';
+import HighlightedCode from '@/components/HighlightedCode';
 
 interface Msg {
   role: 'user' | 'assistant';
@@ -17,26 +18,53 @@ const SUGGESTIONS = [
   'What should I learn to become a backend developer?',
 ];
 
-/** Minimal markdown-ish renderer: code fences, bold, inline code, dashboard links. */
+/** Markdown-ish renderer: colored code fences, bold, inline code, colorful links. */
 function RichText({ text }: { text: string }) {
   const parts = text.split(/```/);
   return (
     <>
-      {parts.map((part, i) =>
-        i % 2 === 1 ? (
-          <pre
-            key={i}
-            className="mono my-2.5 overflow-x-auto rounded-xl p-3.5 text-[12.5px] leading-relaxed"
-            style={{ background: '#0C1116', color: '#d7e2ec' }}
-          >
-            <code>{part.replace(/^[a-z]*\n/, '')}</code>
-          </pre>
-        ) : (
-          <InlineText key={i} text={part} />
-        ),
-      )}
+      {parts.map((part, i) => {
+        if (i % 2 === 1) {
+          const langMatch = part.match(/^([a-zA-Z0-9+#.-]*)\n/);
+          const language = langMatch?.[1] || 'javascript';
+          const code = langMatch ? part.slice(langMatch[0].length) : part.replace(/^[a-zA-Z0-9+#.-]*\n/, '');
+          return (
+            <pre
+              key={i}
+              className="mono my-2.5 overflow-x-auto rounded-xl p-3.5 text-[12.5px] leading-relaxed"
+              style={{ background: '#0C1116', color: '#d7e2ec' }}
+            >
+              <HighlightedCode code={code} language={language} />
+            </pre>
+          );
+        }
+        return <InlineText key={i} text={part} />;
+      })}
     </>
   );
+}
+
+const LINK_RE =
+  /(\*\*[^*]+\*\*|`[^`]+`|https?:\/\/[^\s)<>]+|\/(?:dashboard|tutorials|courses|certifications|ecosystem|enterprise|books|resources|junior-dev|internships|learning|contact|network)[\w/?#&=%.-]*)/g;
+
+function linkClass(href: string) {
+  if (href.includes('/tutorials') || href.includes('/courses')) return 'tutor-link-green';
+  if (href.startsWith('http')) return 'tutor-link-amber';
+  return 'tutor-link';
+}
+
+function linkLabel(href: string) {
+  if (href.startsWith('/dashboard/courses/')) return 'open lesson →';
+  if (href.startsWith('/tutorials/')) return 'open tutorial →';
+  if (href.startsWith('/courses/')) return 'view course →';
+  if (href.startsWith('http')) {
+    try {
+      return new URL(href).hostname.replace(/^www\./, '');
+    } catch {
+      return 'open link →';
+    }
+  }
+  return 'open →';
 }
 
 function InlineText({ text }: { text: string }) {
@@ -45,12 +73,12 @@ function InlineText({ text }: { text: string }) {
     <>
       {lines.map((line, li) => {
         if (!line.trim()) return <div key={li} className="h-2" />;
-        // Tokenise **bold**, `code` and /dashboard/... links.
-        const tokens = line.split(/(\*\*[^*]+\*\*|`[^`]+`|\/dashboard\/[\w/-]+)/g);
+        const tokens = line.split(LINK_RE);
         const isBullet = /^\s*[-•]\s/.test(line);
         return (
           <p key={li} className={`text-[14px] leading-relaxed ${isBullet ? 'pl-4' : ''}`}>
             {tokens.map((tok, ti) => {
+              if (!tok) return null;
               if (tok.startsWith('**') && tok.endsWith('**')) {
                 return <strong key={ti}>{tok.slice(2, -2)}</strong>;
               }
@@ -59,21 +87,29 @@ function InlineText({ text }: { text: string }) {
                   <code
                     key={ti}
                     className="mono rounded px-1.5 py-0.5 text-[12.5px]"
-                    style={{ background: 'var(--paper-dim)' }}
+                    style={{ background: 'rgba(129, 212, 250, 0.14)', color: '#0277bd' }}
                   >
                     {tok.slice(1, -1)}
                   </code>
                 );
               }
-              if (tok.startsWith('/dashboard/')) {
+              if (tok.startsWith('http://') || tok.startsWith('https://')) {
                 return (
-                  <Link
+                  <a
                     key={ti}
                     href={tok}
-                    className="font-semibold underline"
-                    style={{ color: 'var(--green-deep)' }}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={linkClass(tok)}
                   >
-                    open lesson →
+                    {linkLabel(tok)}
+                  </a>
+                );
+              }
+              if (tok.startsWith('/')) {
+                return (
+                  <Link key={ti} href={tok} className={linkClass(tok)}>
+                    {linkLabel(tok)}
                   </Link>
                 );
               }

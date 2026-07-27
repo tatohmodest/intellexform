@@ -1,7 +1,7 @@
 import { getTutorial, getTutorialLessons, getTutorialLessonNav } from '@/lib/tutorials';
 import GatedTutorialLesson from '@/components/tutorials/GatedTutorialLesson';
 
-const COURSE_SLUG = 'nextjs';
+const COURSE_SLUG = 'react';
 
 export const dynamic = 'force-dynamic';
 

@@ -8,6 +8,8 @@ import { getTutorial, getTutorialLessons } from '@/lib/tutorials';
 import LessonBlocks from '@/components/tutorials/LessonBlocks';
 import LessonActions from '@/components/dashboard/LessonActions';
 import TrackLogo from '@/components/TrackLogo';
+import SubscribePanel from '@/components/content/SubscribePanel';
+import { canAccessContent, getContentAccess, type LessonLevel } from '@/lib/contentAccess';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,19 +32,54 @@ export default async function LessonPlayerPage({
   const prev = idx > 0 ? lessons[idx - 1] : null;
   const next = idx < lessons.length - 1 ? lessons[idx + 1] : null;
 
+  const access = await getContentAccess('tutorial', params.slug, course.title);
+  const gate = await canAccessContent({
+    userId: session.uid,
+    kind: 'tutorial',
+    slug: params.slug,
+    level: lesson.level as LessonLevel,
+    config: access,
+  });
+
+  if (!gate.allowed) {
+    return (
+      <div className="mx-auto max-w-[640px] py-6">
+        <Link
+          href={`/dashboard/courses/${params.slug}`}
+          className="mb-6 inline-flex items-center gap-1.5 text-[13.5px] font-semibold"
+          style={{ color: 'var(--ink-soft)' }}
+        >
+          <ArrowLeft size={14} /> {track.shortTitle}
+        </Link>
+        <p className="mono mb-2 text-[11px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
+          Locked · subscribe to continue
+        </p>
+        <h1 className="font-display text-[28px] leading-tight sm:text-[32px]">{course.title}</h1>
+        <p className="mt-2 text-[15px]" style={{ color: 'var(--ink-soft)' }}>
+          Admin set this track as payable. Unlock full access or the {lesson.level} level to keep learning.
+        </p>
+        <div className="mt-8">
+          <SubscribePanel
+            config={access}
+            level={lesson.level as LessonLevel}
+            returnPath={`/dashboard/courses/${params.slug}/${params.lesson}`}
+            kind="tutorial"
+            slug={params.slug}
+          />
+        </div>
+      </div>
+    );
+  }
+
   const progress = await getProgress(session.uid, params.slug);
   const done = new Set(progress.map((p) => p.lessonSlug));
   const pct = lessons.length ? Math.round((done.size / lessons.length) * 100) : 0;
 
   return (
     <div className="mx-auto flex max-w-[1180px] gap-8">
-      {/* Curriculum sidebar */}
       <aside className="sticky top-[88px] hidden max-h-[calc(100vh-110px)] w-[290px] shrink-0 overflow-y-auto rounded-2xl border xl:block" style={{ borderColor: 'var(--line)' }}>
         <div className="border-b p-4" style={{ borderColor: 'var(--line)' }}>
-          <Link
-            href={`/dashboard/courses/${params.slug}`}
-            className="flex items-center gap-2.5"
-          >
+          <Link href={`/dashboard/courses/${params.slug}`} className="flex items-center gap-2.5">
             <TrackLogo slug={track.slug} color={track.color} size={36} className="rounded-lg" />
             <div className="min-w-0">
               <div className="truncate text-[13.5px] font-semibold">{track.shortTitle}</div>
@@ -92,7 +129,6 @@ export default async function LessonPlayerPage({
         </div>
       </aside>
 
-      {/* Lesson body */}
       <article className="min-w-0 flex-1">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link
@@ -118,10 +154,7 @@ export default async function LessonPlayerPage({
           <span className="flex items-center gap-1">
             <Clock size={11} /> {lesson.minutes} min
           </span>
-          <span
-            className="rounded-full px-2 py-0.5"
-            style={{ background: 'var(--paper-dim)' }}
-          >
+          <span className="rounded-full px-2 py-0.5" style={{ background: 'var(--paper-dim)' }}>
             {lesson.level}
           </span>
         </div>

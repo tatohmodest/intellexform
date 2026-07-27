@@ -220,3 +220,35 @@ textarea.form-input { resize: vertical; min-height: 100px; }
   .hc-check { opacity: 1; transform: none; }
   .hc-bar { width: 100%; }
 }
+
+/* ── Syntax highlight tokens (AI tutor + code blocks) ─────── */
+.tok-keyword { color: #c792ea; }
+.tok-string { color: #c3e88d; }
+.tok-comment { color: #546e7a; font-style: italic; }
+.tok-number { color: #f78c6c; }
+.tok-tag { color: #82aaff; }
+.tok-attr { color: #ffcb6b; }
+.tutor-link {
+  color: #4fc3f7;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(79, 195, 247, 0.55);
+}
+.tutor-link:hover { color: #81d4fa; }
+.tutor-link-green {
+  color: #69f0ae;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(105, 240, 174, 0.5);
+}
+.tutor-link-green:hover { color: #b9f6ca; }
+.tutor-link-amber {
+  color: #ffd54f;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(255, 213, 79, 0.5);
+}
+.tutor-link-amber:hover { color: #ffe082; }
