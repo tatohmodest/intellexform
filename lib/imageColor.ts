@@ -39,10 +39,9 @@ export async function extractDominantColor(source: File | string): Promise<strin
     }
 
     type Bucket = { r: number; g: number; b: number; w: number };
-    let best: Bucket | null = null;
-    buckets.forEach((v: Bucket) => {
-      if (!best || v.w > best.w) best = v;
-    });
+    const list: Bucket[] = Array.from(buckets.values());
+    list.sort((a, b) => b.w - a.w);
+    const best = list[0];
 
     if (!best || best.w < 1) {
       // Fallback: average mid-luminance pixels
@@ -66,8 +65,7 @@ export async function extractDominantColor(source: File | string): Promise<strin
       return toHex(r / n, g / n, b / n);
     }
 
-    const picked: Bucket = best;
-    return toHex(picked.r / picked.w, picked.g / picked.w, picked.b / picked.w);
+    return toHex(best.r / best.w, best.g / best.w, best.b / best.w);
   } finally {
     if (typeof source !== 'string') URL.revokeObjectURL(objectUrl);
   }
