@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { getDb } from '@/lib/repo';
 import { MENTORS, type Mentor, type MentorSlot } from '@/lib/learn/mentors';
-import type { InstitutionAuthMethod } from '@/lib/learn/identity';
+import type { ContentVisibility, InstitutionAuthMethod } from '@/lib/learn/identity';
 
 /**
  * Ecosystem data layer — roles, mentor profiles, the book library &
@@ -24,6 +24,7 @@ export const LEARN_COLLECTIONS = [
   'mentor_profiles',
   'books',
   'book_purchases',
+  'teacher_courses',
   'institutions',
   'institution_members',
   'institution_posts',
@@ -53,6 +54,9 @@ export async function ensureLearnCollections() {
     db.collection('books').createIndex({ published: 1, createdAt: -1 }),
     db.collection('books').createIndex({ authorId: 1 }),
     db.collection('book_purchases').createIndex({ userId: 1, bookId: 1 }, { unique: true }),
+    db.collection('teacher_courses').createIndex({ authorId: 1, updatedAt: -1 }),
+    db.collection('teacher_courses').createIndex({ institutionSlug: 1, published: 1 }),
+    db.collection('teacher_courses').createIndex({ visibility: 1, published: 1, createdAt: -1 }),
     db.collection('institutions').createIndex({ slug: 1 }, { unique: true }),
     db
       .collection('institution_members')
@@ -611,6 +615,195 @@ export async function getBookEarnings(authorId: string): Promise<number> {
   } catch {
     return 0;
   }
+}
+
+// ── Teacher / mentor video courses (campus + InTelleX tutors) ─────────────────
+
+export type VideoProvider = 'drive' | 'youtube' | 'cloudinary' | 'url';
+
+export interface TeacherLesson {
+  id: string;
+  title: string;
+  videoUrl: string;
+  videoProvider: VideoProvider;
+  notes?: string;
+}
+
+export interface TeacherCourseDoc {
+  _id?: ObjectId;
+  authorId: string;
+  authorName: string;
+  /** null / empty = InTelleX mentor catalogue (not campus-scoped) */
+  institutionSlug?: string | null;
+  title: string;
+  description: string;
+  visibility: ContentVisibility;
+  lessons: TeacherLesson[];
+  published: boolean;
+  accent?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type TeacherCourseView = Omit<TeacherCourseDoc, '_id'> & { id: string };
+
+function toTeacherCourseView(d: Record<string, unknown>): TeacherCourseView {
+  const { _id, ...rest } = d as unknown as TeacherCourseDoc & { _id: ObjectId };
+  return { ...(rest as Omit<TeacherCourseDoc, '_id'>), id: _id.toString() };
+}
+
+/** Normalize Drive / YouTube share links into a playable/embeddable URL. */
+export function normalizeVideoUrl(raw: string): {
+  videoUrl: string;
+  videoProvider: VideoProvider;
+  embedUrl: string;
+} {
+  const url = raw.trim();
+  const drive = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (drive) {
+    const id = drive[1];
+    return {
+      videoUrl: `https://drive.google.com/file/d/${id}/view`,
+      videoProvider: 'drive',
+      embedUrl: `https://drive.google.com/file/d/${id}/preview`,
+    };
+  }
+  const driveOpen = url.match(/drive\.google\.com\/open\?id=([^&]+)/);
+  if (driveOpen) {
+    const id = driveOpen[1];
+    return {
+      videoUrl: `https://drive.google.com/file/d/${id}/view`,
+      videoProvider: 'drive',
+      embedUrl: `https://drive.google.com/file/d/${id}/preview`,
+    };
+  }
+  const yt =
+    url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{6,})/) ||
+    url.match(/youtube\.com\/shorts\/([A-Za-z0-9_-]{6,})/);
+  if (yt) {
+    const id = yt[1];
+    return {
+      videoUrl: `https://www.youtube.com/watch?v=${id}`,
+      videoProvider: 'youtube',
+      embedUrl: `https://www.youtube.com/embed/${id}`,
+    };
+  }
+  if (url.includes('cloudinary.com') || url.includes('res.cloudinary')) {
+    return { videoUrl: url, videoProvider: 'cloudinary', embedUrl: url };
+  }
+  return { videoUrl: url, videoProvider: 'url', embedUrl: url };
+}
+
+export async function listTeacherCoursesByAuthor(authorId: string): Promise<TeacherCourseView[]> {
+  try {
+    await ensureLearnCollections();
+    const db = await getDb();
+    const docs = await db
+      .collection('teacher_courses')
+      .find({ authorId })
+      .sort({ updatedAt: -1 })
+      .toArray();
+    return docs.map((d) => toTeacherCourseView(d as Record<string, unknown>));
+  } catch {
+    return [];
+  }
+}
+
+export async function listTeacherCoursesForCampus(
+  institutionSlug: string,
+  opts?: { includeUnpublishedForAuthorId?: string },
+): Promise<TeacherCourseView[]> {
+  try {
+    await ensureLearnCollections();
+    const db = await getDb();
+    const query: Record<string, unknown> = { institutionSlug };
+    if (opts?.includeUnpublishedForAuthorId) {
+      query.$or = [
+        { published: true },
+        { authorId: opts.includeUnpublishedForAuthorId },
+      ];
+    } else {
+      query.published = true;
+    }
+    const docs = await db
+      .collection('teacher_courses')
+      .find(query)
+      .sort({ updatedAt: -1 })
+      .toArray();
+    return docs.map((d) => toTeacherCourseView(d as Record<string, unknown>));
+  } catch {
+    return [];
+  }
+}
+
+export async function listPublicTeacherCourses(limit = 40): Promise<TeacherCourseView[]> {
+  try {
+    await ensureLearnCollections();
+    const db = await getDb();
+    const docs = await db
+      .collection('teacher_courses')
+      .find({ published: true, visibility: 'public' })
+      .sort({ updatedAt: -1 })
+      .limit(limit)
+      .toArray();
+    return docs.map((d) => toTeacherCourseView(d as Record<string, unknown>));
+  } catch {
+    return [];
+  }
+}
+
+export async function getTeacherCourse(id: string): Promise<TeacherCourseView | null> {
+  try {
+    const db = await getDb();
+    const doc = await db.collection('teacher_courses').findOne({ _id: new ObjectId(id) });
+    return doc ? toTeacherCourseView(doc as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function createTeacherCourse(opts: {
+  authorId: string;
+  authorName: string;
+  title: string;
+  institutionSlug?: string | null;
+  visibility?: ContentVisibility;
+}): Promise<string> {
+  await ensureLearnCollections();
+  const db = await getDb();
+  const now = new Date();
+  const doc: TeacherCourseDoc = {
+    authorId: opts.authorId,
+    authorName: opts.authorName,
+    institutionSlug: opts.institutionSlug || null,
+    title: opts.title.slice(0, 140) || 'Untitled course',
+    description: '',
+    visibility: opts.visibility || 'private',
+    lessons: [],
+    published: false,
+    accent: '#00b369',
+    createdAt: now,
+    updatedAt: now,
+  };
+  const res = await db.collection('teacher_courses').insertOne(doc as unknown as Record<string, unknown>);
+  return res.insertedId.toString();
+}
+
+export async function updateTeacherCourse(
+  id: string,
+  authorId: string,
+  patch: Partial<
+    Pick<
+      TeacherCourseDoc,
+      'title' | 'description' | 'visibility' | 'lessons' | 'published' | 'accent' | 'institutionSlug'
+    >
+  >,
+) {
+  const db = await getDb();
+  await db.collection('teacher_courses').updateOne(
+    { _id: new ObjectId(id), authorId },
+    { $set: { ...patch, updatedAt: new Date() } },
+  );
 }
 
 // ── Institutions (multi-tenant EduOS foundation) ──────────────────────────────

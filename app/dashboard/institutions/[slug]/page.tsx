@@ -92,50 +92,32 @@ export default async function CampusPage({
       </Link>
 
       <div
-        className="mb-8 overflow-hidden rounded-3xl text-white"
+        className="mb-8 text-white"
         style={{
-          background: `radial-gradient(900px 400px at 0% 0%, ${inst.color}cc, transparent 65%), radial-gradient(700px 380px at 100% 100%, ${inst.color}66, transparent 60%), #0C1116`,
+          background: `linear-gradient(120deg, ${inst.color} 0%, #0C1116 72%)`,
         }}
       >
         <div className="p-7 sm:p-9">
-          <div className="flex flex-wrap items-center justify-between gap-5">
-            <div className="flex items-center gap-4">
-              <span
-                className="flex h-16 w-16 items-center justify-center rounded-2xl font-display text-[26px] font-semibold"
-                style={{ background: 'rgba(255,255,255,0.14)' }}
-              >
-                {(inst.name || 'I').charAt(0).toUpperCase()}
-              </span>
-              <div>
-                <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">
-                  Digital campus · Powered by InTelleX
-                </p>
-                <h1 className="font-display text-[28px] leading-tight">{inst.name}</h1>
-                <p className="text-[13.5px] text-white/70">{inst.tagline}</p>
-                <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[12px] text-white/60">
-                  <span className="flex items-center gap-1">
-                    <Users size={12} /> {inst.memberCount.toLocaleString()} members
-                  </span>
-                  <span className="flex items-center gap-1">
-                    {inst.visibility === 'public' ? <Globe2 size={12} /> : <Lock size={12} />}
-                    {inst.visibility === 'public' ? 'Public campus' : 'Private campus'}
-                  </span>
-                  {affiliation?.externalStudentId && (
-                    <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide">
-                      ID {affiliation.externalStudentId}
-                    </span>
-                  )}
-                  {membership === 'owner' && (
-                    <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide">
-                      You run this campus
-                    </span>
-                  )}
-                  {affiliation?.role && (
-                    <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide">
-                      {affiliation.role}
-                    </span>
-                  )}
-                </div>
+          <div className="flex flex-wrap items-end justify-between gap-5">
+            <div>
+              <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55">
+                Digital campus · Powered by InTelleX
+              </p>
+              <h1 className="font-display text-[36px] leading-[0.95] tracking-tight sm:text-[44px]">
+                {inst.name}
+              </h1>
+              <p className="mt-3 max-w-xl text-[15px] text-white/75">{inst.tagline}</p>
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] uppercase tracking-[0.12em] text-white/55">
+                <span className="flex items-center gap-1">
+                  <Users size={12} /> {inst.memberCount.toLocaleString()} members
+                </span>
+                <span className="flex items-center gap-1">
+                  {inst.visibility === 'public' ? <Globe2 size={12} /> : <Lock size={12} />}
+                  {inst.visibility === 'public' ? 'Public' : 'Private'}
+                </span>
+                {affiliation?.externalStudentId && <span>ID {affiliation.externalStudentId}</span>}
+                {membership === 'owner' && <span>You run this campus</span>}
+                {affiliation?.role && <span>{affiliation.role}</span>}
               </div>
             </div>
             <JoinCampusButton slug={inst.slug} isMember={Boolean(membership)} />
@@ -155,17 +137,16 @@ export default async function CampusPage({
             tab={tab}
             posts={posts}
             canAnnounce={membership === 'owner'}
-            isHomeCampus={inst.slug === 'intellex'}
           />
         </div>
 
-        <aside className="lg:col-span-2">
-          <div className="rounded-2xl border p-5" style={{ borderColor: 'var(--line)' }}>
-            <h3 className="mb-2 font-display text-[17px]">About</h3>
+        <aside className="space-y-8 lg:col-span-2">
+          <div className="border-t pt-5" style={{ borderColor: 'var(--line)' }}>
+            <h3 className="mb-2 font-display text-[18px]">About</h3>
             <p className="text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
               {inst.about || inst.tagline || 'This institution has not written an about section yet.'}
             </p>
-            <div className="mt-4 border-t pt-4 text-[12.5px]" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
+            <div className="mt-4 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
               Founded by <span className="font-semibold" style={{ color: 'var(--ink)' }}>{inst.ownerName}</span>
               <br />
               Campus since{' '}
@@ -173,10 +154,10 @@ export default async function CampusPage({
             </div>
           </div>
 
-          <div className="mt-4 rounded-2xl border p-5" style={{ borderColor: 'var(--line)' }}>
-            <h3 className="mb-2 font-display text-[17px]">Capabilities</h3>
+          <div className="border-t pt-5" style={{ borderColor: 'var(--line)' }}>
+            <h3 className="mb-2 font-display text-[18px]">Capabilities</h3>
             <p className="mb-3 text-[13px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Every campus starts with InTelleX Core. Additional capabilities are provisioned by the Platform Team based on what this institution needs.
+              Every campus starts with InTelleX Core. Additional capabilities are provisioned by the Platform Team.
             </p>
             {modules.length === 0 ? (
               <p className="text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
@@ -185,18 +166,15 @@ export default async function CampusPage({
             ) : (
               <ul className="space-y-1.5 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
                 {modules.map((m) => (
-                  <li key={m} className="flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: inst.color }} />
-                    {m.replace(/_/g, ' ')}
-                  </li>
+                  <li key={m}>{m.replace(/_/g, ' ')}</li>
                 ))}
               </ul>
             )}
           </div>
 
           {inst.slug === 'intellex' && (
-            <div className="mt-4 rounded-2xl border p-5" style={{ borderColor: 'rgba(0,179,105,0.3)', background: 'rgba(0,179,105,0.04)' }}>
-              <h3 className="mb-2 font-display text-[17px]">Home campus</h3>
+            <div className="border-t pt-5" style={{ borderColor: 'var(--line)' }}>
+              <h3 className="mb-2 font-display text-[18px]">Home campus</h3>
               <p className="text-[13px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
                 Intellex is the founding institution of the ecosystem — its courses,
                 mentors, library and AI tutor are available to every member.

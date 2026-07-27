@@ -73,21 +73,41 @@ export default async function MentorStudioPage() {
           <Link href="/dashboard/mentor/profile" className="btn btn-ghost !py-2.5 text-[13.5px]">
             <PenLine size={15} /> Edit profile
           </Link>
+          <Link
+            href="/dashboard/teach/courses"
+            className="btn btn-primary !py-2.5 text-[13.5px]"
+          >
+            <Video size={15} /> Course Studio
+          </Link>
           <NewBookButton />
         </div>
       </div>
 
       {/* Stats */}
-      <div className="mb-10 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <div className="mb-10 grid grid-cols-2 gap-x-8 gap-y-6 border-y py-6 lg:grid-cols-4" style={{ borderColor: 'var(--line)' }}>
         {stats.map((s) => (
-          <div key={s.label} className="rounded-2xl border p-4 sm:p-5" style={{ borderColor: 'var(--line)' }}>
-            <span className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: s.tint, color: s.color }}>
-              <s.icon size={17} />
-            </span>
-            <div className="font-display text-[20px] leading-none sm:text-[24px]">{s.value}</div>
-            <div className="mt-1 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>{s.label}</div>
+          <div key={s.label}>
+            <div className="font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
+              {s.label}
+            </div>
+            <div className="mt-1 font-display text-[26px] leading-none">{s.value}</div>
           </div>
         ))}
+      </div>
+
+      <div className="mb-8 border p-5" style={{ borderColor: 'var(--line)' }}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-display text-[20px]">Video Course Studio</h2>
+            <p className="mt-1 max-w-xl text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
+              Record lessons, store them on Google Drive (public or private), set visibility, and
+              publish for learners — same studio campus instructors use.
+            </p>
+          </div>
+          <Link href="/dashboard/teach/courses" className="btn btn-primary !py-2.5 text-[13px]">
+            <Video size={14} /> Open studio
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">

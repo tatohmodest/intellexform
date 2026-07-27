@@ -11,7 +11,6 @@ import {
   ShoppingBag,
   Sparkles,
   Users,
-  Video,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -23,6 +22,7 @@ import {
 } from '@/lib/eduos/capabilities';
 import { AnnouncementComposer } from '@/components/dashboard/CampusActions';
 import MarkdownLite from '@/components/dashboard/MarkdownLite';
+import CampusCoursesPanel from '@/components/dashboard/CampusCoursesPanel';
 
 type Post = {
   id: string;
@@ -42,7 +42,6 @@ export default function CampusCapabilityView({
   tab,
   posts,
   canAnnounce,
-  isHomeCampus,
 }: {
   slug: string;
   institutionName: string;
@@ -53,7 +52,6 @@ export default function CampusCapabilityView({
   tab: string;
   posts: Post[];
   canAnnounce: boolean;
-  isHomeCampus: boolean;
 }) {
   const nav = campusNavItems({ slug, role, modules });
   const active = tab || 'home';
@@ -62,33 +60,26 @@ export default function CampusCapabilityView({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-2">
-        <span
-          className="mono rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.14em]"
-          style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}
-        >
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b pb-4" style={{ borderColor: 'var(--line)' }}>
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
           {packLabel(pack as 'foundation')} · Core included
         </span>
-        {modules.slice(0, 4).map((id) => {
+        {modules.slice(0, 5).map((id) => {
           const meta = MODULE_CATALOG.find((m) => m.id === id);
           return (
-            <span
-              key={id}
-              className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-white"
-              style={{ background: accent }}
-            >
+            <span key={id} className="text-[12.5px] font-semibold" style={{ color: accent }}>
               {meta?.name ?? id}
             </span>
           );
         })}
-        {modules.length > 4 && (
+        {modules.length > 5 && (
           <span className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-            +{modules.length - 4} capabilities
+            +{modules.length - 5} more
           </span>
         )}
       </div>
 
-      <nav className="-mx-1 flex gap-1 overflow-x-auto pb-1">
+      <nav className="-mx-1 flex gap-5 overflow-x-auto border-b" style={{ borderColor: 'var(--line)' }}>
         {nav.map((item) => {
           const isActive =
             item.id === active || (active === 'home' && item.id === 'home' && !tab);
@@ -96,12 +87,11 @@ export default function CampusCapabilityView({
             <Link
               key={item.id}
               href={item.href}
-              className="shrink-0 rounded-full px-3.5 py-2 text-[13px] font-semibold transition-colors"
-              style={
-                isActive
-                  ? { background: accent, color: '#fff' }
-                  : { background: 'var(--paper-dim)', color: 'var(--ink-soft)' }
-              }
+              className="shrink-0 border-b-2 pb-3 text-[13.5px] font-semibold transition-colors"
+              style={{
+                borderColor: isActive ? accent : 'transparent',
+                color: isActive ? 'var(--ink)' : 'var(--ink-soft)',
+              }}
             >
               {item.label}
             </Link>
@@ -144,30 +134,11 @@ export default function CampusCapabilityView({
       )}
 
       {active === 'courses' && (
-        <CapabilityPanel
-          icon={digitalLearning ? Video : BookOpen}
-          title={isStaff && digitalLearning ? 'Course studio' : 'Campus courses'}
+        <CampusCoursesPanel
+          slug={slug}
           accent={accent}
-          body={
-            digitalLearning
-              ? isStaff
-                ? 'Build video courses, learning paths, and certificates for your students. Progress and assessments unlock with your Digital Learning capability.'
-                : 'Video courses and learning paths provisioned for this campus. Your progress stays with your InTelleX identity.'
-              : isStaff
-                ? 'Core course management is available. Activate Digital Learning to unlock video classes, lesson progress, and certificates.'
-                : 'Browse courses published by this institution. Advanced video learning appears when the campus unlocks Digital Learning.'
-          }
-          cta={
-            isHomeCampus ? (
-              <Link href="/dashboard/courses" className="text-[13px] font-semibold" style={{ color: accent }}>
-                Open InTelleX catalogue →
-              </Link>
-            ) : digitalLearning && isStaff ? (
-              <Link href="/dashboard/mentor" className="text-[13px] font-semibold" style={{ color: accent }}>
-                Open teaching tools →
-              </Link>
-            ) : null
-          }
+          isStaff={isStaff}
+          digitalLearning={digitalLearning}
         />
       )}
 
