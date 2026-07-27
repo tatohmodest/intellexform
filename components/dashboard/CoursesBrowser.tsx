@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { ArrowUpRight, BookOpen, Check, Clock, GraduationCap } from 'lucide-react';
+import { BookOpen, Check, Clock, GraduationCap } from 'lucide-react';
 import EnrollButton from '@/components/dashboard/EnrollButton';
 import TrackLogo from '@/components/TrackLogo';
 
@@ -63,7 +63,7 @@ export default function CoursesBrowser({
         </div>
       </div>
 
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <label className="block min-w-0 flex-1">
           <span className="sr-only">Search tracks</span>
           <input
@@ -99,89 +99,11 @@ export default function CoursesBrowser({
         </div>
       </div>
 
-      <ul className="divide-y" style={{ borderColor: 'var(--line)' }}>
-        {filtered.map((t, index) => (
-          <li key={t.slug} className="group">
-            <div className="grid gap-5 py-8 sm:grid-cols-[88px_1fr_auto] sm:items-center sm:gap-8">
-              <div
-                className="relative flex h-[88px] w-[88px] items-end overflow-hidden"
-                style={{
-                  background: `linear-gradient(145deg, ${t.color} 0%, ${t.color}88 45%, #0C1116 100%)`,
-                }}
-              >
-                <div className="absolute inset-0 flex items-center justify-center p-3">
-                  <TrackLogo slug={t.slug} color={t.color} size={52} className="rounded-lg bg-white/95 p-1" />
-                </div>
-                <span className="absolute right-2 top-2 font-mono text-[10px] text-white/55">
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-              </div>
-
-              <div className="min-w-0">
-                <div className="mb-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <Link
-                    href={`/dashboard/courses/${t.slug}`}
-                    className="font-display text-[22px] leading-tight transition-opacity group-hover:opacity-80 sm:text-[26px]"
-                  >
-                    {t.shortTitle}
-                  </Link>
-                  {t.enrolled && (
-                    <span
-                      className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em]"
-                      style={{ color: 'var(--green-deep)' }}
-                    >
-                      <Check size={11} /> Enrolled
-                      {t.pct > 0 ? ` · ${t.pct}%` : ''}
-                    </span>
-                  )}
-                </div>
-                <p className="max-w-[540px] text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                  {t.tagline}
-                </p>
-                <div
-                  className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] uppercase tracking-[0.12em]"
-                  style={{ color: 'var(--ink-soft)' }}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    <BookOpen size={11} /> {t.totalLessons} lessons
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Clock size={11} /> ~{Math.round(t.totalMinutes / 60)}h
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <GraduationCap size={11} /> Certificate
-                  </span>
-                  <span>{t.tag}</span>
-                </div>
-                {t.enrolled && (
-                  <div className="mt-3 h-1 max-w-[280px] overflow-hidden" style={{ background: 'var(--paper-dim)' }}>
-                    <div
-                      className="h-full"
-                      style={{ width: `${Math.max(t.pct, 2)}%`, background: 'var(--green)' }}
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[140px] sm:items-stretch">
-                <Link
-                  href={`/dashboard/courses/${t.slug}`}
-                  className="inline-flex items-center justify-center gap-1.5 border px-4 py-2.5 text-[13px] font-semibold transition-colors"
-                  style={{ borderColor: 'var(--ink)', color: 'var(--ink)' }}
-                >
-                  View track <ArrowUpRight size={14} />
-                </Link>
-                <EnrollButton
-                  courseSlug={t.slug}
-                  enrolled={t.enrolled}
-                  continueHref={t.continueHref}
-                  editorial
-                />
-              </div>
-            </div>
-          </li>
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        {filtered.map((t) => (
+          <CourseTrackCard key={t.slug} track={t} />
         ))}
-      </ul>
+      </div>
 
       {filtered.length === 0 && (
         <div className="border-t py-16 text-center" style={{ borderColor: 'var(--line)' }}>
@@ -192,5 +114,112 @@ export default function CoursesBrowser({
         </div>
       )}
     </div>
+  );
+}
+
+function CourseTrackCard({ track: t }: { track: CourseListItem }) {
+  const hours = Math.max(1, Math.round(t.totalMinutes / 60));
+
+  return (
+    <article
+      className="group flex h-full min-w-0 flex-col overflow-hidden border bg-paper transition-shadow hover:shadow-card"
+      style={{ borderColor: 'var(--line)' }}
+    >
+      {/* Course cover */}
+      <Link href={`/dashboard/courses/${t.slug}`} className="relative block aspect-[16/10] overflow-hidden">
+        <div
+          className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.03]"
+          style={{
+            background: `linear-gradient(145deg, ${t.color} 0%, ${t.color}bb 42%, #0C1116 100%)`,
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-30"
+          style={{
+            background:
+              'radial-gradient(ellipse 70% 60% at 80% 20%, rgba(255,255,255,0.35), transparent 55%)',
+          }}
+        />
+        <div className="absolute inset-0 flex items-center justify-center p-6">
+          <span className="flex h-[72px] w-[72px] items-center justify-center bg-white/95 shadow-sm sm:h-20 sm:w-20">
+            <TrackLogo slug={t.slug} color={t.color} size={48} className="!rounded-none" />
+          </span>
+        </div>
+        <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
+          <span className="bg-white/95 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--ink)]">
+            {t.tag}
+          </span>
+          {t.enrolled && (
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-white"
+              style={{ background: 'var(--green-deep)' }}
+            >
+              <Check size={10} /> Enrolled
+            </span>
+          )}
+        </div>
+        {t.enrolled && t.pct > 0 && (
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/25">
+            <div className="h-full bg-white" style={{ width: `${Math.min(100, Math.max(t.pct, 2))}%` }} />
+          </div>
+        )}
+      </Link>
+
+      {/* Course body */}
+      <div className="flex min-w-0 flex-1 flex-col gap-2 p-4 sm:p-5">
+        <Link href={`/dashboard/courses/${t.slug}`} className="min-w-0">
+          <h3 className="font-display text-[18px] font-semibold leading-snug line-clamp-2 transition-opacity group-hover:opacity-80 sm:text-[20px]">
+            {t.title}
+          </h3>
+          <p className="mt-1.5 line-clamp-2 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+            {t.tagline}
+          </p>
+        </Link>
+
+        <div
+          className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[12px]"
+          style={{ color: 'var(--ink-soft)' }}
+        >
+          <span className="inline-flex items-center gap-1">
+            <BookOpen size={12} /> {t.totalLessons} lessons
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Clock size={12} /> ~{hours}h
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <GraduationCap size={12} /> Certificate
+          </span>
+        </div>
+
+        {t.enrolled && (
+          <div className="mt-1 flex items-center justify-between gap-3 text-[12px]">
+            <span style={{ color: 'var(--ink-soft)' }}>
+              {t.doneCount}/{t.totalLessons} complete
+            </span>
+            <span className="font-semibold" style={{ color: 'var(--green-deep)' }}>
+              {t.pct}%
+            </span>
+          </div>
+        )}
+
+        <div className="mt-auto flex flex-col gap-2 pt-3 sm:flex-row">
+          <Link
+            href={`/dashboard/courses/${t.slug}`}
+            className="inline-flex flex-1 items-center justify-center border px-3 py-2.5 text-[13px] font-semibold"
+            style={{ borderColor: 'var(--ink)', color: 'var(--ink)' }}
+          >
+            View course
+          </Link>
+          <div className="flex-1">
+            <EnrollButton
+              courseSlug={t.slug}
+              enrolled={t.enrolled}
+              continueHref={t.continueHref}
+              editorial
+            />
+          </div>
+        </div>
+      </div>
+    </article>
   );
 }
