@@ -35,73 +35,99 @@ export default async function CourseDetailPage({
     : `/dashboard/courses/${params.slug}`;
 
   return (
-    <div className="mx-auto max-w-[900px]">
+    <div className="mx-auto max-w-[960px] overflow-x-hidden">
       <Link
         href="/dashboard/courses"
         className="mb-6 inline-flex items-center gap-1.5 text-[13.5px] font-semibold"
         style={{ color: 'var(--ink-soft)' }}
       >
-        <ArrowLeft size={14} /> All courses
+        <ArrowLeft size={14} /> My courses
       </Link>
 
-      <div
-        className="mb-8 rounded-3xl border p-6 sm:p-8"
-        style={{ borderColor: 'var(--line)', background: `linear-gradient(135deg, ${track.color}10, transparent 55%)` }}
-      >
-        <div className="flex flex-wrap items-start gap-5">
-          <TrackLogo slug={track.slug} color={track.color} size={64} className="rounded-2xl" />
-          <div className="min-w-0 flex-1">
-            <div className="mono mb-1 text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
-              {track.tag} · Self-paced
-            </div>
-            <h1 className="font-display text-[28px] leading-tight">{track.title}</h1>
-            <p className="mt-2 max-w-xl text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              {track.description}
-            </p>
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-              <span className="flex items-center gap-1.5">
-                <BookOpen size={13} /> {track.totalLessons} lessons
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Clock size={13} /> ~{Math.round(track.totalMinutes / 60)} hours
-              </span>
-              <span className="flex items-center gap-1.5">
-                <GraduationCap size={13} /> Certificate on completion
-              </span>
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-3">
-            <EnrollButton courseSlug={params.slug} enrolled={enrolled} continueHref={continueHref} />
-            {enrolled && (
-              <div className="text-[12.5px] font-semibold" style={{ color: 'var(--green-deep)' }}>
-                {pct}% complete
+      {/* Campus-style hero — stacks on mobile so nothing gets squished */}
+      <header className="relative mb-8 overflow-hidden text-white">
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(120deg, ${track.color} 0%, #0C1116 72%)`,
+          }}
+        />
+        <div className="relative p-5 sm:p-8 md:p-9">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
+            <div className="min-w-0 flex-1">
+              <div className="mb-4 flex items-center gap-3">
+                <span className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden border border-white/25 bg-white/95 sm:h-16 sm:w-16">
+                  <TrackLogo slug={track.slug} color={track.color} size={40} />
+                </span>
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/55 sm:text-[11px]">
+                  {track.tag} · Self-paced
+                </p>
               </div>
-            )}
+              <h1 className="break-words font-display text-[32px] leading-[0.95] tracking-tight sm:text-[40px] md:text-[44px]">
+                {track.shortTitle}
+              </h1>
+              <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-white/75 sm:text-[15px]">
+                {track.tagline || track.description}
+              </p>
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[10px] uppercase tracking-[0.12em] text-white/55 sm:text-[11px]">
+                <span className="inline-flex items-center gap-1.5">
+                  <BookOpen size={12} /> {track.totalLessons} lessons
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock size={12} /> ~{Math.round(track.totalMinutes / 60)} hours
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <GraduationCap size={12} /> Certificate
+                </span>
+                {enrolled && <span>{pct}% complete</span>}
+              </div>
+            </div>
+
+            <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:min-w-[160px]">
+              <EnrollButton
+                courseSlug={params.slug}
+                enrolled={enrolled}
+                continueHref={continueHref}
+                editorial
+              />
+              {enrolled && (
+                <div className="h-1.5 overflow-hidden bg-white/15">
+                  <div
+                    className="h-full"
+                    style={{ width: `${Math.max(pct, 2)}%`, background: '#fff' }}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <h2 className="mb-4 font-display text-[21px]">Curriculum</h2>
-      <div className="space-y-4">
+      <p className="mb-8 max-w-2xl text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+        {track.description}
+      </p>
+
+      <h2 className="mb-4 font-display text-[22px] sm:text-[24px]">Curriculum</h2>
+      <div className="space-y-3 sm:space-y-4">
         {course.sections.map((section, si) => {
           const sectionDone = section.lessons.filter((l) => done.has(l.slug)).length;
           return (
             <div
               key={section.id}
-              className="overflow-hidden rounded-2xl border"
+              className="overflow-hidden border"
               style={{ borderColor: 'var(--line)' }}
             >
               <div
-                className="flex flex-wrap items-center justify-between gap-2 border-b px-5 py-4"
+                className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3 sm:px-5 sm:py-4"
                 style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}
               >
-                <div>
-                  <div className="mono text-[10.5px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
+                <div className="min-w-0">
+                  <div className="font-mono text-[10.5px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
                     Section {si + 1} · {section.level}
                   </div>
-                  <div className="text-[15px] font-semibold">{section.title}</div>
+                  <div className="text-[14px] font-semibold sm:text-[15px]">{section.title}</div>
                 </div>
-                <span className="text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+                <span className="shrink-0 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
                   {sectionDone}/{section.lessons.length} done
                 </span>
               </div>
@@ -112,20 +138,20 @@ export default async function CourseDetailPage({
                     <li key={lesson.slug} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
                       <Link
                         href={`/dashboard/courses/${params.slug}/${lesson.slug}`}
-                        className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-[var(--paper-dim)]"
+                        className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--paper-dim)] sm:px-5 sm:py-3.5"
                       >
                         {isDone ? (
-                          <CheckCircle2 size={17} style={{ color: 'var(--green)' }} />
+                          <CheckCircle2 size={17} className="shrink-0" style={{ color: 'var(--green)' }} />
                         ) : (
-                          <Circle size={17} style={{ color: 'var(--line)' }} />
+                          <Circle size={17} className="shrink-0" style={{ color: 'var(--line)' }} />
                         )}
                         <span
-                          className="min-w-0 flex-1 truncate text-[14px]"
+                          className="min-w-0 flex-1 text-[13.5px] leading-snug sm:text-[14px]"
                           style={{ color: isDone ? 'var(--ink-soft)' : 'var(--ink)' }}
                         >
                           {lesson.title}
                         </span>
-                        <span className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                        <span className="shrink-0 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
                           {lesson.minutes} min
                         </span>
                       </Link>
