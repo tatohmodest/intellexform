@@ -56,7 +56,14 @@ export default function TopNav() {
   const [open, setOpen] = useState(false);
   const [desktopMenu, setDesktopMenu] = useState<string | null>(null);
   const [mobileSection, setMobileSection] = useState<string | null>('tutorials');
+  const [authed, setAuthed] = useState(false);
   const navRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => setAuthed(r.ok))
+      .catch(() => setAuthed(false));
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
@@ -191,13 +198,31 @@ export default function TopNav() {
               ))}
             </div>
 
-            <Link
-              href="/register"
-              className="hidden whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-semibold text-paper sm:inline-block"
-              style={{ background: 'var(--ink)' }}
-            >
-              Register
-            </Link>
+            {authed ? (
+              <Link
+                href="/dashboard"
+                className="hidden whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-semibold text-white sm:inline-block"
+                style={{ background: 'var(--green)' }}
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="hidden whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold opacity-80 transition-opacity hover:opacity-100 sm:inline-block"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/signup"
+                  className="hidden whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-semibold text-paper sm:inline-block"
+                  style={{ background: 'var(--ink)' }}
+                >
+                  Sign up
+                </Link>
+              </>
+            )}
             <button
               className="flex h-10 w-10 items-center justify-center rounded-full lg:hidden"
               style={{ background: 'var(--paper-dim)' }}
@@ -315,9 +340,20 @@ export default function TopNav() {
             </div>
 
             <div className="flex flex-col gap-3 border-t p-5" style={{ borderColor: 'var(--line)' }}>
-              <Link href="/register" onClick={() => setOpen(false)} className="btn btn-primary w-full">
-                Register <ArrowRight size={18} />
-              </Link>
+              {authed ? (
+                <Link href="/dashboard" onClick={() => setOpen(false)} className="btn btn-primary w-full">
+                  Go to Dashboard <ArrowRight size={18} />
+                </Link>
+              ) : (
+                <>
+                  <Link href="/signup" onClick={() => setOpen(false)} className="btn btn-primary w-full">
+                    Sign up with LoopingBinary <ArrowRight size={18} />
+                  </Link>
+                  <Link href="/login" onClick={() => setOpen(false)} className="btn btn-ghost w-full">
+                    Sign in
+                  </Link>
+                </>
+              )}
               <a
                 href={buildWhatsappLink('Hello Intellex! I have a question about the platform.')}
                 target="_blank"
