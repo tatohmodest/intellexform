@@ -26,7 +26,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const signed = signMentorUpload({ kind, lbId: user.uid });
+    const signed = signMentorUpload({
+      kind,
+      lbId: user.uid,
+      mimeType: typeof body.mimeType === 'string' ? body.mimeType : undefined,
+      filename: typeof body.filename === 'string' ? body.filename : undefined,
+    });
     return NextResponse.json({
       ok: true,
       ...signed,

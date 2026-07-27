@@ -8,6 +8,28 @@ export type UploadedAsset = {
   resourceType: string;
 };
 
+function friendlyUploadError(raw: string): string {
+  const msg = raw.toLowerCase();
+  if (msg.includes('file_too_large')) return 'file_too_large';
+  if (msg.includes('upload_unavailable') || msg.includes('not configured')) {
+    return 'Uploads are temporarily unavailable. Try again shortly.';
+  }
+  if (msg.includes('unauthorized') || msg.includes('401')) {
+    return 'Your session expired. Sign in again and retry.';
+  }
+  if (msg.includes('invalid signature') || msg.includes('signature')) {
+    return 'Upload signature failed. Refresh the page and try again.';
+  }
+  if (msg.includes('file format') || msg.includes('format')) {
+    return 'That file format was rejected. Use PDF for CV, or JPG/PNG for ID photos.';
+  }
+  if (raw && raw !== 'upload_failed' && raw !== 'network_error' && raw !== 'sign_failed') {
+    return raw;
+  }
+  if (raw === 'network_error') return 'Network error while uploading. Check your connection.';
+  return 'Upload failed. Please try again.';
+}
+
 /** Sign + upload a file directly to Cloudinary (keeps large videos off Next.js). */
 export async function uploadMentorAsset(
   kind: MentorUploadKind,
@@ -37,18 +59,23 @@ export async function uploadMentorAsset(
       uploadName = prepared.name || filename;
     } catch (err) {
       if (err instanceof Error && err.message === 'file_too_large') throw err;
-      // Fall through — Cloudinary transform still caps ID photos.
+      // Fall through with original file.
     }
   }
+
+  const mimeType =
+    uploadBlob.type ||
+    (typeof File !== 'undefined' && file instanceof File ? file.type : '') ||
+    '';
 
   const signRes = await fetch('/api/learn/mentor/upload-sign', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ kind }),
+    body: JSON.stringify({ kind, mimeType, filename: uploadName }),
   });
   if (!signRes.ok) {
     const data = await signRes.json().catch(() => ({}));
-    throw new Error(data.error ?? 'sign_failed');
+    throw new Error(friendlyUploadError(String(data.error ?? 'sign_failed')));
   }
   const signed = await signRes.json();
 
@@ -59,7 +86,6 @@ export async function uploadMentorAsset(
   form.append('signature', signed.signature);
   form.append('folder', signed.folder);
   form.append('public_id', signed.publicId);
-  if (signed.eager) form.append('eager', signed.eager);
   if (signed.transformation) {
     form.append('transformation', signed.transformation);
   }
@@ -76,23 +102,30 @@ export async function uploadMentorAsset(
       try {
         const json = JSON.parse(xhr.responseText);
         if (xhr.status >= 200 && xhr.status < 300) resolve(json);
-        else reject(new Error(json.error?.message ?? 'upload_failed'));
+        else {
+          const cloudMsg =
+            typeof json?.error === 'object' && json.error && 'message' in json.error
+              ? String((json.error as { message: string }).message)
+              : typeof json?.error === 'string'
+                ? json.error
+                : 'upload_failed';
+          reject(new Error(friendlyUploadError(cloudMsg)));
+        }
       } catch {
-        reject(new Error('upload_failed'));
+        reject(new Error('Upload failed. Please try again.'));
       }
     };
-    xhr.onerror = () => reject(new Error('network_error'));
+    xhr.onerror = () => reject(new Error('Network error while uploading. Check your connection.'));
     xhr.send(form);
   });
 
-  const eager = Array.isArray(result.eager) ? result.eager[0] : null;
-  const eagerUrl =
-    eager && typeof eager === 'object' && eager !== null && 'secure_url' in eager
-      ? String((eager as { secure_url: string }).secure_url)
-      : null;
+  const url = String(result.secure_url ?? result.url ?? '');
+  if (!url) {
+    throw new Error('Upload completed without a file URL. Please try again.');
+  }
 
   return {
-    url: String(result.secure_url ?? result.url ?? eagerUrl ?? ''),
+    url,
     bytes: Number(result.bytes ?? uploadBlob.size),
     publicId: String(result.public_id ?? signed.publicId),
     resourceType: String(result.resource_type ?? signed.resourceType),

@@ -98,7 +98,7 @@ export default function MentorApply() {
       if (slots.length === 0) return 'Add at least one availability slot.';
     }
     if (i === 2) {
-      if (!resumeFile) return 'Upload your CV or resume (PDF or DOC).';
+      if (!resumeFile) return 'Upload your CV or resume (PDF preferred).';
     }
     if (i === 3) {
       if (!idFront || !idBack) return 'Upload the front and back of your ID.';
@@ -145,14 +145,17 @@ export default function MentorApply() {
     try {
       setUploadLabel('Uploading CV…');
       const resume = await uploadMentorAsset('resume', resumeFile, resumeFile.name, setUploadPct);
+      if (!resume.url) throw new Error('CV upload did not return a URL.');
 
       setUploadLabel('Uploading ID (front)…');
       setUploadPct(0);
       const front = await uploadMentorAsset('id_front', idFront, idFront.name, setUploadPct);
+      if (!front.url) throw new Error('ID front upload did not return a URL.');
 
       setUploadLabel('Uploading ID (back)…');
       setUploadPct(0);
       const back = await uploadMentorAsset('id_back', idBack, idBack.name, setUploadPct);
+      if (!back.url) throw new Error('ID back upload did not return a URL.');
 
       setUploadLabel('Uploading intro video…');
       setUploadPct(0);
@@ -163,9 +166,7 @@ export default function MentorApply() {
         `intro-${Date.now()}.${videoExt}`,
         setUploadPct,
       );
-      if (!video.url) {
-        throw new Error('video_upload_empty');
-      }
+      if (!video.url) throw new Error('Intro video upload did not return a URL.');
 
       setUploadLabel('Submitting application…');
       const res = await fetch('/api/learn/mentor/apply', {
@@ -192,7 +193,11 @@ export default function MentorApply() {
             ? 'Documents are required before submission.'
             : data.error === 'missing_fields'
               ? 'Please complete every step before submitting.'
-              : 'Could not submit your application. Please try again.',
+              : data.error === 'invalid_document_url'
+                ? 'A document URL was invalid. Re-upload your files and try again.'
+                : data.error === 'db_unavailable'
+                  ? 'Could not save your application right now. Try again shortly.'
+                  : 'Could not submit your application. Please try again.',
         );
         return;
       }
@@ -202,7 +207,7 @@ export default function MentorApply() {
       setError(
         msg === 'file_too_large'
           ? 'Each file must be 10 MB or smaller.'
-          : 'Upload failed. Check your connection and try again.',
+          : msg || 'Upload failed. Check your connection and try again.',
       );
     } finally {
       setBusy(false);
@@ -224,16 +229,22 @@ export default function MentorApply() {
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mx-auto max-w-[560px] rounded-3xl border px-6 py-12 text-center"
+        className="mx-auto max-w-[720px] border-t pt-10"
         style={{ borderColor: 'var(--line)' }}
       >
-        <GraduationCap className="mx-auto mb-4" size={32} style={{ color: 'var(--green-deep)' }} />
-        <h1 className="font-display text-[24px]">Application under review</h1>
-        <p className="mx-auto mt-2 max-w-md text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-          Thanks - your CV, ID, and intro video are with InTelleX admins.
-          Mentor Studio unlocks only after approval. Nothing important is toggled on by accident.
+        <p className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: 'var(--ink-soft)' }}>
+          Instructor application
         </p>
-        <button type="button" onClick={() => router.push('/dashboard')} className="btn btn-primary mt-6 !py-2.5 text-[13.5px]">
+        <h1 className="mt-2 font-display text-[32px] leading-[0.95] tracking-tight">Under review</h1>
+        <p className="mt-3 max-w-md text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+          Your CV, ID, and intro video are with InTelleX admins. Mentor Studio unlocks only after approval.
+        </p>
+        <button
+          type="button"
+          onClick={() => router.push('/dashboard')}
+          className="mt-8 inline-flex items-center gap-2 px-5 py-2.5 text-[13.5px] font-semibold text-white"
+          style={{ background: 'var(--green)' }}
+        >
           Back to dashboard
         </button>
       </motion.div>
@@ -243,34 +254,31 @@ export default function MentorApply() {
   const progress = ((step + 1) / STEPS.length) * 100;
 
   return (
-    <div className="mx-auto max-w-[720px]">
-      <div className="mb-8 text-center">
-        <span
-          className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl"
-          style={{ background: 'rgba(0,179,105,0.12)', color: 'var(--green-deep)' }}
-        >
-          <GraduationCap size={30} />
-        </span>
-        <h1 className="font-display text-[28px] leading-tight">Apply to mentor</h1>
-        <p className="mx-auto mt-2 max-w-md text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Mentorship is a privilege. Complete this short onboarding - profile, documents, and a
-          30–60 second intro - then wait for InTelleX admin approval.
+    <div className="mx-auto max-w-[720px] overflow-x-hidden">
+      <header className="mb-8 border-b pb-8" style={{ borderColor: 'var(--line)' }}>
+        <p className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: 'var(--ink-soft)' }}>
+          Instructor studio · Onboarding
         </p>
-      </div>
+        <h1 className="mt-2 font-display text-[32px] leading-[0.95] tracking-tight sm:text-[40px]">
+          Apply to mentor
+        </h1>
+        <p className="mt-3 max-w-md text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+          Complete profile, documents, and a 30–60 second intro. Access unlocks after InTelleX admin approval.
+        </p>
+      </header>
 
       {/* Step rail */}
-      <div className="mb-6">
-        <div className="mb-3 h-1.5 overflow-hidden rounded-full" style={{ background: 'var(--paper-dim)' }}>
+      <div className="mb-8">
+        <div className="mb-3 h-1 overflow-hidden" style={{ background: 'var(--paper-dim)' }}>
           <motion.div
-            className="h-full rounded-full"
+            className="h-full"
             style={{ background: 'var(--green-deep)' }}
             animate={{ width: `${progress}%` }}
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
           />
         </div>
-        <div className="flex gap-1 overflow-x-auto pb-1">
+        <div className="flex gap-4 overflow-x-auto pb-1">
           {STEPS.map((s, i) => {
-            const Icon = s.icon;
             const active = i === step;
             const done = i < step;
             return (
@@ -280,44 +288,51 @@ export default function MentorApply() {
                 onClick={() => {
                   if (i <= step) go(i);
                 }}
-                className="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors"
-                style={{
-                  background: active
-                    ? 'rgba(0,179,105,0.14)'
-                    : done
-                      ? 'rgba(0,179,105,0.06)'
-                      : 'transparent',
-                  color: active || done ? 'var(--green-deep)' : 'var(--ink-soft)',
-                }}
+                className="shrink-0 text-left"
               >
-                <Icon size={12} />
-                {s.label}
+                <span
+                  className="font-mono text-[10px] uppercase tracking-[0.14em]"
+                  style={{ color: active || done ? 'var(--green-deep)' : 'var(--ink-soft)' }}
+                >
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <span
+                  className="mt-0.5 block text-[13px] font-semibold"
+                  style={{
+                    color: active ? 'var(--ink)' : done ? 'var(--green-deep)' : 'var(--ink-soft)',
+                    borderBottom: active ? '1px solid var(--ink)' : '1px solid transparent',
+                  }}
+                >
+                  {s.label}
+                </span>
               </button>
             );
           })}
         </div>
       </div>
 
-      <div
-        className="relative overflow-hidden rounded-3xl border p-6 sm:p-8"
-        style={{ borderColor: 'var(--line)', minHeight: 420 }}
-      >
+      <div className="relative min-h-[420px] border-t pt-6" style={{ borderColor: 'var(--line)' }}>
         <AnimatePresence mode="wait" custom={dir}>
           <motion.div
             key={step}
             custom={dir}
-            initial={{ opacity: 0, x: dir * 48 }}
+            initial={{ opacity: 0, x: dir * 32 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: dir * -48 }}
+            exit={{ opacity: 0, x: dir * -32 }}
             transition={{ type: 'spring', stiffness: 280, damping: 28 }}
           >
             {step === 0 && (
-              <div className="space-y-5">
-                <h2 className="font-display text-[22px]">Your mentoring profile</h2>
+              <section className="space-y-5">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
+                    Step 01
+                  </p>
+                  <h2 className="font-display text-[22px]">Your mentoring profile</h2>
+                </div>
                 <div>
                   <label className="mb-1.5 block text-[13px] font-semibold">Professional title</label>
                   <input
-                    className="form-input"
+                    className="form-input !rounded-none"
                     placeholder="e.g. Senior Backend Engineer"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
@@ -326,7 +341,7 @@ export default function MentorApply() {
                 <div>
                   <label className="mb-1.5 block text-[13px] font-semibold">Bio</label>
                   <textarea
-                    className="form-input"
+                    className="form-input !rounded-none"
                     rows={3}
                     placeholder="What have you built? What can you help students achieve?"
                     value={bio}
@@ -337,7 +352,7 @@ export default function MentorApply() {
                   <label className="mb-1.5 block text-[13px] font-semibold">Skills (up to 6)</label>
                   <div className="flex gap-2">
                     <input
-                      className="form-input"
+                      className="form-input !rounded-none"
                       placeholder="e.g. Node.js"
                       value={skillInput}
                       onChange={(e) => setSkillInput(e.target.value)}
@@ -348,7 +363,7 @@ export default function MentorApply() {
                         }
                       }}
                     />
-                    <button type="button" onClick={addSkill} className="btn btn-ghost !px-4 !py-2">
+                    <button type="button" onClick={addSkill} className="btn btn-ghost !rounded-none !px-4 !py-2">
                       <Plus size={15} />
                     </button>
                   </div>
@@ -357,8 +372,8 @@ export default function MentorApply() {
                       {expertise.map((s) => (
                         <span
                           key={s}
-                          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-medium"
-                          style={{ background: 'rgba(0,179,105,0.1)', color: 'var(--green-deep)' }}
+                          className="flex items-center gap-1.5 border px-3 py-1.5 text-[12.5px] font-medium"
+                          style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
                         >
                           {s}
                           <button type="button" onClick={() => setExpertise(expertise.filter((x) => x !== s))}>
@@ -369,12 +384,17 @@ export default function MentorApply() {
                     </div>
                   )}
                 </div>
-              </div>
+              </section>
             )}
 
             {step === 1 && (
-              <div className="space-y-5">
-                <h2 className="font-display text-[22px]">Pricing & availability</h2>
+              <section className="space-y-5">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
+                    Step 02
+                  </p>
+                  <h2 className="font-display text-[22px]">Pricing & availability</h2>
+                </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="mb-1.5 block text-[13px] font-semibold">Session price (XAF)</label>
@@ -382,7 +402,7 @@ export default function MentorApply() {
                       type="number"
                       min={0}
                       step={500}
-                      className="form-input"
+                      className="form-input !rounded-none"
                       value={priceXAF}
                       onChange={(e) => setPriceXAF(Number(e.target.value))}
                     />
@@ -390,7 +410,7 @@ export default function MentorApply() {
                   <div>
                     <label className="mb-1.5 block text-[13px] font-semibold">Session length</label>
                     <select
-                      className="form-input"
+                      className="form-input !rounded-none"
                       value={sessionMinutes}
                       onChange={(e) => setSessionMinutes(Number(e.target.value))}
                     >
@@ -406,7 +426,7 @@ export default function MentorApply() {
                     {slots.map((slot, i) => (
                       <div key={i} className="flex items-center gap-2">
                         <select
-                          className="form-input"
+                          className="form-input !rounded-none"
                           value={slot.dayOffset}
                           onChange={(e) => {
                             const copy = [...slots];
@@ -422,7 +442,7 @@ export default function MentorApply() {
                         </select>
                         <input
                           type="time"
-                          className="form-input"
+                          className="form-input !rounded-none"
                           value={slot.time}
                           onChange={(e) => {
                             const copy = [...slots];
@@ -434,7 +454,7 @@ export default function MentorApply() {
                           <button
                             type="button"
                             onClick={() => setSlots(slots.filter((_, si) => si !== i))}
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border"
+                            className="flex h-9 w-9 shrink-0 items-center justify-center border"
                             style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}
                           >
                             <X size={14} />
@@ -454,12 +474,17 @@ export default function MentorApply() {
                     </button>
                   )}
                 </div>
-              </div>
+              </section>
             )}
 
             {step === 2 && (
-              <div className="space-y-4">
-                <h2 className="font-display text-[22px]">Upload your CV or resume</h2>
+              <section className="space-y-4">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
+                    Step 03
+                  </p>
+                  <h2 className="font-display text-[22px]">Upload your CV or resume</h2>
+                </div>
                 <p className="text-[14px]" style={{ color: 'var(--ink-soft)' }}>
                   PDF preferred (images also fine). Up to 10 MB.
                 </p>
@@ -471,12 +496,17 @@ export default function MentorApply() {
                   optimize="resume"
                   onError={setError}
                 />
-              </div>
+              </section>
             )}
 
             {step === 3 && (
-              <div className="space-y-5">
-                <h2 className="font-display text-[22px]">Government ID</h2>
+              <section className="space-y-5">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
+                    Step 04
+                  </p>
+                  <h2 className="font-display text-[22px]">Government ID</h2>
+                </div>
                 <p className="text-[14px]" style={{ color: 'var(--ink-soft)' }}>
                   Front and back of your national ID or passport bio page. Up to 10 MB each.
                 </p>
@@ -500,12 +530,17 @@ export default function MentorApply() {
                     onError={setError}
                   />
                 </div>
-              </div>
+              </section>
             )}
 
             {step === 4 && (
-              <div className="space-y-4">
-                <h2 className="font-display text-[22px]">Intro video (30–60s)</h2>
+              <section className="space-y-4">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
+                    Step 05
+                  </p>
+                  <h2 className="font-display text-[22px]">Intro video (30–60s)</h2>
+                </div>
                 <IntroVideoRecorder
                   value={videoBlob}
                   onReady={(blob, sec) => {
@@ -513,13 +548,18 @@ export default function MentorApply() {
                     setVideoSeconds(sec);
                   }}
                 />
-              </div>
+              </section>
             )}
 
             {step === 5 && (
-              <div className="space-y-5">
-                <h2 className="font-display text-[22px]">Review & submit</h2>
-                <ul className="space-y-3 text-[14px]">
+              <section className="space-y-5">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
+                    Step 06
+                  </p>
+                  <h2 className="font-display text-[22px]">Review & submit</h2>
+                </div>
+                <ul className="divide-y border-y" style={{ borderColor: 'var(--line)' }}>
                   <ReviewRow label="Title" value={title} />
                   <ReviewRow label="Skills" value={expertise.join(', ')} />
                   <ReviewRow label="Price" value={`${priceXAF.toLocaleString()} XAF · ${sessionMinutes} min`} />
@@ -527,14 +567,10 @@ export default function MentorApply() {
                   <ReviewRow label="ID" value={idFront && idBack ? 'Front + back attached' : '-'} />
                   <ReviewRow
                     label="Intro video"
-                    value={
-                      videoBlob
-                        ? `${videoSeconds}s · ${fmtBytes(videoBlob.size)}`
-                        : '-'
-                    }
+                    value={videoBlob ? `${videoSeconds}s · ${fmtBytes(videoBlob.size)}` : '-'}
                   />
                 </ul>
-                <p className="rounded-2xl px-4 py-3 text-[13.5px] leading-relaxed" style={{ background: 'rgba(0,179,105,0.08)', color: 'var(--green-deep)' }}>
+                <p className="border-l-2 pl-4 text-[13.5px] leading-relaxed" style={{ borderColor: 'var(--green)', color: 'var(--ink-soft)' }}>
                   Submitting sends your application to InTelleX admins. You become a mentor only after they approve.
                 </p>
                 {busy && (
@@ -543,37 +579,40 @@ export default function MentorApply() {
                       <span>{uploadLabel}</span>
                       <span>{uploadPct}%</span>
                     </div>
-                    <div className="h-1.5 overflow-hidden rounded-full" style={{ background: 'var(--paper-dim)' }}>
-                      <div className="h-full rounded-full transition-all" style={{ width: `${uploadPct}%`, background: 'var(--green-deep)' }} />
+                    <div className="h-1 overflow-hidden" style={{ background: 'var(--paper-dim)' }}>
+                      <div className="h-full transition-all" style={{ width: `${uploadPct}%`, background: 'var(--green-deep)' }} />
                     </div>
                   </div>
                 )}
-              </div>
+              </section>
             )}
           </motion.div>
         </AnimatePresence>
 
         {error && (
-          <p className="mt-5 rounded-xl px-4 py-3 text-[13px]" style={{ background: 'rgba(196,98,42,0.08)', color: '#a14d18' }}>
+          <p
+            className="mt-5 border px-4 py-3 text-[13px]"
+            style={{ borderColor: 'rgba(196,98,42,0.35)', background: 'rgba(196,98,42,0.08)', color: '#a14d18' }}
+          >
             {error}
           </p>
         )}
 
-        <div className="mt-8 flex items-center justify-between gap-3">
+        <div className="mt-8 flex items-center justify-between gap-3 border-t pt-6" style={{ borderColor: 'var(--line)' }}>
           <button
             type="button"
             onClick={back}
             disabled={step === 0 || busy}
-            className="btn btn-ghost !py-2.5 text-[13.5px] disabled:opacity-40"
+            className="btn btn-ghost !rounded-none !py-2.5 text-[13.5px] disabled:opacity-40"
           >
             <ChevronLeft size={16} /> Back
           </button>
           {step < STEPS.length - 1 ? (
-            <button type="button" onClick={next} className="btn btn-primary !py-2.5 text-[13.5px]">
+            <button type="button" onClick={next} className="btn btn-primary !rounded-none !py-2.5 text-[13.5px]">
               Continue <ChevronRight size={16} />
             </button>
           ) : (
-            <button type="button" onClick={submit} disabled={busy} className="btn btn-primary !py-2.5 text-[13.5px]">
+            <button type="button" onClick={submit} disabled={busy} className="btn btn-primary !rounded-none !py-2.5 text-[13.5px]">
               {busy ? <Loader2 size={16} className="animate-spin" /> : <GraduationCap size={16} />}
               Submit for admin review
             </button>
@@ -586,8 +625,8 @@ export default function MentorApply() {
 
 function ReviewRow({ label, value }: { label: string; value: string }) {
   return (
-    <li className="flex gap-3 border-b pb-3" style={{ borderColor: 'var(--line)' }}>
-      <span className="w-28 shrink-0 text-[12.5px] font-semibold uppercase tracking-wide" style={{ color: 'var(--ink-soft)' }}>
+    <li className="flex gap-3 py-3 text-[14px]">
+      <span className="w-28 shrink-0 font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
         {label}
       </span>
       <span className="font-medium">{value}</span>
@@ -609,7 +648,6 @@ function FileDrop({
   file: File | null;
   onFile: (f: File | null) => void;
   preview?: boolean;
-  /** Shrink every image (any size ≤ 10 MB). */
   optimize?: 'id' | 'resume';
   onError?: (msg: string) => void;
 }) {
@@ -658,7 +696,7 @@ function FileDrop({
 
   return (
     <label
-      className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed px-4 py-8 text-center transition-colors"
+      className="flex cursor-pointer flex-col items-center justify-center gap-2 border border-dashed px-4 py-8 text-center transition-colors"
       style={{
         borderColor: hover ? 'var(--green-deep)' : 'var(--line)',
         background: hover ? 'rgba(0,179,105,0.04)' : 'transparent',
@@ -680,7 +718,7 @@ function FileDrop({
         <Loader2 size={22} className="animate-spin" style={{ color: 'var(--green-deep)' }} />
       ) : thumb ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={thumb} alt="" className="mb-2 max-h-28 rounded-lg object-contain" />
+        <img src={thumb} alt="" className="mb-2 max-h-28 object-contain" />
       ) : (
         <Upload size={22} style={{ color: 'var(--green-deep)' }} />
       )}
