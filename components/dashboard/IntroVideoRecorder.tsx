@@ -27,12 +27,14 @@ function fmtClock(total: number) {
 }
 
 export default function IntroVideoRecorder({ onReady, value }: Props) {
-  const previewRef = useRef<HTMLVideoElement>(null);
+  const liveRef = useRef<HTMLVideoElement>(null);
+  const playbackRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const secondsRef = useRef(0);
+  const previewUrlRef = useRef<string | null>(null);
 
   const [live, setLive] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -42,27 +44,34 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [sizeLabel, setSizeLabel] = useState('');
 
-  useEffect(() => {
-    if (value) {
-      const url = URL.createObjectURL(value);
-      setPreviewUrl(url);
-      setSizeLabel(`${(value.size / (1024 * 1024)).toFixed(2)} MB`);
-      return () => URL.revokeObjectURL(url);
+  const revokePreview = useCallback(() => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
     }
     setPreviewUrl(null);
-    setSizeLabel('');
-  }, [value]);
+  }, []);
 
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    if (liveRef.current) liveRef.current.srcObject = null;
     setLive(false);
   }, []);
 
   useEffect(() => () => {
     if (timerRef.current) clearInterval(timerRef.current);
     stopStream();
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
   }, [stopStream]);
+
+  // Keep size label in sync if parent clears the clip.
+  useEffect(() => {
+    if (!value) {
+      setSizeLabel('');
+      if (!recording && !busy) revokePreview();
+    }
+  }, [value, recording, busy, revokePreview]);
 
   async function startCamera() {
     setError('');
@@ -70,9 +79,9 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
       const stream = await navigator.mediaDevices.getUserMedia(INTRO_VIDEO_CONSTRAINTS);
       streamRef.current = stream;
       setLive(true);
-      if (previewRef.current) {
-        previewRef.current.srcObject = stream;
-        await previewRef.current.play().catch(() => {});
+      if (liveRef.current) {
+        liveRef.current.srcObject = stream;
+        await liveRef.current.play().catch(() => {});
       }
     } catch {
       setError('Camera/mic access is required to record your intro. Allow permissions and try again.');
@@ -80,6 +89,7 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
   }
 
   function clearRecording() {
+    revokePreview();
     onReady(null, 0);
     setSeconds(0);
     setSizeLabel('');
@@ -99,14 +109,15 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
 
   async function startRecording() {
     setError('');
+    revokePreview();
+    onReady(null, 0);
+
     if (!streamRef.current) {
       await startCamera();
     }
     const stream = streamRef.current;
     if (!stream) return;
 
-    // Clear any prior clip before a new take.
-    onReady(null, 0);
     chunksRef.current = [];
     const recorder = createIntroRecorder(stream);
     recorderRef.current = recorder;
@@ -122,20 +133,43 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
           onReady(null, 0);
           return;
         }
-        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'video/webm' });
+        const mime = recorder.mimeType || 'video/webm';
+        const blob = new Blob(chunksRef.current, { type: mime });
         if (!blob.size) {
           setError('Recording was empty. Please try again.');
           onReady(null, 0);
           return;
         }
+
+        // Create preview URL immediately so the clip shows before parent re-renders.
+        const url = URL.createObjectURL(blob);
+        if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+        previewUrlRef.current = url;
+        setPreviewUrl(url);
         setSizeLabel(`${(blob.size / (1024 * 1024)).toFixed(2)} MB`);
         onReady(blob, Math.min(duration, INTRO_VIDEO_MAX_SECONDS));
+
+        // Kick a poster frame so the first paint isn't black.
+        requestAnimationFrame(() => {
+          const el = playbackRef.current;
+          if (!el) return;
+          el.muted = true;
+          el.play()
+            .then(() => {
+              el.pause();
+              el.currentTime = 0;
+              el.muted = false;
+            })
+            .catch(() => {
+              el.muted = false;
+            });
+        });
       } catch {
         setError('Could not save the recording. Please try again.');
         onReady(null, 0);
       } finally {
-        setBusy(false);
         stopStream();
+        setBusy(false);
       }
     };
 
@@ -163,18 +197,27 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
   }
 
   const canStop = seconds >= INTRO_VIDEO_MIN_SECONDS;
+  const showPlayback = Boolean(previewUrl && !live && !recording);
 
   return (
     <div className="space-y-4">
       <div
-        className="relative overflow-hidden rounded-2xl border bg-black/90"
+        className="relative overflow-hidden border bg-black"
         style={{ borderColor: 'var(--line)', aspectRatio: '16 / 9' }}
       >
-        {previewUrl && !live ? (
-          <video src={previewUrl} controls playsInline className="h-full w-full object-contain" />
+        {showPlayback ? (
+          <video
+            key={previewUrl}
+            ref={playbackRef}
+            src={previewUrl!}
+            controls
+            playsInline
+            preload="auto"
+            className="h-full w-full object-contain"
+          />
         ) : (
           <video
-            ref={previewRef}
+            ref={liveRef}
             muted
             playsInline
             autoPlay
@@ -188,7 +231,7 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
           </div>
         )}
         {recording && (
-          <div className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/60 px-3 py-1.5 text-[12.5px] font-semibold text-white">
+          <div className="absolute left-3 top-3 flex items-center gap-2 bg-black/60 px-3 py-1.5 text-[12.5px] font-semibold text-white">
             <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
             {fmtClock(seconds)} / {fmtClock(INTRO_VIDEO_MAX_SECONDS)}
           </div>
@@ -202,8 +245,8 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
       </p>
 
       <div className="flex flex-wrap gap-2">
-        {!live && !recording && !value && (
-          <button type="button" onClick={startCamera} className="btn btn-ghost !py-2.5 text-[13px]">
+        {!live && !recording && !value && !previewUrl && (
+          <button type="button" onClick={startCamera} className="btn btn-ghost !rounded-none !py-2.5 text-[13px]">
             <Video size={15} /> Enable camera
           </button>
         )}
@@ -211,11 +254,11 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
           <button
             type="button"
             onClick={startRecording}
-            className="btn btn-primary !py-2.5 text-[13px]"
+            className="btn btn-primary !rounded-none !py-2.5 text-[13px]"
             disabled={busy}
           >
             <Circle size={14} className="fill-current" />
-            {value ? 'Re-record' : 'Start recording'}
+            {value || previewUrl ? 'Re-record' : 'Start recording'}
           </button>
         )}
         {recording && (
@@ -223,7 +266,7 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
             type="button"
             onClick={stopRecording}
             disabled={!canStop}
-            className="btn !py-2.5 text-[13px] disabled:opacity-50"
+            className="btn !rounded-none !py-2.5 text-[13px] disabled:opacity-50"
             style={{ background: 'rgba(220,38,38,0.12)', color: '#b91c1c' }}
             title={canStop ? 'Stop recording' : `Record at least ${INTRO_VIDEO_MIN_SECONDS}s`}
           >
@@ -231,8 +274,8 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
             {canStop ? 'Stop' : `Stop in ${INTRO_VIDEO_MIN_SECONDS - seconds}s`}
           </button>
         )}
-        {value && !recording && (
-          <button type="button" onClick={clearRecording} className="btn btn-ghost !py-2.5 text-[13px]">
+        {(value || previewUrl) && !recording && (
+          <button type="button" onClick={clearRecording} className="btn btn-ghost !rounded-none !py-2.5 text-[13px]">
             <Trash2 size={14} /> Clear
           </button>
         )}
@@ -244,7 +287,7 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
       </div>
 
       {error && (
-        <p className="rounded-xl px-4 py-3 text-[13px]" style={{ background: 'rgba(196,98,42,0.08)', color: '#a14d18' }}>
+        <p className="border px-4 py-3 text-[13px]" style={{ borderColor: 'rgba(196,98,42,0.35)', background: 'rgba(196,98,42,0.08)', color: '#a14d18' }}>
           {error}
         </p>
       )}

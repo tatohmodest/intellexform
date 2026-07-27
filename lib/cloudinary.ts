@@ -27,14 +27,27 @@ export function isCloudinaryConfigured(): boolean {
   return Boolean(cloudName && apiKey && apiSecret);
 }
 
+function resumeResourceType(
+  mimeType?: string,
+  filename?: string,
+): 'image' | 'raw' {
+  const mime = (mimeType || '').toLowerCase();
+  const name = (filename || '').toLowerCase();
+  if (mime.startsWith('image/') || /\.(png|jpe?g|webp|gif|heic)$/i.test(name)) {
+    return 'image';
+  }
+  // PDF / DOC / DOCX and anything else — raw keeps the original file downloadable.
+  return 'raw';
+}
+
 /**
  * Signed upload params for direct browser → Cloudinary uploads.
- * Videos get an eager transform (720p, auto quality, capped bitrate) so
- * delivery stays sharp while storage stays lean.
  */
 export function signMentorUpload(opts: {
   kind: MentorUploadKind;
   lbId: string;
+  mimeType?: string;
+  filename?: string;
 }): {
   cloudName: string;
   apiKey: string;
@@ -43,7 +56,6 @@ export function signMentorUpload(opts: {
   publicId: string;
   signature: string;
   resourceType: 'image' | 'raw' | 'video' | 'auto';
-  eager?: string;
   transformation?: string;
 } {
   if (!isCloudinaryConfigured()) {
@@ -53,8 +65,15 @@ export function signMentorUpload(opts: {
   const timestamp = Math.round(Date.now() / 1000);
   const folder = `${FOLDERS[opts.kind]}/${opts.lbId}`;
   const publicId = `${opts.kind}_${timestamp}`;
-  const resourceType: 'image' | 'raw' | 'video' | 'auto' =
-    opts.kind === 'intro_video' ? 'video' : opts.kind === 'resume' ? 'auto' : 'image';
+
+  let resourceType: 'image' | 'raw' | 'video' | 'auto';
+  if (opts.kind === 'intro_video') {
+    resourceType = 'video';
+  } else if (opts.kind === 'resume') {
+    resourceType = resumeResourceType(opts.mimeType, opts.filename);
+  } else {
+    resourceType = 'image';
+  }
 
   const paramsToSign: Record<string, string | number> = {
     timestamp,
@@ -62,15 +81,13 @@ export function signMentorUpload(opts: {
     public_id: publicId,
   };
 
-  // Cap stored video: 1280×720, auto quality, ~800kbps - keeps intro clips small.
-  let eager: string | undefined;
+  // Keep upload transforms conservative — `f_auto` / bitrate eager often reject at upload time.
   let transformation: string | undefined;
-  if (opts.kind === 'intro_video') {
-    eager = 'c_limit,w_1280,h_720,q_auto:good,br_800k,f_mp4';
-    paramsToSign.eager = eager;
-  } else if (opts.kind === 'id_front' || opts.kind === 'id_back') {
-    // Incoming image transform — sharp ID photos, smaller stored bytes.
-    transformation = 'c_limit,w_1600,q_auto:good,f_auto';
+  if (opts.kind === 'id_front' || opts.kind === 'id_back') {
+    transformation = 'c_limit,w_1600,q_auto:good';
+    paramsToSign.transformation = transformation;
+  } else if (opts.kind === 'resume' && resourceType === 'image') {
+    transformation = 'c_limit,w_1800,q_auto:good';
     paramsToSign.transformation = transformation;
   }
 
@@ -84,7 +101,6 @@ export function signMentorUpload(opts: {
     publicId,
     signature,
     resourceType,
-    eager,
     transformation,
   };
 }
