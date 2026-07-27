@@ -105,7 +105,12 @@ export default async function DashboardOverview() {
           <p className="mt-1 text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
             {streak > 0
               ? `You're on a ${streak}-day streak — keep the fire alive.`
-              : 'Complete one lesson today to start a new streak.'}
+              : 'Complete one lesson today to start a new streak.'}{' '}
+            One identity — switch campuses from the context menu
+            {learner?.affiliations?.length
+              ? ` · affiliated with ${learner.affiliations.map((a) => a.institutionName).join(', ')}`
+              : ''}
+            .
           </p>
         </div>
         <Link href="/dashboard/tutor" className="btn btn-primary !py-3 text-[14px]">

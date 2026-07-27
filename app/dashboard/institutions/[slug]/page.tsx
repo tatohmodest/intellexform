@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { ArrowLeft, Globe2, Lock, Megaphone, Users } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
+import { getLearner } from '@/lib/learn/repo';
 import {
   getInstitution,
   getMembership,
@@ -37,7 +38,13 @@ export default async function CampusPage({ params }: { params: { slug: string } 
     );
   }
 
-  const posts = await listInstitutionPosts(params.slug);
+  const [posts, learner] = await Promise.all([
+    listInstitutionPosts(params.slug),
+    getLearner(session.uid),
+  ]);
+  const affiliation = (learner?.affiliations ?? []).find(
+    (a) => a.institutionSlug === params.slug,
+  );
 
   return (
     <div className="mx-auto max-w-[900px]">
@@ -62,9 +69,12 @@ export default async function CampusPage({ params }: { params: { slug: string } 
                 {(inst.name || 'I').charAt(0).toUpperCase()}
               </span>
               <div>
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">
+                  Institution context · same InTelleX identity
+                </p>
                 <h1 className="font-display text-[28px] leading-tight">{inst.name}</h1>
                 <p className="text-[13.5px] text-white/70">{inst.tagline}</p>
-                <div className="mt-1.5 flex items-center gap-3 text-[12px] text-white/60">
+                <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[12px] text-white/60">
                   <span className="flex items-center gap-1">
                     <Users size={12} /> {inst.memberCount.toLocaleString()} members
                   </span>
@@ -72,6 +82,11 @@ export default async function CampusPage({ params }: { params: { slug: string } 
                     {inst.visibility === 'public' ? <Globe2 size={12} /> : <Lock size={12} />}
                     {inst.visibility === 'public' ? 'Public campus' : 'Private campus'}
                   </span>
+                  {affiliation?.externalStudentId && (
+                    <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide">
+                      ID {affiliation.externalStudentId}
+                    </span>
+                  )}
                   {membership === 'owner' && (
                     <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide">
                       You run this campus

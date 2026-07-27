@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -20,8 +20,12 @@ import {
   Youtube,
   Building2,
   GraduationCap,
+  ChevronDown,
+  Check,
+  Sparkles,
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
+import type { ActiveContext, Affiliation, PrimaryIntent } from '@/lib/learn/identity';
 
 export interface ShellUser {
   name: string;
@@ -30,6 +34,10 @@ export interface ShellUser {
   xp: number;
   streakCount: number;
   roles?: string[];
+  primaryIntent?: PrimaryIntent | null;
+  affiliations?: Affiliation[];
+  activeContext?: ActiveContext;
+  onboardingComplete?: boolean;
 }
 
 const NAV = [
@@ -56,13 +64,64 @@ function initials(name: string): string {
 function NavLinks({
   pathname,
   isMentor,
+  context,
   onNavigate,
 }: {
   pathname: string;
   isMentor: boolean;
+  context?: ActiveContext;
   onNavigate?: () => void;
 }) {
-  const mentorActive = pathname.startsWith('/dashboard/mentor') && !pathname.startsWith('/dashboard/mentorship');
+  const campusSlug =
+    context?.kind === 'institution' ? context.institutionSlug : null;
+  const mentorActive =
+    pathname.startsWith('/dashboard/mentor') &&
+    !pathname.startsWith('/dashboard/mentorship');
+
+  if (campusSlug) {
+    const base = `/dashboard/institutions/${campusSlug}`;
+    return (
+      <nav className="flex flex-col gap-1">
+        <Link
+          href={base}
+          onClick={onNavigate}
+          className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
+          style={
+            pathname === base || pathname.startsWith(base + '/')
+              ? { background: 'rgba(0,179,105,0.1)', color: 'var(--green-deep)' }
+              : { color: 'var(--ink-soft)' }
+          }
+        >
+          <Building2 size={17} />
+          Campus home
+        </Link>
+        <Link
+          href="/dashboard"
+          onClick={onNavigate}
+          className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
+          style={{ color: 'var(--ink-soft)' }}
+        >
+          <Home size={17} />
+          Personal InTelleX
+        </Link>
+        <div className="mt-4 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
+          <div className="mono mb-1.5 px-3.5 text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
+            Network
+          </div>
+          <Link
+            href="/dashboard/institutions"
+            onClick={onNavigate}
+            className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
+            style={{ color: 'var(--ink-soft)' }}
+          >
+            <Sparkles size={17} />
+            All institutions
+          </Link>
+        </div>
+      </nav>
+    );
+  }
+
   return (
     <nav className="flex flex-col gap-1">
       {NAV.map((item) => {
@@ -70,7 +129,8 @@ function NavLinks({
           ? pathname === item.href
           : item.href === '/dashboard/mentorship'
             ? pathname.startsWith('/dashboard/mentorship')
-            : pathname.startsWith(item.href) && !(item.href === '/dashboard/courses' && mentorActive);
+            : pathname.startsWith(item.href) &&
+              !(item.href === '/dashboard/courses' && mentorActive);
         const Icon = item.icon;
         return (
           <Link
@@ -90,7 +150,6 @@ function NavLinks({
         );
       })}
 
-      {/* Progressive disclosure: teaching tools appear when you're a mentor. */}
       <div className="mt-4 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
         <div className="mono mb-1.5 px-3.5 text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
           {isMentor ? 'Teaching' : 'Teach'}
@@ -113,12 +172,173 @@ function NavLinks({
   );
 }
 
+function ContextSwitcher({
+  user,
+  onSwitched,
+}: {
+  user: ShellUser;
+  onSwitched?: () => void;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const active = user.activeContext ?? { kind: 'personal' as const };
+  const affiliations = user.affiliations ?? [];
+
+  const label = useMemo(() => {
+    if (active.kind === 'institution') {
+      const a = affiliations.find((x) => x.institutionSlug === active.institutionSlug);
+      return a?.institutionName || active.institutionSlug || 'Campus';
+    }
+    if (active.kind === 'teaching') return 'Teaching';
+    if (active.kind === 'mentorship') return 'Mentorship';
+    if (active.kind === 'intellex') return 'InTelleX Academy';
+    return 'Personal';
+  }, [active, affiliations]);
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
+
+  async function switchTo(ctx: ActiveContext, href?: string) {
+    setBusy(true);
+    try {
+      const res = await fetch('/api/learn/context', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ctx),
+      });
+      if (!res.ok) return;
+      setOpen(false);
+      onSwitched?.();
+      if (href) router.push(href);
+      else if (ctx.kind === 'institution' && ctx.institutionSlug) {
+        router.push(`/dashboard/institutions/${ctx.institutionSlug}`);
+      } else if (ctx.kind === 'teaching') {
+        router.push('/dashboard/mentor');
+      } else {
+        router.push('/dashboard');
+      }
+      router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="relative mb-5 px-1" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        disabled={busy}
+        className="flex w-full items-center gap-2 rounded-2xl border px-3 py-2.5 text-left transition-colors"
+        style={{ borderColor: 'var(--line)' }}
+      >
+        <span
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[11px] font-bold text-white"
+          style={{ background: 'linear-gradient(135deg, #00b369, #1f5fa8)' }}
+        >
+          {active.kind === 'institution' ? 'U' : 'IX'}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="mono block text-[9.5px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
+            Context
+          </span>
+          <span className="block truncate text-[13.5px] font-semibold">{label}</span>
+        </span>
+        <ChevronDown size={15} style={{ color: 'var(--ink-soft)' }} />
+      </button>
+
+      {open && (
+        <div
+          className="absolute left-0 right-0 z-50 mt-2 overflow-hidden rounded-2xl border shadow-lg"
+          style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}
+        >
+          <ContextItem
+            active={active.kind === 'personal' || active.kind === 'intellex'}
+            title="Personal"
+            subtitle="Your InTelleX home"
+            onClick={() => switchTo({ kind: 'personal', institutionSlug: null })}
+          />
+          {affiliations.map((a) => (
+            <ContextItem
+              key={a.institutionSlug}
+              active={
+                active.kind === 'institution' &&
+                active.institutionSlug === a.institutionSlug
+              }
+              title={a.institutionName}
+              subtitle={`${a.role} · ${a.status}`}
+              onClick={() =>
+                switchTo({
+                  kind: 'institution',
+                  institutionSlug: a.institutionSlug,
+                })
+              }
+            />
+          ))}
+          <ContextItem
+            active={active.kind === 'teaching'}
+            title="Teaching"
+            subtitle={user.roles?.includes('mentor') ? 'Mentor Studio' : 'Apply to teach'}
+            onClick={() => switchTo({ kind: 'teaching', institutionSlug: null })}
+          />
+          <Link
+            href="/dashboard/institutions"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 border-t px-3 py-2.5 text-[12.5px] font-semibold"
+            style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
+          >
+            <Building2 size={14} /> Find more institutions
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ContextItem({
+  title,
+  subtitle,
+  active,
+  onClick,
+}: {
+  title: string;
+  subtitle: string;
+  active?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-black/[0.03]"
+    >
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[13.5px] font-semibold">{title}</span>
+        <span className="block truncate text-[11.5px]" style={{ color: 'var(--ink-soft)' }}>
+          {subtitle}
+        </span>
+      </span>
+      {active && <Check size={14} style={{ color: 'var(--green-deep)' }} />}
+    </button>
+  );
+}
+
 export default function DashboardShell({
   user,
   children,
+  minimal = false,
 }: {
   user: ShellUser;
   children: React.ReactNode;
+  minimal?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -130,19 +350,40 @@ export default function DashboardShell({
     router.refresh();
   }
 
+  if (minimal) {
+    return (
+      <div className="min-h-screen bg-paper">
+        <header
+          className="sticky top-0 z-20 flex h-[64px] items-center gap-3 border-b px-4 backdrop-blur sm:px-8"
+          style={{ borderColor: 'var(--line)', background: 'rgba(255,255,255,0.92)' }}
+        >
+          <BrandLogo href="/" height={30} variant="full" />
+          <span className="mono ml-2 rounded-full border px-2 py-0.5 text-[9.5px] uppercase tracking-[0.14em]" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
+            Identity
+          </span>
+          <div className="ml-auto text-[13px] font-medium" style={{ color: 'var(--ink-soft)' }}>
+            {user.email}
+          </div>
+        </header>
+        <main className="px-4 pb-16 pt-6 sm:px-6">{children}</main>
+      </div>
+    );
+  }
+
   const sidebarInner = (
     <>
-      <div className="mb-8 flex items-center gap-2.5 px-2">
-        {/* Same wordmark as the homepage header */}
+      <div className="mb-4 flex items-center gap-2.5 px-2">
         <BrandLogo href="/" height={32} variant="full" />
-        <span className="mono rounded-full border px-2 py-0.5 text-[9.5px] uppercase tracking-[0.14em]" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
-          Learn
-        </span>
       </div>
+
+      {user.onboardingComplete !== false && (
+        <ContextSwitcher user={user} onSwitched={() => setMobileOpen(false)} />
+      )}
 
       <NavLinks
         pathname={pathname}
         isMentor={Boolean(user.roles?.includes('mentor'))}
+        context={user.activeContext}
         onNavigate={() => setMobileOpen(false)}
       />
 
@@ -169,7 +410,6 @@ export default function DashboardShell({
 
   return (
     <div className="min-h-screen bg-paper">
-      {/* Desktop sidebar */}
       <aside
         className="fixed inset-y-0 left-0 z-30 hidden w-[240px] flex-col border-r px-4 py-6 lg:flex"
         style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}
@@ -177,7 +417,6 @@ export default function DashboardShell({
         {sidebarInner}
       </aside>
 
-      {/* Mobile drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div
@@ -185,7 +424,7 @@ export default function DashboardShell({
             onClick={() => setMobileOpen(false)}
           />
           <aside
-            className="absolute inset-y-0 left-0 flex w-[260px] flex-col px-4 py-6"
+            className="absolute inset-y-0 left-0 flex w-[280px] flex-col px-4 py-6"
             style={{ background: 'var(--paper)' }}
           >
             {sidebarInner}
@@ -193,7 +432,6 @@ export default function DashboardShell({
         </div>
       )}
 
-      {/* Topbar */}
       <header
         className="sticky top-0 z-20 flex h-[64px] items-center gap-3 border-b px-4 backdrop-blur lg:pl-[264px] lg:pr-8"
         style={{ borderColor: 'var(--line)', background: 'rgba(255,255,255,0.92)' }}
@@ -207,7 +445,6 @@ export default function DashboardShell({
           {mobileOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
 
-        {/* Compact icon — full wordmark does not fit the mobile top bar */}
         <div className="lg:hidden">
           <BrandLogo href="/" height={30} variant="mark" />
         </div>
@@ -257,7 +494,6 @@ export default function DashboardShell({
         </div>
       </header>
 
-      {/* Content */}
       <main className="px-4 pb-16 pt-6 sm:px-6 lg:pl-[268px] lg:pr-10">{children}</main>
     </div>
   );

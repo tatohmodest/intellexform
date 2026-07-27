@@ -1,11 +1,18 @@
 import { ObjectId } from 'mongodb';
 import { getDb } from '@/lib/repo';
 import type { LBProfile } from '@/lib/auth/oauth';
+import type {
+  ActiveContext,
+  Affiliation,
+  JoinPath,
+  PrimaryIntent,
+} from '@/lib/learn/identity';
+import { PERSONAL_CONTEXT } from '@/lib/learn/identity';
 
 /**
- * Learner data layer — users, enrollments, lesson progress, mentorship
- * bookings, XP and streaks. Every read degrades gracefully when Mongo is
- * unreachable so the dashboard still renders.
+ * Learner data layer — global InTelleX identity, enrollments, progress,
+ * mentorship bookings, XP and streaks. Affiliations attach campuses to the
+ * same passport; they never create a second account.
  */
 
 export interface LearnerDoc {
@@ -13,8 +20,16 @@ export interface LearnerDoc {
   email: string;
   name: string;
   avatar?: string;
-  /** Progressive roles: every account is a student; mentor/admin unlock more UI. */
+  /** Progressive platform roles (mentor/admin unlock more UI). */
   roles?: ('student' | 'mentor' | 'admin')[];
+  /** First-run onboarding finished. */
+  onboardingComplete?: boolean;
+  primaryIntent?: PrimaryIntent | null;
+  joinPath?: JoinPath | null;
+  /** Campus / org affiliations on this global identity. */
+  affiliations?: Affiliation[];
+  /** Current workspace context (Personal / campus / teaching…). */
+  activeContext?: ActiveContext;
   xp: number;
   streakCount: number;
   /** YYYY-MM-DD of the last day the learner did something. */
@@ -67,6 +82,12 @@ export async function upsertLearnerFromOAuth(profile: LBProfile): Promise<Learne
     email: profile.email ?? '',
     name: profile.name ?? 'Learner',
     avatar: profile.picture,
+    roles: ['student'],
+    onboardingComplete: false,
+    primaryIntent: null,
+    joinPath: null,
+    affiliations: [],
+    activeContext: PERSONAL_CONTEXT,
     xp: 0,
     streakCount: 0,
     lastActiveDay: null,
@@ -90,6 +111,11 @@ export async function upsertLearnerFromOAuth(profile: LBProfile): Promise<Learne
         $setOnInsert: {
           lbId: profile.sub,
           roles: ['student'],
+          onboardingComplete: false,
+          primaryIntent: null,
+          joinPath: null,
+          affiliations: [],
+          activeContext: PERSONAL_CONTEXT,
           xp: 0,
           streakCount: 0,
           lastActiveDay: null,
@@ -125,6 +151,86 @@ export async function updateLearnerSettings(
 ) {
   const db = await getDb();
   await db.collection('learners').updateOne({ lbId }, { $set: patch });
+}
+
+/** Complete first-run onboarding — identity stays global; intent only personalizes. */
+export async function completeLearnerOnboarding(
+  lbId: string,
+  opts: {
+    primaryIntent: PrimaryIntent;
+    joinPath?: JoinPath | null;
+  },
+): Promise<LearnerDoc | null> {
+  const db = await getDb();
+  const activeContext: ActiveContext =
+    opts.primaryIntent === 'teach'
+      ? { kind: 'teaching', institutionSlug: null }
+      : opts.primaryIntent === 'institution'
+        ? { kind: 'personal', institutionSlug: null }
+        : PERSONAL_CONTEXT;
+
+  await db.collection('learners').updateOne(
+    { lbId },
+    {
+      $set: {
+        onboardingComplete: true,
+        primaryIntent: opts.primaryIntent,
+        joinPath: opts.joinPath ?? null,
+        activeContext,
+        updatedAt: new Date(),
+      },
+      $setOnInsert: {
+        lbId,
+        roles: ['student'],
+        affiliations: [],
+        xp: 0,
+        streakCount: 0,
+        lastActiveDay: null,
+        weeklyGoalMinutes: 150,
+        createdAt: new Date(),
+      },
+    },
+    { upsert: true },
+  );
+  return getLearner(lbId);
+}
+
+/** Attach a campus affiliation to the global identity (never a second account). */
+export async function upsertAffiliation(
+  lbId: string,
+  affiliation: Affiliation,
+): Promise<LearnerDoc | null> {
+  const db = await getDb();
+  const learner = await getLearner(lbId);
+  const existing = learner?.affiliations ?? [];
+  const without = existing.filter((a) => a.institutionSlug !== affiliation.institutionSlug);
+  const affiliations = [...without, affiliation];
+  await db.collection('learners').updateOne(
+    { lbId },
+    {
+      $set: {
+        affiliations,
+        activeContext: {
+          kind: 'institution',
+          institutionSlug: affiliation.institutionSlug,
+        },
+        updatedAt: new Date(),
+      },
+    },
+  );
+  return getLearner(lbId);
+}
+
+export async function setActiveContext(
+  lbId: string,
+  context: ActiveContext,
+): Promise<LearnerDoc | null> {
+  const db = await getDb();
+  await db.collection('learners').updateOne(
+    { lbId },
+    { $set: { activeContext: context, updatedAt: new Date() } },
+  );
+  return getLearner(lbId);
 }
 
 /** Bump streak + XP for activity today. Returns the new values. */
