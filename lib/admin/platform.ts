@@ -151,9 +151,14 @@ export async function getPlatformOverview() {
       prisma.instructorApplication.count({
         where: { status: { in: ['SUBMITTED', 'UNDER_REVIEW'] } },
       }),
-      prisma.mentorApplication.count({
-        where: { status: { in: ['SUBMITTED', 'UNDER_REVIEW'] } },
-      }),
+      // Live mentor apply writes Mongo `mentor_applications`, not Prisma.
+      getDb()
+        .then((db) =>
+          db.collection('mentor_applications').countDocuments({
+            status: { $in: ['submitted', 'under_review'] },
+          }),
+        )
+        .catch(() => 0),
     ]),
     prisma.institutionFederationLink.findMany({
       take: 20,
@@ -918,7 +923,7 @@ export async function listConnections() {
 }
 
 export async function listGovernanceQueue() {
-  const [institutions, instructors, mentors] = await Promise.all([
+  const [institutions, instructors, mentorDocs] = await Promise.all([
     prisma.institutionApplication.findMany({
       where: { status: { in: ['SUBMITTED', 'UNDER_REVIEW'] } },
       orderBy: { createdAt: 'desc' },
@@ -936,15 +941,38 @@ export async function listGovernanceQueue() {
         institution: { select: { id: true, name: true, slug: true } },
       },
     }),
-    prisma.mentorApplication.findMany({
-      where: { status: { in: ['SUBMITTED', 'UNDER_REVIEW'] } },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-      include: {
-        applicant: { select: { id: true, email: true, name: true } },
-      },
-    }),
+    getDb()
+      .then((db) =>
+        db
+          .collection('mentor_applications')
+          .find({ status: { $in: ['submitted', 'under_review'] } })
+          .sort({ createdAt: -1 })
+          .limit(50)
+          .toArray(),
+      )
+      .catch(() => []),
   ]);
+
+  // Shape Mongo mentor apps so the governance panel can render them.
+  const mentors = mentorDocs.map((d) => {
+    const { _id, name, email, title, status, createdAt } = d as {
+      _id: { toString(): string };
+      name?: string;
+      email?: string | null;
+      title?: string;
+      status?: string;
+      createdAt?: Date | string;
+    };
+    return {
+      id: _id.toString(),
+      title: title ?? '',
+      status: status ?? 'submitted',
+      createdAt: createdAt ?? null,
+      applicant: { id: null, email: email ?? null, name: name ?? null },
+      source: 'mongo' as const,
+    };
+  });
+
   return { institutions, instructors, mentors };
 }
 
