@@ -241,7 +241,11 @@ export async function canAccessContent(opts: {
   const config =
     opts.config ?? (await getContentAccess(opts.kind, opts.slug));
 
-  if (config.mode === 'free') return { allowed: true };
+  // Free tracks are for registered students only — never open to anonymous visitors.
+  if (config.mode === 'free') {
+    if (!opts.userId) return { allowed: false, reason: 'login_required' };
+    return { allowed: true };
+  }
 
   if (!opts.userId) return { allowed: false, reason: 'login_required' };
 

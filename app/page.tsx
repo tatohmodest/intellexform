@@ -65,7 +65,7 @@ const VALUE_PILLARS = [
   },
   {
     icon: Compass,
-    title: 'Free tutorials to fundamentals',
+    title: 'Tutorials for registered students',
     body: 'World-class beginner-to-pro tracks - HTML, Python, design, marketing, DevOps, and more - so you can start before you pay.',
   },
   {
@@ -141,7 +141,7 @@ export default async function HomePage() {
               Built so you actually finish what you start
             </h2>
             <p className="text-[15.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Free tutorials for fundamentals, a paid catalogue for career skills, live mentors when
+              Tutorials free for registered students, a paid catalogue for career skills, live mentors when
               you need a person, and an AI Tutor grounded in what we teach - not generic chat.
             </p>
           </Reveal>
@@ -226,7 +226,7 @@ export default async function HomePage() {
               Full ecosystem map
             </Link>
             <Link href="/tutorials" className="btn btn-ghost">
-              Free tutorials
+              Student tutorials
             </Link>
           </div>
         </div>
@@ -605,7 +605,7 @@ export default async function HomePage() {
                 Ready to learn with InTelleX?
               </h2>
               <p className="mt-2 text-[14.5px] leading-relaxed" style={{ color: 'rgba(251,248,240,0.75)' }}>
-                Free tutorials now. Full catalogue, certificates, mentors, and AI when you are ready.
+                Free for students with an account. Full catalogue, certificates, mentors, and AI when you are ready.
                 Schools and companies: see our enterprise campus platform.
               </p>
             </div>
