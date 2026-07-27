@@ -100,12 +100,22 @@ export default async function MentorStudioPage() {
           <div>
             <h2 className="font-display text-[20px]">Video Course Studio</h2>
             <p className="mt-1 max-w-xl text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
-              Record lessons, store them on Google Drive (public or private), set visibility, and
-              publish for learners — same studio campus instructors use.
+              Record lessons, host on Google Drive, set visibility, publish for learners.
             </p>
           </div>
           <Link href="/dashboard/teach/courses" className="btn btn-primary !py-2.5 text-[13px]">
-            <Video size={14} /> Open studio
+            <Video size={14} /> Courses
+          </Link>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
+          <div>
+            <h2 className="font-display text-[20px]">Assessment Studio</h2>
+            <p className="mt-1 max-w-xl text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
+              Locked exams (no back, leave-tab terminates), Drive assignments, AI question assist, marks & results.
+            </p>
+          </div>
+          <Link href="/dashboard/teach/assessments" className="btn btn-ghost !py-2.5 text-[13px]">
+            Exams & assignments
           </Link>
         </div>
       </div>
