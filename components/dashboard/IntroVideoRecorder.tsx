@@ -65,14 +65,6 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
   }, [stopStream]);
 
-  // Keep size label in sync if parent clears the clip.
-  useEffect(() => {
-    if (!value) {
-      setSizeLabel('');
-      if (!recording && !busy) revokePreview();
-    }
-  }, [value, recording, busy, revokePreview]);
-
   async function startCamera() {
     setError('');
     try {
