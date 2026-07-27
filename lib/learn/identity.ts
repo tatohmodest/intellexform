@@ -91,4 +91,8 @@ export type CampusBrand = {
   color: string;
   logoUrl?: string | null;
   tagline?: string;
+  /** Capability pack provisioned by Platform Team. */
+  capabilityPack?: 'foundation' | 'professional' | 'enterprise' | 'custom';
+  /** Modules unlocked beyond Core for this campus. */
+  enabledModules?: string[];
 };

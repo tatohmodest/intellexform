@@ -627,6 +627,18 @@ export interface InstitutionDoc {
   /** How this campus authenticates students when they affiliate. */
   authMethod?: InstitutionAuthMethod;
   country?: string | null;
+  /**
+   * Commercial pack: foundation | professional | enterprise | custom.
+   * Modules (capabilities) unlock from pack or explicit enabledModules.
+   */
+  capabilityPack?: 'foundation' | 'professional' | 'enterprise' | 'custom';
+  /** Explicit module ids beyond Core — wins over pack when set. */
+  enabledModules?: string[];
+  branding?: {
+    primaryColor?: string;
+    secondaryColor?: string;
+    accentColor?: string;
+  };
   ownerId: string;
   ownerName: string;
   memberCount: number;
@@ -679,6 +691,8 @@ export async function createInstitution(opts: {
     color: /^#[0-9a-fA-F]{6}$/.test(opts.color) ? opts.color : '#00b369',
     emoji: opts.emoji.slice(0, 4) || '',
     visibility: opts.visibility === 'private' ? 'private' : 'public',
+    capabilityPack: 'foundation',
+    enabledModules: [],
     ownerId: opts.ownerId,
     ownerName: opts.ownerName,
     memberCount: 1,
@@ -990,16 +1004,26 @@ async function seedIntellexInstitution(db: Awaited<ReturnType<typeof getDb>>) {
       visibility: 'public',
       authMethod: 'open',
       country: 'Cameroon',
+      capabilityPack: 'enterprise',
+      enabledModules: [],
       ownerId: 'system',
       ownerName: 'InTelleX',
       memberCount: 0,
       createdAt: new Date(),
     });
-  } else if (!exists.authMethod) {
-    await db.collection('institutions').updateOne(
-      { slug: 'intellex' },
-      { $set: { authMethod: 'open', country: exists.country ?? 'Cameroon' } },
-    );
+  } else {
+    const patch: Record<string, unknown> = {};
+    if (!exists.authMethod) {
+      patch.authMethod = 'open';
+      patch.country = exists.country ?? 'Cameroon';
+    }
+    if (!exists.capabilityPack) {
+      patch.capabilityPack = 'enterprise';
+      patch.enabledModules = exists.enabledModules ?? [];
+    }
+    if (Object.keys(patch).length) {
+      await db.collection('institutions').updateOne({ slug: 'intellex' }, { $set: patch });
+    }
   }
 
   const demos: Array<{
@@ -1010,6 +1034,8 @@ async function seedIntellexInstitution(db: Awaited<ReturnType<typeof getDb>>) {
     color: string;
     authMethod: string;
     country: string;
+    capabilityPack: 'foundation' | 'professional' | 'enterprise' | 'custom';
+    enabledModules: string[];
   }> = [
     {
       slug: 'university-of-buea',
@@ -1019,6 +1045,8 @@ async function seedIntellexInstitution(db: Awaited<ReturnType<typeof getDb>>) {
       color: '#1f5fa8',
       authMethod: 'matricule',
       country: 'Cameroon',
+      capabilityPack: 'professional',
+      enabledModules: [],
     },
     {
       slug: 'saint-monica-university',
@@ -1028,6 +1056,16 @@ async function seedIntellexInstitution(db: Awaited<ReturnType<typeof getDb>>) {
       color: '#7c3aed',
       authMethod: 'matricule',
       country: 'Cameroon',
+      capabilityPack: 'custom',
+      enabledModules: [
+        'digital_learning',
+        'assessment',
+        'ai_learning',
+        'digital_library',
+        'live_teaching',
+        'research',
+        'intellex_resources',
+      ],
     },
     {
       slug: 'seven-advanced-academy',
@@ -1037,17 +1075,25 @@ async function seedIntellexInstitution(db: Awaited<ReturnType<typeof getDb>>) {
       color: '#c2570a',
       authMethod: 'matricule',
       country: 'Cameroon',
+      capabilityPack: 'foundation',
+      enabledModules: [],
     },
   ];
 
   for (const d of demos) {
     const found = await db.collection('institutions').findOne({ slug: d.slug });
     if (found) {
+      const patch: Record<string, unknown> = {};
       if (!found.authMethod) {
-        await db.collection('institutions').updateOne(
-          { slug: d.slug },
-          { $set: { authMethod: d.authMethod, country: d.country } },
-        );
+        patch.authMethod = d.authMethod;
+        patch.country = d.country;
+      }
+      if (!found.capabilityPack) {
+        patch.capabilityPack = d.capabilityPack;
+        patch.enabledModules = d.enabledModules;
+      }
+      if (Object.keys(patch).length) {
+        await db.collection('institutions').updateOne({ slug: d.slug }, { $set: patch });
       }
       continue;
     }

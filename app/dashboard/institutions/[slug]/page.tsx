@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft, Globe2, Lock, Megaphone, Users } from 'lucide-react';
+import { ArrowLeft, Globe2, Lock, Users } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getLearner, setActiveContext } from '@/lib/learn/repo';
 import {
@@ -8,9 +8,13 @@ import {
   getMembership,
   listInstitutionPosts,
 } from '@/lib/learn/ecosystem';
-import { AnnouncementComposer, JoinCampusButton } from '@/components/dashboard/CampusActions';
+import { JoinCampusButton } from '@/components/dashboard/CampusActions';
 import CampusProfileComplete from '@/components/dashboard/CampusProfileComplete';
-import MarkdownLite from '@/components/dashboard/MarkdownLite';
+import CampusCapabilityView from '@/components/dashboard/CampusCapabilityView';
+import {
+  resolveCampusModules,
+  type ModuleId,
+} from '@/lib/eduos/capabilities';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +23,7 @@ export default async function CampusPage({
   searchParams,
 }: {
   params: { slug: string };
-  searchParams?: { complete?: string };
+  searchParams?: { complete?: string; tab?: string };
 }) {
   const session = getSessionUser();
   if (!session) redirect(`/login?next=/dashboard/institutions/${params.slug}`);
@@ -65,8 +69,17 @@ export default async function CampusPage({
     affiliation?.profileComplete === false &&
     (searchParams?.complete === '1' || affiliation?.profileComplete === false);
 
+  const modules = resolveCampusModules({
+    capabilityPack: inst.capabilityPack,
+    enabledModules: (inst.enabledModules ?? []) as ModuleId[],
+  });
+  const role =
+    affiliation?.role ||
+    (membership === 'owner' ? 'owner' : membership ? 'member' : 'viewer');
+  const tab = searchParams?.tab || 'home';
+
   return (
-    <div className="mx-auto max-w-[900px]">
+    <div className="mx-auto max-w-[960px]">
       {showProfileComplete && (
         <CampusProfileComplete
           slug={inst.slug}
@@ -78,7 +91,6 @@ export default async function CampusPage({
         <ArrowLeft size={14} /> Institutions
       </Link>
 
-      {/* Branded campus header */}
       <div
         className="mb-8 overflow-hidden rounded-3xl text-white"
         style={{
@@ -96,7 +108,7 @@ export default async function CampusPage({
               </span>
               <div>
                 <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">
-                  Institution context · same InTelleX identity
+                  Digital campus · Powered by InTelleX
                 </p>
                 <h1 className="font-display text-[28px] leading-tight">{inst.name}</h1>
                 <p className="text-[13.5px] text-white/70">{inst.tagline}</p>
@@ -118,6 +130,11 @@ export default async function CampusPage({
                       You run this campus
                     </span>
                   )}
+                  {affiliation?.role && (
+                    <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide">
+                      {affiliation.role}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -127,31 +144,19 @@ export default async function CampusPage({
       </div>
 
       <div className="grid gap-8 lg:grid-cols-5">
-        <div className="space-y-6 lg:col-span-3">
-          <div className="flex items-center gap-2.5">
-            <Megaphone size={17} style={{ color: 'var(--green-deep)' }} />
-            <h2 className="font-display text-[21px]">Campus news</h2>
-          </div>
-
-          {membership === 'owner' && <AnnouncementComposer slug={inst.slug} />}
-
-          {posts.length === 0 ? (
-            <div className="rounded-2xl border border-dashed p-6 text-[13.5px]" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
-              No announcements yet.
-              {membership === 'owner' ? ' Post your first update above.' : ' Check back soon.'}
-            </div>
-          ) : (
-            posts.map((p) => (
-              <article key={p.id} className="rounded-2xl border p-5" style={{ borderColor: 'var(--line)' }}>
-                <div className="mb-1 text-[15px] font-semibold">{p.title}</div>
-                <div className="mb-3 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-                  {p.authorName} ·{' '}
-                  {new Date(p.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </div>
-                <MarkdownLite text={p.body} />
-              </article>
-            ))
-          )}
+        <div className="lg:col-span-3">
+          <CampusCapabilityView
+            slug={inst.slug}
+            institutionName={inst.name}
+            accent={inst.color || '#00b369'}
+            pack={inst.capabilityPack || 'foundation'}
+            modules={modules}
+            role={role}
+            tab={tab}
+            posts={posts}
+            canAnnounce={membership === 'owner'}
+            isHomeCampus={inst.slug === 'intellex'}
+          />
         </div>
 
         <aside className="lg:col-span-2">
@@ -166,6 +171,27 @@ export default async function CampusPage({
               Campus since{' '}
               {new Date(inst.createdAt).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
             </div>
+          </div>
+
+          <div className="mt-4 rounded-2xl border p-5" style={{ borderColor: 'var(--line)' }}>
+            <h3 className="mb-2 font-display text-[17px]">Capabilities</h3>
+            <p className="mb-3 text-[13px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+              Every campus starts with InTelleX Core. Additional capabilities are provisioned by the Platform Team based on what this institution needs.
+            </p>
+            {modules.length === 0 ? (
+              <p className="text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+                Foundation · Core campus management only.
+              </p>
+            ) : (
+              <ul className="space-y-1.5 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+                {modules.map((m) => (
+                  <li key={m} className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: inst.color }} />
+                    {m.replace(/_/g, ' ')}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {inst.slug === 'intellex' && (
