@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateCourseById, deleteCourseById } from '@/lib/repo';
-import { verifySessionToken, COOKIE_NAME } from '@/lib/adminAuth';
+import { assertAdmin } from '@/lib/adminAuth';
 import { normalizeCoursePayload, slugify } from '@/lib/courseForm';
 
 export const dynamic = 'force-dynamic';
 
 function authed(req: NextRequest) {
-  const token = req.cookies.get(COOKIE_NAME)?.value;
-  return Boolean(token && verifySessionToken(token));
+  return assertAdmin(req);
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
