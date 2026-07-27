@@ -23,10 +23,6 @@ import HomeHero from '@/components/landing/HomeHero';
 import HeroCard from '@/components/landing/HeroCard';
 import OsShowcase from '@/components/landing/OsShowcase';
 import { ECOSYSTEM, LOOPING_BINARY } from '@/lib/ecosystem';
-import {
-  PLATFORM_CONTACT,
-  institutionMailto,
-} from '@/lib/contact';
 
 export const dynamic = 'force-dynamic';
 
