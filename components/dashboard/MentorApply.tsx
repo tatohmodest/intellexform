@@ -17,7 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import IntroVideoRecorder from '@/components/dashboard/IntroVideoRecorder';
-import { MAX_MENTOR_DOC_BYTES, prepareImageForUpload } from '@/lib/compressImage';
+import { MAX_MENTOR_DOC_BYTES, prepareMentorDocForUpload } from '@/lib/compressImage';
 import { INTRO_VIDEO_MAX_SECONDS, INTRO_VIDEO_MIN_SECONDS } from '@/lib/learn/compressVideo';
 import { uploadMentorAsset } from '@/lib/learn/mentorUpload';
 
@@ -468,7 +468,7 @@ export default function MentorApply() {
                   label="Drop CV here or browse"
                   file={resumeFile}
                   onFile={setResumeFile}
-                  optimizeImage
+                  optimize="resume"
                   onError={setError}
                 />
               </div>
@@ -487,7 +487,7 @@ export default function MentorApply() {
                     file={idFront}
                     onFile={setIdFront}
                     preview
-                    optimizeImage
+                    optimize="id"
                     onError={setError}
                   />
                   <FileDrop
@@ -496,7 +496,7 @@ export default function MentorApply() {
                     file={idBack}
                     onFile={setIdBack}
                     preview
-                    optimizeImage
+                    optimize="id"
                     onError={setError}
                   />
                 </div>
@@ -601,7 +601,7 @@ function FileDrop({
   file,
   onFile,
   preview,
-  optimizeImage,
+  optimize,
   onError,
 }: {
   accept: string;
@@ -609,8 +609,8 @@ function FileDrop({
   file: File | null;
   onFile: (f: File | null) => void;
   preview?: boolean;
-  /** Shrink large photos client-side while keeping them sharp (max 10 MB in). */
-  optimizeImage?: boolean;
+  /** Shrink every image (any size ≤ 10 MB). */
+  optimize?: 'id' | 'resume';
   onError?: (msg: string) => void;
 }) {
   const [hover, setHover] = useState(false);
@@ -637,16 +637,20 @@ function FileDrop({
       return;
     }
     onError?.('');
-    if (!optimizeImage || !raw.type.startsWith('image/')) {
+    if (!optimize) {
       onFile(raw);
       return;
     }
     setBusy(true);
     try {
-      const prepared = await prepareImageForUpload(raw, { maxEdge: 1600, quality: 0.88 });
+      const prepared = await prepareMentorDocForUpload(raw, optimize);
       onFile(prepared);
-    } catch {
-      onFile(raw);
+    } catch (err) {
+      if (err instanceof Error && err.message === 'file_too_large') {
+        onError?.('File must be 10 MB or smaller.');
+      } else {
+        onFile(raw);
+      }
     } finally {
       setBusy(false);
     }

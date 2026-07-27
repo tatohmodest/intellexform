@@ -1,5 +1,5 @@
 import type { MentorUploadKind } from '@/lib/learn/mentorUploadKinds';
-import { MAX_MENTOR_DOC_BYTES, prepareImageForUpload } from '@/lib/compressImage';
+import { MAX_MENTOR_DOC_BYTES, prepareMentorDocForUpload } from '@/lib/compressImage';
 
 export type UploadedAsset = {
   url: string;
@@ -7,9 +7,6 @@ export type UploadedAsset = {
   publicId: string;
   resourceType: string;
 };
-
-const ID_MAX_EDGE = 1600;
-const ID_QUALITY = 0.88;
 
 /** Sign + upload a file directly to Cloudinary (keeps large videos off Next.js). */
 export async function uploadMentorAsset(
@@ -21,28 +18,27 @@ export async function uploadMentorAsset(
   let uploadBlob: Blob = file;
   let uploadName = filename;
 
-  // ID photos (and image CVs): accept up to 10MB, shrink client-side, keep them sharp.
+  if (file.size > MAX_MENTOR_DOC_BYTES && kind !== 'intro_video') {
+    throw new Error('file_too_large');
+  }
+
+  // Every ID / resume image (any size ≤ 10 MB) is re-encoded smaller before upload.
   if (
     typeof File !== 'undefined' &&
     file instanceof File &&
-    file.type.startsWith('image/') &&
     (kind === 'id_front' || kind === 'id_back' || kind === 'resume')
   ) {
-    if (file.size > MAX_MENTOR_DOC_BYTES) {
-      throw new Error('file_too_large');
-    }
     try {
-      const prepared = await prepareImageForUpload(file, {
-        maxEdge: kind === 'resume' ? 1920 : ID_MAX_EDGE,
-        quality: ID_QUALITY,
-      });
+      const prepared = await prepareMentorDocForUpload(
+        file,
+        kind === 'resume' ? 'resume' : 'id',
+      );
       uploadBlob = prepared;
       uploadName = prepared.name || filename;
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.message === 'file_too_large') throw err;
       // Fall through — Cloudinary transform still caps ID photos.
     }
-  } else if (kind === 'resume' && file.size > MAX_MENTOR_DOC_BYTES) {
-    throw new Error('file_too_large');
   }
 
   const signRes = await fetch('/api/learn/mentor/upload-sign', {
