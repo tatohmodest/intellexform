@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import IntroVideoRecorder from '@/components/dashboard/IntroVideoRecorder';
+import { INTRO_VIDEO_MAX_SECONDS, INTRO_VIDEO_MIN_SECONDS } from '@/lib/learn/compressVideo';
 import { uploadMentorAsset } from '@/lib/learn/mentorUpload';
 
 const DAYS = ['Today', 'Tomorrow', 'In 2 days', 'In 3 days', 'In 4 days', 'In 5 days', 'In 6 days'];
@@ -102,8 +103,13 @@ export default function MentorApply() {
       if (!idFront || !idBack) return 'Upload the front and back of your ID.';
     }
     if (i === 4) {
-      if (!videoBlob) return 'Record a short intro video (max 1 minute).';
-      if (videoSeconds > 60) return 'Intro video must be 1 minute or less.';
+      if (!videoBlob) return `Record an intro video (${INTRO_VIDEO_MIN_SECONDS}–${INTRO_VIDEO_MAX_SECONDS} seconds).`;
+      if (videoSeconds < INTRO_VIDEO_MIN_SECONDS) {
+        return `Intro video must be at least ${INTRO_VIDEO_MIN_SECONDS} seconds.`;
+      }
+      if (videoSeconds > INTRO_VIDEO_MAX_SECONDS) {
+        return `Intro video must be ${INTRO_VIDEO_MAX_SECONDS} seconds or less.`;
+      }
     }
     return null;
   }
@@ -149,12 +155,16 @@ export default function MentorApply() {
 
       setUploadLabel('Uploading intro video…');
       setUploadPct(0);
+      const videoExt = videoBlob.type.includes('mp4') ? 'mp4' : 'webm';
       const video = await uploadMentorAsset(
         'intro_video',
         videoBlob,
-        `intro-${Date.now()}.webm`,
+        `intro-${Date.now()}.${videoExt}`,
         setUploadPct,
       );
+      if (!video.url) {
+        throw new Error('video_upload_empty');
+      }
 
       setUploadLabel('Submitting application…');
       const res = await fetch('/api/learn/mentor/apply', {
@@ -238,7 +248,7 @@ export default function MentorApply() {
         <h1 className="font-display text-[28px] leading-tight">Apply to mentor</h1>
         <p className="mx-auto mt-2 max-w-md text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
           Mentorship is a privilege. Complete this short onboarding - profile, documents, and a
-          1-minute intro - then wait for InTelleX admin approval.
+          30–60 second intro - then wait for InTelleX admin approval.
         </p>
       </div>
 
@@ -483,7 +493,7 @@ export default function MentorApply() {
 
             {step === 4 && (
               <div className="space-y-4">
-                <h2 className="font-display text-[22px]">1-minute intro video</h2>
+                <h2 className="font-display text-[22px]">Intro video (30–60s)</h2>
                 <IntroVideoRecorder
                   value={videoBlob}
                   onReady={(blob, sec) => {
@@ -507,7 +517,7 @@ export default function MentorApply() {
                     label="Intro video"
                     value={
                       videoBlob
-                        ? `${videoSeconds || '≤60'}s · ${fmtBytes(videoBlob.size)}`
+                        ? `${videoSeconds}s · ${fmtBytes(videoBlob.size)}`
                         : '-'
                     }
                   />

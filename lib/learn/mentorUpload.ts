@@ -66,7 +66,8 @@ export async function uploadMentorAsset(
       : null;
 
   return {
-    url: eagerUrl || String(result.secure_url ?? result.url ?? ''),
+    // Prefer the original upload URL — eager derivatives can be async / empty.
+    url: String(result.secure_url ?? result.url ?? eagerUrl ?? ''),
     bytes: Number(result.bytes ?? file.size),
     publicId: String(result.public_id ?? signed.publicId),
     resourceType: String(result.resource_type ?? signed.resourceType),
