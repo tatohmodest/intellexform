@@ -2,11 +2,15 @@ import Link from 'next/link';
 import {
   ArrowRight,
   BadgeCheck,
+  BookOpen,
   Building2,
+  Compass,
+  Gauge,
   Globe,
   Network,
   ShieldCheck,
   Users,
+  Video,
 } from 'lucide-react';
 import { getAllCourses } from '@/lib/repo';
 import TopNav from '@/components/landing/TopNav';
@@ -16,6 +20,7 @@ import Testimonials from '@/components/landing/Testimonials';
 import CourseRow from '@/components/CourseRow';
 import Reveal from '@/components/Reveal';
 import HomeHero from '@/components/landing/HomeHero';
+import HeroCard from '@/components/landing/HeroCard';
 import { ECOSYSTEM, LOOPING_BINARY } from '@/lib/ecosystem';
 
 export const dynamic = 'force-dynamic';
@@ -24,20 +29,52 @@ const WAYS = [
   {
     id: 'self-paced',
     title: 'Self-paced courses',
-    body: 'Catalogue courses with certificates — finish on your schedule.',
+    body: 'Recorded courses you work through on your own time — progress monitored, checklists when you stall, and a certificate when you finish. Mobile-friendly so you can learn between classes, work, or traffic.',
+    tag: 'Included in every subscription',
+    image: '/way_selfpaced.webp',
+    alt: 'Learner watching a self-paced course on a laptop',
     href: '/courses',
   },
   {
     id: 'live',
-    title: 'Live mentorship',
-    body: 'Approved mentors. Online or onsite. Real accountability.',
+    title: 'Live mentoring',
+    body: 'A real mentor teaches you directly — online from anywhere, or onsite at a location you choose. Mentorship is approved, not toggled on: people earn the right to guide learners.',
+    tag: 'Priced per mentor & format',
+    image: '/way_live.webp',
+    alt: 'Mentor teaching a student in a live session',
     href: '/register',
   },
   {
     id: 'ai',
     title: 'AI Tutor',
-    body: 'Knows InTelleX, free tutorials, and the live Mongo catalogue.',
+    body: 'An AI that knows InTelleX — free tutorials, the live Mongo catalogue, how campuses join the network, and how to learn step by step. Ask it about a skill, a course, or the platform itself.',
+    tag: 'Included with your account',
+    image: '/way_ai.webp',
+    alt: 'Student learning with an AI tutor',
     href: '/signup',
+  },
+];
+
+const VALUE_PILLARS = [
+  {
+    icon: Network,
+    title: 'Education infrastructure, not another app',
+    body: 'InTelleX is built as an Education Operating System. Schools plug into a trusted network for identity, discovery, verification, AI, and marketplace — while keeping ownership of their academic data.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Governance you can feel',
+    body: 'Institutions apply and get provisioned. Mentors and instructors are reviewed. Sensitive actions are auditable. Nothing important is created by accident or managed without accountability.',
+  },
+  {
+    icon: BookOpen,
+    title: 'Learn in layers that stick',
+    body: 'Free tutorials for fundamentals, a paid catalogue for career skills, live mentors when you need a person, and an AI Tutor grounded in what we actually teach — not generic chat.',
+  },
+  {
+    icon: Building2,
+    title: 'One identity across the ecosystem',
+    body: 'Certificates, internships, Junior Dev, books, and campus memberships orbit the same account. You progress once — and carry that progress through the Looping Binary world.',
   },
 ];
 
@@ -47,9 +84,7 @@ export default async function HomePage() {
     .filter((c) => c.bestSeller || c.featured)
     .sort((a, b) => (b.courseNumberOfVotes || 0) - (a.courseNumberOfVotes || 0))
     .slice(0, 6);
-  const mentorLed = all
-    .filter((c) => c.featured && !c.selfPaced)
-    .slice(0, 4);
+  const mentorLed = all.filter((c) => c.featured && !c.selfPaced).slice(0, 4);
 
   const pillars = [
     ...ECOSYSTEM.slice(0, 4),
@@ -58,16 +93,20 @@ export default async function HomePage() {
       href: '/network',
       tab: 'Network',
       title: 'Federated institution network',
-      short: 'Campuses connect. Academic data stays with the school.',
+      short:
+        'Campuses connect through InTelleX. Schools own grades, students, and exams — the Core owns trust and identity.',
       image: '/eco_learning.webp',
+      alt: 'Institution network illustration',
     },
     {
       slug: 'tutorials',
       href: '/tutorials',
       tab: 'Tutorials',
       title: 'Free world-class tutorials',
-      short: '26 tracks from HTML to Kubernetes, C++, Rust, and more.',
+      short:
+        'Twenty-six beginner-to-pro tracks — from HTML and Python to Kubernetes, C++, Rust, Linux, and Arduino.',
       image: '/eco_resources.webp',
+      alt: 'Free tutorials illustration',
     },
   ];
 
@@ -77,66 +116,119 @@ export default async function HomePage() {
       <TopNav />
       <HomeHero />
 
-      <div className="border-b py-6" style={{ borderColor: 'var(--line)' }}>
-        <div className="wrap flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap gap-x-7 gap-y-2">
+      {/* Trust strip */}
+      <div className="border-b py-7" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
+        <div className="wrap flex flex-wrap items-center justify-between gap-6">
+          <div className="flex flex-wrap gap-x-8 gap-y-3">
             {[
-              { icon: Network, label: 'Federated Education OS' },
-              { icon: ShieldCheck, label: 'Governance-first campuses' },
-              { icon: Users, label: '360+ learners' },
-              { icon: Globe, label: 'Built in Douala' },
+              { icon: Users, label: '360+ learners across Cameroon & beyond' },
+              { icon: ShieldCheck, label: 'Governance-first Education OS' },
+              { icon: BadgeCheck, label: 'Certificate on every completed course' },
+              { icon: Globe, label: 'Built by Looping Binary in Douala' },
             ].map((t) => (
-              <span key={t.label} className="inline-flex items-center gap-2 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                <t.icon size={14} style={{ color: 'var(--green-deep)' }} /> {t.label}
+              <span
+                key={t.label}
+                className="inline-flex items-center gap-2 text-[13px]"
+                style={{ color: 'var(--ink-soft)' }}
+              >
+                <t.icon size={15} style={{ color: 'var(--green-deep)' }} /> {t.label}
               </span>
             ))}
           </div>
           <div className="flex flex-wrap gap-2">
-            {['MTN MoMo', 'Orange Money', 'Verified institutions'].map((p) => (
-              <span key={p} className="pill">{p}</span>
+            {['MTN MoMo', 'Orange Money', 'Verified institutions', 'InTelleX Cert'].map((p) => (
+              <span key={p} className="pill">
+                {p}
+              </span>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Ecosystem showcase */}
-      <section id="ecosystem" className="py-14 sm:py-18">
+      {/* What InTelleX brings */}
+      <section className="py-16 sm:py-20">
         <div className="wrap">
-          <Reveal className="mb-8 max-w-[640px]">
-            <div className="tab mb-3">The ecosystem</div>
-            <h2 className="mb-2 text-[26px] leading-[1.12] sm:text-[34px]">
-              One network. Many campuses. Clear ownership.
+          <Reveal className="mb-10 max-w-[680px]">
+            <div className="tab mb-3">Why InTelleX</div>
+            <h2 className="mb-3 text-[26px] leading-[1.12] sm:text-[34px]">
+              Built so learning, campuses, and careers share one trustworthy spine
             </h2>
-            <p className="text-[15px]" style={{ color: 'var(--ink-soft)' }}>
-              InTelleX connects learning, institutions, mentorship, and careers — without stuffing every school into one database.
+            <p className="text-[15.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+              Most platforms sell features. InTelleX sells follow-through: who is allowed to teach,
+              who owns a campus, how a learner moves from a free tutorial to a certificate to a
+              mentor — and how institutions join a network without surrendering their data.
             </p>
           </Reveal>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-2">
+            {VALUE_PILLARS.map((v) => (
+              <div
+                key={v.title}
+                className="rounded-[20px] border bg-paper p-6 sm:p-7"
+                style={{ borderColor: 'var(--line)' }}
+              >
+                <div
+                  className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl"
+                  style={{ background: 'rgba(0,179,105,0.12)', color: 'var(--green-deep)' }}
+                >
+                  <v.icon size={20} />
+                </div>
+                <h3 className="mb-2 font-display text-[19px] leading-snug">{v.title}</h3>
+                <p className="text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                  {v.body}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Ecosystem */}
+      <section id="ecosystem" className="border-t py-16 sm:py-20" style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}>
+        <div className="wrap">
+          <Reveal className="mb-10 max-w-[680px]">
+            <div className="tab mb-3">The ecosystem</div>
+            <h2 className="mb-3 text-[26px] leading-[1.12] sm:text-[34px]">
+              One network. Many doors into the same future.
+            </h2>
+            <p className="text-[15.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+              Certifications, internships, Junior Dev, books, free resources, tutorials, and
+              institution campuses are not side products — they are how InTelleX stays useful after
+              the first lesson ends. Each path has its own page; the home page shows you the map.
+            </p>
+          </Reveal>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {pillars.map((p) => (
               <Link
                 key={p.slug}
                 href={p.href}
-                className="group overflow-hidden rounded-[20px] border transition-shadow hover:shadow-card"
+                className="group overflow-hidden rounded-[20px] border bg-paper transition-shadow hover:shadow-card"
                 style={{ borderColor: 'var(--line)' }}
               >
                 <div className="aspect-[16/9] overflow-hidden" style={{ background: 'var(--paper-dim)' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={p.image}
-                    alt=""
+                    alt={'alt' in p ? p.alt : ''}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                   />
                 </div>
                 <div className="p-5">
-                  <div className="mb-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em]" style={{ color: 'var(--green-deep)' }}>
+                  <div
+                    className="mb-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em]"
+                    style={{ color: 'var(--green-deep)' }}
+                  >
                     {p.tab}
                   </div>
-                  <h3 className="mb-1.5 font-display text-[18px] leading-snug">{p.title}</h3>
+                  <h3 className="mb-2 font-display text-[18px] leading-snug">{p.title}</h3>
                   <p className="text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
                     {p.short}
                   </p>
-                  <span className="mt-3 inline-flex items-center gap-1 text-[13px] font-semibold" style={{ color: 'var(--green-deep)' }}>
+                  <span
+                    className="mt-3 inline-flex items-center gap-1 text-[13px] font-semibold"
+                    style={{ color: 'var(--green-deep)' }}
+                  >
                     Explore <ArrowRight size={14} />
                   </span>
                 </div>
@@ -149,127 +241,398 @@ export default async function HomePage() {
               Full ecosystem map
             </Link>
             <Link href="/network" className="btn btn-ghost">
-              <Building2 size={15} /> Institution network
+              <Building2 size={15} /> How institutions join
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Catalogue — intentionally short */}
-      <section id="courses" className="border-t py-14" style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}>
+      {/* Catalogue — fewer rows, still explained */}
+      <section id="courses" className="py-16 sm:py-20">
         <div className="wrap">
-          <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-            <Reveal className="max-w-[560px]">
+          <div className="mb-10 flex flex-wrap items-end justify-between gap-5">
+            <Reveal className="max-w-[640px]">
               <div className="tab mb-3">Catalogue</div>
-              <h2 className="mb-2 text-[26px] leading-[1.12] sm:text-[32px]">
-                Featured paths — not an endless scroll
+              <h2 className="mb-3 text-[26px] leading-[1.12] sm:text-[34px]">
+                Skills employers hire for — sampled, not dumped
               </h2>
-              <p className="text-[15px]" style={{ color: 'var(--ink-soft)' }}>
-                A tight sample from the live Mongo catalogue. Browse everything when you are ready.
+              <p className="text-[15.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                The full Mongo catalogue lives on the courses page. Here we only spotlight what
+                learners are viewing right now and a few mentor-led programs — so the home page
+                stays readable while still advertising the depth behind InTelleX.
               </p>
             </Reveal>
             <Link href="/courses" className="btn btn-ghost">
-              All courses →
+              Browse all courses →
             </Link>
           </div>
 
-          <CourseRow title="Trending now" courses={trending} href="/courses" />
+          <CourseRow
+            title="Learners are viewing"
+            subtitle="Popular picks from the live InTelleX catalogue — web, data, security, and more."
+            courses={trending}
+            href="/courses"
+          />
           {mentorLed.length > 0 && (
-            <CourseRow title="Mentor-led programs" courses={mentorLed} live href="/courses" />
+            <CourseRow
+              title="Live & mentor-led programs"
+              subtitle="Flagship paths with real mentors — online or onsite — when a playlist is not enough."
+              courses={mentorLed}
+              live
+              href="/courses"
+            />
           )}
         </div>
       </section>
 
-      {/* Ways to learn */}
-      <section id="learn" className="py-14 sm:py-16">
+      {/* Ways to learn — full copy + imagery */}
+      <section id="learn" className="border-t py-16 sm:py-24" style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}>
         <div className="wrap">
-          <Reveal className="mb-8 max-w-[560px]">
-            <div className="tab mb-3">Ways to learn</div>
-            <h2 className="mb-2 text-[26px] sm:text-[32px]">Three doors. One identity.</h2>
+          <Reveal className="mb-12 max-w-[640px]">
+            <div className="tab mb-4">Ways to learn</div>
+            <h2 className="mb-3.5 text-[27px] leading-[1.15] sm:text-[36px]">
+              Three ways in, one certificate out
+            </h2>
+            <p className="text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+              Self-paced courses, live mentors, or the AI Tutor — mix them as you go. One InTelleX
+              identity carries your progress, your campus memberships, and the proof you finished.
+            </p>
           </Reveal>
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-3">
             {WAYS.map((w) => (
-              <Link
-                key={w.id}
-                href={w.href}
-                className="rounded-[18px] border p-6 transition-shadow hover:shadow-card"
-                style={{ borderColor: 'var(--line)' }}
-              >
-                <h3 className="mb-2 font-display text-[19px]">{w.title}</h3>
-                <p className="text-[14px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+              <Link key={w.id} href={w.href} className="flex flex-col">
+                <div className="mb-5 overflow-hidden rounded-[18px]" style={{ background: 'var(--paper)' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={w.image} alt={w.alt} className="aspect-[4/3] w-full object-cover object-center" />
+                </div>
+                <h3 className="mb-2 font-display text-xl">{w.title}</h3>
+                <p className="mb-3 text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
                   {w.body}
                 </p>
+                <div className="mt-auto font-mono text-xs" style={{ color: 'var(--green-deep)' }}>
+                  {w.tag}
+                </div>
               </Link>
+            ))}
+          </div>
+
+          <div className="mt-12 grid gap-5 md:grid-cols-3">
+            {[
+              {
+                icon: Video,
+                title: 'Watch anywhere',
+                body: 'Mobile-friendly lessons you can pick up between classes, work, or traffic — without losing your place.',
+              },
+              {
+                icon: Gauge,
+                title: 'Progress monitored',
+                body: 'We notice when you stall and nudge you forward, so InTelleX is not another abandoned playlist.',
+              },
+              {
+                icon: Compass,
+                title: 'Guided step-by-step',
+                body: 'Checklists, free tutorials, and an AI Tutor that can point you to the next concrete lesson.',
+              },
+            ].map((v) => (
+              <div
+                key={v.title}
+                className="flex flex-col gap-3 rounded-[18px] border bg-paper p-6"
+                style={{ borderColor: 'var(--line)' }}
+              >
+                <div
+                  className="flex h-11 w-11 items-center justify-center rounded-xl"
+                  style={{ background: 'var(--green)', color: '#fff' }}
+                >
+                  <v.icon size={20} />
+                </div>
+                <h3 className="font-display text-[18px]">{v.title}</h3>
+                <p className="text-[14px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                  {v.body}
+                </p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Pricing compact */}
-      <section id="pricing" className="border-t py-14" style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}>
+      {/* Pricing — full value articulation restored */}
+      <section id="pricing" className="py-16 sm:py-24">
         <div className="wrap">
-          <Reveal className="mb-8 max-w-[560px]">
-            <div className="tab mb-3">Pricing</div>
-            <h2 className="mb-2 text-[26px] sm:text-[32px]">Priced for students, not corporations</h2>
+          <Reveal className="mb-12 max-w-[640px]">
+            <div className="tab mb-4">Pricing</div>
+            <h2 className="mb-3.5 text-[27px] leading-[1.15] sm:text-[36px]">
+              Priced for students, not corporations
+            </h2>
+            <p className="text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+              We tried higher prices before this. These are the numbers that actually get used in
+              Cameroon — full catalogue access, certificates, and the learning environment that
+              helps you finish. Pay with MTN MoMo, Orange Money, or card.
+            </p>
           </Reveal>
-          <div className="grid items-stretch gap-5 md:grid-cols-3">
-            <div className="rounded-[18px] border bg-paper p-6" style={{ borderColor: 'var(--line)' }}>
-              <h3 className="font-display text-[18px]">Monthly</h3>
-              <div className="mt-3 mb-4 font-display text-[28px] font-semibold">
-                1,999 <span className="text-[13px] font-normal" style={{ color: 'var(--ink-soft)' }}>XAF</span>
+
+          <div className="grid items-stretch gap-6 md:grid-cols-3">
+            <div className="flex flex-col rounded-[20px] border bg-paper p-8" style={{ borderColor: 'var(--line)' }}>
+              <h3 className="mb-1.5 font-display text-[19px]">Monthly</h3>
+              <div className="mb-5 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                Full access to every self-paced course, in every field — plus certificates and the
+                learning dashboard.
               </div>
-              <Link href="/register" className="btn btn-primary w-full !py-2.5 text-[13px]">Start monthly</Link>
+              <div className="mb-5 flex items-baseline gap-1.5">
+                <span className="font-display text-[26px] font-semibold sm:text-[34px]">1,999</span>
+                <span className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+                  XAF / month
+                </span>
+              </div>
+              <ul className="mb-6 flex flex-col gap-2.5 text-sm">
+                {[
+                  'Every self-paced course, every field',
+                  'Certificate after each completed course',
+                  'AI Tutor + free tutorial library',
+                  'Cancel or pause anytime',
+                ].map((li) => (
+                  <li key={li} className="relative pl-5">
+                    <span className="absolute left-0" style={{ color: 'var(--green-deep)' }}>
+                      ✓
+                    </span>
+                    {li}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/register" className="btn btn-primary mt-auto">
+                Start monthly
+              </Link>
             </div>
-            <div className="rounded-[18px] p-6" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
-              <div className="mb-1 font-mono text-[10px] uppercase tracking-wider" style={{ color: 'var(--amber)' }}>Best value</div>
-              <h3 className="font-display text-[18px]">Yearly</h3>
-              <div className="mt-3 mb-4 font-display text-[28px] font-semibold">
-                22,560 <span className="text-[13px] font-normal opacity-70">XAF</span>
+
+            <div
+              className="relative flex flex-col rounded-[20px] p-8"
+              style={{ background: 'var(--ink)', color: 'var(--paper)' }}
+            >
+              <span
+                className="absolute -top-3 right-6 rounded-full px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em]"
+                style={{ background: 'var(--amber)', color: 'var(--ink)' }}
+              >
+                Best value
+              </span>
+              <h3 className="mb-1.5 font-display text-[19px]">Yearly</h3>
+              <div className="mb-5 text-[13.5px] leading-relaxed" style={{ color: 'rgba(251,248,240,0.7)' }}>
+                Same access as monthly — 6% cheaper when you commit for the year. One payment, fewer
+                renewals to track.
               </div>
-              <Link href="/register" className="btn btn-amber w-full !py-2.5 text-[13px]">Start yearly</Link>
+              <div className="font-mono text-[14px] line-through opacity-55">24,000 XAF</div>
+              <div className="mb-5 mt-1.5 flex items-baseline gap-1.5">
+                <span className="font-display text-[26px] font-semibold sm:text-[34px]">22,560</span>
+                <span className="text-[13px]" style={{ color: 'rgba(251,248,240,0.7)' }}>
+                  XAF / year
+                </span>
+              </div>
+              <ul className="mb-6 flex flex-col gap-2.5 text-sm">
+                {[
+                  'Everything in Monthly',
+                  '6% off the monthly rate',
+                  'Best for serious year-long skill paths',
+                  'One payment, no monthly renewals to track',
+                ].map((li) => (
+                  <li key={li} className="relative pl-5">
+                    <span className="absolute left-0" style={{ color: 'var(--amber)' }}>
+                      ✓
+                    </span>
+                    {li}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/register" className="btn btn-amber mt-auto">
+                Start yearly
+              </Link>
             </div>
-            <div className="rounded-[18px] border bg-paper p-6" style={{ borderColor: 'var(--line)' }}>
-              <h3 className="font-display text-[18px]">Single course</h3>
-              <div className="mt-3 mb-4 font-display text-[28px] font-semibold">
-                From 4,999 <span className="text-[13px] font-normal" style={{ color: 'var(--ink-soft)' }}>XAF</span>
+
+            <div className="flex flex-col rounded-[20px] border bg-paper p-8" style={{ borderColor: 'var(--line)' }}>
+              <h3 className="mb-1.5 font-display text-[19px]">Single courses</h3>
+              <div className="mb-5 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                No subscription. Buy one course outright when you need a specific skill — and keep
+                lifetime access to that course.
               </div>
-              <Link href="/courses" className="btn btn-primary w-full !py-2.5 text-[13px]">Browse courses</Link>
+              <div className="mb-5 flex items-baseline gap-1.5">
+                <span className="font-display text-[26px] font-semibold sm:text-[34px]">From 4,999</span>
+                <span className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+                  XAF / course
+                </span>
+              </div>
+              <ul className="mb-6 flex flex-col gap-2.5 text-sm">
+                {[
+                  'Lifetime access to that course',
+                  'Certificate on completion',
+                  'Ideal for one focused skill',
+                  'Upgrade to a plan anytime',
+                ].map((li) => (
+                  <li key={li} className="relative pl-5">
+                    <span className="absolute left-0" style={{ color: 'var(--green-deep)' }}>
+                      ✓
+                    </span>
+                    {li}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/courses" className="btn btn-primary mt-auto">
+                Browse courses
+              </Link>
             </div>
           </div>
-          <p className="mt-5 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-            Junior Dev champions get 30% off their first plan —{' '}
-            <Link href="/junior-dev" className="underline" style={{ color: 'var(--green-deep)' }}>details</Link>
-            {' · '}
-            <a href={LOOPING_BINARY.juniorDev} target="_blank" rel="noopener noreferrer" className="underline" style={{ color: 'var(--green-deep)' }}>
-              compete
-            </a>
-            .
-          </p>
+
+          <div id="discounts" className="mt-6 grid gap-5 md:grid-cols-2">
+            <div
+              className="flex items-start gap-4 rounded-[16px] p-6"
+              style={{ border: '1px dashed var(--green-deep)', background: 'rgba(0,179,105,0.06)' }}
+            >
+              <div className="font-display text-[26px]" style={{ color: 'var(--green-deep)' }}>
+                6%
+              </div>
+              <div>
+                <h4 className="mb-1 text-[15px] font-semibold">Pay yearly, not monthly</h4>
+                <p className="text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                  Commit for a year up front and the price drops from 24,000 to 22,560 XAF
+                  automatically — same catalogue, same certificates, fewer payments to remember.
+                </p>
+              </div>
+            </div>
+            <div
+              className="flex items-start gap-4 rounded-[16px] p-6"
+              style={{ border: '1px dashed var(--green-deep)', background: 'rgba(0,179,105,0.06)' }}
+            >
+              <div className="font-display text-[26px]" style={{ color: 'var(--green-deep)' }}>
+                30%
+              </div>
+              <div>
+                <h4 className="mb-1 text-[15px] font-semibold">Win the Junior Dev tournament</h4>
+                <p className="text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                  Champions get 30% off their first InTelleX plan.{' '}
+                  <Link href="/junior-dev" className="underline" style={{ color: 'var(--green-deep)' }}>
+                    Learn more
+                  </Link>{' '}
+                  or{' '}
+                  <a
+                    href={LOOPING_BINARY.juniorDev}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                    style={{ color: 'var(--green-deep)' }}
+                  >
+                    compete on Junior Dev
+                  </a>
+                  .
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Live + AI deep dives */}
+      <section className="border-t py-16 sm:py-24" style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}>
+        <div className="wrap grid gap-10 lg:grid-cols-2 lg:gap-12">
+          <div className="rounded-[22px] border bg-paper p-7 sm:p-8" style={{ borderColor: 'var(--line)' }}>
+            <div className="tab mb-4">Live tutoring</div>
+            <h2 className="mb-3 font-display text-[24px] sm:text-[28px]">
+              Sometimes you need a person, not a playlist
+            </h2>
+            <p className="mb-5 text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+              Mentors teach live — online or onsite — in the fields we cover. On InTelleX,
+              mentorship is a privilege: applications are reviewed before someone can guide
+              learners or publish in the library.
+            </p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/mentor_session.webp"
+              alt="Mentor guiding a learner in a live session"
+              className="mb-5 aspect-[16/10] w-full rounded-[14px] object-cover"
+            />
+            <Link href="/register" className="btn btn-ghost">
+              Get a quote
+            </Link>
+          </div>
+          <div id="ai" className="rounded-[22px] border bg-paper p-7 sm:p-8" style={{ borderColor: 'var(--line)' }}>
+            <div className="tab mb-4">AI Tutor</div>
+            <h2 className="mb-3 font-display text-[24px] sm:text-[28px]">
+              An AI that knows InTelleX — and your next lesson
+            </h2>
+            <p className="mb-5 text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+              Ask about Docker, how campuses join the network, or which catalogue course fits your
+              goal. The tutor is grounded in free tutorials, Mongo courses, and how this Education
+              OS actually works.
+            </p>
+            <HeroCard />
+          </div>
+        </div>
+      </section>
+
+      {/* Junior Dev callout */}
+      <section className="px-6 py-16">
+        <div
+          className="mx-auto max-w-[1140px] rounded-[24px] p-7 sm:p-12"
+          style={{ background: 'var(--green-deep)', color: 'var(--paper)' }}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-8">
+            <div>
+              <h3 className="max-w-[520px] font-display text-[22px] sm:text-[26px]">
+                Already in Junior Dev? Your InTelleX edge may already be earned.
+              </h3>
+              <p className="mt-2 max-w-[520px] text-[14.5px] leading-relaxed" style={{ color: 'rgba(251,248,240,0.82)' }}>
+                Builder tier and above includes InTelleX course access. Tournament champions get 30%
+                off their first plan — competition that turns into real learning leverage.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/junior-dev" className="btn btn-amber">
+                See Junior Dev benefits
+              </Link>
+              <a
+                href={LOOPING_BINARY.juniorDev}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-ghost"
+                style={{ color: 'var(--paper)', borderColor: 'rgba(251,248,240,0.35)' }}
+              >
+                Open Junior Dev
+              </a>
+            </div>
+          </div>
         </div>
       </section>
 
       <Testimonials />
 
-      <section className="py-14">
+      <section className="py-14 sm:py-16">
         <div className="wrap">
           <div
             className="flex flex-col items-start justify-between gap-6 overflow-hidden rounded-[24px] p-8 sm:flex-row sm:items-center sm:p-10"
-            style={{ background: 'linear-gradient(135deg, var(--ink) 0%, #0d3d2a 100%)', color: 'var(--paper)' }}
+            style={{
+              background: 'linear-gradient(135deg, var(--ink) 0%, #0d3d2a 100%)',
+              color: 'var(--paper)',
+            }}
           >
-            <div className="max-w-[520px]">
-              <div className="mb-2 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: '#9AFFC8' }}>
+            <div className="max-w-[560px]">
+              <div
+                className="mb-2 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em]"
+                style={{ color: '#9AFFC8' }}
+              >
                 <BadgeCheck size={14} /> Education infrastructure
               </div>
               <h2 className="font-display text-[26px] leading-tight sm:text-[32px]">
                 Ready to plug into the network?
               </h2>
-              <p className="mt-2 text-[14.5px]" style={{ color: 'rgba(251,248,240,0.75)' }}>
-                Learners start free tutorials today. Institutions apply. Mentors earn their place.
+              <p className="mt-2 text-[14.5px] leading-relaxed" style={{ color: 'rgba(251,248,240,0.75)' }}>
+                Learners start with free tutorials today. Institutions apply and get provisioned.
+                Mentors earn their place. That is how InTelleX stays trustworthy as it grows.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Link href="/signup" className="btn btn-primary">Create account</Link>
-              <Link href="/dashboard/institutions" className="btn btn-ghost" style={{ color: 'var(--paper)', borderColor: 'rgba(251,248,240,0.25)' }}>
+              <Link href="/signup" className="btn btn-primary">
+                Create account
+              </Link>
+              <Link
+                href="/dashboard/institutions"
+                className="btn btn-ghost"
+                style={{ color: 'var(--paper)', borderColor: 'rgba(251,248,240,0.25)' }}
+              >
                 Apply for a campus
               </Link>
             </div>

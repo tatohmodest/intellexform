@@ -15,10 +15,10 @@ const HERO_SLIDES: HeroSlide[] = [
         </em>
       </>
     ),
-    body: 'InTelleX is the network schools plug into — identity, trust, courses, mentors, and AI.',
+    body: 'Courses, mentors, campuses, and AI on one trustworthy spine — so you actually finish what you start.',
     ctaLabel: 'Enter InTelleX',
-    secondaryLabel: 'See the ecosystem',
-    secondaryHref: '/ecosystem',
+    secondaryLabel: 'See what you get',
+    secondaryHref: '/#learn',
   },
   {
     id: 'network',
@@ -28,14 +28,14 @@ const HERO_SLIDES: HeroSlide[] = [
       <>
         Schools own their data.{' '}
         <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>
-          You own the network.
+          InTelleX owns the network.
         </em>
       </>
     ),
-    body: 'Federated campuses, verified institutions, one learner identity across the ecosystem.',
+    body: 'Federated campuses, verified institutions, and one learner identity — without a giant shared academic database.',
     ctaLabel: 'Explore the network',
-    secondaryLabel: 'How governance works',
-    secondaryHref: '/network',
+    secondaryLabel: 'Ecosystem map',
+    secondaryHref: '/ecosystem',
   },
   {
     id: 'mentor',
@@ -43,14 +43,14 @@ const HERO_SLIDES: HeroSlide[] = [
     alt: 'Mentor guiding a student in a live tutoring session',
     headline: (
       <>
-        Mentors and campuses are{' '}
+        Sometimes you need a{' '}
         <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>
-          approved
+          person
         </em>
-        , not assumed.
+        , not a playlist.
       </>
     ),
-    body: 'Live tutoring with accountability — privileges earned through review, not a toggle.',
+    body: 'Live tutoring online or onsite — mentors are approved, accountable, and priced for real guidance.',
     ctaLabel: 'Get a quote',
     secondaryLabel: 'Ways to learn',
     secondaryHref: '/#learn',
@@ -64,11 +64,11 @@ const HERO_SLIDES: HeroSlide[] = [
         An AI that knows{' '}
         <em className="not-italic text-green-deep" style={{ fontStyle: 'italic' }}>
           InTelleX
-        </em>
-        — and your catalogue.
+        </em>{' '}
+        — and your next lesson.
       </>
     ),
-    body: 'Grounded in free tutorials, Mongo courses, and how the platform actually works.',
+    body: 'Grounded in free tutorials, the live catalogue, and how this Education OS actually works.',
     ctaLabel: 'Try AI Tutor',
     secondaryLabel: 'Browse courses',
     secondaryHref: '/courses',
