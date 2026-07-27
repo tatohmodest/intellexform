@@ -3,6 +3,7 @@ import { Building2 } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { listPublicInstitutions, myInstitutionSlugs } from '@/lib/learn/ecosystem';
 import InstitutionsBrowser from '@/components/dashboard/InstitutionsBrowser';
+import BrandLogo from '@/components/BrandLogo';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,7 @@ export default async function InstitutionsPage() {
   return (
     <div className="mx-auto max-w-[1000px]">
       <div className="mb-8">
+        <BrandLogo href="/" height={28} className="mb-4" />
         <div className="tab mb-2 inline-flex items-center gap-1.5">
           <Building2 size={11} />
           The ecosystem

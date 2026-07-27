@@ -8,7 +8,7 @@ export default function Footer() {
       <div className="wrap">
         <div className="mb-9 flex flex-wrap justify-between gap-8">
           <div className="max-w-[260px]">
-            <BrandLogo href="/" height={36} className="brightness-0 invert" />
+            <BrandLogo href="/" height={36} variant="footer" className="brightness-0 invert" />
 
             <p className="mt-3 text-[13.5px]">
               A Looping Binary platform. Skills to income, one level at a time. Built in Douala, Cameroon.

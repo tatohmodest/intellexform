@@ -88,7 +88,7 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
             {[
               { icon: <BookOpen size={16} />, text: '17 course tracks · 500+ hands-on lessons' },
               { icon: <Video size={16} />, text: '1-on-1 mentorship & live classes (HD video)' },
-              { icon: <Bot size={16} />, text: 'AI tutor grounded in the Intellex curriculum' },
+              { icon: <Bot size={16} />, text: 'AI tutor that knows InTelleX + your catalogue' },
               { icon: <Flame size={16} />, text: 'Streaks, XP and certificates that keep you going' },
             ].map((f, i) => (
               <motion.div

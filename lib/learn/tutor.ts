@@ -1,13 +1,16 @@
 import { TUTORIALS, getTutorialLessons } from '@/lib/tutorials';
 import type { ContentBlock, TutorialLesson } from '@/lib/tutorials/types';
+import { getAllCourses } from '@/lib/repo';
+import type { Course } from '@/lib/types';
+import { GOLDEN_RULE } from '@/lib/eduos/governance';
 
 /**
- * Intellex AI Tutor engine.
+ * InTelleX AI Tutor engine.
  *
- * With OPENAI_API_KEY set it proxies an OpenAI-compatible chat API, grounded
- * with the most relevant lessons from the Intellex curriculum (lightweight
- * retrieval). Without a key it falls back to a curriculum tutor that answers
- * directly from the platform's own lesson library.
+ * Grounded in:
+ * 1) Free tutorial curriculum (lib/tutorials)
+ * 2) Monetized Mongo course catalogue (home /courses)
+ * 3) Platform / EduOS knowledge (federated network, governance)
  */
 
 export interface ChatMessage {
@@ -23,7 +26,7 @@ interface ScoredLesson {
 }
 
 const STOPWORDS = new Set(
-  'a an and are as at be but by for from has have how i in is it its of on or that the this to was what when where which who why will with you your me my can do does'.split(' '),
+  'a an and are as at be but by for from has have how i in is it its of on or that the the this to was what when where which who why will with you your me my can do does'.split(' '),
 );
 
 function tokenize(text: string): string[] {
@@ -64,7 +67,7 @@ export function findRelevantLessons(question: string, limit = 3): ScoredLesson[]
   const results: ScoredLesson[] = [];
   for (const course of TUTORIALS) {
     const lessons = getTutorialLessons(course.slug);
-    const courseTerms = tokenize(`${course.title} ${course.shortTitle} ${course.slug}`);
+    const courseTerms = tokenize(`${course.title} ${course.shortTitle} ${course.slug} ${course.description}`);
     const courseHit = terms.some((t) => courseTerms.includes(t));
     for (const lesson of lessons) {
       const titleTokens = tokenize(`${lesson.title} ${lesson.description}`);
@@ -75,7 +78,6 @@ export function findRelevantLessons(question: string, limit = 3): ScoredLesson[]
       }
       if (courseHit) score += 1;
       if (score > 2) {
-        // Body match as a tie-breaker (only scan when the lesson is a candidate).
         const body = lesson.content.map(blockText).join(' ').toLowerCase();
         for (const t of terms) if (body.includes(t)) score += 1;
         results.push({ courseSlug: course.slug, courseTitle: course.title, lesson, score });
@@ -99,64 +101,178 @@ function lessonExcerpt(lesson: TutorialLesson, maxChars = 1400): string {
   return out.slice(0, maxChars);
 }
 
-// ── Fallback curriculum tutor (no API key required) ───────────────────────────
+function scoreCourse(question: string, course: Course): number {
+  const terms = tokenize(question);
+  if (!terms.length) return 0;
+  const hay = tokenize(
+    [
+      course.name,
+      course.slug,
+      course.type,
+      course.shortDescription,
+      course.courseDetails,
+      ...(course.whatYouWillLearn || []),
+      course.instructor || '',
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
+  let score = 0;
+  for (const t of terms) {
+    if (hay.includes(t)) score += 3;
+    if (course.slug.toLowerCase().includes(t)) score += 2;
+  }
+  return score;
+}
 
-export function curriculumTutorAnswer(question: string): string {
-  const matches = findRelevantLessons(question, 2);
-  if (matches.length === 0) {
+export async function findRelevantCatalogueCourses(question: string, limit = 4): Promise<Course[]> {
+  try {
+    const all = await getAllCourses();
+    return all
+      .map((c) => ({ c, score: scoreCourse(question, c) }))
+      .filter((x) => x.score > 2)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map((x) => x.c);
+  } catch {
+    return [];
+  }
+}
+
+/** Compact catalogue summary for system context (Mongo home courses). */
+export async function buildCatalogueDigest(limit = 40): Promise<string> {
+  try {
+    const all = await getAllCourses();
+    const featured = all.filter((c) => c.featured || c.bestSeller).slice(0, limit);
+    const pool = featured.length ? featured : all.slice(0, limit);
+    return pool
+      .map(
+        (c) =>
+          `- ${c.name} (${c.type || 'Course'}${c.selfPaced ? ', self-paced' : ''}) → /courses/${c.slug}`,
+      )
+      .join('\n');
+  } catch {
+    return '(catalogue temporarily unavailable)';
+  }
+}
+
+const PLATFORM_KNOWLEDGE = `
+You are the official InTelleX AI Tutor on the InTelleX Education Operating System (built by Looping Binary in Douala, Cameroon).
+
+About InTelleX:
+- InTelleX is an Education Cloud / federated education network — not just an LMS.
+- Layer 1 (Core): identity, institution registry, verification, applications, API gateway, marketplace, AI routing.
+- Layer 2 (Institutions): each campus owns its academic data (courses, grades, students). Schools connect to the network; they do not dump all records into one mega-database.
+- Golden rule: ${GOLDEN_RULE}
+- Institutions are not self-created — applicants submit an application; Platform Owner/Admin reviews and provisions.
+- Mentors and instructors apply and are approved — privileges are earned.
+- Learners have one global InTelleX identity across campuses.
+- Ways to learn: self-paced courses (Mongo catalogue + certificates), live mentorship, free tutorials (/tutorials), and this AI Tutor.
+- Ecosystem: certifications, internships (Looping Binary), Junior Dev tournaments, books, free resources, learning environment, federated institution network (/network).
+- Pricing (self-paced access): Monthly ~1,999 XAF, Yearly ~22,560 XAF, or single courses from ~4,999 XAF. MTN MoMo and Orange Money supported.
+- Free tutorials cover tracks like HTML, CSS, JavaScript, Next.js, Python, Go, C++, Java, Rust, Rails, Docker, Kubernetes, Linux, Bash, Arduino, Flutter, Django, Flask, NestJS, Node/Express, PostgreSQL, MongoDB, Data Analysis, Digital Marketing, Pygame, Computer Architecture.
+
+When learners ask "what is InTelleX", "how do institutions work", "how do I become a mentor", or "what courses do you have", answer from this knowledge and cite catalogue / tutorial links.
+`.trim();
+
+export function curriculumTutorAnswer(
+  question: string,
+  catalogueHits: Course[] = [],
+): string {
+  const q = question.toLowerCase();
+  const aboutPlatform =
+    /intellex|institution|campus|federat|mentor apply|become a mentor|platform|ecosystem|network|eduos|governance|how does (this|intellex) work/.test(
+      q,
+    );
+
+  if (aboutPlatform) {
     return [
-      "I couldn't find that topic in the Intellex curriculum yet, but let's work through it together. Try asking me about:",
+      '**InTelleX** is an Education Operating System — a federated network for schools, academies, and learners.',
       '',
-      '- **Frontend** — HTML, CSS, JavaScript, Next.js',
-      '- **Backend** — Node.js & Express, NestJS, Django, Flask, Go',
-      '- **Databases** — PostgreSQL, MongoDB',
-      '- **Data & more** — Python, Data Analysis, Docker, Flutter, Digital Marketing, Pygame',
+      '- **You** get one global identity, self-paced courses, live mentors, free tutorials, and this AI Tutor.',
+      '- **Institutions** apply to join; after approval InTelleX provisions their campus. They own their academic data.',
+      '- **Mentors / instructors** apply and are reviewed — teaching is a privilege, not a toggle.',
       '',
-      'Or rephrase your question with the technology name in it (e.g. "How do CSS grid columns work?").',
+      `Golden rule: ${GOLDEN_RULE}`,
+      '',
+      'Explore:',
+      '- Catalogue: /courses',
+      '- Free tutorials: /tutorials',
+      '- Federated network: /network',
+      '- Ecosystem hub: /ecosystem',
+      '- Apply for a campus: /dashboard/institutions',
+      '',
+      'Ask me about a skill (e.g. "explain Docker volumes") or a catalogue course by name.',
     ].join('\n');
   }
 
+  const matches = findRelevantLessons(question, 2);
   const parts: string[] = [];
-  const top = matches[0];
-  parts.push(
-    `Great question — this is covered in **${top.lesson.title}** (${top.courseTitle}, ${top.lesson.level}). Here's the core of it:\n`,
-  );
-  parts.push(lessonExcerpt(top.lesson));
-  parts.push(
-    `\n📖 Want the full walkthrough? Open the lesson: /dashboard/courses/${top.courseSlug}/${top.lesson.slug}`,
-  );
-  if (matches[1]) {
-    const alt = matches[1];
+
+  if (matches.length === 0 && catalogueHits.length === 0) {
+    return [
+      "I couldn't pin that to a specific InTelleX lesson yet — but I know our catalogue and tutorials. Try:",
+      '',
+      '- A technology name ("How do CSS grid columns work?")',
+      '- A catalogue course ("What is in the fullstack program?")',
+      '- Platform questions ("How do institutions join InTelleX?")',
+      '',
+      'Browse: /courses · Free paths: /tutorials · Network: /network',
+    ].join('\n');
+  }
+
+  if (matches[0]) {
+    const top = matches[0];
     parts.push(
-      `\nAlso related: **${alt.lesson.title}** — /dashboard/courses/${alt.courseSlug}/${alt.lesson.slug}`,
+      `From our free curriculum — **${top.lesson.title}** (${top.courseTitle}, ${top.lesson.level}):\n`,
+    );
+    parts.push(lessonExcerpt(top.lesson));
+    parts.push(
+      `\n📖 Full lesson: /dashboard/courses/${top.courseSlug}/${top.lesson.slug}`,
     );
   }
+
+  if (catalogueHits.length) {
+    parts.push('\n**Related catalogue courses** (from the InTelleX Mongo catalogue):');
+    for (const c of catalogueHits.slice(0, 3)) {
+      parts.push(`- **${c.name}** (${c.type || 'Course'}) → /courses/${c.slug}`);
+    }
+  }
+
   parts.push(
-    '\nAsk me a follow-up — "explain it simpler", "show me another example", or "quiz me on this".',
+    '\nAsk a follow-up — "explain it simpler", "show an example", or "what should I take next?".',
   );
   return parts.join('\n');
 }
-
-// ── OpenAI-backed tutor (streams when configured) ─────────────────────────────
 
 export function isLLMConfigured(): boolean {
   return Boolean(process.env.OPENAI_API_KEY);
 }
 
-const SYSTEM_PROMPT = `You are the Intellex AI Tutor — a warm, world-class programming and tech mentor on the Intellex learning platform (built by LoopingBinary in Cameroon).
+export async function buildSystemPrompt(): Promise<string> {
+  const digest = await buildCatalogueDigest(36);
+  const tutorialList = TUTORIALS.map((t) => `${t.shortTitle} (/tutorials/${t.slug})`).join(', ');
+  return `${PLATFORM_KNOWLEDGE}
 
 Rules:
-- Teach step by step, one level at a time. Check understanding with a short question at the end.
-- Prefer small runnable code examples with brief explanations.
-- If the learner seems stuck, simplify; if they seem confident, go deeper.
+- Teach step by step. End with a short check-understanding question when tutoring skills.
+- Prefer small runnable examples.
 - Keep answers focused (under ~350 words unless asked for more).
-- When relevant curriculum lessons are provided as context, cite them with their /dashboard/courses/... link so the learner can study further.`;
+- Cite free tutorial lessons with /dashboard/courses/... links and catalogue courses with /courses/... links.
+- Never invent grades, private institutional data, or access another campus's records. Respect permissions.
+- You know InTelleX deeply — institutions, governance, ecosystem, pricing, tutorials, and the live catalogue below.
+
+Free tutorial tracks: ${tutorialList}
+
+Live catalogue sample (Mongo):
+${digest}`;
+}
 
 export async function llmTutorStream(
   messages: ChatMessage[],
 ): Promise<ReadableStream<Uint8Array>> {
   const lastUser = [...messages].reverse().find((m) => m.role === 'user');
-  const context = lastUser
+  const lessonContext = lastUser
     ? findRelevantLessons(lastUser.content, 2)
         .map(
           (m) =>
@@ -164,14 +280,26 @@ export async function llmTutorStream(
         )
         .join('\n\n---\n\n')
     : '';
+  const catalogueHits = lastUser ? await findRelevantCatalogueCourses(lastUser.content, 4) : [];
+  const catalogueContext = catalogueHits
+    .map(
+      (c) =>
+        `Catalogue course "${c.name}" (${c.type || 'Course'}) link:/courses/${c.slug}\n${(c.shortDescription || c.courseDetails || '').slice(0, 280)}`,
+    )
+    .join('\n\n');
+
+  const system = await buildSystemPrompt();
 
   const body = {
     model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
     stream: true,
     messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      ...(context
-        ? [{ role: 'system' as const, content: `Relevant Intellex curriculum context:\n\n${context}` }]
+      { role: 'system', content: system },
+      ...(lessonContext
+        ? [{ role: 'system' as const, content: `Relevant free-curriculum context:\n\n${lessonContext}` }]
+        : []),
+      ...(catalogueContext
+        ? [{ role: 'system' as const, content: `Relevant catalogue courses:\n\n${catalogueContext}` }]
         : []),
       ...messages.filter((m) => m.role !== 'system').slice(-12),
     ],
@@ -193,7 +321,6 @@ export async function llmTutorStream(
     throw new Error(`LLM request failed (${res.status}): ${err.slice(0, 300)}`);
   }
 
-  // Re-emit OpenAI SSE as a plain text token stream.
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
   const reader = res.body.getReader();
@@ -218,7 +345,7 @@ export async function llmTutorStream(
           const token = json.choices?.[0]?.delta?.content;
           if (token) controller.enqueue(encoder.encode(token));
         } catch {
-          // Ignore malformed keep-alive chunks.
+          // ignore keep-alives
         }
       }
     },

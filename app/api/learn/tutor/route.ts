@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/getUser';
 import {
   curriculumTutorAnswer,
+  findRelevantCatalogueCourses,
   isLLMConfigured,
   llmTutorStream,
   type ChatMessage,
@@ -42,7 +43,8 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const answer = curriculumTutorAnswer(lastUser.content);
+  const catalogueHits = await findRelevantCatalogueCourses(lastUser.content, 4);
+  const answer = curriculumTutorAnswer(lastUser.content, catalogueHits);
   return new Response(answer, {
     headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Tutor-Engine': 'curriculum' },
   });

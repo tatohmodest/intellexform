@@ -3,9 +3,10 @@ import { ArrowLeft } from 'lucide-react';
 import TopNav from '@/components/landing/TopNav';
 import Footer from '@/components/landing/Footer';
 import JoinWizard from '@/components/landing/JoinWizard';
+import BrandLogo from '@/components/BrandLogo';
 
 export const metadata = {
-  title: 'Register — Intellex',
+  title: 'Register — InTelleX',
   description: 'Pick a plan, tell us how to reach you, and continue on WhatsApp.',
 };
 
@@ -19,8 +20,11 @@ export default function RegisterPage() {
             <Link href="/" className="mb-6 inline-flex items-center gap-2 text-sm" style={{ color: 'var(--ink-soft)' }}>
               <ArrowLeft size={15} /> Back to home
             </Link>
+            <BrandLogo href="/" height={32} className="mb-5" />
             <div className="tab mb-4">Register</div>
-            <h1 className="mb-3.5 text-[26px] leading-[1.15] sm:text-[34px] sm:leading-[1.1]">Pick a plan, tell us how to reach you</h1>
+            <h1 className="mb-3.5 text-[26px] leading-[1.15] sm:text-[34px] sm:leading-[1.1]">
+              Pick a plan, tell us how to reach you
+            </h1>
             <p className="text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
               Fill this in and we&apos;ll follow up on WhatsApp with payment details for MTN MoMo or Orange
               Money. Your choices are saved to our admin and sent straight to us on WhatsApp.
@@ -34,7 +38,7 @@ export default function RegisterPage() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/join_cta.webp"
-                alt="Milestone path toward joining Intellex"
+                alt="Milestone path toward joining InTelleX"
                 className="aspect-[16/10] w-full object-cover object-center"
               />
             </div>
