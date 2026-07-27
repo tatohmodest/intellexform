@@ -64,7 +64,7 @@ const VALUE_PILLARS = [
   {
     icon: ShieldCheck,
     title: 'Governance you can feel',
-    body: 'Institutions apply and get provisioned. Mentors and instructors are reviewed. Sensitive actions are auditable. Nothing important is created by accident or managed without accountability.',
+    body: 'Institutions partner with the InTelleX Platform Team — reviewed, provisioned, and branded. Mentors and instructors are reviewed. Sensitive actions are auditable.',
   },
   {
     icon: BookOpen,
@@ -240,8 +240,8 @@ export default async function HomePage() {
             <Link href="/ecosystem" className="btn btn-primary">
               Full ecosystem map
             </Link>
-            <Link href="/network" className="btn btn-ghost">
-              <Building2 size={15} /> How institutions join
+            <Link href="/network#partner" className="btn btn-ghost">
+              <Building2 size={15} /> Partner your institution
             </Link>
           </div>
         </div>
@@ -620,20 +620,20 @@ export default async function HomePage() {
                 Ready to plug into the network?
               </h2>
               <p className="mt-2 text-[14.5px] leading-relaxed" style={{ color: 'rgba(251,248,240,0.75)' }}>
-                Learners start with free tutorials today. Institutions apply and get provisioned.
-                Mentors earn their place. That is how InTelleX stays trustworthy as it grows.
+                Learners start with free tutorials today. Institutions partner with our Platform Team —
+                curated, provisioned, never self-serve. Mentors earn their place.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
               <Link href="/signup" className="btn btn-primary">
-                Create account
+                Sign in with Looping Binary
               </Link>
               <Link
-                href="/dashboard/institutions"
+                href="/network#partner"
                 className="btn btn-ghost"
                 style={{ color: 'var(--paper)', borderColor: 'rgba(251,248,240,0.25)' }}
               >
-                Apply for a campus
+                Partner your institution
               </Link>
             </div>
           </div>

@@ -25,7 +25,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
-import type { ActiveContext, Affiliation, PrimaryIntent } from '@/lib/learn/identity';
+import type { ActiveContext, Affiliation, CampusBrand, PrimaryIntent } from '@/lib/learn/identity';
 
 export interface ShellUser {
   name: string;
@@ -65,11 +65,13 @@ function NavLinks({
   pathname,
   isMentor,
   context,
+  accent,
   onNavigate,
 }: {
   pathname: string;
   isMentor: boolean;
   context?: ActiveContext;
+  accent: string;
   onNavigate?: () => void;
 }) {
   const campusSlug =
@@ -77,6 +79,8 @@ function NavLinks({
   const mentorActive =
     pathname.startsWith('/dashboard/mentor') &&
     !pathname.startsWith('/dashboard/mentorship');
+  const activeBg = `${accent}1a`;
+  const activeColor = accent;
 
   if (campusSlug) {
     const base = `/dashboard/institutions/${campusSlug}`;
@@ -88,7 +92,7 @@ function NavLinks({
           className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
           style={
             pathname === base || pathname.startsWith(base + '/')
-              ? { background: 'rgba(0,179,105,0.1)', color: 'var(--green-deep)' }
+              ? { background: activeBg, color: activeColor }
               : { color: 'var(--ink-soft)' }
           }
         >
@@ -140,7 +144,7 @@ function NavLinks({
             className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
             style={
               active
-                ? { background: 'rgba(0,179,105,0.1)', color: 'var(--green-deep)' }
+                ? { background: activeBg, color: activeColor }
                 : { color: 'var(--ink-soft)' }
             }
           >
@@ -174,9 +178,11 @@ function NavLinks({
 
 function ContextSwitcher({
   user,
+  accent = '#00b369',
   onSwitched,
 }: {
   user: ShellUser;
+  accent?: string;
   onSwitched?: () => void;
 }) {
   const router = useRouter();
@@ -206,7 +212,7 @@ function ContextSwitcher({
     return () => document.removeEventListener('mousedown', onDoc);
   }, []);
 
-  async function switchTo(ctx: ActiveContext, href?: string) {
+  async function switchTo(ctx: ActiveContext) {
     setBusy(true);
     try {
       const res = await fetch('/api/learn/context', {
@@ -217,8 +223,7 @@ function ContextSwitcher({
       if (!res.ok) return;
       setOpen(false);
       onSwitched?.();
-      if (href) router.push(href);
-      else if (ctx.kind === 'institution' && ctx.institutionSlug) {
+      if (ctx.kind === 'institution' && ctx.institutionSlug) {
         router.push(`/dashboard/institutions/${ctx.institutionSlug}`);
       } else if (ctx.kind === 'teaching') {
         router.push('/dashboard/mentor');
@@ -242,13 +247,13 @@ function ContextSwitcher({
       >
         <span
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[11px] font-bold text-white"
-          style={{ background: 'linear-gradient(135deg, #00b369, #1f5fa8)' }}
+          style={{ background: accent }}
         >
           {active.kind === 'institution' ? 'U' : 'IX'}
         </span>
         <span className="min-w-0 flex-1">
           <span className="mono block text-[9.5px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
-            Context
+            Workspace
           </span>
           <span className="block truncate text-[13.5px] font-semibold">{label}</span>
         </span>
@@ -262,8 +267,9 @@ function ContextSwitcher({
         >
           <ContextItem
             active={active.kind === 'personal' || active.kind === 'intellex'}
-            title="Personal"
-            subtitle="Your InTelleX home"
+            title="InTelleX"
+            subtitle="Personal learning home"
+            accent={accent}
             onClick={() => switchTo({ kind: 'personal', institutionSlug: null })}
           />
           {affiliations.map((a) => (
@@ -275,6 +281,7 @@ function ContextSwitcher({
               }
               title={a.institutionName}
               subtitle={`${a.role} · ${a.status}`}
+              accent={accent}
               onClick={() =>
                 switchTo({
                   kind: 'institution',
@@ -287,13 +294,14 @@ function ContextSwitcher({
             active={active.kind === 'teaching'}
             title="Teaching"
             subtitle={user.roles?.includes('mentor') ? 'Mentor Studio' : 'Apply to teach'}
+            accent={accent}
             onClick={() => switchTo({ kind: 'teaching', institutionSlug: null })}
           />
           <Link
             href="/dashboard/institutions"
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 border-t px-3 py-2.5 text-[12.5px] font-semibold"
-            style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
+            style={{ borderColor: 'var(--line)', color: accent }}
           >
             <Building2 size={14} /> Find more institutions
           </Link>
@@ -307,11 +315,13 @@ function ContextItem({
   title,
   subtitle,
   active,
+  accent,
   onClick,
 }: {
   title: string;
   subtitle: string;
   active?: boolean;
+  accent: string;
   onClick: () => void;
 }) {
   return (
@@ -326,7 +336,7 @@ function ContextItem({
           {subtitle}
         </span>
       </span>
-      {active && <Check size={14} style={{ color: 'var(--green-deep)' }} />}
+      {active && <Check size={14} style={{ color: accent }} />}
     </button>
   );
 }
@@ -335,14 +345,20 @@ export default function DashboardShell({
   user,
   children,
   minimal = false,
+  campusBrand = null,
 }: {
   user: ShellUser;
   children: React.ReactNode;
   minimal?: boolean;
+  campusBrand?: CampusBrand | null;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const inCampus =
+    user.activeContext?.kind === 'institution' && Boolean(campusBrand);
+  const accent = inCampus && campusBrand ? campusBrand.color : '#00b369';
 
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -372,22 +388,52 @@ export default function DashboardShell({
 
   const sidebarInner = (
     <>
-      <div className="mb-4 flex items-center gap-2.5 px-2">
-        <BrandLogo href="/" height={32} variant="full" />
+      <div className="mb-4 px-1">
+        {inCampus && campusBrand ? (
+          <div className="flex items-center gap-2.5">
+            <span
+              className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl text-[14px] font-bold text-white"
+              style={{ background: accent }}
+            >
+              {campusBrand.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={campusBrand.logoUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                campusBrand.name.slice(0, 1)
+              )}
+            </span>
+            <div className="min-w-0">
+              <div className="truncate text-[14px] font-semibold leading-tight">{campusBrand.name}</div>
+              <div className="mono text-[9px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
+                Powered by InTelleX
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2.5 px-1">
+            <BrandLogo href="/" height={32} variant="full" />
+          </div>
+        )}
       </div>
 
       {user.onboardingComplete !== false && (
-        <ContextSwitcher user={user} onSwitched={() => setMobileOpen(false)} />
+        <ContextSwitcher user={user} accent={accent} onSwitched={() => setMobileOpen(false)} />
       )}
 
       <NavLinks
         pathname={pathname}
         isMentor={Boolean(user.roles?.includes('mentor'))}
         context={user.activeContext}
+        accent={accent}
         onNavigate={() => setMobileOpen(false)}
       />
 
       <div className="mt-auto space-y-1 pt-6">
+        {inCampus && (
+          <p className="mono px-3.5 pb-2 text-[9.5px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
+            Powered by InTelleX
+          </p>
+        )}
         <Link
           href="/"
           className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
@@ -408,11 +454,22 @@ export default function DashboardShell({
     </>
   );
 
+  const themeStyle = inCampus
+    ? ({
+        ['--green' as string]: accent,
+        ['--green-deep' as string]: accent,
+        ['--campus-accent' as string]: accent,
+      } as React.CSSProperties)
+    : undefined;
+
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen bg-paper" style={themeStyle}>
       <aside
         className="fixed inset-y-0 left-0 z-30 hidden w-[240px] flex-col border-r px-4 py-6 lg:flex"
-        style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}
+        style={{
+          borderColor: 'var(--line)',
+          background: inCampus ? `${accent}08` : 'var(--paper)',
+        }}
       >
         {sidebarInner}
       </aside>
@@ -434,7 +491,10 @@ export default function DashboardShell({
 
       <header
         className="sticky top-0 z-20 flex h-[64px] items-center gap-3 border-b px-4 backdrop-blur lg:pl-[264px] lg:pr-8"
-        style={{ borderColor: 'var(--line)', background: 'rgba(255,255,255,0.92)' }}
+        style={{
+          borderColor: 'var(--line)',
+          background: inCampus ? `${accent}0d` : 'rgba(255,255,255,0.92)',
+        }}
       >
         <button
           className="flex h-9 w-9 items-center justify-center rounded-lg border lg:hidden"
@@ -446,8 +506,23 @@ export default function DashboardShell({
         </button>
 
         <div className="lg:hidden">
-          <BrandLogo href="/" height={30} variant="mark" />
+          {inCampus && campusBrand ? (
+            <span className="text-[14px] font-semibold" style={{ color: accent }}>
+              {campusBrand.name}
+            </span>
+          ) : (
+            <BrandLogo href="/" height={30} variant="mark" />
+          )}
         </div>
+
+        {inCampus && campusBrand && (
+          <div className="hidden min-w-0 lg:block">
+            <div className="truncate text-[14px] font-semibold">{campusBrand.name}</div>
+            <div className="text-[11.5px]" style={{ color: 'var(--ink-soft)' }}>
+              {campusBrand.tagline || 'Digital campus'} · Powered by InTelleX
+            </div>
+          </div>
+        )}
 
         <div className="ml-auto flex items-center gap-2.5 sm:gap-4">
           <div
@@ -461,7 +536,7 @@ export default function DashboardShell({
           </div>
           <div
             className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold"
-            style={{ background: 'rgba(0,179,105,0.1)', color: 'var(--green-deep)' }}
+            style={{ background: `${accent}1a`, color: accent }}
             title="Experience points"
           >
             <Zap size={14} />
@@ -482,7 +557,7 @@ export default function DashboardShell({
             ) : (
               <span
                 className="flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold text-white"
-                style={{ background: 'linear-gradient(135deg, #00b369, #1f5fa8)' }}
+                style={{ background: `linear-gradient(135deg, ${accent}, #1f5fa8)` }}
               >
                 {initials(user.name) || 'IX'}
               </span>

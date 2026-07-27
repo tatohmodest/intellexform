@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { completeLearnerOnboarding, getLearner } from '@/lib/learn/repo';
-import type { JoinPath, PrimaryIntent } from '@/lib/learn/identity';
+import {
+  normalizeJoinPath,
+  type JoinPath,
+  type PrimaryIntent,
+} from '@/lib/learn/identity';
 
 export const dynamic = 'force-dynamic';
 
-const INTENTS: PrimaryIntent[] = ['learn', 'teach', 'institution'];
-const PATHS: JoinPath[] = ['exploring', 'institution', 'both'];
+const INTENTS: PrimaryIntent[] = ['learn', 'teach'];
+const PATHS: JoinPath[] = ['intellex', 'institution', 'both', 'exploring'];
 
 /**
  * POST /api/learn/onboarding
- * Completes first-run identity onboarding (intent + optional join path).
+ * Completes first-run identity onboarding (Learn/Teach + join path).
+ * Institutions are never self-created from this flow.
  */
 export async function POST(req: NextRequest) {
   const user = getSessionUser();
@@ -20,20 +25,20 @@ export async function POST(req: NextRequest) {
   const primaryIntent = String(body.primaryIntent ?? '') as PrimaryIntent;
   const joinPathRaw = body.joinPath != null ? String(body.joinPath) : null;
   const joinPath = joinPathRaw && PATHS.includes(joinPathRaw as JoinPath)
-    ? (joinPathRaw as JoinPath)
+    ? normalizeJoinPath(joinPathRaw as JoinPath)
     : null;
 
   if (!INTENTS.includes(primaryIntent)) {
     return NextResponse.json({ error: 'invalid_intent' }, { status: 400 });
   }
-  if (primaryIntent === 'learn' && !joinPath) {
+  if (!joinPath) {
     return NextResponse.json({ error: 'join_path_required' }, { status: 400 });
   }
 
   try {
     const learner = await completeLearnerOnboarding(user.uid, {
       primaryIntent,
-      joinPath: primaryIntent === 'learn' ? joinPath : null,
+      joinPath,
     });
     return NextResponse.json({
       ok: true,
@@ -41,11 +46,8 @@ export async function POST(req: NextRequest) {
       primaryIntent: learner?.primaryIntent,
       joinPath: learner?.joinPath,
       activeContext: learner?.activeContext,
-      needsInstitutionSearch:
-        primaryIntent === 'learn' &&
-        (joinPath === 'institution' || joinPath === 'both'),
-      needsInstitutionApplication: primaryIntent === 'institution',
-      needsMentorApply: primaryIntent === 'teach',
+      needsInstitutionSearch: joinPath === 'institution' || joinPath === 'both',
+      needsMentorApply: primaryIntent === 'teach' && joinPath === 'intellex',
     });
   } catch (err) {
     console.error('onboarding failed:', err);
@@ -59,7 +61,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const learner = await getLearner(user.uid);
   return NextResponse.json({
-    onboardingComplete: Boolean(learner?.onboardingComplete),
+    onboardingComplete: learner?.onboardingComplete !== false,
     primaryIntent: learner?.primaryIntent ?? null,
     joinPath: learner?.joinPath ?? null,
     affiliations: learner?.affiliations ?? [],

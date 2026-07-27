@@ -3,7 +3,8 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getLearner } from '@/lib/learn/repo';
-import { isOnboardingComplete } from '@/lib/learn/identity';
+import { getInstitution } from '@/lib/learn/ecosystem';
+import { isOnboardingComplete, type CampusBrand } from '@/lib/learn/identity';
 import DashboardShell from '@/components/dashboard/DashboardShell';
 
 export const metadata: Metadata = {
@@ -30,6 +31,21 @@ export default async function DashboardLayout({
     redirect('/dashboard/onboarding');
   }
 
+  const ctx = learner?.activeContext ?? { kind: 'personal' as const };
+  let campusBrand: CampusBrand | null = null;
+  if (ctx.kind === 'institution' && ctx.institutionSlug) {
+    const inst = await getInstitution(ctx.institutionSlug);
+    if (inst) {
+      campusBrand = {
+        slug: inst.slug,
+        name: inst.name,
+        color: inst.color || '#00b369',
+        logoUrl: inst.logoUrl ?? null,
+        tagline: inst.tagline,
+      };
+    }
+  }
+
   return (
     <DashboardShell
       user={{
@@ -41,9 +57,10 @@ export default async function DashboardLayout({
         roles: learner?.roles ?? ['student'],
         primaryIntent: learner?.primaryIntent ?? null,
         affiliations: learner?.affiliations ?? [],
-        activeContext: learner?.activeContext ?? { kind: 'personal' },
+        activeContext: ctx,
         onboardingComplete: isOnboardingComplete(learner),
       }}
+      campusBrand={campusBrand}
       minimal={onOnboarding}
     >
       {children}

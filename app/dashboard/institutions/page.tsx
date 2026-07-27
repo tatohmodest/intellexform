@@ -26,8 +26,8 @@ export default async function InstitutionsPage() {
         </div>
         <h1 className="font-display text-[30px] leading-tight">Institutions</h1>
         <p className="mt-1 max-w-2xl text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          InTelleX is a federated education network. Public verified campuses appear here.
-          Opening a campus requires an application and platform provisioning — not a self-serve create button.
+          Verified campuses on the InTelleX network. Join with your campus credentials —
+          institutions are onboarded by the Platform Team, never self-created here.
         </p>
       </div>
 

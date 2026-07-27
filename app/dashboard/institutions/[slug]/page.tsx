@@ -2,18 +2,25 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { ArrowLeft, Globe2, Lock, Megaphone, Users } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
-import { getLearner } from '@/lib/learn/repo';
+import { getLearner, setActiveContext } from '@/lib/learn/repo';
 import {
   getInstitution,
   getMembership,
   listInstitutionPosts,
 } from '@/lib/learn/ecosystem';
 import { AnnouncementComposer, JoinCampusButton } from '@/components/dashboard/CampusActions';
+import CampusProfileComplete from '@/components/dashboard/CampusProfileComplete';
 import MarkdownLite from '@/components/dashboard/MarkdownLite';
 
 export const dynamic = 'force-dynamic';
 
-export default async function CampusPage({ params }: { params: { slug: string } }) {
+export default async function CampusPage({
+  params,
+  searchParams,
+}: {
+  params: { slug: string };
+  searchParams?: { complete?: string };
+}) {
   const session = getSessionUser();
   if (!session) redirect(`/login?next=/dashboard/institutions/${params.slug}`);
 
@@ -46,8 +53,27 @@ export default async function CampusPage({ params }: { params: { slug: string } 
     (a) => a.institutionSlug === params.slug,
   );
 
+  if (affiliation) {
+    await setActiveContext(session.uid, {
+      kind: 'institution',
+      institutionSlug: params.slug,
+    }).catch(() => {});
+  }
+
+  const showProfileComplete =
+    Boolean(affiliation) &&
+    affiliation?.profileComplete === false &&
+    (searchParams?.complete === '1' || affiliation?.profileComplete === false);
+
   return (
     <div className="mx-auto max-w-[900px]">
+      {showProfileComplete && (
+        <CampusProfileComplete
+          slug={inst.slug}
+          institutionName={inst.name}
+          accent={inst.color}
+        />
+      )}
       <Link href="/dashboard/institutions" className="mb-6 inline-flex items-center gap-1.5 text-[13.5px] font-semibold" style={{ color: 'var(--ink-soft)' }}>
         <ArrowLeft size={14} /> Institutions
       </Link>

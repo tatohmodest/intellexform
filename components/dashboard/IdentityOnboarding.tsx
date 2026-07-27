@@ -6,7 +6,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
   BookOpen,
-  Building2,
   CheckCircle2,
   Compass,
   GraduationCap,
@@ -16,8 +15,8 @@ import {
   Users,
 } from 'lucide-react';
 
-type Intent = 'learn' | 'teach' | 'institution';
-type JoinPath = 'exploring' | 'institution' | 'both';
+type Intent = 'learn' | 'teach';
+type JoinPath = 'intellex' | 'institution' | 'both';
 
 type InstitutionHit = {
   slug: string;
@@ -27,6 +26,7 @@ type InstitutionHit = {
   authMethod?: string;
   country?: string | null;
   memberCount: number;
+  logoUrl?: string | null;
 };
 
 const INTENTS: {
@@ -47,12 +47,6 @@ const INTENTS: {
     body: 'Guide learners as a mentor or instructor. Privileges are earned after review.',
     icon: Users,
   },
-  {
-    id: 'institution',
-    title: 'Represent an institution',
-    body: 'Apply to bring your school or academy onto the InTelleX network.',
-    icon: Building2,
-  },
 ];
 
 const JOIN_PATHS: {
@@ -62,21 +56,21 @@ const JOIN_PATHS: {
   icon: typeof Compass;
 }[] = [
   {
-    id: 'exploring',
-    title: "I'm exploring InTelleX",
-    body: 'Browse courses, mentorship, and the AI tutor — no campus required.',
+    id: 'intellex',
+    title: 'Continue with InTelleX',
+    body: 'Enter the InTelleX learning platform — courses, mentorship, and AI.',
     icon: Compass,
   },
   {
     id: 'institution',
-    title: "I'm joining my institution",
-    body: 'Search your campus, verify with matricule, then open that workspace.',
+    title: 'Join my institution',
+    body: 'Search your campus, verify with matricule, then open that digital campus.',
     icon: GraduationCap,
   },
   {
     id: 'both',
     title: 'Both',
-    body: 'Use InTelleX personally and affiliate with a campus when you are ready.',
+    body: 'Access InTelleX and your institution — switch workspaces anytime.',
     icon: Sparkles,
   },
 ];
@@ -116,10 +110,14 @@ export default function IdentityOnboarding({ firstName }: { firstName: string })
 
   const title = useMemo(() => {
     if (step === 'intent') return `Welcome to InTelleX, ${firstName}`;
-    if (step === 'path') return 'How are you joining today?';
+    if (step === 'path') {
+      return intent === 'teach'
+        ? 'How will you teach on InTelleX?'
+        : 'How are you joining today?';
+    }
     if (step === 'search') return 'Search your institution';
     return `Verify with ${selected?.name ?? 'your campus'}`;
-  }, [step, firstName, selected]);
+  }, [step, firstName, selected, intent]);
 
   async function finishOnboarding(opts: {
     primaryIntent: Intent;
@@ -156,34 +154,25 @@ export default function IdentityOnboarding({ firstName }: { firstName: string })
     }
   }
 
-  async function chooseIntent(id: Intent) {
+  function chooseIntent(id: Intent) {
     setIntent(id);
     setError('');
-    if (id === 'learn') {
-      setStep('path');
-      return;
-    }
-    if (id === 'teach') {
+    setStep('path');
+  }
+
+  async function choosePath(id: JoinPath) {
+    if (!intent) return;
+    setJoinPath(id);
+    if (id === 'intellex') {
       await finishOnboarding({
-        primaryIntent: 'teach',
-        next: '/dashboard/mentor',
+        primaryIntent: intent,
+        joinPath: id,
+        next: intent === 'teach' ? '/dashboard/mentor' : '/dashboard',
       });
       return;
     }
     await finishOnboarding({
-      primaryIntent: 'institution',
-      next: '/dashboard/institutions',
-    });
-  }
-
-  async function choosePath(id: JoinPath) {
-    setJoinPath(id);
-    if (id === 'exploring') {
-      await finishOnboarding({ primaryIntent: 'learn', joinPath: id, next: '/dashboard' });
-      return;
-    }
-    await finishOnboarding({
-      primaryIntent: 'learn',
+      primaryIntent: intent,
       joinPath: id,
       continueToSearch: true,
     });
@@ -197,7 +186,11 @@ export default function IdentityOnboarding({ firstName }: { firstName: string })
       const res = await fetch(`/api/learn/institutions/${selected.slug}/affiliate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matricule, password }),
+        body: JSON.stringify({
+          matricule,
+          password,
+          role: intent === 'teach' ? 'instructor' : 'student',
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -210,7 +203,11 @@ export default function IdentityOnboarding({ firstName }: { firstName: string })
         );
         return;
       }
-      router.replace(data.redirectTo || `/dashboard/institutions/${selected.slug}`);
+      const dest =
+        data.needsProfileComplete
+          ? `${data.redirectTo || `/dashboard/institutions/${selected.slug}`}?complete=1`
+          : data.redirectTo || `/dashboard/institutions/${selected.slug}`;
+      router.replace(dest);
       router.refresh();
     } catch {
       setError('Could not connect. Please try again.');
@@ -226,7 +223,9 @@ export default function IdentityOnboarding({ firstName }: { firstName: string })
       fetch(`/api/learn/institutions/${inst.slug}/affiliate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          role: intent === 'teach' ? 'instructor' : 'student',
+        }),
       })
         .then(async (res) => {
           const data = await res.json().catch(() => ({}));
@@ -234,7 +233,11 @@ export default function IdentityOnboarding({ firstName }: { firstName: string })
             setError('Could not join this campus.');
             return;
           }
-          router.replace(data.redirectTo || `/dashboard/institutions/${inst.slug}`);
+          const dest =
+            data.needsProfileComplete
+              ? `${data.redirectTo || `/dashboard/institutions/${inst.slug}`}?complete=1`
+              : data.redirectTo || `/dashboard/institutions/${inst.slug}`;
+          router.replace(dest);
           router.refresh();
         })
         .catch(() => setError('Could not connect.'))
@@ -256,14 +259,14 @@ export default function IdentityOnboarding({ firstName }: { firstName: string })
 
       <div className="relative">
         <p className="mono mb-2 text-[11px] uppercase tracking-[0.18em]" style={{ color: 'var(--ink-soft)' }}>
-          One identity · many contexts
+          One identity · many campuses
         </p>
         <h1 className="font-display text-[32px] leading-tight sm:text-[36px]">{title}</h1>
         <p className="mt-2 max-w-lg text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
           {step === 'intent' &&
             'You are creating an InTelleX identity — not a university account. Campuses become affiliations on this passport.'}
           {step === 'path' &&
-            'This personalizes your home. You can affiliate with a campus anytime without creating another login.'}
+            'This personalizes your home. You can switch between InTelleX and any campus you verify — same login.'}
           {step === 'search' &&
             'Find your campus on the network. Academic records stay with them — InTelleX only stores the affiliation.'}
           {step === 'verify' &&
@@ -332,9 +335,11 @@ export default function IdentityOnboarding({ firstName }: { firstName: string })
                         type="button"
                         className="font-semibold underline"
                         style={{ color: 'var(--green-deep)' }}
-                        onClick={() => router.replace('/dashboard')}
+                        onClick={() =>
+                          router.replace(intent === 'teach' ? '/dashboard/mentor' : '/dashboard')
+                        }
                       >
-                        continue exploring InTelleX
+                        continue with InTelleX
                       </button>
                       .
                     </p>
@@ -349,10 +354,15 @@ export default function IdentityOnboarding({ firstName }: { firstName: string })
                       style={{ borderColor: 'var(--line)' }}
                     >
                       <span
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[13px] font-bold text-white"
+                        className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl text-[13px] font-bold text-white"
                         style={{ background: inst.color || '#00b369' }}
                       >
-                        {inst.name.slice(0, 1)}
+                        {inst.logoUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={inst.logoUrl} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          inst.name.slice(0, 1)
+                        )}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-semibold">{inst.name}</span>
@@ -370,9 +380,11 @@ export default function IdentityOnboarding({ firstName }: { firstName: string })
                   <button
                     type="button"
                     className="btn btn-ghost w-full !py-2.5 text-[13.5px]"
-                    onClick={() => router.replace('/dashboard')}
+                    onClick={() =>
+                      router.replace(intent === 'teach' ? '/dashboard/mentor' : '/dashboard')
+                    }
                   >
-                    Skip for now — go to my InTelleX home
+                    Skip for now — go to InTelleX
                   </button>
                 )}
               </div>
@@ -390,12 +402,13 @@ export default function IdentityOnboarding({ firstName }: { firstName: string })
                   <div>
                     <div className="font-semibold">{selected.name}</div>
                     <div className="text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
-                      Student verification · {selected.authMethod || 'campus auth'}
+                      {intent === 'teach' ? 'Instructor' : 'Student'} verification ·{' '}
+                      {selected.authMethod || 'campus auth'}
                     </div>
                   </div>
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-[13px] font-semibold">Matricule / student ID</label>
+                  <label className="mb-1.5 block text-[13px] font-semibold">Matricule / staff ID</label>
                   <input
                     className="form-input"
                     value={matricule}

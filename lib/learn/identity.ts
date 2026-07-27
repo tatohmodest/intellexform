@@ -5,10 +5,12 @@
  *
  * Users belong to InTelleX — not to universities.
  * Institutions are affiliations on one passport, like GitHub orgs.
+ * Institutions are never self-created — Platform Team onboards them.
  */
 
-export type PrimaryIntent = 'learn' | 'teach' | 'institution';
-export type JoinPath = 'exploring' | 'institution' | 'both';
+export type PrimaryIntent = 'learn' | 'teach';
+/** exploring kept as alias of intellex for legacy docs. */
+export type JoinPath = 'intellex' | 'institution' | 'both' | 'exploring';
 
 /** Role within a specific institution affiliation (not the global account). */
 export type AffiliationRole =
@@ -32,16 +34,16 @@ export interface Affiliation {
   faculty?: string | null;
   program?: string | null;
   year?: string | null;
+  emergencyContact?: string | null;
+  photoUrl?: string | null;
+  /** Campus-required profile extras finished after first verify. */
+  profileComplete?: boolean;
   verifiedAt?: Date | string | null;
   joinedAt: Date | string;
 }
 
 /**
  * UI context — switching contexts never creates a new account.
- * personal  = learner's InTelleX home
- * intellex  = InTelleX academy flavour of the same home
- * institution = campus workspace
- * teaching / mentorship = role workspaces
  */
 export type ContextKind =
   | 'personal'
@@ -64,13 +66,29 @@ export type InstitutionAuthMethod =
   | 'sso'
   | 'ldap';
 
+/** Who can see institution-published learning content. */
+export type ContentVisibility = 'private' | 'network' | 'public';
+
 export const PERSONAL_CONTEXT: ActiveContext = { kind: 'personal', institutionSlug: null };
+
+export function normalizeJoinPath(path: JoinPath | null | undefined): JoinPath | null {
+  if (!path) return null;
+  if (path === 'exploring') return 'intellex';
+  return path;
+}
 
 export function isOnboardingComplete(learner: {
   onboardingComplete?: boolean;
 } | null | undefined): boolean {
   if (!learner) return false;
-  // Explicit false = first-run still open. Missing field = legacy account (skip trap).
   if (learner.onboardingComplete === false) return false;
   return true;
 }
+
+export type CampusBrand = {
+  slug: string;
+  name: string;
+  color: string;
+  logoUrl?: string | null;
+  tagline?: string;
+};
