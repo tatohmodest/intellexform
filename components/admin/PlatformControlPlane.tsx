@@ -1096,10 +1096,19 @@ function GovernancePanel({
       </div>
 
       <div>
-        <h3 className="mb-2 font-semibold">Mentor applications (Prisma)</h3>
+        <h3 className="mb-2 font-semibold">Mentor / instructor applications</h3>
+        <p className="mb-2 text-xs" style={{ color: 'var(--ink-soft)' }}>
+          Review CV, ID, and intro video under{' '}
+          <a href="/admin/applications" className="font-semibold underline">
+            Applications
+          </a>
+          .
+        </p>
         {mentors.map((a) => (
           <div key={String(a.id)} className="border-b py-2 text-sm" style={{ borderColor: 'var(--line)' }}>
-            {(a.applicant as { email?: string })?.email} · {String(a.title)} · {String(a.status)}
+            {(a.applicant as { email?: string; name?: string })?.name ||
+              (a.applicant as { email?: string })?.email}{' '}
+            · {String(a.title)} · {String(a.status)}
           </div>
         ))}
         {mentors.length === 0 ? (

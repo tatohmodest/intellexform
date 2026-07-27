@@ -2,14 +2,14 @@
 
 import AdminGate from '@/components/admin/AdminGate';
 import AdminShell from '@/components/admin/AdminShell';
-import PlatformControlPlane from '@/components/admin/PlatformControlPlane';
+import AdminApplications from '@/components/admin/AdminApplications';
 
 export default function AdminApplicationsPage() {
   return (
     <AdminGate>
       {({ email, logout }) => (
         <AdminShell email={email} onLogout={logout} title="Applications">
-          <PlatformControlPlane initialSection="governance" />
+          <AdminApplications />
         </AdminShell>
       )}
     </AdminGate>
