@@ -4,6 +4,9 @@ import { extFromFilenameOrMime } from '@/lib/cloudinaryFormats';
 
 export type { MentorUploadKind, MediaUploadKind };
 
+/** Platform image uploads (avatars, campus brand, course art, book covers). */
+export type BrandUploadKind = 'avatar' | 'logo' | 'cover' | 'course_image' | 'book_cover';
+
 const cloudName = process.env.CLOUDINARY_CLOUD_NAME ?? '';
 const apiKey = process.env.CLOUDINARY_API_KEY ?? '';
 const apiSecret = process.env.CLOUDINARY_API_SECRET ?? '';
@@ -25,6 +28,14 @@ const FOLDERS: Record<MediaUploadKind, string> = {
   assignment: 'intellex/assignments',
   course_cover: 'intellex/course-covers',
   avatar: 'intellex/avatars',
+};
+
+const BRAND_FOLDERS: Record<BrandUploadKind, string> = {
+  avatar: 'intellex/avatars',
+  logo: 'intellex/institutions/logos',
+  cover: 'intellex/institutions/covers',
+  course_image: 'intellex/courses',
+  book_cover: 'intellex/books/covers',
 };
 
 export function isCloudinaryConfigured(): boolean {
@@ -137,6 +148,63 @@ export function signMentorUpload(opts: {
   filename?: string;
 }) {
   return signMediaUpload(opts);
+}
+
+/** Signed image upload for avatars, logos, covers, and course art. */
+export function signBrandMediaUpload(opts: {
+  kind: BrandUploadKind;
+  ownerId: string;
+}): {
+  cloudName: string;
+  apiKey: string;
+  timestamp: number;
+  folder: string;
+  publicId: string;
+  signature: string;
+  resourceType: 'image';
+  transformation: string;
+} {
+  if (!isCloudinaryConfigured()) {
+    throw new Error('cloudinary_not_configured');
+  }
+
+  const timestamp = Math.round(Date.now() / 1000);
+  const safeOwner = opts.ownerId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64) || 'anon';
+  const folder = `${BRAND_FOLDERS[opts.kind]}/${safeOwner}`;
+  const publicId = `${opts.kind}_${timestamp}`;
+
+  const transformation =
+    opts.kind === 'avatar'
+      ? // Face-aware crop, sharp but compact delivery format
+        'c_fill,g_auto,w_512,h_512,q_auto:good,f_auto'
+      : opts.kind === 'logo'
+        ? // Keep logos crisp; cap edge so 10MB uploads land light
+          'c_limit,w_1000,h_1000,q_auto:good,f_auto'
+        : opts.kind === 'cover'
+          ? // Wide banner — dimension limit does most of the size cut
+            'c_fill,g_auto,w_1920,h_768,q_auto:good,f_auto'
+          : // Course / book art
+            'c_limit,w_1800,q_auto:good,f_auto';
+
+  const paramsToSign: Record<string, string | number> = {
+    timestamp,
+    folder,
+    public_id: publicId,
+    transformation,
+  };
+
+  const signature = cloudinary.utils.api_sign_request(paramsToSign, apiSecret);
+
+  return {
+    cloudName,
+    apiKey,
+    timestamp,
+    folder,
+    publicId,
+    signature,
+    resourceType: 'image',
+    transformation,
+  };
 }
 
 export { cloudinary };

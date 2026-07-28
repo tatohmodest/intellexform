@@ -236,27 +236,29 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 .tok-number { color: #f78c6c; }
 .tok-tag { color: #82aaff; }
 .tok-attr { color: #ffcb6b; }
+
+/* Tutor links — soft brand tones (readable on light paper, not neon) */
 .tutor-link {
-  color: #4fc3f7;
+  color: #2f6fad;
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-decoration-color: rgba(79, 195, 247, 0.55);
+  text-decoration-color: rgba(47, 111, 173, 0.35);
 }
-.tutor-link:hover { color: #81d4fa; }
+.tutor-link:hover { color: #1f5fa8; }
 .tutor-link-green {
-  color: #69f0ae;
+  color: #0b8a56;
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-decoration-color: rgba(105, 240, 174, 0.5);
+  text-decoration-color: rgba(11, 138, 86, 0.35);
 }
-.tutor-link-green:hover { color: #b9f6ca; }
+.tutor-link-green:hover { color: #087447; }
 .tutor-link-amber {
-  color: #ffd54f;
+  color: #3d6b8a;
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-decoration-color: rgba(255, 213, 79, 0.5);
+  text-decoration-color: rgba(61, 107, 138, 0.35);
 }
-.tutor-link-amber:hover { color: #ffe082; }
+.tutor-link-amber:hover { color: #2c5269; }

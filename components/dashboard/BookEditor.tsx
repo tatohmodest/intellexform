@@ -14,6 +14,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import type { BookView } from '@/lib/learn/ecosystem';
+import ColorPickerField from '@/components/media/ColorPickerField';
+import { normalizeHexColor } from '@/lib/imageColor';
 
 const CATEGORIES = ['Programming', 'Data & AI', 'Design', 'Marketing', 'Career', 'Business', 'Other'];
 const COLORS = ['#00b369', '#4a90e2', '#7c3aed', '#e0234e', '#f59e0b', '#0C1116'];
@@ -103,12 +105,21 @@ export default function BookEditor({ book }: { book: BookView }) {
             {COLORS.map((c) => (
               <button
                 key={c}
+                type="button"
                 onClick={() => setCoverColor(c)}
                 className="h-6 w-6 rounded-full border-2"
                 style={{ background: c, borderColor: coverColor === c ? 'var(--ink)' : 'transparent' }}
                 aria-label={`Cover color ${c}`}
               />
             ))}
+          </div>
+          <div className="mt-3">
+            <ColorPickerField
+              label="Custom cover color"
+              value={coverColor}
+              onChange={(c) => setCoverColor(normalizeHexColor(c))}
+              hint="Pick any color — no hex knowledge needed."
+            />
           </div>
         </div>
 

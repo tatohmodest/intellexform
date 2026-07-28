@@ -21,6 +21,9 @@ import {
 import { CAPABILITY_PACKS, MODULE_CATALOG, type CapabilityPack } from '@/lib/eduos/capabilities';
 import { COMMERCIAL_PLANS, type CommercialPlanId } from '@/lib/eduos/plans';
 import { formatXAF } from '@/lib/format';
+import ImageUploadField from '@/components/media/ImageUploadField';
+import ColorPickerField from '@/components/media/ColorPickerField';
+import { normalizeHexColor } from '@/lib/imageColor';
 
 type Section =
   | 'overview'
@@ -853,28 +856,39 @@ function InstitutionDetail({
         </div>
       </div>
 
-      <div className="space-y-2 overflow-hidden rounded-xl border p-4" style={{ borderColor: 'var(--line)' }}>
+      <div className="space-y-3 overflow-hidden rounded-xl border p-4" style={{ borderColor: 'var(--line)' }}>
         <h4 className="font-semibold">Branding (logo & cover)</h4>
         <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>
-          Customize how this campus appears - especially the InTelleX home campus.
+          Upload images to Cloudinary — we store the generated links. Color can be picked visually or auto-sampled from an upload.
         </p>
-        <input
-          className="form-input !rounded-none"
-          placeholder="Logo image URL"
-          value={logoUrl}
-          onChange={(e) => setLogoUrl(e.target.value)}
-        />
-        <input
-          className="form-input !rounded-none"
-          placeholder="Cover image URL"
-          value={coverUrl}
-          onChange={(e) => setCoverUrl(e.target.value)}
-        />
-        <input
-          className="form-input !rounded-none"
-          placeholder="Primary color #00b369"
+        <div className="grid gap-4 sm:grid-cols-2">
+          <ImageUploadField
+            label="Logo"
+            kind="logo"
+            ownerId={String(inst.id || inst.slug || 'campus')}
+            value={logoUrl}
+            autoColor
+            onChange={setLogoUrl}
+            onColorExtracted={setPrimaryColor}
+            previewHeight={110}
+          />
+          <ImageUploadField
+            label="Cover image"
+            kind="cover"
+            ownerId={String(inst.id || inst.slug || 'campus')}
+            value={coverUrl}
+            autoColor={!logoUrl}
+            onChange={setCoverUrl}
+            onColorExtracted={(hex) => {
+              if (!logoUrl) setPrimaryColor(hex);
+            }}
+            previewHeight={110}
+          />
+        </div>
+        <ColorPickerField
+          label="Primary color"
           value={primaryColor}
-          onChange={(e) => setPrimaryColor(e.target.value)}
+          onChange={(c) => setPrimaryColor(normalizeHexColor(c))}
         />
         <textarea
           className="form-input !rounded-none"
@@ -891,7 +905,7 @@ function InstitutionDetail({
             onBrand({
               logoUrl: logoUrl || null,
               coverUrl: coverUrl || null,
-              primaryColor,
+              primaryColor: normalizeHexColor(primaryColor),
               description,
             })
           }

@@ -3,6 +3,8 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, Loader2, LogOut, Save, Upload } from 'lucide-react';
+import { uploadMediaAsset } from '@/lib/mediaUpload';
+import { MAX_IMAGE_UPLOAD_BYTES } from '@/lib/compressImage';
 
 type Prefs = {
   locale: string;
@@ -36,6 +38,8 @@ export default function SettingsForm({
     marketingEmails: initialPreferences?.marketingEmails ?? false,
   });
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadPct, setUploadPct] = useState(0);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
@@ -45,17 +49,28 @@ export default function SettingsForm({
       setError('Choose an image file (JPG, PNG, WebP).');
       return;
     }
-    if (file.size > 240_000) {
-      setError('Keep profile photos under ~240KB for now.');
+    if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+      setError('Keep profile photos under 10MB. We compress them automatically.');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = String(reader.result || '');
-      setAvatar(result);
-      setError('');
-    };
-    reader.readAsDataURL(file);
+    setUploading(true);
+    setError('');
+    setUploadPct(0);
+    try {
+      const uploaded = await uploadMediaAsset('avatar', file, file.name, setUploadPct);
+      setAvatar(uploaded.url);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'upload_failed';
+      setError(
+        msg === 'upload_unavailable'
+          ? 'Photo upload is not configured yet. Paste an image URL instead.'
+          : 'Could not upload photo. Try again or paste a URL.',
+      );
+    } finally {
+      setUploading(false);
+      setUploadPct(0);
+      if (fileRef.current) fileRef.current.value = '';
+    }
   }
 
   async function save() {
@@ -75,7 +90,11 @@ export default function SettingsForm({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error === 'invalid_avatar' ? 'Avatar too large or invalid.' : 'Could not save.');
+        setError(
+          data.error === 'invalid_avatar'
+            ? 'Use a Cloudinary / https image link for your photo.'
+            : 'Could not save.',
+        );
         return;
       }
       setSaved(true);
@@ -117,18 +136,21 @@ export default function SettingsForm({
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={(e) => onPickAvatar(e.target.files?.[0] ?? null)}
+              onChange={(e) => void onPickAvatar(e.target.files?.[0] ?? null)}
             />
             <button
               type="button"
+              disabled={uploading}
               className="inline-flex items-center gap-2 border px-4 py-2 text-[13px] font-semibold"
               style={{ borderColor: 'var(--ink)' }}
               onClick={() => fileRef.current?.click()}
             >
-              <Upload size={14} /> Upload photo
+              {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+              {uploading ? `Uploading ${uploadPct}%` : 'Upload photo'}
             </button>
             <p className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-              Or paste an image URL below. JPG / PNG / WebP, keep it light.
+              Photos upload to Cloudinary (max 10MB) — we compress large files and store the
+              generated link.
             </p>
           </div>
         </div>
@@ -137,7 +159,7 @@ export default function SettingsForm({
         <input
           className="form-input mb-5 max-w-lg !rounded-none"
           value={avatar.startsWith('data:') ? '' : avatar}
-          onChange={(e) => setAvatar(e.target.value)}
+          onChange={(e) => setAvatar(e.target.value.trim())}
           placeholder="https://…"
         />
 
@@ -214,7 +236,7 @@ export default function SettingsForm({
 
       <button
         onClick={save}
-        disabled={busy}
+        disabled={busy || uploading}
         className="inline-flex items-center gap-2 px-6 py-3 text-[13.5px] font-semibold text-white"
         style={{ background: 'var(--green)' }}
       >
