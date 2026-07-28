@@ -91,7 +91,7 @@ export default function NotificationBell({ accent = '#00b369' }: { accent?: stri
 
       {open && (
         <div
-          className="absolute right-0 top-[calc(100%+8px)] z-50 w-[min(360px,calc(100vw-24px))] border bg-paper shadow-lg"
+          className="absolute right-0 top-[calc(100%+8px)] z-50 w-[min(360px,calc(100vw-24px))] border bg-paper shadow-lg max-sm:fixed max-sm:left-1/2 max-sm:right-auto max-sm:top-[72px] max-sm:w-[calc(100vw-24px)] max-sm:max-w-[360px] max-sm:-translate-x-1/2"
           style={{ borderColor: 'var(--line)' }}
         >
           <div
