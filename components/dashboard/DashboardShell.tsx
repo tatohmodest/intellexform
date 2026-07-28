@@ -30,6 +30,7 @@ import {
 import BrandLogo from '@/components/BrandLogo';
 import MobileBottomNav from '@/components/dashboard/MobileBottomNav';
 import NotificationBell from '@/components/dashboard/NotificationBell';
+import OngoingClassBanner from '@/components/dashboard/OngoingClassBanner';
 import type { ActiveContext, Affiliation, CampusBrand, PrimaryIntent } from '@/lib/learn/identity';
 import { campusNavItems, type ModuleId } from '@/lib/eduos/capabilities';
 
@@ -658,7 +659,10 @@ export default function DashboardShell({
         </div>
       </header>
 
-      <main className="px-4 pb-28 pt-6 sm:px-6 lg:pb-16 lg:pl-[268px] lg:pr-10">{children}</main>
+      <main className="px-4 pb-28 pt-6 sm:px-6 lg:pb-16 lg:pl-[268px] lg:pr-10">
+        <OngoingClassBanner accent={accent} />
+        {children}
+      </main>
       <MobileBottomNav accent={accent} />
     </div>
   );
