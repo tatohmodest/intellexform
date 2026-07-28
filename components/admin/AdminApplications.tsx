@@ -8,11 +8,16 @@ import {
   ExternalLink,
   Loader2,
   RefreshCw,
+  Send,
   UserCheck,
   Video,
   X,
   type LucideIcon,
 } from 'lucide-react';
+import {
+  MENTOR_DOC_REQUEST_ITEMS,
+  type MentorDocRequestItem,
+} from '@/lib/learn/ecosystem';
 
 type MentorApp = {
   id: string;
@@ -34,6 +39,13 @@ type MentorApp = {
   status: string;
   createdAt: string;
   reviewNote?: string | null;
+  documentRequest?: {
+    items: MentorDocRequestItem[];
+    note?: string | null;
+    requestedAt?: string;
+    status?: 'open' | 'fulfilled';
+    fulfilledAt?: string | null;
+  } | null;
 };
 
 function fmt(d?: string) {
@@ -79,9 +91,13 @@ export default function AdminApplications() {
     load();
   }, [load]);
 
-  async function act(id: string, action: 'approve' | 'reject') {
-    let note = '';
-    if (action === 'reject') {
+  async function act(
+    id: string,
+    action: 'approve' | 'reject' | 'request_documents',
+    opts?: { note?: string; items?: MentorDocRequestItem[] },
+  ) {
+    let note = opts?.note ?? '';
+    if (action === 'reject' && opts?.note === undefined) {
       const entered = window.prompt('Optional rejection note for the applicant:');
       if (entered === null) return;
       note = entered;
@@ -92,11 +108,20 @@ export default function AdminApplications() {
       const res = await fetch(`/api/admin/applications/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'mentor', action, note }),
+        body: JSON.stringify({
+          type: 'mentor',
+          action,
+          note,
+          items: opts?.items,
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error ?? 'Action failed');
+        setError(
+          data.error === 'items_required'
+            ? 'Select at least one document to request.'
+            : data.error ?? 'Action failed',
+        );
         return;
       }
       await load();
@@ -122,7 +147,8 @@ export default function AdminApplications() {
         <div>
           <h2 className="font-display text-[22px]">Mentor applications</h2>
           <p className="text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
-            Review CV, ID, and intro video - approve to grant Mentor Studio access.
+            Review CV, ID, and intro video. Request only the documents that need fixing — applicants
+            resend those items from Mentor Studio.
           </p>
         </div>
         <button type="button" onClick={load} className="btn btn-ghost !py-2 text-[13px]">
@@ -148,6 +174,9 @@ export default function AdminApplications() {
                 busy={busyId === app.id}
                 onApprove={() => act(app.id, 'approve')}
                 onReject={() => act(app.id, 'reject')}
+                onRequestDocs={(items, note) =>
+                  act(app.id, 'request_documents', { items, note })
+                }
                 onError={setError}
               />
             ))}
@@ -190,16 +219,22 @@ function ApplicationCard({
   busy,
   onApprove,
   onReject,
+  onRequestDocs,
   onError,
 }: {
   app: MentorApp;
   busy: boolean;
   onApprove?: () => void;
   onReject?: () => void;
+  onRequestDocs?: (items: MentorDocRequestItem[], note: string) => void;
   onError?: (msg: string) => void;
 }) {
   const [dlBusy, setDlBusy] = useState(false);
+  const [showRequest, setShowRequest] = useState(false);
+  const [selected, setSelected] = useState<MentorDocRequestItem[]>([]);
+  const [note, setNote] = useState('');
   const pending = app.status === 'submitted' || app.status === 'under_review';
+  const openReq = app.documentRequest?.status === 'open' ? app.documentRequest : null;
 
   async function downloadResume() {
     if (!app.resumeUrl) return;
@@ -213,8 +248,6 @@ function ApplicationCard({
         window.open(app.resumeUrl, '_blank', 'noopener,noreferrer');
         return;
       }
-      // Server issues a 302 to a signed Cloudinary attachment URL — open it
-      // directly so the browser downloads the real PDF (not a JSON error body).
       const url = `/api/admin/applications/${app.id}/resume`;
       const win = window.open(url, '_blank', 'noopener,noreferrer');
       if (!win) {
@@ -227,6 +260,10 @@ function ApplicationCard({
     }
   }
 
+  function toggleItem(id: MentorDocRequestItem) {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
   return (
     <article className="rounded-2xl border p-5" style={{ borderColor: 'var(--line)' }}>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -234,6 +271,7 @@ function ApplicationCard({
           <div className="flex flex-wrap items-center gap-2">
             <h4 className="font-semibold">{app.name}</h4>
             <StatusPill status={app.status} />
+            {openReq && <StatusPill status="docs_requested" />}
           </div>
           <p className="mt-0.5 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
             {app.title} · {(app.expertise ?? []).join(', ') || '-'}
@@ -248,7 +286,7 @@ function ApplicationCard({
           </p>
         </div>
         {pending && onApprove && onReject && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               disabled={busy}
@@ -257,6 +295,14 @@ function ApplicationCard({
             >
               {busy ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
               Approve mentor
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setShowRequest((v) => !v)}
+              className="btn btn-ghost !py-2 text-[13px]"
+            >
+              <Send size={14} /> Request docs
             </button>
             <button
               type="button"
@@ -306,6 +352,82 @@ function ApplicationCard({
         <DocLink href={app.introVideoUrl} icon={Video} label="Intro video" />
       </div>
 
+      {openReq && (
+        <div
+          className="mt-4 border px-3 py-3 text-[13px]"
+          style={{ borderColor: 'rgba(194,87,10,0.35)', background: 'rgba(255,122,0,0.06)' }}
+        >
+          <p className="font-semibold" style={{ color: '#c2570a' }}>
+            Waiting on applicant · requested {fmt(openReq.requestedAt)}
+          </p>
+          <p className="mt-1" style={{ color: 'var(--ink-soft)' }}>
+            {(openReq.items || [])
+              .map((id) => MENTOR_DOC_REQUEST_ITEMS.find((x) => x.id === id)?.label || id)
+              .join(' · ')}
+          </p>
+          {openReq.note && (
+            <p className="mt-1" style={{ color: 'var(--ink)' }}>
+              Note: {openReq.note}
+            </p>
+          )}
+        </div>
+      )}
+
+      {showRequest && onRequestDocs && (
+        <div className="mt-4 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
+          <p className="mb-2 text-[13px] font-semibold">Ask them to re-send (pick any subset)</p>
+          <div className="flex flex-wrap gap-2">
+            {MENTOR_DOC_REQUEST_ITEMS.map((item) => {
+              const on = selected.includes(item.id);
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => toggleItem(item.id)}
+                  className="border px-3 py-1.5 text-[12px] font-semibold"
+                  style={{
+                    borderColor: on ? 'var(--green-deep)' : 'var(--line)',
+                    color: on ? 'var(--green-deep)' : 'var(--ink-soft)',
+                    background: on ? 'rgba(0,179,105,0.08)' : undefined,
+                  }}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+          <textarea
+            className="form-input mt-3 !rounded-none text-[13px]"
+            rows={2}
+            placeholder="Optional note (e.g. CV must be PDF, ID photo is blurry…)"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={busy || selected.length === 0}
+              onClick={() => onRequestDocs(selected, note.trim())}
+              className="btn btn-primary !py-2 text-[13px] disabled:opacity-50"
+            >
+              {busy ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+              Send request
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost !py-2 text-[13px]"
+              onClick={() => {
+                setShowRequest(false);
+                setSelected([]);
+                setNote('');
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {app.status === 'approved' && (
         <p className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-medium" style={{ color: 'var(--green-deep)' }}>
           <UserCheck size={13} /> Mentor access granted
@@ -321,16 +443,21 @@ function ApplicationCard({
 }
 
 function StatusPill({ status }: { status: string }) {
-  const colors: Record<string, { bg: string; color: string }> = {
+  const colors: Record<string, { bg: string; color: string; label?: string }> = {
     submitted: { bg: 'rgba(74,144,226,0.12)', color: 'var(--blue-ink)' },
     under_review: { bg: 'rgba(255,122,0,0.12)', color: '#c2570a' },
     approved: { bg: 'rgba(0,179,105,0.12)', color: 'var(--green-deep)' },
     rejected: { bg: 'rgba(220,38,38,0.1)', color: '#b91c1c' },
+    docs_requested: {
+      bg: 'rgba(255,122,0,0.14)',
+      color: '#c2570a',
+      label: 'docs requested',
+    },
   };
   const c = colors[status] ?? { bg: 'var(--paper-dim)', color: 'var(--ink-soft)' };
   return (
     <span className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide" style={{ background: c.bg, color: c.color }}>
-      {status.replace('_', ' ')}
+      {c.label || status.replace('_', ' ')}
     </span>
   );
 }

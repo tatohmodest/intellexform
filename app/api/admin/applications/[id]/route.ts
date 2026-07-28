@@ -4,13 +4,20 @@ import { assertAdmin } from '@/lib/adminAuth';
 import {
   approveMentorApplication,
   rejectMentorApplication,
+  requestMentorDocuments,
+  type MentorDocRequestItem,
 } from '@/lib/learn/ecosystem';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * PATCH /api/admin/applications/[id]
- * body: { type: 'mentor', action: 'approve' | 'reject', note?: string }
+ * body: {
+ *   type: 'mentor',
+ *   action: 'approve' | 'reject' | 'request_documents',
+ *   note?: string,
+ *   items?: MentorDocRequestItem[]
+ * }
  */
 export async function PATCH(
   req: NextRequest,
@@ -50,6 +57,14 @@ export async function PATCH(
         return NextResponse.json({ error: result.error }, { status: 400 });
       }
       return NextResponse.json({ ok: true, status: 'rejected' });
+    }
+    if (action === 'request_documents') {
+      const items = Array.isArray(body.items) ? (body.items as MentorDocRequestItem[]) : [];
+      const result = await requestMentorDocuments(id, items, note);
+      if (!result.ok) {
+        return NextResponse.json({ error: result.error }, { status: 400 });
+      }
+      return NextResponse.json({ ok: true, status: 'under_review', items: result.items });
     }
     return NextResponse.json({ error: 'invalid_action' }, { status: 400 });
   } catch (err) {

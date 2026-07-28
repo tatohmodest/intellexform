@@ -17,8 +17,10 @@ import {
   X,
 } from 'lucide-react';
 import IntroVideoRecorder from '@/components/dashboard/IntroVideoRecorder';
+import MentorRevisionPortal from '@/components/dashboard/MentorRevisionPortal';
 import { MAX_MENTOR_DOC_BYTES, prepareMentorDocForUpload } from '@/lib/compressImage';
 import { INTRO_VIDEO_MAX_SECONDS, INTRO_VIDEO_MIN_SECONDS } from '@/lib/learn/compressVideo';
+import type { MentorApplicationDoc } from '@/lib/learn/ecosystem';
 import { uploadMentorAsset } from '@/lib/learn/mentorUpload';
 
 const DAYS = ['Today', 'Tomorrow', 'In 2 days', 'In 3 days', 'In 4 days', 'In 5 days', 'In 6 days'];
@@ -63,13 +65,17 @@ export default function MentorApply() {
   const [uploadLabel, setUploadLabel] = useState('');
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [pendingApp, setPendingApp] = useState<MentorApplicationDoc | null>(null);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     fetch('/api/learn/mentor/application')
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (data?.application) setSubmitted(true);
+        if (data?.application) {
+          setSubmitted(true);
+          setPendingApp(data.application);
+        }
       })
       .finally(() => setChecking(false));
   }, []);
@@ -243,6 +249,11 @@ export default function MentorApply() {
   }
 
   if (submitted) {
+    const openRequest =
+      pendingApp?.documentRequest?.status === 'open' &&
+      Array.isArray(pendingApp.documentRequest.items) &&
+      pendingApp.documentRequest.items.length > 0;
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -253,10 +264,24 @@ export default function MentorApply() {
         <p className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: 'var(--ink-soft)' }}>
           Instructor application
         </p>
-        <h1 className="mt-2 font-display text-[32px] leading-[0.95] tracking-tight">Under review</h1>
+        <h1 className="mt-2 font-display text-[32px] leading-[0.95] tracking-tight">
+          {openRequest ? 'Updates requested' : 'Under review'}
+        </h1>
         <p className="mt-3 max-w-md text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-          Your CV, ID, and intro video are with InTelleX admins. Mentor Studio unlocks only after approval.
+          {openRequest
+            ? 'Admins need specific documents again. Use the portal below — only the listed items.'
+            : 'Your CV, ID, and intro video are with InTelleX admins. Mentor Studio unlocks only after approval.'}
         </p>
+
+        {openRequest && pendingApp && (
+          <MentorRevisionPortal
+            application={pendingApp}
+            onDone={(app) => {
+              setPendingApp(app);
+            }}
+          />
+        )}
+
         <button
           type="button"
           onClick={() => router.push('/dashboard')}

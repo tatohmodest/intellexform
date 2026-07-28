@@ -192,6 +192,28 @@ export type MentorApplicationStatus =
   | 'approved'
   | 'rejected';
 
+/** Documents an admin can ask the applicant to send again (any subset). */
+export type MentorDocRequestItem = 'resume' | 'id_front' | 'id_back' | 'intro_video';
+
+export const MENTOR_DOC_REQUEST_ITEMS: {
+  id: MentorDocRequestItem;
+  label: string;
+  hint: string;
+}[] = [
+  { id: 'resume', label: 'CV / resume', hint: 'Public Google Drive link' },
+  { id: 'id_front', label: 'ID front', hint: 'Photo of ID front' },
+  { id: 'id_back', label: 'ID back', hint: 'Photo of ID back' },
+  { id: 'intro_video', label: 'Intro video', hint: '30–60 second recording' },
+];
+
+export interface MentorDocumentRequest {
+  items: MentorDocRequestItem[];
+  note?: string | null;
+  requestedAt: Date;
+  status: 'open' | 'fulfilled';
+  fulfilledAt?: Date | null;
+}
+
 export interface MentorApplicationDoc {
   id: string;
   lbId: string;
@@ -217,6 +239,8 @@ export interface MentorApplicationDoc {
   status: MentorApplicationStatus;
   reviewNote?: string | null;
   reviewedAt?: Date | null;
+  /** Open admin request for specific documents to be re-sent. */
+  documentRequest?: MentorDocumentRequest | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -372,6 +396,7 @@ export async function approveMentorApplication(
         reviewedAt: new Date(),
         updatedAt: new Date(),
         instructorBadge,
+        documentRequest: null,
       },
     },
   );
@@ -417,9 +442,155 @@ export async function rejectMentorApplication(
         reviewNote: (note ?? '').slice(0, 500) || null,
         reviewedAt: new Date(),
         updatedAt: new Date(),
+        documentRequest: null,
       },
     },
   );
+  return { ok: true };
+}
+
+const DOC_ITEM_SET = new Set<MentorDocRequestItem>([
+  'resume',
+  'id_front',
+  'id_back',
+  'intro_video',
+]);
+
+function normalizeDocItems(raw: unknown): MentorDocRequestItem[] {
+  if (!Array.isArray(raw)) return [];
+  return Array.from(
+    new Set(
+      raw
+        .map((x) => String(x) as MentorDocRequestItem)
+        .filter((x) => DOC_ITEM_SET.has(x)),
+    ),
+  );
+}
+
+/** Admin asks a pending applicant to re-send specific documents (1–N). */
+export async function requestMentorDocuments(
+  applicationId: string,
+  items: MentorDocRequestItem[],
+  note?: string,
+): Promise<{ ok: true; items: MentorDocRequestItem[] } | { ok: false; error: string }> {
+  await ensureLearnCollections();
+  const db = await getDb();
+  let oid: ObjectId;
+  try {
+    oid = new ObjectId(applicationId);
+  } catch {
+    return { ok: false, error: 'invalid_id' };
+  }
+  const app = await db.collection('mentor_applications').findOne({ _id: oid });
+  if (!app) return { ok: false, error: 'not_found' };
+  if (!['submitted', 'under_review'].includes(String(app.status))) {
+    return { ok: false, error: 'not_pending' };
+  }
+  const normalized = normalizeDocItems(items);
+  if (!normalized.length) return { ok: false, error: 'items_required' };
+
+  const request: MentorDocumentRequest = {
+    items: normalized,
+    note: (note ?? '').slice(0, 800) || null,
+    requestedAt: new Date(),
+    status: 'open',
+    fulfilledAt: null,
+  };
+
+  await db.collection('mentor_applications').updateOne(
+    { _id: oid },
+    {
+      $set: {
+        documentRequest: request,
+        status: 'under_review',
+        updatedAt: new Date(),
+      },
+    },
+  );
+
+  const labels = normalized
+    .map((id) => MENTOR_DOC_REQUEST_ITEMS.find((x) => x.id === id)?.label || id)
+    .join(', ');
+
+  try {
+    const { createNotification } = await import('@/lib/learn/notifications');
+    await createNotification({
+      userId: String(app.lbId),
+      title: 'Admins need updated documents',
+      body: `Please re-send: ${labels}.${request.note ? ` Note: ${request.note}` : ''} Open Mentor Studio to upload.`,
+      href: '/dashboard/mentor',
+      kind: 'system',
+      data: { applicationId, items: normalized },
+    });
+  } catch (err) {
+    console.error('document request notify failed:', err);
+  }
+
+  return { ok: true, items: normalized };
+}
+
+/** Applicant fulfills an open document request with only the asked items. */
+export async function fulfillMentorDocumentRequest(
+  lbId: string,
+  updates: {
+    resumeUrl?: string;
+    resumeSource?: 'google_drive' | 'cloudinary';
+    resumePublicId?: string;
+    resumeResourceType?: string;
+    resumeFormat?: string;
+    idFrontUrl?: string;
+    idBackUrl?: string;
+    introVideoUrl?: string;
+    introVideoBytes?: number;
+  },
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await ensureLearnCollections();
+  const db = await getDb();
+  const app = await db.collection('mentor_applications').findOne({
+    lbId,
+    status: { $in: ['submitted', 'under_review'] },
+  });
+  if (!app) return { ok: false, error: 'not_found' };
+  const req = app.documentRequest as MentorDocumentRequest | null | undefined;
+  if (!req || req.status !== 'open' || !Array.isArray(req.items) || !req.items.length) {
+    return { ok: false, error: 'no_open_request' };
+  }
+
+  const items = normalizeDocItems(req.items);
+  const $set: Record<string, unknown> = {
+    updatedAt: new Date(),
+    status: 'under_review',
+    'documentRequest.status': 'fulfilled',
+    'documentRequest.fulfilledAt': new Date(),
+  };
+
+  for (const item of items) {
+    if (item === 'resume') {
+      if (!updates.resumeUrl) return { ok: false, error: 'resume_required' };
+      $set.resumeUrl = updates.resumeUrl;
+      $set.resumeSource = updates.resumeSource || 'google_drive';
+      if (updates.resumePublicId) $set.resumePublicId = updates.resumePublicId;
+      if (updates.resumeResourceType) $set.resumeResourceType = updates.resumeResourceType;
+      if (updates.resumeFormat) $set.resumeFormat = updates.resumeFormat;
+    }
+    if (item === 'id_front') {
+      if (!updates.idFrontUrl) return { ok: false, error: 'id_front_required' };
+      $set.idFrontUrl = updates.idFrontUrl;
+    }
+    if (item === 'id_back') {
+      if (!updates.idBackUrl) return { ok: false, error: 'id_back_required' };
+      $set.idBackUrl = updates.idBackUrl;
+    }
+    if (item === 'intro_video') {
+      if (!updates.introVideoUrl) return { ok: false, error: 'intro_video_required' };
+      $set.introVideoUrl = updates.introVideoUrl;
+      if (typeof updates.introVideoBytes === 'number') {
+        $set.introVideoBytes = updates.introVideoBytes;
+      }
+    }
+  }
+
+  await db.collection('mentor_applications').updateOne({ _id: app._id }, { $set });
   return { ok: true };
 }
 
