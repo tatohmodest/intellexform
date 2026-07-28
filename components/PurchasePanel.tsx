@@ -4,8 +4,15 @@ import { useState } from 'react';
 import { Loader2, Lock, ShieldCheck } from 'lucide-react';
 import { Course } from '@/lib/types';
 import { formatXAF } from '@/lib/format';
+import ShareCourseButton from '@/components/ShareCourseButton';
 
-export default function PurchasePanel({ course }: { course: Course }) {
+export default function PurchasePanel({
+  course,
+  shareUrl,
+}: {
+  course: Course;
+  shareUrl: string;
+}) {
   const [open, setOpen] = useState(false);
   const [fullName, setFullName] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
@@ -80,6 +87,14 @@ export default function PurchasePanel({ course }: { course: Course }) {
           </p>
         </form>
       )}
+
+      <ShareCourseButton
+        url={shareUrl}
+        title={course.name}
+        text={course.shortDescription || `Learn ${course.name} on InTelleX.`}
+        className="mt-3 w-full"
+        label="Share course"
+      />
 
       <ul className="mt-5 flex flex-col gap-2 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
         {course.certificateOfCompletion && (

@@ -3,11 +3,12 @@ import { notFound } from 'next/navigation';
 import { Star, Check, Clock, Globe, BadgeCheck, ArrowLeft } from 'lucide-react';
 import { getCourseBySlug } from '@/lib/repo';
 import { formatXAF } from '@/lib/format';
-import { buildShareMetadata } from '@/lib/seo/share';
+import { absoluteUrl, buildShareMetadata } from '@/lib/seo/share';
 import TopNav from '@/components/landing/TopNav';
 import Footer from '@/components/landing/Footer';
 import PurchasePanel from '@/components/PurchasePanel';
 import CourseHeroImage from '@/components/CourseHeroImage';
+import ShareCourseButton from '@/components/ShareCourseButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +32,11 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
   const course = await getCourseBySlug(params.slug);
   if (!course) notFound();
 
+  const shareUrl = absoluteUrl(`/courses/${course.slug}`);
+  const shareText =
+    course.shortDescription ||
+    `Learn ${course.name} on InTelleX.`;
+
   return (
     <>
       <TopNav />
@@ -38,9 +44,18 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
       {/* Header band */}
       <section className="py-8 sm:py-12" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
         <div className="wrap">
-          <Link href="/courses" className="mb-4 inline-flex items-center gap-2 text-sm sm:mb-6" style={{ color: 'rgba(251,248,240,0.7)' }}>
-            <ArrowLeft size={15} /> All courses
-          </Link>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 sm:mb-6">
+            <Link href="/courses" className="inline-flex items-center gap-2 text-sm" style={{ color: 'rgba(251,248,240,0.7)' }}>
+              <ArrowLeft size={15} /> All courses
+            </Link>
+            <ShareCourseButton
+              url={shareUrl}
+              title={course.name}
+              text={shareText}
+              variant="dark"
+              label="Share course"
+            />
+          </div>
           <div className="grid gap-2.5 sm:gap-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="tab" style={{ background: 'rgba(74,144,226,0.18)', color: '#8fc0ff' }}>{course.type}</span>
@@ -126,7 +141,7 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
 
           {/* Sticky purchase */}
           <div className="lg:sticky lg:top-24 lg:self-start">
-            <PurchasePanel course={course} />
+            <PurchasePanel course={course} shareUrl={shareUrl} />
           </div>
         </div>
       </section>

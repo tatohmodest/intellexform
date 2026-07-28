@@ -16,8 +16,9 @@ import { getSessionUser } from '@/lib/auth/getUser';
 import { findMentor, getTeacherCourse, isEnrolledInCourse } from '@/lib/learn/ecosystem';
 import { courseDurationHours, deliveryModeLabel } from '@/lib/learn/courseTypes';
 import { isDirectVideo, toEmbedUrl } from '@/lib/learn/videoEmbed';
-import { buildShareMetadata } from '@/lib/seo/share';
+import { absoluteUrl, buildShareMetadata } from '@/lib/seo/share';
 import EnrollTeacherCourseButton from '@/components/dashboard/EnrollTeacherCourseButton';
+import ShareCourseButton from '@/components/ShareCourseButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,16 +67,32 @@ export default async function InstructorCoursePage({
     ? course.lessons || []
     : (course.lessons || []).filter((l) => l.preview || !isPaid);
   const lockedCount = (course.lessons?.length || 0) - visibleLessons.length;
+  const shareUrl = absoluteUrl(`/courses/instructor/${course.id}`);
+  const shareText =
+    course.subtitle ||
+    course.description?.slice(0, 160) ||
+    `Learn ${course.title} on InTelleX.`;
 
   return (
     <div className="mx-auto max-w-[980px] overflow-x-hidden">
-      <Link
-        href="/dashboard/courses"
-        className="mb-6 inline-flex items-center gap-1.5 text-[13.5px] font-semibold"
-        style={{ color: 'var(--ink-soft)' }}
-      >
-        <ArrowLeft size={14} /> My Courses
-      </Link>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <Link
+          href="/dashboard/courses"
+          className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold"
+          style={{ color: 'var(--ink-soft)' }}
+        >
+          <ArrowLeft size={14} /> My Courses
+        </Link>
+        {course.published ? (
+          <ShareCourseButton
+            url={shareUrl}
+            title={course.title}
+            text={shareText}
+            accent={accent}
+            label="Share course"
+          />
+        ) : null}
+      </div>
 
       <header className="mb-8 grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-start">
         <div className="min-w-0">

@@ -4,9 +4,10 @@ import { ArrowRight, BookOpen, Clock, Video } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { findMentor, getTeacherCourse } from '@/lib/learn/ecosystem';
 import { courseDurationHours, deliveryModeLabel } from '@/lib/learn/courseTypes';
-import { buildShareMetadata } from '@/lib/seo/share';
+import { absoluteUrl, buildShareMetadata } from '@/lib/seo/share';
 import TopNav from '@/components/landing/TopNav';
 import Footer from '@/components/landing/Footer';
+import ShareCourseButton from '@/components/ShareCourseButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,12 +52,26 @@ export default async function PublicInstructorCoursePage({
   const accent = course.accent || '#00b369';
   const isPaid = (course.priceXAF ?? 0) > 0;
   const loginNext = `/dashboard/courses/instructor/${course.id}`;
+  const shareUrl = absoluteUrl(`/courses/instructor/${course.id}`);
+  const shareText =
+    course.subtitle ||
+    course.description?.slice(0, 160) ||
+    `Learn ${course.title} on InTelleX.`;
 
   return (
     <>
       <TopNav />
       <section className="py-8 sm:py-12" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
         <div className="wrap max-w-[920px]">
+          <div className="mb-4 flex justify-end">
+            <ShareCourseButton
+              url={shareUrl}
+              title={course.title}
+              text={shareText}
+              variant="dark"
+              label="Share course"
+            />
+          </div>
           {course.category && (
             <p className="font-mono text-[10px] uppercase tracking-[0.18em]" style={{ color: 'rgba(251,248,240,0.55)' }}>
               {course.category}
@@ -137,6 +152,14 @@ export default async function PublicInstructorCoursePage({
             >
               Create an account
             </Link>
+            <ShareCourseButton
+              url={shareUrl}
+              title={course.title}
+              text={shareText}
+              accent={accent}
+              className="mt-3 w-full"
+              label="Share course"
+            />
           </aside>
         </div>
       </section>
