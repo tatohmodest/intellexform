@@ -68,9 +68,9 @@ export default function AgoraRoom({
   const micTrackRef = useRef<IMicrophoneAudioTrack | null>(null);
   const camTrackRef = useRef<ICameraVideoTrack | null>(null);
   const screenTrackRef = useRef<ILocalVideoTrack | null>(null);
-  const localVideoRef = useRef<HTMLDivElement>(null);
-  const screenPreviewRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
+  const localVideoRef = useRef<HTMLDivElement | null>(null);
+  const screenPreviewRef = useRef<HTMLDivElement | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
   const remoteRefs = useRef<Map<string | number, HTMLDivElement>>(new Map());
   const remoteUsersRef = useRef<Map<string | number, IAgoraRTCRemoteUser>>(new Map());
 
@@ -204,18 +204,38 @@ export default function AgoraRoom({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channel]);
 
-  // Play local screen into the main presenter stage.
+  // Play local screen into the main presenter stage once the node exists.
+  // Do NOT call track.stop() here - that blanks the preview. Parent must have
+  // an explicit height so Agora's video (height:100%) actually paints.
+  const attachScreenPreview = useCallback((el: HTMLDivElement | null) => {
+    screenPreviewRef.current = el;
+    const track = screenTrackRef.current;
+    if (!el || !track) return;
+    try {
+      track.play(el, { fit: 'contain' });
+    } catch (err) {
+      console.error('Screen preview play failed:', err);
+    }
+  }, []);
+
   useEffect(() => {
     if (!sharing) return;
-    const track = screenTrackRef.current;
     const el = screenPreviewRef.current;
-    if (track && el) {
-      track.stop();
-      track.play(el, { fit: 'contain' });
+    const track = screenTrackRef.current;
+    if (el && track) {
+      try {
+        track.play(el, { fit: 'contain' });
+      } catch {
+        /* ignore */
+      }
     }
-    // Keep camera preview in the filmstrip while presenting.
+    // Keep camera preview in the filmstrip while presenting (local only).
     if (camTrackRef.current && camOn && localVideoRef.current) {
-      camTrackRef.current.play(localVideoRef.current, { fit: 'cover' });
+      try {
+        camTrackRef.current.play(localVideoRef.current, { fit: 'cover' });
+      } catch {
+        /* ignore */
+      }
     }
   }, [sharing, camOn]);
 
@@ -260,13 +280,28 @@ export default function AgoraRoom({
         await client.publish(screenTrack);
         setSharing(true);
 
-        requestAnimationFrame(() => {
-          if (screenPreviewRef.current && screenTrackRef.current) {
-            screenTrackRef.current.play(screenPreviewRef.current, { fit: 'contain' });
+        // Retry play after layout paints with a real height.
+        const playPreview = () => {
+          const el = screenPreviewRef.current;
+          if (el && screenTrackRef.current) {
+            try {
+              screenTrackRef.current.play(el, { fit: 'contain' });
+            } catch (err) {
+              console.error('Screen preview play failed:', err);
+            }
           }
           if (camTrackRef.current && camOn && localVideoRef.current) {
-            camTrackRef.current.play(localVideoRef.current, { fit: 'cover' });
+            try {
+              camTrackRef.current.play(localVideoRef.current, { fit: 'cover' });
+            } catch {
+              /* ignore */
+            }
           }
+        };
+        requestAnimationFrame(() => {
+          playPreview();
+          window.setTimeout(playPreview, 120);
+          window.setTimeout(playPreview, 400);
         });
 
         screenTrack.on('track-ended', () => {
@@ -539,23 +574,23 @@ export default function AgoraRoom({
       >
         {sharing ? (
           /* Meet-style presenting: big screen on top, faces in a strip underneath */
-          <div className="flex min-h-0 flex-1 flex-col gap-3">
+          <div className="flex flex-col gap-3">
             <div
-              className="relative min-h-0 flex-1 overflow-hidden rounded-2xl"
+              className="relative w-full overflow-hidden rounded-2xl"
               style={{
                 background: '#0a0e12',
-                minHeight: isFullscreen ? '55vh' : 360,
-                maxHeight: isFullscreen ? 'calc(100vh - 220px)' : 520,
+                // Explicit height (not only minHeight) so Agora's height:100% video paints.
+                height: isFullscreen ? 'calc(100vh - 220px)' : 420,
               }}
             >
               <div
-                ref={screenPreviewRef}
-                className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-contain"
+                ref={attachScreenPreview}
+                className="absolute inset-0 [&_video]:!h-full [&_video]:!w-full [&_video]:!object-contain [&_video]:!bg-black"
               />
-              <span className="absolute bottom-2.5 left-3 rounded-md bg-black/55 px-2 py-1 text-[11.5px] font-medium text-white">
+              <span className="pointer-events-none absolute bottom-2.5 left-3 z-10 rounded-md bg-black/55 px-2 py-1 text-[11.5px] font-medium text-white">
                 Your screen · sharing
               </span>
-              <span className="absolute right-3 top-3 rounded-md bg-[var(--green)] px-2 py-1 text-[11px] font-semibold text-white">
+              <span className="pointer-events-none absolute right-3 top-3 z-10 rounded-md bg-[var(--green)] px-2 py-1 text-[11px] font-semibold text-white">
                 You are presenting
               </span>
             </div>
