@@ -211,7 +211,8 @@ export default function TutorChat() {
             Free to use · cites InTelleX lessons
           </p>
           <p className="mt-2 text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-            Same look as My Courses - pick a prompt below or type your own question.
+            Pick a prompt below or type your own question - answers link straight into your
+            courses and tutorials.
           </p>
         </div>
         <div
