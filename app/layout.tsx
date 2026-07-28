@@ -37,7 +37,8 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: 'InTelleX',
-    statusBarStyle: 'black-translucent',
+    // default = light status bar / chrome with dark (black) text & icons
+    statusBarStyle: 'default',
   },
   formatDetection: {
     telephone: false,
@@ -67,10 +68,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#00b369' },
-    { media: '(prefers-color-scheme: dark)', color: '#0C1116' },
-  ],
+  // Browser / PWA chrome (address bar, status area) — white with dark system text
+  themeColor: '#FFFFFF',
   colorScheme: 'light',
 };
 
