@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Star, Check, Clock, Globe, BadgeCheck, ArrowLeft } from 'lucide-react';
 import { getCourseBySlug } from '@/lib/repo';
 import { formatXAF } from '@/lib/format';
+import { buildShareMetadata } from '@/lib/seo/share';
 import TopNav from '@/components/landing/TopNav';
 import Footer from '@/components/landing/Footer';
 import PurchasePanel from '@/components/PurchasePanel';
@@ -13,10 +14,17 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const course = await getCourseBySlug(params.slug);
   if (!course) return { title: 'Course not found - Intellex' };
-  return {
-    title: `${course.name} - Intellex`,
-    description: course.shortDescription,
-  };
+  const description =
+    course.shortDescription ||
+    course.courseDetails?.slice(0, 200) ||
+    `Learn ${course.name} on InTelleX.`;
+  return buildShareMetadata({
+    title: `${course.name} - InTelleX`,
+    description,
+    path: `/courses/${course.slug}`,
+    image: course.courseImage,
+    imageAlt: course.name,
+  });
 }
 
 export default async function CourseDetailPage({ params }: { params: { slug: string } }) {

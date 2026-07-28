@@ -16,9 +16,27 @@ import { getSessionUser } from '@/lib/auth/getUser';
 import { findMentor, getTeacherCourse, isEnrolledInCourse } from '@/lib/learn/ecosystem';
 import { courseDurationHours, deliveryModeLabel } from '@/lib/learn/courseTypes';
 import { isDirectVideo, toEmbedUrl } from '@/lib/learn/videoEmbed';
+import { buildShareMetadata } from '@/lib/seo/share';
 import EnrollTeacherCourseButton from '@/components/dashboard/EnrollTeacherCourseButton';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({ params }: { params: { id: string } }) {
+  const course = await getTeacherCourse(params.id);
+  if (!course) return { title: 'Course not found - InTelleX' };
+  const description =
+    course.subtitle ||
+    course.description?.slice(0, 200) ||
+    `Learn ${course.title} on InTelleX.`;
+  // Canonical share URL is the public page so WhatsApp can scrape without auth.
+  return buildShareMetadata({
+    title: `${course.title} - InTelleX`,
+    description,
+    path: `/courses/instructor/${course.id}`,
+    image: course.coverUrl,
+    imageAlt: course.title,
+  });
+}
 
 export default async function InstructorCoursePage({
   params,
