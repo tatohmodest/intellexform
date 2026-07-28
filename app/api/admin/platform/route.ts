@@ -23,6 +23,7 @@ import {
   listOnboardingInvites,
 } from '@/lib/admin/onboardingInvites';
 import { COMMERCIAL_PLANS, type CommercialPlanId } from '@/lib/eduos/plans';
+import { manageInstitutionDomain } from '@/lib/learn/institutionDomains';
 
 export const dynamic = 'force-dynamic';
 
@@ -189,6 +190,50 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
           ...invite,
           url: `${origin}/onboard/${invite.token}`,
+        });
+      }
+      case 'manage_institution_domain': {
+        const slug = String(body.slug || '').trim();
+        const domainAction = String(body.domainAction || '').trim() as
+          | 'approve'
+          | 'reject'
+          | 'activate'
+          | 'revoke'
+          | 'set'
+          | 'cancel_pending';
+        if (!slug || !domainAction) {
+          return NextResponse.json(
+            { error: 'slug and domainAction required' },
+            { status: 400 },
+          );
+        }
+        const result = await manageInstitutionDomain({
+          slug,
+          action: domainAction,
+          domain: body.domain ?? null,
+          subdomain: body.subdomain ?? undefined,
+          notes: body.notes ?? null,
+          actorEmail: email,
+        });
+        if ('error' in result) {
+          return NextResponse.json(result, { status: 400 });
+        }
+        // Prefer Prisma detail when the institution exists there.
+        let detail = null;
+        try {
+          const { prisma } = await import('@/lib/db/prisma');
+          const row = await prisma.institution.findUnique({
+            where: { slug },
+            select: { id: true },
+          });
+          if (row) detail = await getInstitutionDetail(row.id);
+        } catch {
+          /* ignore */
+        }
+        return NextResponse.json({
+          ok: true,
+          domain: result.domain,
+          institution: detail,
         });
       }
       default:

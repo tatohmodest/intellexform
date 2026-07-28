@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, Globe2, Loader2, Save } from 'lucide-react';
 import AdminGate from '@/components/admin/AdminGate';
 import AdminShell from '@/components/admin/AdminShell';
 import { CAPABILITY_PACKS, MODULE_CATALOG, type CapabilityPack } from '@/lib/eduos/capabilities';
@@ -41,6 +41,11 @@ function InstitutionEditor() {
     enabledModules: [] as string[],
     visibility: 'PRIVATE',
   });
+  const [domainForm, setDomainForm] = useState({
+    domain: '',
+    subdomain: '',
+    notes: '',
+  });
 
   useEffect(() => {
     if (!id) return;
@@ -62,6 +67,11 @@ function InstitutionEditor() {
           capabilityPack: (data.capabilityPack as CapabilityPack) || 'foundation',
           enabledModules: (data.enabledModules as string[]) || [],
           visibility: String(data.visibility || 'PRIVATE'),
+        });
+        setDomainForm({
+          domain: String(data.pendingCustomDomain || data.customDomain || ''),
+          subdomain: String(data.subdomain || ''),
+          notes: '',
         });
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed'));
@@ -100,6 +110,43 @@ function InstitutionEditor() {
       setForm((f) => ({ ...f, status: String(data.status || f.status) }));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Provision failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function manageDomain(domainAction: string, extra: Record<string, unknown> = {}) {
+    if (!inst?.slug) return;
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch('/api/admin/platform', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'manage_institution_domain',
+          slug: inst.slug,
+          domainAction,
+          domain: domainForm.domain || undefined,
+          subdomain: domainForm.subdomain || null,
+          notes: domainForm.notes || undefined,
+          ...extra,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Domain action failed');
+      if (data.institution) {
+        setInst(data.institution);
+        setDomainForm({
+          domain: String(
+            data.institution.pendingCustomDomain || data.institution.customDomain || '',
+          ),
+          subdomain: String(data.institution.subdomain || ''),
+          notes: '',
+        });
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Domain action failed');
     } finally {
       setBusy(false);
     }
@@ -249,6 +296,82 @@ function InstitutionEditor() {
             })}
           </div>
         ) : null}
+      </div>
+
+      <div className="space-y-3 border p-4" style={{ borderColor: 'var(--line)' }}>
+        <h2 className="inline-flex items-center gap-2 font-display text-lg">
+          <Globe2 size={16} /> Campus domain
+        </h2>
+        <p className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+          InTelleX can approve, change, or revoke the hostname for this campus interface. Point a
+          CNAME to <code>{String(inst?.cnameTarget || 'cname.intellex.cm')}</code>.
+        </p>
+        <div className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+          Status: <strong style={{ color: 'var(--ink)' }}>{String(inst?.domainStatus || 'none')}</strong>
+          {inst?.customDomain ? <> · Active: {String(inst.customDomain)}</> : null}
+          {inst?.pendingCustomDomain ? <> · Pending: {String(inst.pendingCustomDomain)}</> : null}
+        </div>
+        <input
+          className="form-input !rounded-none"
+          placeholder="learn.school.edu"
+          value={domainForm.domain}
+          onChange={(e) => setDomainForm((f) => ({ ...f, domain: e.target.value }))}
+        />
+        <input
+          className="form-input !rounded-none"
+          placeholder="Optional subdomain label"
+          value={domainForm.subdomain}
+          onChange={(e) => setDomainForm((f) => ({ ...f, subdomain: e.target.value }))}
+        />
+        <input
+          className="form-input !rounded-none"
+          placeholder="Admin notes"
+          value={domainForm.notes}
+          onChange={(e) => setDomainForm((f) => ({ ...f, notes: e.target.value }))}
+        />
+        <div className="flex flex-wrap gap-2">
+          {inst?.pendingCustomDomain ? (
+            <>
+              <button
+                type="button"
+                className="btn btn-primary !rounded-none"
+                disabled={busy}
+                onClick={() =>
+                  manageDomain('approve', { domain: String(inst.pendingCustomDomain) })
+                }
+              >
+                Approve pending
+              </button>
+              <button
+                type="button"
+                className="btn !rounded-none"
+                disabled={busy}
+                onClick={() => manageDomain('reject')}
+              >
+                Reject
+              </button>
+            </>
+          ) : null}
+          <button
+            type="button"
+            className="btn btn-primary !rounded-none"
+            disabled={busy || !domainForm.domain.trim()}
+            onClick={() => manageDomain('set')}
+          >
+            Set / change domain
+          </button>
+          {inst?.customDomain || inst?.pendingCustomDomain ? (
+            <button
+              type="button"
+              className="btn !rounded-none"
+              style={{ color: '#b91c1c' }}
+              disabled={busy}
+              onClick={() => manageDomain('revoke')}
+            >
+              Revoke
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-3">
