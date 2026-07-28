@@ -1970,14 +1970,28 @@ export async function getAdminLearningOverview() {
   for (const name of LEARN_COLLECTIONS) {
     collections.push({ name, count: await db.collection(name).countDocuments() });
   }
-  const [recentLearners, recentEnrollments, recentBookings, recentBooks, recentInstitutions] =
-    await Promise.all([
-      db.collection('learners').find({}, { projection: { _id: 0, lbId: 1, name: 1, email: 1, xp: 1, streakCount: 1, roles: 1, lastLoginAt: 1 } }).sort({ lastLoginAt: -1 }).limit(25).toArray(),
-      db.collection('enrollments').find({}, { projection: { _id: 0 } }).sort({ enrolledAt: -1 }).limit(25).toArray(),
-      db.collection('bookings').find({}).sort({ createdAt: -1 }).limit(25).toArray(),
-      db.collection('books').find({}, { projection: { chapters: 0 } }).sort({ createdAt: -1 }).limit(25).toArray(),
-      db.collection('institutions').find({}, { projection: { _id: 0 } }).sort({ createdAt: -1 }).limit(25).toArray(),
-    ]);
+  // Course class sessions live outside LEARN_COLLECTIONS (created on demand).
+  const { countCourseClassSessions, listRecentCourseClasses } = await import(
+    '@/lib/learn/courseClassSessions'
+  );
+  const classSessionCount = await countCourseClassSessions();
+  collections.push({ name: 'course_class_sessions', count: classSessionCount });
+
+  const [
+    recentLearners,
+    recentEnrollments,
+    recentBookings,
+    recentBooks,
+    recentInstitutions,
+    recentClassSessions,
+  ] = await Promise.all([
+    db.collection('learners').find({}, { projection: { _id: 0, lbId: 1, name: 1, email: 1, xp: 1, streakCount: 1, roles: 1, lastLoginAt: 1 } }).sort({ lastLoginAt: -1 }).limit(25).toArray(),
+    db.collection('enrollments').find({}, { projection: { _id: 0 } }).sort({ enrolledAt: -1 }).limit(25).toArray(),
+    db.collection('bookings').find({}).sort({ createdAt: -1 }).limit(25).toArray(),
+    db.collection('books').find({}, { projection: { chapters: 0 } }).sort({ createdAt: -1 }).limit(25).toArray(),
+    db.collection('institutions').find({}, { projection: { _id: 0 } }).sort({ createdAt: -1 }).limit(25).toArray(),
+    listRecentCourseClasses(40),
+  ]);
   const revenueRows = await db
     .collection('book_purchases')
     .aggregate([{ $match: { priceXAF: { $gt: 0 } } }, { $group: { _id: null, total: { $sum: '$priceXAF' } } }])
@@ -1990,6 +2004,7 @@ export async function getAdminLearningOverview() {
     recentBookings: recentBookings.map((b) => ({ ...b, _id: b._id.toString() })),
     recentBooks: recentBooks.map((b) => ({ ...b, _id: b._id.toString() })),
     recentInstitutions,
+    recentClassSessions,
   };
 }
 

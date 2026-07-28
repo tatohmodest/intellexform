@@ -11,6 +11,15 @@ interface Overview {
   recentBookings: Array<{ _id: string; userId: string; mentorName: string; topic: string; scheduledAt: string; status: string; priceXAF?: number }>;
   recentBooks: Array<{ _id: string; title: string; authorName: string; priceXAF: number; published: boolean; sales: number }>;
   recentInstitutions: Array<{ slug: string; name: string; visibility: string; memberCount: number; ownerName: string }>;
+  recentClassSessions?: Array<{
+    id: string;
+    courseTitle: string;
+    instructorName: string;
+    status: string;
+    startAt: string;
+    endAt: string | null;
+    durationMinutes: number;
+  }>;
 }
 
 function fmt(d?: string) {
@@ -117,6 +126,20 @@ export default function AdminLearning() {
           </div>
         </div>
       </section>
+
+      <Section
+        title="Instructor class sessions"
+        head={['COURSE', 'INSTRUCTOR', 'STARTED', 'ENDED', 'DURATION', 'STATUS']}
+        rows={(data.recentClassSessions || []).map((s) => [
+          s.courseTitle,
+          s.instructorName,
+          fmt(s.startAt),
+          s.endAt ? fmt(s.endAt) : s.status === 'live' ? 'In progress' : '-',
+          `${s.durationMinutes} min`,
+          s.status === 'live' ? 'LIVE' : 'Ended',
+        ])}
+        empty="No instructor class sessions yet. When an instructor starts class from My Students, start and end times appear here for verification."
+      />
 
       <Section
         title="Learners"

@@ -1,14 +1,20 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ClipboardList,
   GraduationCap,
+  Loader2,
+  Radio,
   Search,
+  Square,
   Users,
+  Video,
 } from 'lucide-react';
 import type { InstructorCourseStudents } from '@/lib/learn/ecosystem';
+import type { CourseClassSessionView } from '@/lib/learn/courseClassSessions';
 
 export default function MyStudentsPanel({
   groups,
@@ -17,10 +23,35 @@ export default function MyStudentsPanel({
   groups: InstructorCourseStudents[];
   totalStudents: number;
 }) {
+  const router = useRouter();
   const [query, setQuery] = useState('');
   const [openCourseId, setOpenCourseId] = useState<string | null>(
     groups.find((g) => g.studentCount > 0)?.courseId ?? groups[0]?.courseId ?? null,
   );
+  const [liveByCourse, setLiveByCourse] = useState<Record<string, CourseClassSessionView>>({});
+  const [classBusy, setClassBusy] = useState(false);
+  const [classError, setClassError] = useState('');
+
+  const refreshLive = useCallback(async () => {
+    try {
+      const res = await fetch('/api/learn/course-sessions');
+      if (!res.ok) return;
+      const data = await res.json();
+      const map: Record<string, CourseClassSessionView> = {};
+      for (const s of (data.sessions || []) as CourseClassSessionView[]) {
+        map[s.courseId] = s;
+      }
+      setLiveByCourse(map);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshLive();
+    const t = window.setInterval(refreshLive, 30000);
+    return () => window.clearInterval(t);
+  }, [refreshLive]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -36,6 +67,56 @@ export default function MyStudentsPanel({
   }, [groups, query]);
 
   const active = filtered.find((g) => g.courseId === openCourseId) || filtered[0] || null;
+  const activeLive = active ? liveByCourse[active.courseId] : null;
+
+  async function startClass(courseId: string) {
+    setClassBusy(true);
+    setClassError('');
+    try {
+      const res = await fetch('/api/learn/course-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courseId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setClassError(data.error || 'Could not start class');
+        return;
+      }
+      const live = data.session as CourseClassSessionView;
+      setLiveByCourse((prev) => ({ ...prev, [courseId]: live }));
+      router.push(`/dashboard/sessions/${live.channel}`);
+    } catch {
+      setClassError('Network error');
+    } finally {
+      setClassBusy(false);
+    }
+  }
+
+  async function endClass(sessionId: string, courseId: string) {
+    if (!window.confirm('End this class? Students will be told the session is over.')) return;
+    setClassBusy(true);
+    setClassError('');
+    try {
+      const res = await fetch(`/api/learn/course-sessions/${sessionId}/end`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setClassError(data.error || 'Could not end class');
+        return;
+      }
+      setLiveByCourse((prev) => {
+        const next = { ...prev };
+        delete next[courseId];
+        return next;
+      });
+    } catch {
+      setClassError('Network error');
+    } finally {
+      setClassBusy(false);
+    }
+  }
 
   return (
     <div>
@@ -51,8 +132,8 @@ export default function MyStudentsPanel({
             Grouped by enrolment
           </p>
           <p className="mt-2 text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-            See who is in each of your courses. Assign an exam or assignment to everyone enrolled
-            in that course from Assessment Studio.
+            See who is in each of your courses. Start class immediately, or assign an exam or
+            assignment to everyone enrolled in that course.
           </p>
         </div>
         <div
@@ -62,6 +143,14 @@ export default function MyStudentsPanel({
           <span>{totalStudents} students</span>
           <span style={{ color: 'var(--line)' }}>·</span>
           <span>{groups.length} courses</span>
+          {Object.keys(liveByCourse).length > 0 ? (
+            <>
+              <span style={{ color: 'var(--line)' }}>·</span>
+              <span style={{ color: '#b91c1c' }}>
+                {Object.keys(liveByCourse).length} live
+              </span>
+            </>
+          ) : null}
         </div>
       </div>
 
@@ -111,6 +200,7 @@ export default function MyStudentsPanel({
             <ul className="space-y-1">
               {filtered.map((g) => {
                 const selected = active?.courseId === g.courseId;
+                const live = liveByCourse[g.courseId];
                 return (
                   <li key={g.courseId}>
                     <button
@@ -134,6 +224,9 @@ export default function MyStudentsPanel({
                           className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.12em]"
                           style={{ color: selected ? 'var(--green-deep)' : 'var(--ink-soft)' }}
                         >
+                          {live ? (
+                            <span style={{ color: '#b91c1c' }}>Live now · </span>
+                          ) : null}
                           {g.published ? 'Published' : 'Draft'} · {g.students.length} enrolled
                         </span>
                       </span>
@@ -171,6 +264,46 @@ export default function MyStudentsPanel({
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    {activeLive ? (
+                      <>
+                        <Link
+                          href={`/dashboard/sessions/${activeLive.channel}`}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 text-[13px] font-semibold text-white"
+                          style={{ background: '#b91c1c' }}
+                        >
+                          <Radio size={14} className="animate-pulse" /> Join live class
+                        </Link>
+                        <button
+                          type="button"
+                          disabled={classBusy}
+                          onClick={() => endClass(activeLive.id, active.courseId)}
+                          className="inline-flex items-center gap-1.5 border px-3.5 py-2.5 text-[13px] font-semibold"
+                          style={{ borderColor: 'var(--ink)', color: 'var(--ink)' }}
+                        >
+                          {classBusy ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Square size={14} />
+                          )}
+                          End class
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={classBusy}
+                        onClick={() => startClass(active.courseId)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2.5 text-[13px] font-semibold text-white"
+                        style={{ background: 'var(--green)' }}
+                      >
+                        {classBusy ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Video size={14} />
+                        )}
+                        Start class now
+                      </button>
+                    )}
                     <Link
                       href={`/dashboard/teach/assessments?courseId=${encodeURIComponent(active.courseId)}&kind=assignment`}
                       className="inline-flex items-center gap-1.5 border px-3.5 py-2.5 text-[13px] font-semibold"
@@ -180,13 +313,41 @@ export default function MyStudentsPanel({
                     </Link>
                     <Link
                       href={`/dashboard/teach/assessments?courseId=${encodeURIComponent(active.courseId)}&kind=exam`}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2.5 text-[13px] font-semibold text-white"
-                      style={{ background: 'var(--green)' }}
+                      className="inline-flex items-center gap-1.5 border px-3.5 py-2.5 text-[13px] font-semibold"
+                      style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
                     >
                       <GraduationCap size={14} /> Assign exam
                     </Link>
                   </div>
                 </div>
+
+                {classError ? (
+                  <p className="mb-4 text-[13px]" style={{ color: '#b91c1c' }}>
+                    {classError}
+                  </p>
+                ) : null}
+
+                {activeLive ? (
+                  <div
+                    className="mb-5 border px-4 py-3"
+                    style={{
+                      borderColor: 'rgba(220,38,38,0.35)',
+                      background: 'rgba(220,38,38,0.05)',
+                    }}
+                  >
+                    <p
+                      className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold"
+                      style={{ color: '#b91c1c' }}
+                    >
+                      <Radio size={14} className="animate-pulse" /> Session in progress
+                    </p>
+                    <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+                      Started {new Date(activeLive.startAt).toLocaleString()}. Enrolled students
+                      see that class is live and can join. Ending the class records the finish
+                      time for platform admin review.
+                    </p>
+                  </div>
+                ) : null}
 
                 <div className="mb-4 flex flex-wrap gap-2">
                   <Link

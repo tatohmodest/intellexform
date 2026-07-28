@@ -7,6 +7,7 @@ import {
   Check,
   Clock,
   GraduationCap,
+  Radio,
 } from 'lucide-react';
 import TrackLogo from '@/components/TrackLogo';
 import EnrollButton from '@/components/dashboard/EnrollButton';
@@ -16,11 +17,12 @@ import type { MyCourseCard } from '@/lib/learn/myCourses';
 export default function MyCourseCardView({ course: c }: { course: MyCourseCard }) {
   const hours = Math.max(1, Math.round((c.totalMinutes || 60) / 60));
   const logoSrc = c.source === 'tutorial' ? getTrackLogo(c.slug) : c.thumbnailUrl;
+  const live = c.liveSession;
 
   return (
     <article
       className="group flex h-full min-w-0 flex-col overflow-hidden border bg-paper transition-shadow hover:shadow-card"
-      style={{ borderColor: 'var(--ink)' }}
+      style={{ borderColor: live ? '#b91c1c' : 'var(--ink)' }}
     >
       <Link href={c.href} className="relative block aspect-[16/10] overflow-hidden">
         {c.source !== 'tutorial' && c.thumbnailUrl ? (
@@ -53,6 +55,11 @@ export default function MyCourseCardView({ course: c }: { course: MyCourseCard }
           <span className="bg-white/95 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--ink)]">
             {c.tag}
           </span>
+          {live ? (
+            <span className="inline-flex items-center gap-1 bg-[#b91c1c] px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-white">
+              <Radio size={10} className="animate-pulse" /> Live now
+            </span>
+          ) : null}
           {c.enrolled && (
             <span
               className="inline-flex items-center gap-1 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-white"
@@ -105,7 +112,7 @@ export default function MyCourseCardView({ course: c }: { course: MyCourseCard }
                 className="mt-1 line-clamp-2 hidden text-[13px] leading-relaxed sm:block"
                 style={{ color: 'var(--ink-soft)' }}
               >
-                {c.tagline}
+                {live ? `Class in progress with ${live.instructorName}` : c.tagline}
               </p>
             </div>
           </div>
@@ -148,6 +155,15 @@ export default function MyCourseCardView({ course: c }: { course: MyCourseCard }
         )}
 
         <div className="mt-auto flex flex-col gap-1.5 pt-2 sm:gap-2 sm:pt-3">
+          {live ? (
+            <Link
+              href={`/dashboard/sessions/${live.channel}`}
+              className="inline-flex w-full items-center justify-center gap-1.5 px-2 py-2 text-[11.5px] font-semibold text-white sm:px-3 sm:py-2.5 sm:text-[13px]"
+              style={{ background: '#b91c1c' }}
+            >
+              <Radio size={13} className="animate-pulse" /> Join live class
+            </Link>
+          ) : null}
           <Link
             href={c.href}
             className="inline-flex w-full items-center justify-center border px-2 py-2 text-[11.5px] font-semibold sm:px-3 sm:py-2.5 sm:text-[13px]"
@@ -162,7 +178,7 @@ export default function MyCourseCardView({ course: c }: { course: MyCourseCard }
               continueHref={c.continueHref}
               editorial
             />
-          ) : (
+          ) : !live ? (
             <Link
               href={c.href}
               className="inline-flex w-full items-center justify-center gap-1.5 px-2 py-2 text-[11.5px] font-semibold text-white sm:px-3 sm:py-2.5 sm:text-[13px]"
@@ -170,7 +186,7 @@ export default function MyCourseCardView({ course: c }: { course: MyCourseCard }
             >
               {c.pricingType === 'FREE' ? 'Open course' : 'Get access'}
             </Link>
-          )}
+          ) : null}
         </div>
       </div>
     </article>
