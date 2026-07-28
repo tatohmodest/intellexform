@@ -3,17 +3,23 @@ import {
   Award,
   BookOpenCheck,
   CalendarCheck,
+  ClipboardCheck,
   Flame,
   GraduationCap,
   Medal,
+  Megaphone,
+  Presentation,
   Rocket,
+  School,
   Star,
   Trophy,
+  Users,
   Zap,
 } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getBookings, getEnrollments, getLearner, getProgress } from '@/lib/learn/repo';
 import { getCatalogTrack } from '@/lib/learn/catalog';
+import { getInstructorTeachingStats } from '@/lib/learn/xp';
 import TrackLogo from '@/components/TrackLogo';
 
 export const dynamic = 'force-dynamic';
@@ -31,11 +37,12 @@ export default async function AchievementsPage() {
   const session = getSessionUser();
   if (!session) redirect('/login?next=/dashboard/achievements');
 
-  const [learner, enrollments, progress, bookings] = await Promise.all([
+  const [learner, enrollments, progress, bookings, teaching] = await Promise.all([
     getLearner(session.uid),
     getEnrollments(session.uid),
     getProgress(session.uid),
     getBookings(session.uid),
+    getInstructorTeachingStats(session.uid),
   ]);
 
   const xp = learner?.xp ?? 0;
@@ -59,6 +66,14 @@ export default async function AchievementsPage() {
     .filter((t): t is NonNullable<typeof t> => t !== null)
     .filter((t) => t.totalLessons > 0 && (byCourse.get(t.slug) ?? 0) >= t.totalLessons);
 
+  const hasTeaching =
+    teaching.classesStarted > 0 ||
+    teaching.coursesCreated > 0 ||
+    teaching.assessmentsCreated > 0 ||
+    teaching.studentsTaught > 0 ||
+    Boolean(learner?.instructorBadge) ||
+    Boolean(learner?.instructorBadgeLabels?.length);
+
   const badges = [
     { icon: Rocket, name: 'First Step', desc: 'Complete your first lesson', earned: lessonsDone >= 1 },
     { icon: BookOpenCheck, name: 'Bookworm', desc: 'Complete 10 lessons', earned: lessonsDone >= 10 },
@@ -68,6 +83,48 @@ export default async function AchievementsPage() {
     { icon: CalendarCheck, name: 'Mentored', desc: 'Book your first mentorship session', earned: bookings.length >= 1 },
     { icon: GraduationCap, name: 'Graduate', desc: 'Finish a full course track', earned: certificates.length >= 1 },
     { icon: Zap, name: 'Powerhouse', desc: 'Earn 1,000 XP', earned: xp >= 1000 },
+    {
+      icon: Presentation,
+      name: 'First Class',
+      desc: 'Start your first live class',
+      earned: teaching.classesStarted >= 1,
+    },
+    {
+      icon: School,
+      name: 'Classroom Leader',
+      desc: 'Host 5 live classes',
+      earned: teaching.classesStarted >= 5,
+    },
+    {
+      icon: Megaphone,
+      name: 'Course Author',
+      desc: 'Create a course in Course Studio',
+      earned: teaching.coursesCreated >= 1,
+    },
+    {
+      icon: BookOpenCheck,
+      name: 'Publisher',
+      desc: 'Publish your first course',
+      earned: teaching.coursesPublished >= 1,
+    },
+    {
+      icon: ClipboardCheck,
+      name: 'Assessment Builder',
+      desc: 'Create an exam or assignment',
+      earned: teaching.assessmentsCreated >= 1,
+    },
+    {
+      icon: Award,
+      name: 'Fair Examiner',
+      desc: 'Publish an assessment to students',
+      earned: teaching.assessmentsPublished >= 1,
+    },
+    {
+      icon: Users,
+      name: 'Mentor of Many',
+      desc: 'Teach 10 enrolled students',
+      earned: teaching.studentsTaught >= 10,
+    },
     ...(learner?.instructorBadgeLabels || []).map((label) => ({
       icon: Award,
       name: label,
@@ -96,7 +153,7 @@ export default async function AchievementsPage() {
         </div>
         <h1 className="font-display text-[30px] leading-tight">Achievements</h1>
         <p className="mt-1 text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Every lesson, streak and session earns you XP, badges and certificates.
+          Lessons, live classes, courses and assessments all earn XP, badges and certificates.
         </p>
       </div>
 
@@ -126,10 +183,17 @@ export default async function AchievementsPage() {
               <div className="font-display text-[26px]">{lessonsDone}</div>
               <div className="text-[11.5px] text-white/60">lessons</div>
             </div>
-            <div className="text-center">
-              <div className="font-display text-[26px]">{streak}</div>
-              <div className="text-[11.5px] text-white/60">day streak</div>
-            </div>
+            {hasTeaching ? (
+              <div className="text-center">
+                <div className="font-display text-[26px]">{teaching.classesStarted}</div>
+                <div className="text-[11.5px] text-white/60">classes</div>
+              </div>
+            ) : (
+              <div className="text-center">
+                <div className="font-display text-[26px]">{streak}</div>
+                <div className="text-[11.5px] text-white/60">day streak</div>
+              </div>
+            )}
             <div className="text-center">
               <div className="font-display text-[26px]">{earnedCount}/{badges.length}</div>
               <div className="text-[11.5px] text-white/60">badges</div>

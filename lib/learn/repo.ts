@@ -8,6 +8,7 @@ import type {
   PrimaryIntent,
 } from '@/lib/learn/identity';
 import { PERSONAL_CONTEXT } from '@/lib/learn/identity';
+import { XP } from '@/lib/learn/xp';
 
 /**
  * Learner data layer - global InTelleX identity, enrollments, progress,
@@ -301,8 +302,12 @@ export async function setActiveContext(
   return getLearner(lbId);
 }
 
-/** Bump streak + XP for activity today. Returns the new values. */
-async function touchActivity(lbId: string, xpGain: number) {
+/**
+ * Bump streak + XP for activity today (learner or instructor).
+ * No-ops when the user has no learner passport yet.
+ */
+export async function awardXp(lbId: string, xpGain: number) {
+  if (!lbId || xpGain <= 0) return;
   const db = await getDb();
   const col = db.collection('learners');
   const learner = (await col.findOne({ lbId })) as unknown as LearnerDoc | null;
@@ -347,7 +352,7 @@ export async function enroll(userId: string, courseSlug: string) {
     },
     { upsert: true },
   );
-  await touchActivity(userId, 10).catch(() => {});
+  await awardXp(userId, XP.ENROLL_TRACK).catch(() => {});
 }
 
 // ── Lesson progress ───────────────────────────────────────────────────────────
@@ -369,8 +374,6 @@ export async function getProgress(
     return [];
   }
 }
-
-const XP_PER_LESSON = 20;
 
 export async function setLessonComplete(opts: {
   userId: string;
@@ -399,7 +402,7 @@ export async function setLessonComplete(opts: {
       { upsert: true },
     );
     if (res.upsertedCount > 0) {
-      await touchActivity(opts.userId, XP_PER_LESSON).catch(() => {});
+      await awardXp(opts.userId, XP.COMPLETE_LESSON).catch(() => {});
     }
   } else {
     await col.deleteOne({
@@ -436,7 +439,7 @@ export async function createBooking(booking: Omit<BookingDoc, 'createdAt' | 'sta
   const res = await db
     .collection('bookings')
     .insertOne(doc as unknown as Record<string, unknown>);
-  await touchActivity(booking.userId, 5).catch(() => {});
+  await awardXp(booking.userId, XP.BOOK_MENTORSHIP).catch(() => {});
   return res.insertedId.toString();
 }
 

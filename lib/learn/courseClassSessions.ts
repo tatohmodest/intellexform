@@ -2,6 +2,8 @@ import { ObjectId } from 'mongodb';
 import crypto from 'crypto';
 import { getDb } from '@/lib/repo';
 import { ensureLearnCollections } from '@/lib/learn/ecosystem';
+import { awardXp } from '@/lib/learn/repo';
+import { XP } from '@/lib/learn/xp';
 
 export type CourseClassSessionStatus = 'live' | 'ended';
 
@@ -319,6 +321,7 @@ export async function startCourseClass(opts: {
     createdAt: now,
   };
   const res = await db.collection('course_class_sessions').insertOne(doc);
+  await awardXp(opts.instructorId, XP.START_CLASS).catch(() => {});
   return toView({ ...doc, _id: res.insertedId } as unknown as Record<string, unknown>);
 }
 
@@ -345,6 +348,18 @@ export async function endCourseClass(
       { _id: oid },
       { $set: { status: 'ended', endAt: now } },
     );
+    const startAt =
+      existing.startAt instanceof Date
+        ? existing.startAt
+        : new Date(String(existing.startAt));
+    let xpGain = XP.END_CLASS;
+    if (
+      Number.isFinite(startAt.getTime()) &&
+      now.getTime() - startAt.getTime() >= 20 * 60 * 1000
+    ) {
+      xpGain += XP.END_CLASS_LONG_BONUS;
+    }
+    await awardXp(instructorId, xpGain).catch(() => {});
   }
   const updated = await db.collection('course_class_sessions').findOne({ _id: oid });
   return updated ? toView(updated as Record<string, unknown>) : null;
