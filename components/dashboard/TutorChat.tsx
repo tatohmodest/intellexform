@@ -451,12 +451,11 @@ export default function TutorChat() {
               e.preventDefault();
               send();
             }}
-            className="relative flex items-end gap-2 rounded-[28px] border bg-white/95 p-2 pl-4 backdrop-blur-md transition-[box-shadow,border-color]"
+            className="relative flex items-end gap-2 rounded-[28px] bg-white p-2 pl-4 backdrop-blur-md transition-shadow"
             style={{
-              borderColor: focused ? 'rgba(0,179,105,0.45)' : 'var(--line)',
               boxShadow: focused
-                ? '0 14px 44px rgba(0,179,105,0.16)'
-                : '0 12px 40px rgba(12,17,22,0.12)',
+                ? '0 10px 36px rgba(12,17,22,0.14)'
+                : '0 8px 28px rgba(12,17,22,0.10)',
             }}
           >
             <label className="min-w-0 flex-1 py-1.5">
