@@ -96,6 +96,14 @@ h1, h2, h3, .display {
   transition: background 0.2s, border-color 0.2s, transform 0.15s;
 }
 .btn:hover { transform: translateY(-1px); }
+/* Pill buttons are oversized on phones - tighten padding so rows of actions fit. */
+@media (max-width: 640px) {
+  .btn {
+    padding: 11px 16px;
+    font-size: 14px;
+    gap: 6px;
+  }
+}
 .btn-primary { background: var(--green); color: #ffffff; }
 .btn-primary:hover { background: var(--green-deep); }
 .btn-amber { background: var(--blue); color: #ffffff; }

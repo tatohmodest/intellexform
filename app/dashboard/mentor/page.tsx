@@ -74,7 +74,7 @@ export default async function MentorStudioPage() {
             <GraduationCap size={11} />
             Mentor Studio
           </div>
-          <h1 className="font-display text-[30px] leading-tight">
+          <h1 className="font-display text-[26px] leading-tight sm:text-[30px]">
             Welcome back, {profile.name.split(/\s+/)[0]}.
           </h1>
           <p className="mt-1 text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
@@ -89,52 +89,63 @@ export default async function MentorStudioPage() {
             </p>
           )}
         </div>
-        <div className="flex gap-2.5">
-          <Link href="/dashboard/mentor/profile" className="btn btn-ghost !py-2.5 text-[13.5px]">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:gap-2.5">
+          <Link
+            href="/dashboard/mentor/profile"
+            className="btn btn-ghost !py-2.5 w-full whitespace-nowrap text-[13.5px] sm:w-auto"
+          >
             <PenLine size={15} /> Edit profile
           </Link>
           <Link
             href="/dashboard/teach/courses"
-            className="btn btn-primary !py-2.5 text-[13.5px]"
+            className="btn btn-primary !py-2.5 w-full whitespace-nowrap text-[13.5px] sm:w-auto"
           >
             <Video size={15} /> Course Studio
           </Link>
-          <NewBookButton />
+          <NewBookButton className="col-span-2 w-full sm:col-span-1 sm:w-auto" />
         </div>
       </div>
 
       {/* Stats */}
-      <div className="mb-10 grid grid-cols-2 gap-x-8 gap-y-6 border-y py-6 lg:grid-cols-4" style={{ borderColor: 'var(--line)' }}>
+      <div className="mb-10 grid grid-cols-2 gap-x-5 gap-y-5 border-y py-6 sm:gap-x-8 sm:gap-y-6 lg:grid-cols-4" style={{ borderColor: 'var(--line)' }}>
         {stats.map((s) => (
-          <div key={s.label}>
+          <div key={s.label} className="min-w-0">
             <div className="font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
               {s.label}
             </div>
-            <div className="mt-1 font-display text-[26px] leading-none">{s.value}</div>
+            <div className="mt-1 break-words font-display text-[22px] leading-none sm:text-[26px]">
+              {s.value}
+            </div>
           </div>
         ))}
       </div>
 
-      <div className="mb-8 border p-5" style={{ borderColor: 'var(--line)' }}>
+      <div className="mb-8 border p-4 sm:p-5" style={{ borderColor: 'var(--line)' }}>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="font-display text-[20px]">Video Course Studio</h2>
+          <div className="min-w-0">
+            <h2 className="font-display text-[19px] sm:text-[20px]">Video Course Studio</h2>
             <p className="mt-1 max-w-xl text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
               Record lessons, host on Google Drive, set visibility, publish for learners.
             </p>
           </div>
-          <Link href="/dashboard/teach/courses" className="btn btn-primary !py-2.5 text-[13px]">
+          <Link
+            href="/dashboard/teach/courses"
+            className="btn btn-primary !py-2.5 w-full whitespace-nowrap text-[13px] sm:w-auto"
+          >
             <Video size={14} /> Courses
           </Link>
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
-          <div>
-            <h2 className="font-display text-[20px]">Assessment Studio</h2>
+          <div className="min-w-0">
+            <h2 className="font-display text-[19px] sm:text-[20px]">Assessment Studio</h2>
             <p className="mt-1 max-w-xl text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
-              Locked exams (no back, leave-tab terminates), Drive assignments, AI question assist, marks & results.
+              Locked exams (no back, leave-tab terminates), file assignments with deadlines, AI question assist, marks & results.
             </p>
           </div>
-          <Link href="/dashboard/teach/assessments" className="btn btn-ghost !py-2.5 text-[13px]">
+          <Link
+            href="/dashboard/teach/assessments"
+            className="btn btn-ghost !py-2.5 w-full whitespace-nowrap text-[13px] sm:w-auto"
+          >
             Exams & assignments
           </Link>
         </div>
