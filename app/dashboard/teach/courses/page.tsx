@@ -57,6 +57,7 @@ export default async function TeachingCourseStudioPage({
         institutionSlug={campus}
         campusName={campusName}
         accent={campus ? '#1f5fa8' : '#00b369'}
+        canAllocateInstructor={membership === 'owner'}
       />
     </div>
   );

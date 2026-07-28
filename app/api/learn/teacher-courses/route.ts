@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/getUser';
 import {
   createTeacherCourse,
+  getMembership,
+  listCoursesByInstructor,
   listPublicTeacherCourses,
-  listTeacherCoursesByAuthor,
   listTeacherCoursesForCampus,
 } from '@/lib/learn/ecosystem';
 import { getLearner } from '@/lib/learn/repo';
@@ -27,7 +28,8 @@ export async function GET(req: NextRequest) {
     });
     return NextResponse.json({ courses });
   }
-  const courses = await listTeacherCoursesByAuthor(session.uid);
+  // Courses I authored plus courses an institution allocated to me.
+  const courses = await listCoursesByInstructor(session.uid, { publishedOnly: false });
   return NextResponse.json({ courses });
 }
 
@@ -49,12 +51,29 @@ export async function POST(req: NextRequest) {
     ? body.visibility
     : 'private') as ContentVisibility;
 
+  // An institution can create the course and allocate a delivering instructor.
+  let instructorId: string | null = null;
+  let instructorName: string | null = null;
+  let createdByInstitution = false;
+  const requestedInstructor = String(body.instructorId || '').trim();
+  if (requestedInstructor && institutionSlug) {
+    const role = await getMembership(institutionSlug, session.uid);
+    if (role === 'owner') {
+      instructorId = requestedInstructor;
+      instructorName = String(body.instructorName || '').trim() || null;
+      createdByInstitution = true;
+    }
+  }
+
   const id = await createTeacherCourse({
     authorId: session.uid,
     authorName: learner?.name || session.name || 'Instructor',
     title,
     institutionSlug,
     visibility,
+    instructorId,
+    instructorName,
+    createdByInstitution,
   });
 
   return NextResponse.json({ id }, { status: 201 });

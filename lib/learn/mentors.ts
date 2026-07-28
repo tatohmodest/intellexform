@@ -26,6 +26,8 @@ export interface Mentor {
   initials: string;
   slots: MentorSlot[];
   avatarUrl?: string | null;
+  /** Short self-introduction recorded during onboarding. */
+  introVideoUrl?: string | null;
   /** Awarded on approval, e.g. "InTelleX Instructor". */
   instructorBadge?: string | null;
 }

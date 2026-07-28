@@ -171,10 +171,22 @@ export default function MentorDirectory({
                 >
                   {m.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={m.avatarUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                    <img
+                      src={m.avatarUrl}
+                      alt={m.name}
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
                   ) : (
                     <span className="relative z-[1] p-3 font-display text-[28px] leading-none text-white/95">
                       {m.initials}
+                    </span>
+                  )}
+                  {m.introVideoUrl && (
+                    <span
+                      className="absolute bottom-1 right-1 z-[2] flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white"
+                      title="Has an intro video"
+                    >
+                      <Video size={12} />
                     </span>
                   )}
                   <span className="absolute right-2 top-2 font-mono text-[10px] text-white/55">

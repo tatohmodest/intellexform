@@ -2,6 +2,24 @@ import { ObjectId } from 'mongodb';
 import { getDb } from '@/lib/repo';
 import { type Mentor, type MentorSlot } from '@/lib/learn/mentors';
 import type { ContentVisibility, InstitutionAuthMethod } from '@/lib/learn/identity';
+import type {
+  TeacherCourseBase,
+  TeacherCourseView,
+  TeacherLesson,
+  VideoProvider,
+} from '@/lib/learn/courseTypes';
+
+export type {
+  CourseAudience,
+  CourseDeliveryMode,
+  CourseLevel,
+  CourseLiveSchedule,
+  TeacherCourseBase,
+  TeacherCourseView,
+  TeacherLesson,
+  VideoProvider,
+} from '@/lib/learn/courseTypes';
+export { courseDurationHours, deliveryModeLabel } from '@/lib/learn/courseTypes';
 import {
   MENTOR_DOC_REQUEST_ITEMS,
   type MentorApplicationDoc,
@@ -142,6 +160,10 @@ export interface MentorProfileDoc {
   /** e.g. "InTelleX Instructor" or "{Campus} Instructor" */
   instructorBadge?: string | null;
   badgeInstitutionSlug?: string | null;
+  /** Profile photo students see in the directory. */
+  avatarUrl?: string | null;
+  /** Short self-introduction video (carried over from the application). */
+  introVideoUrl?: string | null;
   createdAt: Date;
 }
 
@@ -167,6 +189,8 @@ export async function becomeMentor(opts: {
   slots: MentorSlot[];
   instructorBadge?: string | null;
   badgeInstitutionSlug?: string | null;
+  avatarUrl?: string | null;
+  introVideoUrl?: string | null;
 }): Promise<void> {
   await ensureLearnCollections();
   const db = await getDb();
@@ -187,6 +211,8 @@ export async function becomeMentor(opts: {
     active: true,
     instructorBadge: opts.instructorBadge || null,
     badgeInstitutionSlug: opts.badgeInstitutionSlug || null,
+    avatarUrl: opts.avatarUrl || null,
+    introVideoUrl: opts.introVideoUrl || null,
     createdAt: new Date(),
   };
   const { createdAt, rating, sessionsCompleted, ...updatable } = doc;
@@ -329,6 +355,14 @@ export async function approveMentorApplication(
     slots: Array.isArray(app.slots) ? (app.slots as MentorSlot[]) : [],
     instructorBadge,
     badgeInstitutionSlug: badgeSlug,
+    // Carry the onboarding intro video + avatar onto the public profile.
+    introVideoUrl: typeof app.introVideoUrl === 'string' ? app.introVideoUrl : null,
+    avatarUrl:
+      (await db
+        .collection('learners')
+        .findOne({ lbId: String(app.lbId) }, { projection: { avatar: 1 } })
+        .then((l) => (typeof l?.avatar === 'string' ? l.avatar : null))
+        .catch(() => null)) ?? null,
   });
 
   // Persist badge on learner passport for Achievements.
@@ -564,7 +598,20 @@ export async function getMentorProfile(lbId: string): Promise<MentorProfileDoc |
 
 export async function updateMentorProfile(
   lbId: string,
-  patch: Partial<Pick<MentorProfileDoc, 'title' | 'bio' | 'expertise' | 'priceXAF' | 'sessionMinutes' | 'slots' | 'active'>>,
+  patch: Partial<
+    Pick<
+      MentorProfileDoc,
+      | 'title'
+      | 'bio'
+      | 'expertise'
+      | 'priceXAF'
+      | 'sessionMinutes'
+      | 'slots'
+      | 'active'
+      | 'avatarUrl'
+      | 'introVideoUrl'
+    >
+  >,
 ) {
   const db = await getDb();
   await db.collection('mentor_profiles').updateOne({ lbId }, { $set: patch });
@@ -592,7 +639,8 @@ export async function getAllMentors(): Promise<Mentor[]> {
       accent: d.accent,
       initials: d.initials,
       slots: d.slots,
-      avatarUrl: (d as { avatarUrl?: string }).avatarUrl,
+      avatarUrl: d.avatarUrl ?? null,
+      introVideoUrl: d.introVideoUrl ?? null,
       instructorBadge: d.instructorBadge || null,
     }));
   } catch {
@@ -810,37 +858,11 @@ export async function getBookEarnings(authorId: string): Promise<number> {
 
 // ── Teacher / mentor video courses (campus + InTelleX tutors) ─────────────────
 
-export type VideoProvider = 'drive' | 'youtube' | 'cloudinary' | 'url';
-
-export interface TeacherLesson {
-  id: string;
-  title: string;
-  videoUrl: string;
-  videoProvider: VideoProvider;
-  notes?: string;
-}
-
-export interface TeacherCourseDoc {
-  _id?: ObjectId;
-  authorId: string;
-  authorName: string;
-  /** null / empty = InTelleX mentor catalogue (not campus-scoped) */
-  institutionSlug?: string | null;
-  title: string;
-  description: string;
-  visibility: ContentVisibility;
-  lessons: TeacherLesson[];
-  published: boolean;
-  accent?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export type TeacherCourseView = Omit<TeacherCourseDoc, '_id'> & { id: string };
+export type TeacherCourseDoc = TeacherCourseBase & { _id?: ObjectId };
 
 function toTeacherCourseView(d: Record<string, unknown>): TeacherCourseView {
   const { _id, ...rest } = d as unknown as TeacherCourseDoc & { _id: ObjectId };
-  return { ...(rest as Omit<TeacherCourseDoc, '_id'>), id: _id.toString() };
+  return { ...(rest as TeacherCourseBase), id: _id.toString() };
 }
 
 /** Normalize Drive / YouTube share links into a playable/embeddable URL. */
@@ -959,6 +981,9 @@ export async function createTeacherCourse(opts: {
   title: string;
   institutionSlug?: string | null;
   visibility?: ContentVisibility;
+  instructorId?: string | null;
+  instructorName?: string | null;
+  createdByInstitution?: boolean;
 }): Promise<string> {
   await ensureLearnCollections();
   const db = await getDb();
@@ -973,6 +998,25 @@ export async function createTeacherCourse(opts: {
     lessons: [],
     published: false,
     accent: '#00b369',
+    coverUrl: null,
+    coverPublicId: null,
+    subtitle: '',
+    category: '',
+    level: 'all',
+    language: 'English',
+    tags: [],
+    deliveryMode: 'self_paced',
+    durationHours: null,
+    priceXAF: 0,
+    audience: opts.institutionSlug ? 'institution' : 'allocated',
+    seats: null,
+    certificate: false,
+    liveSchedule: null,
+    outcomes: [],
+    requirements: [],
+    instructorId: opts.instructorId || null,
+    instructorName: opts.instructorName || null,
+    createdByInstitution: Boolean(opts.createdByInstitution),
     createdAt: now,
     updatedAt: now,
   };
@@ -980,21 +1024,117 @@ export async function createTeacherCourse(opts: {
   return res.insertedId.toString();
 }
 
+export type TeacherCoursePatch = Partial<
+  Pick<
+    TeacherCourseDoc,
+    | 'title'
+    | 'description'
+    | 'visibility'
+    | 'lessons'
+    | 'published'
+    | 'accent'
+    | 'institutionSlug'
+    | 'coverUrl'
+    | 'coverPublicId'
+    | 'subtitle'
+    | 'category'
+    | 'level'
+    | 'language'
+    | 'tags'
+    | 'deliveryMode'
+    | 'durationHours'
+    | 'priceXAF'
+    | 'audience'
+    | 'seats'
+    | 'certificate'
+    | 'liveSchedule'
+    | 'outcomes'
+    | 'requirements'
+    | 'instructorId'
+    | 'instructorName'
+  >
+>;
+
+/** Author or the allocated instructor may edit. */
 export async function updateTeacherCourse(
   id: string,
-  authorId: string,
-  patch: Partial<
-    Pick<
-      TeacherCourseDoc,
-      'title' | 'description' | 'visibility' | 'lessons' | 'published' | 'accent' | 'institutionSlug'
-    >
-  >,
+  editorId: string,
+  patch: TeacherCoursePatch,
 ) {
   const db = await getDb();
   await db.collection('teacher_courses').updateOne(
-    { _id: new ObjectId(id), authorId },
+    {
+      _id: new ObjectId(id),
+      $or: [{ authorId: editorId }, { instructorId: editorId }],
+    },
     { $set: { ...patch, updatedAt: new Date() } },
   );
+}
+
+/** Published courses taught by this instructor (author or allocated). */
+export async function listCoursesByInstructor(
+  instructorId: string,
+  opts?: { publishedOnly?: boolean },
+): Promise<TeacherCourseView[]> {
+  try {
+    await ensureLearnCollections();
+    const db = await getDb();
+    const query: Record<string, unknown> = {
+      $or: [{ authorId: instructorId }, { instructorId }],
+    };
+    if (opts?.publishedOnly !== false) query.published = true;
+    const docs = await db
+      .collection('teacher_courses')
+      .find(query)
+      .sort({ updatedAt: -1 })
+      .toArray();
+    return docs.map((d) => toTeacherCourseView(d as Record<string, unknown>));
+  } catch {
+    return [];
+  }
+}
+
+/** Institutions this person belongs to (for instructor profiles). */
+export async function listUserInstitutions(
+  userId: string,
+): Promise<{ slug: string; name: string; role: string; color: string; logoUrl?: string | null }[]> {
+  try {
+    const db = await getDb();
+    const members = await db
+      .collection('institution_members')
+      .find({ userId })
+      .project({ institutionSlug: 1, role: 1 })
+      .toArray();
+    if (!members.length) return [];
+    const slugs = members.map((m) => String(m.institutionSlug));
+    const institutions = await db
+      .collection('institutions')
+      .find({ slug: { $in: slugs } })
+      .project({ slug: 1, name: 1, color: 1, logoUrl: 1 })
+      .toArray();
+    const bySlug = new Map(institutions.map((i) => [String(i.slug), i]));
+    return members
+      .map((m) => {
+        const inst = bySlug.get(String(m.institutionSlug));
+        if (!inst) return null;
+        return {
+          slug: String(inst.slug),
+          name: String(inst.name),
+          role: String(m.role || 'member'),
+          color: String(inst.color || '#00b369'),
+          logoUrl: (inst.logoUrl as string) ?? null,
+        };
+      })
+      .filter(Boolean) as {
+      slug: string;
+      name: string;
+      role: string;
+      color: string;
+      logoUrl?: string | null;
+    }[];
+  } catch {
+    return [];
+  }
 }
 
 // ── Institutions (multi-tenant EduOS foundation) ──────────────────────────────
@@ -1263,6 +1403,28 @@ export async function getInstitution(slug: string): Promise<InstitutionDoc | nul
     return (doc as unknown as InstitutionDoc) ?? null;
   } catch {
     return null;
+  }
+}
+
+/** Members of a campus - used to allocate an instructor to a course. */
+export async function listInstitutionMembers(
+  slug: string,
+): Promise<{ userId: string; userName: string; role: string }[]> {
+  try {
+    const db = await getDb();
+    const docs = await db
+      .collection('institution_members')
+      .find({ institutionSlug: slug })
+      .project({ userId: 1, userName: 1, role: 1 })
+      .limit(500)
+      .toArray();
+    return docs.map((d) => ({
+      userId: String(d.userId),
+      userName: String(d.userName || 'Member'),
+      role: String(d.role || 'member'),
+    }));
+  } catch {
+    return [];
   }
 }
 

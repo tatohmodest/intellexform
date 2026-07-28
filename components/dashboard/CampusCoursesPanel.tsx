@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Play, Video } from 'lucide-react';
-import type { TeacherCourseView } from '@/lib/learn/ecosystem';
+import { Award, Clock, Play, Radio, Users, Video } from 'lucide-react';
+import { courseDurationHours, type TeacherCourseView } from '@/lib/learn/courseTypes';
 import { toEmbedUrl, isDirectVideo } from '@/lib/learn/videoEmbed';
 
 export default function CampusCoursesPanel({
@@ -73,13 +73,61 @@ export default function CampusCoursesPanel({
               <button
                 type="button"
                 onClick={() => setOpenId(openId === c.id ? null : c.id)}
-                className="flex w-full items-start justify-between gap-4 text-left"
+                className="flex w-full items-start gap-4 text-left"
               >
-                <div>
+                {c.coverUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={c.coverUrl}
+                    alt=""
+                    className="hidden h-[72px] w-[128px] shrink-0 object-cover sm:block"
+                  />
+                ) : (
+                  <span
+                    className="hidden h-[72px] w-[128px] shrink-0 items-center justify-center sm:flex"
+                    style={{ background: `${accent}14`, color: accent }}
+                  >
+                    <Video size={18} />
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
                   <div className="text-[16px] font-semibold">{c.title}</div>
                   <div className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                    {c.authorName} · {c.lessons?.length || 0} lessons · {c.visibility}
+                    {c.instructorName || c.authorName} · {c.lessons?.length || 0} lessons
                     {!c.published ? ' · draft' : ''}
+                  </div>
+                  <div
+                    className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] uppercase tracking-[0.12em]"
+                    style={{ color: 'var(--ink-soft)' }}
+                  >
+                    {c.deliveryMode === 'live' || c.deliveryMode === 'hybrid' ? (
+                      <span className="inline-flex items-center gap-1">
+                        <Radio size={10} /> Live sessions
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1">
+                        <Video size={10} /> Self-paced
+                      </span>
+                    )}
+                    {courseDurationHours(c) > 0 && (
+                      <span className="inline-flex items-center gap-1">
+                        <Clock size={10} /> {courseDurationHours(c)}h
+                      </span>
+                    )}
+                    {c.level && c.level !== 'all' && <span>{c.level}</span>}
+                    {c.certificate && (
+                      <span className="inline-flex items-center gap-1">
+                        <Award size={10} /> Certificate
+                      </span>
+                    )}
+                    {typeof c.seats === 'number' && c.seats > 0 && (
+                      <span className="inline-flex items-center gap-1">
+                        <Users size={10} /> {c.seats} seats
+                      </span>
+                    )}
+                    <span style={{ color: c.priceXAF ? 'var(--ink)' : 'inherit' }}>
+                      {c.priceXAF ? `${c.priceXAF.toLocaleString()} XAF` : 'Free'}
+                    </span>
                   </div>
                   {c.description ? (
                     <p className="mt-2 line-clamp-2 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
@@ -87,7 +135,7 @@ export default function CampusCoursesPanel({
                     </p>
                   ) : null}
                 </div>
-                <span className="inline-flex items-center gap-1 text-[12.5px] font-semibold" style={{ color: accent }}>
+                <span className="inline-flex shrink-0 items-center gap-1 text-[12.5px] font-semibold" style={{ color: accent }}>
                   <Play size={13} /> {openId === c.id ? 'Close' : 'Watch'}
                 </span>
               </button>

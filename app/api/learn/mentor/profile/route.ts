@@ -30,6 +30,12 @@ export async function PATCH(req: NextRequest) {
   }
   if ([30, 45, 60].includes(body.sessionMinutes)) patch.sessionMinutes = body.sessionMinutes;
   if (typeof body.active === 'boolean') patch.active = body.active;
+  if (body.avatarUrl === null || typeof body.avatarUrl === 'string') {
+    patch.avatarUrl = body.avatarUrl || null;
+  }
+  if (body.introVideoUrl === null || typeof body.introVideoUrl === 'string') {
+    patch.introVideoUrl = body.introVideoUrl || null;
+  }
   if (Array.isArray(body.slots)) {
     patch.slots = body.slots
       .filter(
