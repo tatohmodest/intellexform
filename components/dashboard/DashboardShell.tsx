@@ -24,6 +24,8 @@ import {
   Check,
   Bell,
   Sparkles,
+  ClipboardList,
+  Video,
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 import MobileBottomNav from '@/components/dashboard/MobileBottomNav';
@@ -198,6 +200,58 @@ function NavLinks({
           <GraduationCap size={17} strokeWidth={mentorActive ? 2.4 : 2} />
           {isMentor ? 'Mentor Studio' : 'Apply to mentor'}
         </Link>
+        {isMentor && (
+          <>
+            <Link
+              href="/dashboard/teach/courses"
+              onClick={onNavigate}
+              className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
+              style={
+                pathname.startsWith('/dashboard/teach/courses')
+                  ? { background: activeBg, color: activeColor }
+                  : { color: 'var(--ink-soft)' }
+              }
+            >
+              <Video
+                size={17}
+                strokeWidth={pathname.startsWith('/dashboard/teach/courses') ? 2.4 : 2}
+              />
+              Course Studio
+            </Link>
+            <Link
+              href="/dashboard/students"
+              onClick={onNavigate}
+              className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
+              style={
+                pathname.startsWith('/dashboard/students')
+                  ? { background: activeBg, color: activeColor }
+                  : { color: 'var(--ink-soft)' }
+              }
+            >
+              <Users
+                size={17}
+                strokeWidth={pathname.startsWith('/dashboard/students') ? 2.4 : 2}
+              />
+              My Students
+            </Link>
+            <Link
+              href="/dashboard/teach/assessments"
+              onClick={onNavigate}
+              className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
+              style={
+                pathname.startsWith('/dashboard/teach/assessments')
+                  ? { background: activeBg, color: activeColor }
+                  : { color: 'var(--ink-soft)' }
+              }
+            >
+              <ClipboardList
+                size={17}
+                strokeWidth={pathname.startsWith('/dashboard/teach/assessments') ? 2.4 : 2}
+              />
+              Assessment Studio
+            </Link>
+          </>
+        )}
       </div>
     </nav>
   );

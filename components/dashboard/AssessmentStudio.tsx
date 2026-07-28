@@ -16,16 +16,23 @@ import DriveDocViewer from '@/components/dashboard/DriveDocViewer';
 import CloudinaryDocViewer from '@/components/dashboard/CloudinaryDocViewer';
 import { formatCountdown, toDatetimeLocalValue } from '@/lib/learn/countdown';
 
+type CourseOption = { id: string; title: string };
+
 export default function AssessmentStudio({
   institutionSlug = null,
   campusName,
   accent = '#00b369',
+  initialCourseId = null,
+  initialKind = null,
 }: {
   institutionSlug?: string | null;
   campusName?: string;
   accent?: string;
+  initialCourseId?: string | null;
+  initialKind?: 'assignment' | 'exam' | null;
 }) {
   const [items, setItems] = useState<AssessmentView[]>([]);
+  const [courses, setCourses] = useState<CourseOption[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draft, setDraft] = useState<AssessmentView | null>(null);
   const [subs, setSubs] = useState<SubmissionView[]>([]);
@@ -35,16 +42,25 @@ export default function AssessmentStudio({
   const [aiTopic, setAiTopic] = useState('');
   const [error, setError] = useState('');
   const [tab, setTab] = useState<'build' | 'results'>('build');
-  const [newKind, setNewKind] = useState<'assignment' | 'exam'>('exam');
+  const [newKind, setNewKind] = useState<'assignment' | 'exam'>(initialKind || 'exam');
   const [newTitle, setNewTitle] = useState('');
+  const [newCourseId, setNewCourseId] = useState<string>(initialCourseId || '');
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const q = institutionSlug ? `?campus=${encodeURIComponent(institutionSlug)}` : '';
-      const res = await fetch(`/api/learn/assessments${q}`);
-      const data = await res.json();
-      setItems(data.assessments || []);
+      const [ares, cres] = await Promise.all([
+        fetch(`/api/learn/assessments${q}`),
+        fetch('/api/learn/teacher-courses'),
+      ]);
+      const adata = await ares.json();
+      setItems(adata.assessments || []);
+      if (cres.ok) {
+        const cdata = await cres.json();
+        const list = (cdata.courses || []) as Array<{ id: string; title: string }>;
+        setCourses(list.map((c) => ({ id: c.id, title: c.title })));
+      }
     } finally {
       setLoading(false);
     }
@@ -53,6 +69,11 @@ export default function AssessmentStudio({
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (initialCourseId) setNewCourseId(initialCourseId);
+    if (initialKind) setNewKind(initialKind);
+  }, [initialCourseId, initialKind]);
 
   async function create() {
     const title = newTitle.trim() || (newKind === 'exam' ? 'New exam' : 'New assignment');
@@ -64,6 +85,7 @@ export default function AssessmentStudio({
         kind: newKind,
         title,
         institutionSlug: institutionSlug || null,
+        courseId: newCourseId || null,
       }),
     });
     const data = await res.json();
@@ -125,6 +147,7 @@ export default function AssessmentStudio({
           ...draft,
           published: typeof publish === 'boolean' ? publish : draft.published,
           institutionSlug: draft.institutionSlug ?? institutionSlug ?? null,
+          courseId: draft.courseId ?? null,
         }),
       });
       const data = await res.json();
@@ -205,6 +228,25 @@ export default function AssessmentStudio({
             </button>
           ))}
         </div>
+        {courses.length > 0 && (
+          <label className="mb-3 block">
+            <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: 'var(--ink-soft)' }}>
+              Assign to course
+            </span>
+            <select
+              className="form-input !rounded-none !py-2 text-[13px]"
+              value={newCourseId}
+              onChange={(e) => setNewCourseId(e.target.value)}
+            >
+              <option value="">All my students (fallback)</option>
+              {courses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.title}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <div className="mb-4 flex gap-2">
           <input
             className="form-input !rounded-none !py-2 text-[13px]"
@@ -233,6 +275,7 @@ export default function AssessmentStudio({
                   <span className="block text-[14px] font-semibold">{a.title}</span>
                   <span className="font-mono text-[10px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
                     {a.kind} · {a.published ? 'live' : 'draft'} · {a.questions?.length || 0} Q
+                    {a.courseId ? ' · course' : ''}
                   </span>
                 </button>
               </li>
@@ -300,6 +343,30 @@ export default function AssessmentStudio({
                   value={draft.title}
                   onChange={(e) => setDraft({ ...draft, title: e.target.value })}
                 />
+                {courses.length > 0 && (
+                  <label className="block max-w-md">
+                    <span className="mb-1.5 block text-[13px] font-semibold">
+                      Allocate to course roster
+                    </span>
+                    <select
+                      className="form-input !rounded-none text-[13px]"
+                      value={draft.courseId || ''}
+                      onChange={(e) =>
+                        setDraft({ ...draft, courseId: e.target.value || null })
+                      }
+                    >
+                      <option value="">Not linked (broader notify)</option>
+                      {courses.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.title}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-1 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                      When published, only students enrolled in this course are notified.
+                    </p>
+                  </label>
+                )}
                 <textarea
                   className="w-full border-0 bg-transparent text-[14.5px] outline-none"
                   style={{ color: 'var(--ink-soft)' }}
@@ -645,7 +712,7 @@ function DueClock({ dueAt, accent }: { dueAt: string | Date; accent: string }) {
     >
       <Clock size={15} style={{ color: c.expired ? '#b91c1c' : accent }} />
       <span className="font-semibold" style={{ color: c.expired ? '#b91c1c' : accent }}>
-        {c.expired ? 'Deadline passed — late submissions blocked' : `Time left: ${c.label}`}
+        {c.expired ? 'Deadline passed - late submissions blocked' : `Time left: ${c.label}`}
       </span>
       <span className="font-mono text-[11px]" style={{ color: 'var(--ink-soft)' }}>
         Due {new Date(dueAt).toLocaleString()}

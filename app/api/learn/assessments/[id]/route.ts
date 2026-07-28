@@ -58,6 +58,9 @@ export async function PATCH(
   if (body.institutionSlug === null || typeof body.institutionSlug === 'string') {
     patch.institutionSlug = body.institutionSlug || null;
   }
+  if (body.courseId === null || typeof body.courseId === 'string') {
+    patch.courseId = body.courseId || null;
+  }
   if (Array.isArray(body.questions)) {
     patch.questions = body.questions.map((q: Record<string, unknown>, i: number) => {
       const type = q.type === 'structural' ? 'structural' : 'mcq';
@@ -93,6 +96,7 @@ export async function PATCH(
       const audience = await resolveAssignmentAudience({
         authorId: session.uid,
         institutionSlug: assessment.institutionSlug,
+        courseId: assessment.courseId,
       });
       const dueLabel = assessment.dueAt
         ? ` Deadline: ${new Date(assessment.dueAt).toLocaleString()}.`

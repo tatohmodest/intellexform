@@ -1289,6 +1289,103 @@ export async function listStudentCourseEnrollments(
   }
 }
 
+export type InstructorStudentRow = {
+  studentId: string;
+  studentName: string;
+  studentEmail: string | null;
+  source: CourseEnrollmentSource;
+  priceXAF: number;
+  enrolledAt: string;
+};
+
+export type InstructorCourseStudents = {
+  courseId: string;
+  courseTitle: string;
+  published: boolean;
+  studentCount: number;
+  students: InstructorStudentRow[];
+};
+
+/**
+ * All enrolments across courses this instructor owns or teaches,
+ * grouped by course for the My Students page.
+ */
+export async function listInstructorStudentGroups(
+  instructorId: string,
+): Promise<InstructorCourseStudents[]> {
+  try {
+    const [courses, enrollments] = await Promise.all([
+      listCoursesByInstructor(instructorId, { publishedOnly: false }),
+      (async () => {
+        await ensureCourseEnrollmentCollection();
+        const db = await getDb();
+        return db
+          .collection('course_enrollments')
+          .find({ instructorId })
+          .sort({ createdAt: -1 })
+          .toArray();
+      })(),
+    ]);
+
+    const byCourse = new Map<string, InstructorStudentRow[]>();
+    for (const raw of enrollments) {
+      const d = raw as unknown as CourseEnrollmentDoc & { _id: ObjectId };
+      const list = byCourse.get(d.courseId) || [];
+      list.push({
+        studentId: d.studentId,
+        studentName: d.studentName || 'Student',
+        studentEmail: d.studentEmail ?? null,
+        source: d.source,
+        priceXAF: Number(d.priceXAF) || 0,
+        enrolledAt:
+          d.createdAt instanceof Date
+            ? d.createdAt.toISOString()
+            : new Date(d.createdAt).toISOString(),
+      });
+      byCourse.set(d.courseId, list);
+    }
+
+    const groups: InstructorCourseStudents[] = courses.map((c) => {
+      const students = byCourse.get(c.id) || [];
+      byCourse.delete(c.id);
+      return {
+        courseId: c.id,
+        courseTitle: c.title,
+        published: Boolean(c.published),
+        studentCount: students.length,
+        students,
+      };
+    });
+
+    // Orphan enrolments whose course was deleted still show up
+    for (const [courseId, students] of Array.from(byCourse.entries())) {
+      groups.push({
+        courseId,
+        courseTitle: students[0] ? `Course ${courseId.slice(0, 6)}` : 'Course',
+        published: false,
+        studentCount: students.length,
+        students,
+      });
+    }
+
+    return groups.sort((a, b) => b.studentCount - a.studentCount || a.courseTitle.localeCompare(b.courseTitle));
+  } catch {
+    return [];
+  }
+}
+
+/** Distinct student IDs enrolled in a teacher course. */
+export async function listStudentIdsForCourse(courseId: string): Promise<string[]> {
+  try {
+    await ensureCourseEnrollmentCollection();
+    const db = await getDb();
+    const ids = await db.collection('course_enrollments').distinct('studentId', { courseId });
+    return (ids as string[]).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 /** Instructor course revenue after platform commission. */
 export async function getCourseEarnings(
   instructorId: string,

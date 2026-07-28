@@ -168,6 +168,7 @@ export async function createAssessment(opts: {
   authorName: string;
   title: string;
   institutionSlug?: string | null;
+  courseId?: string | null;
 }): Promise<string> {
   await ensureAssessmentCollections();
   const db = await getDb();
@@ -177,7 +178,7 @@ export async function createAssessment(opts: {
     authorId: opts.authorId,
     authorName: opts.authorName,
     institutionSlug: opts.institutionSlug || null,
-    courseId: null,
+    courseId: opts.courseId || null,
     title: opts.title.slice(0, 160) || (opts.kind === 'exam' ? 'Untitled exam' : 'Untitled assignment'),
     instructions: '',
     studentTips:
@@ -230,14 +231,36 @@ export async function listPublishedForStudent(opts: {
 }): Promise<AssessmentView[]> {
   await ensureAssessmentCollections();
   const db = await getDb();
-  const query: Record<string, unknown> = { published: true };
+
+  const enrolledCourseIds = await db
+    .collection('course_enrollments')
+    .distinct('courseId', { studentId: opts.studentId })
+    .catch(() => [] as string[]);
+
+  const query: Record<string, unknown> = {
+    published: true,
+    $or: [
+      { courseId: null },
+      { courseId: { $exists: false } },
+      { courseId: { $in: enrolledCourseIds as string[] } },
+    ],
+  };
   if (opts.institutionSlug) {
-    query.$or = [
-      { institutionSlug: opts.institutionSlug },
-      { institutionSlug: null },
+    query.$and = [
+      {
+        $or: [
+          { institutionSlug: opts.institutionSlug },
+          { institutionSlug: null },
+          { institutionSlug: { $exists: false } },
+        ],
+      },
     ];
   }
-  const docs = await db.collection('assessments').find(query).sort({ dueAt: 1, updatedAt: -1 }).toArray();
+  const docs = await db
+    .collection('assessments')
+    .find(query)
+    .sort({ dueAt: 1, updatedAt: -1 })
+    .toArray();
   return docs.map((d) => toAssessment(d as Record<string, unknown>));
 }
 

@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
     authorName: learner?.name || session.name || 'Instructor',
     title,
     institutionSlug: body.institutionSlug || null,
+    courseId: typeof body.courseId === 'string' && body.courseId.trim() ? body.courseId.trim() : null,
   });
   return NextResponse.json({ id }, { status: 201 });
 }

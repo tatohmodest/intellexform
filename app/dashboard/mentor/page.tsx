@@ -146,6 +146,20 @@ export default async function MentorStudioPage() {
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
           <div className="min-w-0">
+            <h2 className="font-display text-[19px] sm:text-[20px]">My Students</h2>
+            <p className="mt-1 max-w-xl text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
+              See who enrolled in each of your courses, then assign exams or assignments to that roster.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/students"
+            className="btn btn-ghost !py-2.5 w-full whitespace-nowrap text-[13px] sm:w-auto"
+          >
+            <Users size={14} /> View students
+          </Link>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
+          <div className="min-w-0">
             <h2 className="font-display text-[19px] sm:text-[20px]">Assessment Studio</h2>
             <p className="mt-1 max-w-xl text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
               Locked exams (no back, leave-tab terminates), file assignments with deadlines, AI question assist, marks & results.

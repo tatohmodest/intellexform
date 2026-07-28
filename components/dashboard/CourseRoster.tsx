@@ -117,7 +117,7 @@ export default function CourseRoster({
         </label>
         <p className="mb-2 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
           Search anyone on InTelleX by name or email. Added students get the course in My
-          Courses immediately — no payment needed.
+          Courses immediately - no payment needed.
         </p>
         <div className="relative">
           <Search
