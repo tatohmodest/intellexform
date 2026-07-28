@@ -124,6 +124,9 @@ export interface MentorProfileDoc {
   rating: number;
   sessionsCompleted: number;
   active: boolean;
+  /** e.g. "InTelleX Instructor" or "{Campus} Instructor" */
+  instructorBadge?: string | null;
+  badgeInstitutionSlug?: string | null;
   createdAt: Date;
 }
 
@@ -147,6 +150,8 @@ export async function becomeMentor(opts: {
   priceXAF: number;
   sessionMinutes: number;
   slots: MentorSlot[];
+  instructorBadge?: string | null;
+  badgeInstitutionSlug?: string | null;
 }): Promise<void> {
   await ensureLearnCollections();
   const db = await getDb();
@@ -165,6 +170,8 @@ export async function becomeMentor(opts: {
     rating: 5,
     sessionsCompleted: 0,
     active: true,
+    instructorBadge: opts.instructorBadge || null,
+    badgeInstitutionSlug: opts.badgeInstitutionSlug || null,
     createdAt: new Date(),
   };
   const { createdAt, rating, sessionsCompleted, ...updatable } = doc;
@@ -200,10 +207,13 @@ export interface MentorApplicationDoc {
   githubUrl?: string | null;
   portfolioUrl?: string | null;
   resumeUrl: string;
+  resumeSource?: 'google_drive' | 'cloudinary' | null;
   idFrontUrl: string;
   idBackUrl: string;
   introVideoUrl: string;
   introVideoBytes?: number | null;
+  institutionSlug?: string | null;
+  institutionName?: string | null;
   status: MentorApplicationStatus;
   reviewNote?: string | null;
   reviewedAt?: Date | null;
@@ -233,6 +243,9 @@ export async function submitMentorApplication(opts: {
   resumePublicId?: string;
   resumeResourceType?: string;
   resumeFormat?: string;
+  resumeSource?: 'google_drive' | 'cloudinary';
+  institutionSlug?: string;
+  institutionName?: string;
   idFrontUrl: string;
   idBackUrl: string;
   introVideoUrl: string;
@@ -264,6 +277,9 @@ export async function submitMentorApplication(opts: {
     resumePublicId: opts.resumePublicId ?? null,
     resumeResourceType: opts.resumeResourceType ?? null,
     resumeFormat: opts.resumeFormat ?? null,
+    resumeSource: opts.resumeSource ?? 'cloudinary',
+    institutionSlug: opts.institutionSlug ?? null,
+    institutionName: opts.institutionName ?? null,
     idFrontUrl: opts.idFrontUrl,
     idBackUrl: opts.idBackUrl,
     introVideoUrl: opts.introVideoUrl,
@@ -313,6 +329,15 @@ export async function approveMentorApplication(
     return { ok: false, error: 'not_pending' };
   }
 
+  let badgeOrg = String(app.institutionName || '').trim();
+  const badgeSlug = String(app.institutionSlug || '').trim() || 'intellex';
+  if (!badgeOrg && badgeSlug && badgeSlug !== 'intellex') {
+    const inst = await db.collection('institutions').findOne({ slug: badgeSlug });
+    badgeOrg = String(inst?.name || '').trim();
+  }
+  if (!badgeOrg) badgeOrg = 'InTelleX';
+  const instructorBadge = `${badgeOrg} Instructor`;
+
   await becomeMentor({
     lbId: String(app.lbId),
     name: String(app.name),
@@ -322,7 +347,22 @@ export async function approveMentorApplication(
     priceXAF: Number(app.priceXAF ?? 0),
     sessionMinutes: Number(app.sessionMinutes ?? 45),
     slots: Array.isArray(app.slots) ? (app.slots as MentorSlot[]) : [],
+    instructorBadge,
+    badgeInstitutionSlug: badgeSlug,
   });
+
+  // Persist badge on learner passport for Achievements.
+  await db.collection('learners').updateOne(
+    { lbId: String(app.lbId) },
+    {
+      $addToSet: { instructorBadgeLabels: instructorBadge },
+      $set: {
+        instructorBadge,
+        instructorBadgeSlug: badgeSlug,
+        updatedAt: new Date(),
+      },
+    },
+  );
 
   await db.collection('mentor_applications').updateOne(
     { _id: oid },
@@ -331,9 +371,25 @@ export async function approveMentorApplication(
         status: 'approved',
         reviewedAt: new Date(),
         updatedAt: new Date(),
+        instructorBadge,
       },
     },
   );
+
+  try {
+    const { createNotification } = await import('@/lib/learn/notifications');
+    await createNotification({
+      userId: String(app.lbId),
+      title: `You're an ${instructorBadge}`,
+      body: `Your instructor application was approved. Your ${instructorBadge} badge is live in Mentor Studio and Achievements.`,
+      href: '/dashboard/mentor',
+      kind: 'badge',
+      data: { instructorBadge, institutionSlug: badgeSlug },
+    });
+  } catch (err) {
+    console.error('instructor badge notify failed:', err);
+  }
+
   return { ok: true };
 }
 
@@ -410,6 +466,7 @@ export async function getAllMentors(): Promise<Mentor[]> {
       initials: d.initials,
       slots: d.slots,
       avatarUrl: (d as { avatarUrl?: string }).avatarUrl,
+      instructorBadge: d.instructorBadge || null,
     }));
   } catch {
     return [];

@@ -26,6 +26,8 @@ export interface Mentor {
   initials: string;
   slots: MentorSlot[];
   avatarUrl?: string | null;
+  /** Awarded on approval, e.g. "InTelleX Instructor". */
+  instructorBadge?: string | null;
 }
 
 /** @deprecated Empty - mentors are created via Mentor Studio / applications. */

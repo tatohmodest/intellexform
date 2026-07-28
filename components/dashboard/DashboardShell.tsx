@@ -22,10 +22,12 @@ import {
   GraduationCap,
   ChevronDown,
   Check,
+  Bell,
   Sparkles,
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 import MobileBottomNav from '@/components/dashboard/MobileBottomNav';
+import NotificationBell from '@/components/dashboard/NotificationBell';
 import type { ActiveContext, Affiliation, CampusBrand, PrimaryIntent } from '@/lib/learn/identity';
 import { campusNavItems, type ModuleId } from '@/lib/eduos/capabilities';
 
@@ -51,6 +53,7 @@ const NAV = [
   { href: '/dashboard/tutor', label: 'AI Tutor', icon: Bot },
   { href: '/dashboard/institutions', label: 'Institutions', icon: Building2 },
   { href: '/dashboard/achievements', label: 'Achievements', icon: Trophy },
+  { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -556,6 +559,7 @@ export default function DashboardShell({
         )}
 
         <div className="ml-auto flex items-center gap-2.5 sm:gap-4">
+          <NotificationBell accent={accent} />
           <div
             className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold"
             style={{ background: 'rgba(255,122,0,0.1)', color: '#c2570a' }}

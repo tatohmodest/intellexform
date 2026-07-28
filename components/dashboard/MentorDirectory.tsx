@@ -191,6 +191,14 @@ export default function MentorDirectory({
                   <p className="mt-1 max-w-[540px] text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
                     {m.title}
                   </p>
+                  {m.instructorBadge && (
+                    <p
+                      className="mt-2 inline-flex font-mono text-[10px] uppercase tracking-[0.14em]"
+                      style={{ color: 'var(--green-deep)' }}
+                    >
+                      {m.instructorBadge}
+                    </p>
+                  )}
                   <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
                     <span className="inline-flex items-center gap-1">
                       <Star size={11} /> {m.rating}

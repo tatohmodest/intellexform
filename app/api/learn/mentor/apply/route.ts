@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { submitMentorApplication } from '@/lib/learn/ecosystem';
+import { isGoogleDriveShareUrl, toDriveEmbedUrl } from '@/lib/learn/assessments';
 import type { MentorSlot } from '@/lib/learn/mentors';
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,7 @@ function isCloudinaryUrl(url: string): boolean {
 /**
  * POST /api/learn/mentor/apply - submit a mentor *application*.
  * Mentorship is not toggled on; Platform admins approve after reviewing
- * CV, government ID (front/back), and intro video.
+ * CV (public Google Drive link), government ID (front/back), and intro video.
  */
 export async function POST(req: NextRequest) {
   const user = getSessionUser();
@@ -43,24 +44,34 @@ export async function POST(req: NextRequest) {
         .map((s: MentorSlot) => ({ dayOffset: s.dayOffset, time: s.time }))
     : [];
 
-  const resumeUrl = String(body.resumeUrl ?? '').trim();
-  const resumePublicId = String(body.resumePublicId ?? '').trim() || undefined;
-  const resumeResourceType = String(body.resumeResourceType ?? '').trim() || undefined;
-  const resumeFormat = String(body.resumeFormat ?? '').trim() || undefined;
+  const resumeRaw = String(body.resumeUrl ?? '').trim();
   const idFrontUrl = String(body.idFrontUrl ?? '').trim();
   const idBackUrl = String(body.idBackUrl ?? '').trim();
   const introVideoUrl = String(body.introVideoUrl ?? '').trim();
   const introVideoBytes = Number(body.introVideoBytes ?? 0);
+  const institutionSlug = String(body.institutionSlug ?? '').trim() || null;
+  const institutionName = String(body.institutionName ?? '').trim() || null;
 
   if (!title || !bio || expertise.length === 0 || slots.length === 0) {
     return NextResponse.json({ error: 'missing_fields' }, { status: 400 });
   }
-  if (!resumeUrl || !idFrontUrl || !idBackUrl || !introVideoUrl) {
+  if (!resumeRaw || !idFrontUrl || !idBackUrl || !introVideoUrl) {
     return NextResponse.json({ error: 'missing_documents' }, { status: 400 });
   }
-  if (
-    ![resumeUrl, idFrontUrl, idBackUrl, introVideoUrl].every(isCloudinaryUrl)
-  ) {
+
+  // CV: prefer Google Drive / Docs public share links (also accept legacy Cloudinary).
+  let resumeUrl = resumeRaw;
+  let resumeSource: 'google_drive' | 'cloudinary' = 'cloudinary';
+  if (isGoogleDriveShareUrl(resumeRaw)) {
+    resumeUrl = toDriveEmbedUrl(resumeRaw).url;
+    resumeSource = 'google_drive';
+  } else if (isCloudinaryUrl(resumeRaw)) {
+    resumeSource = 'cloudinary';
+  } else {
+    return NextResponse.json({ error: 'invalid_resume_url' }, { status: 400 });
+  }
+
+  if (![idFrontUrl, idBackUrl, introVideoUrl].every(isCloudinaryUrl)) {
     return NextResponse.json({ error: 'invalid_document_url' }, { status: 400 });
   }
 
@@ -79,9 +90,9 @@ export async function POST(req: NextRequest) {
       githubUrl: String(body.githubUrl ?? '').trim() || undefined,
       portfolioUrl: String(body.portfolioUrl ?? '').trim() || undefined,
       resumeUrl,
-      resumePublicId,
-      resumeResourceType,
-      resumeFormat,
+      resumeSource,
+      institutionSlug: institutionSlug || undefined,
+      institutionName: institutionName || undefined,
       idFrontUrl,
       idBackUrl,
       introVideoUrl,

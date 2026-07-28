@@ -24,6 +24,9 @@ type MentorApp = {
   priceXAF: number;
   sessionMinutes: number;
   resumeUrl?: string;
+  resumeSource?: 'google_drive' | 'cloudinary' | string | null;
+  institutionSlug?: string | null;
+  institutionName?: string | null;
   idFrontUrl?: string;
   idBackUrl?: string;
   introVideoUrl?: string;
@@ -203,16 +206,22 @@ function ApplicationCard({
     setDlBusy(true);
     onError?.('');
     try {
+      const isDrive =
+        app.resumeSource === 'google_drive' ||
+        /drive\.google\.com|docs\.google\.com/i.test(app.resumeUrl);
+      if (isDrive) {
+        window.open(app.resumeUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
       // Server issues a 302 to a signed Cloudinary attachment URL — open it
       // directly so the browser downloads the real PDF (not a JSON error body).
       const url = `/api/admin/applications/${app.id}/resume`;
       const win = window.open(url, '_blank', 'noopener,noreferrer');
       if (!win) {
-        // Popup blocked — navigate same tab.
         window.location.assign(url);
       }
     } catch {
-      onError?.('Could not download CV. Check your connection and try again.');
+      onError?.('Could not open CV. Check your connection and try again.');
     } finally {
       setDlBusy(false);
     }
@@ -233,6 +242,9 @@ function ApplicationCard({
             {app.email || 'No email'} · {fmt(app.createdAt)} ·{' '}
             {app.priceXAF?.toLocaleString()} XAF / {app.sessionMinutes} min
             {app.introVideoBytes ? ` · video ${fmtBytes(app.introVideoBytes)}` : ''}
+            {app.institutionName || app.institutionSlug
+              ? ` · ${app.institutionName || app.institutionSlug}`
+              : ' · InTelleX'}
           </p>
         </div>
         {pending && onApprove && onReject && (
@@ -279,7 +291,10 @@ function ApplicationCard({
             ) : (
               <Download size={12} style={{ color: 'var(--green-deep)' }} />
             )}
-            Download CV
+            {app.resumeSource === 'google_drive' ||
+            (app.resumeUrl && /drive\.google\.com|docs\.google\.com/i.test(app.resumeUrl))
+              ? 'Open CV (Drive)'
+              : 'Download CV'}
           </button>
         ) : (
           <span className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] opacity-50" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>

@@ -129,6 +129,11 @@ export function toDriveEmbedUrl(raw: string): { url: string; embedUrl: string; k
   return { url, embedUrl: url, kind: 'url' };
 }
 
+/** True when the URL is a Google Drive / Docs share link we can embed. */
+export function isGoogleDriveShareUrl(raw: string): boolean {
+  return toDriveEmbedUrl(raw).kind !== 'url';
+}
+
 export async function ensureAssessmentCollections() {
   await ensureLearnCollections();
   const db = await getDb();

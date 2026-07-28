@@ -68,6 +68,14 @@ export default async function MentorStudioPage() {
           <p className="mt-1 text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
             {profile.title} · {profile.priceXAF.toLocaleString()} XAF / {profile.sessionMinutes} min
           </p>
+          {profile.instructorBadge && (
+            <p
+              className="mt-2 inline-flex items-center gap-1.5 border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.14em]"
+              style={{ borderColor: 'rgba(0,179,105,0.35)', color: 'var(--green-deep)', background: 'rgba(0,179,105,0.08)' }}
+            >
+              {profile.instructorBadge}
+            </p>
+          )}
         </div>
         <div className="flex gap-2.5">
           <Link href="/dashboard/mentor/profile" className="btn btn-ghost !py-2.5 text-[13.5px]">

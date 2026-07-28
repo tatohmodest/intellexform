@@ -43,6 +43,9 @@ export interface LearnerDoc {
     reducedMotion?: boolean;
     marketingEmails?: boolean;
   };
+  /** Latest instructor badge label after mentor approval. */
+  instructorBadge?: string | null;
+  instructorBadgeLabels?: string[];
   createdAt: Date;
   lastLoginAt: Date;
 }

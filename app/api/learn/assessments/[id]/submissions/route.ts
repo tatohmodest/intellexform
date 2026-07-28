@@ -86,6 +86,13 @@ export async function POST(
   }
 
   if (assessment.kind === 'assignment') {
+    const dueAt = assessment.dueAt ? new Date(assessment.dueAt).getTime() : null;
+    if (dueAt && Date.now() > dueAt) {
+      return NextResponse.json(
+        { error: 'deadline_passed', message: 'The deadline has passed. You can no longer submit.' },
+        { status: 403 },
+      );
+    }
     const driveRaw = String(body.driveUrl || '').trim();
     if (!driveRaw) return NextResponse.json({ error: 'drive_url_required' }, { status: 400 });
     const norm = toDriveEmbedUrl(driveRaw);

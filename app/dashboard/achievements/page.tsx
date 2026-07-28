@@ -68,6 +68,22 @@ export default async function AchievementsPage() {
     { icon: CalendarCheck, name: 'Mentored', desc: 'Book your first mentorship session', earned: bookings.length >= 1 },
     { icon: GraduationCap, name: 'Graduate', desc: 'Finish a full course track', earned: certificates.length >= 1 },
     { icon: Zap, name: 'Powerhouse', desc: 'Earn 1,000 XP', earned: xp >= 1000 },
+    ...(learner?.instructorBadgeLabels || []).map((label) => ({
+      icon: Award,
+      name: label,
+      desc: 'Approved instructor for this campus',
+      earned: true,
+    })),
+    ...(!learner?.instructorBadgeLabels?.length && learner?.instructorBadge
+      ? [
+          {
+            icon: Award,
+            name: learner.instructorBadge,
+            desc: 'Approved instructor for this campus',
+            earned: true,
+          },
+        ]
+      : []),
   ];
   const earnedCount = badges.filter((b) => b.earned).length;
 

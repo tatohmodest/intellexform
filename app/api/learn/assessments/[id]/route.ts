@@ -79,5 +79,46 @@ export async function PATCH(
 
   await updateAssessment(params.id, session.uid, patch);
   const assessment = await getAssessment(params.id);
+
+  // Notify students when an assignment/exam is newly published.
+  if (
+    assessment &&
+    patch.published === true &&
+    !existing.published
+  ) {
+    try {
+      const { createNotificationsForUsers, resolveAssignmentAudience } = await import(
+        '@/lib/learn/notifications'
+      );
+      const audience = await resolveAssignmentAudience({
+        authorId: session.uid,
+        institutionSlug: assessment.institutionSlug,
+      });
+      const dueLabel = assessment.dueAt
+        ? ` Deadline: ${new Date(assessment.dueAt).toLocaleString()}.`
+        : '';
+      await createNotificationsForUsers(audience, {
+        title:
+          assessment.kind === 'exam'
+            ? `New exam: ${assessment.title}`
+            : `New assignment: ${assessment.title}`,
+        body: `${assessment.authorName} published ${
+          assessment.kind === 'exam' ? 'an exam' : 'an assignment'
+        }.${dueLabel} Open it in your dashboard.`,
+        href:
+          assessment.kind === 'exam'
+            ? `/dashboard/exams/${assessment.id}`
+            : `/dashboard/assignments/${assessment.id}`,
+        kind: assessment.kind,
+        data: {
+          assessmentId: assessment.id,
+          dueAt: assessment.dueAt ? new Date(assessment.dueAt).toISOString() : null,
+        },
+      });
+    } catch (err) {
+      console.error('assignment notify failed:', err);
+    }
+  }
+
   return NextResponse.json({ assessment });
 }

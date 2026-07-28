@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   ClipboardList,
+  Clock,
   Loader2,
   Plus,
   Save,
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react';
 import type { AssessmentView, ExamQuestion, SubmissionView } from '@/lib/learn/assessments';
 import DriveDocViewer from '@/components/dashboard/DriveDocViewer';
+import { formatCountdown, toDatetimeLocalValue } from '@/lib/learn/countdown';
 
 export default function AssessmentStudio({
   institutionSlug = null,
@@ -313,6 +315,40 @@ export default function AssessmentStudio({
                   onChange={(e) => setDraft({ ...draft, studentTips: e.target.value })}
                 />
 
+                {draft.kind === 'assignment' && (
+                  <div className="flex flex-wrap items-end gap-4 text-[13px]">
+                    <label className="block">
+                      <span className="mb-1.5 flex items-center gap-1.5 font-semibold">
+                        <Clock size={13} /> Submission deadline
+                      </span>
+                      <input
+                        type="datetime-local"
+                        className="form-input !rounded-none !py-1.5"
+                        value={toDatetimeLocalValue(draft.dueAt)}
+                        onChange={(e) =>
+                          setDraft({
+                            ...draft,
+                            dueAt: e.target.value ? new Date(e.target.value) : null,
+                          })
+                        }
+                      />
+                      <p className="mt-1 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                        Students see a live countdown. After this time they cannot submit a Drive link.
+                      </p>
+                    </label>
+                    {draft.dueAt && (
+                      <button
+                        type="button"
+                        className="text-[12px] font-semibold"
+                        style={{ color: 'var(--ink-soft)' }}
+                        onClick={() => setDraft({ ...draft, dueAt: null })}
+                      >
+                        Clear deadline
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {draft.kind === 'exam' && (
                   <div className="flex flex-wrap gap-4 text-[13px]">
                     <label className="flex items-center gap-2">
@@ -481,6 +517,9 @@ export default function AssessmentStudio({
 
             {tab === 'results' && (
               <div className="space-y-6">
+                {draft.kind === 'assignment' && draft.dueAt && (
+                  <DueClock dueAt={draft.dueAt} accent={accent} />
+                )}
                 {subs.length === 0 ? (
                   <p style={{ color: 'var(--ink-soft)' }}>No submissions yet.</p>
                 ) : (
@@ -488,10 +527,18 @@ export default function AssessmentStudio({
                     <div key={s.id} className="border-t pt-5" style={{ borderColor: 'var(--line)' }}>
                       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
                         <div>
-                          <div className="font-semibold">{s.studentName}</div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-semibold">{s.studentName}</span>
+                            {draft.kind === 'assignment' && draft.dueAt && (
+                              <StudentDueChip dueAt={draft.dueAt} accent={accent} />
+                            )}
+                          </div>
                           <div className="font-mono text-[10px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
                             {s.status}
                             {typeof s.score === 'number' ? ` · ${s.score}/${s.maxScore ?? '-'}` : ''}
+                            {s.submittedAt
+                              ? ` · submitted ${new Date(s.submittedAt).toLocaleString()}`
+                              : ''}
                           </div>
                         </div>
                       </div>
@@ -563,5 +610,50 @@ function GradeRow({
         Save mark
       </button>
     </div>
+  );
+}
+
+function useLiveCountdown(dueAt: string | Date | null | undefined) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!dueAt) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [dueAt]);
+  return formatCountdown(dueAt, now);
+}
+
+function DueClock({ dueAt, accent }: { dueAt: string | Date; accent: string }) {
+  const c = useLiveCountdown(dueAt);
+  return (
+    <div
+      className="flex flex-wrap items-center gap-3 border px-4 py-3 text-[13px]"
+      style={{
+        borderColor: c.expired ? '#b91c1c55' : 'var(--line)',
+        background: c.expired ? 'rgba(185,28,28,0.06)' : `${accent}0d`,
+      }}
+    >
+      <Clock size={15} style={{ color: c.expired ? '#b91c1c' : accent }} />
+      <span className="font-semibold" style={{ color: c.expired ? '#b91c1c' : accent }}>
+        {c.expired ? 'Deadline passed — late submissions blocked' : `Time left: ${c.label}`}
+      </span>
+      <span className="font-mono text-[11px]" style={{ color: 'var(--ink-soft)' }}>
+        Due {new Date(dueAt).toLocaleString()}
+      </span>
+    </div>
+  );
+}
+
+function StudentDueChip({ dueAt, accent }: { dueAt: string | Date; accent: string }) {
+  const c = useLiveCountdown(dueAt);
+  return (
+    <span
+      className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.12em]"
+      style={{ color: c.expired ? '#b91c1c' : accent }}
+      title={c.expired ? 'Deadline passed' : 'Time remaining until deadline'}
+    >
+      <Clock size={11} />
+      {c.expired ? 'Closed' : c.label}
+    </span>
   );
 }

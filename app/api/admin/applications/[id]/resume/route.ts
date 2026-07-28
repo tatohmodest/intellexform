@@ -163,7 +163,16 @@ export async function GET(
     );
 
     const resumeUrl = typeof app?.resumeUrl === 'string' ? app.resumeUrl : '';
-    if (!resumeUrl || !isCloudinaryUrl(resumeUrl)) {
+    if (!resumeUrl) {
+      return NextResponse.json({ error: 'resume_missing' }, { status: 404 });
+    }
+
+    // Google Drive / Docs public share — redirect admins to the file.
+    if (/drive\.google\.com|docs\.google\.com/i.test(resumeUrl)) {
+      return NextResponse.redirect(resumeUrl, 302);
+    }
+
+    if (!isCloudinaryUrl(resumeUrl)) {
       return NextResponse.json({ error: 'resume_missing' }, { status: 404 });
     }
 
