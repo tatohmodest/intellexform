@@ -26,10 +26,10 @@ export default function TutorialCourseView({
   return (
     <>
       <TopNav />
-      <div className="flex min-h-[calc(100vh-57px)] flex-col overflow-x-hidden lg:flex-row">
+      <div className="flex flex-col lg:h-[calc(100vh-57px)] lg:flex-row lg:overflow-hidden">
         <TutorialSidebar course={course} activeTitle="Curriculum" />
 
-        <main className="min-w-0 w-full flex-1">
+        <main className="min-w-0 w-full flex-1 lg:overflow-y-auto lg:overscroll-contain">
           <section
             className="border-b px-4 py-8 sm:px-6 sm:py-10 md:px-8 lg:px-12 lg:py-12"
             style={{
@@ -137,9 +137,11 @@ export default function TutorialCourseView({
               })}
             </div>
           </section>
+          <div className="lg:hidden">
+            <Footer />
+          </div>
         </main>
       </div>
-      <Footer />
     </>
   );
 }

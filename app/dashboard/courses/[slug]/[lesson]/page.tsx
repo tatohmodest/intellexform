@@ -1,13 +1,13 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft, Bot, CheckCircle2, Circle, Clock } from 'lucide-react';
+import { ArrowLeft, Bot, Clock } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getProgress } from '@/lib/learn/repo';
 import { getCatalogTrack } from '@/lib/learn/catalog';
 import { getTutorial, getTutorialLessons } from '@/lib/tutorials';
 import LessonBlocks from '@/components/tutorials/LessonBlocks';
 import LessonActions from '@/components/dashboard/LessonActions';
-import TrackLogo from '@/components/TrackLogo';
+import LessonCurriculum from '@/components/dashboard/LessonCurriculum';
 import SubscribePanel from '@/components/content/SubscribePanel';
 import { canAccessContent, getContentAccess, type LessonLevel } from '@/lib/contentAccess';
 
@@ -77,64 +77,25 @@ export default async function LessonPlayerPage({
   }
 
   const progress = await getProgress(session.uid, params.slug);
-  const done = new Set(progress.map((p) => p.lessonSlug));
-  const pct = lessons.length ? Math.round((done.size / lessons.length) * 100) : 0;
+  const done = progress.map((p) => p.lessonSlug);
+  const pct = lessons.length ? Math.round((done.length / lessons.length) * 100) : 0;
 
   return (
-    <div className="mx-auto flex max-w-[1180px] gap-8">
-      <aside className="sticky top-[88px] hidden max-h-[calc(100vh-110px)] w-[290px] shrink-0 overflow-y-auto rounded-2xl border xl:block" style={{ borderColor: 'var(--line)' }}>
-        <div className="border-b p-4" style={{ borderColor: 'var(--line)' }}>
-          <Link href={`/dashboard/courses/${params.slug}`} className="flex items-center gap-2.5">
-            <TrackLogo slug={track.slug} color={track.color} size={36} className="rounded-lg" />
-            <div className="min-w-0">
-              <div className="truncate text-[13.5px] font-semibold">{track.shortTitle}</div>
-              <div className="text-[11.5px]" style={{ color: 'var(--ink-soft)' }}>
-                {pct}% · {done.size}/{lessons.length} lessons
-              </div>
-            </div>
-          </Link>
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full" style={{ background: 'var(--paper-dim)' }}>
-            <div
-              className="h-full rounded-full"
-              style={{ width: `${Math.max(pct, 2)}%`, background: 'var(--green)' }}
-            />
-          </div>
-        </div>
-        <div className="p-2">
-          {course.sections.map((section) => (
-            <div key={section.id} className="mb-1">
-              <div className="mono px-3 pb-1 pt-3 text-[10px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
-                {section.title}
-              </div>
-              {section.lessons.map((l) => {
-                const active = l.slug === params.lesson;
-                const isDone = done.has(l.slug);
-                return (
-                  <Link
-                    key={l.slug}
-                    href={`/dashboard/courses/${params.slug}/${l.slug}`}
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px]"
-                    style={
-                      active
-                        ? { background: 'rgba(0,179,105,0.1)', color: 'var(--green-deep)', fontWeight: 600 }
-                        : { color: isDone ? 'var(--ink-soft)' : 'var(--ink)' }
-                    }
-                  >
-                    {isDone ? (
-                      <CheckCircle2 size={14} style={{ color: 'var(--green)' }} className="shrink-0" />
-                    ) : (
-                      <Circle size={14} style={{ color: 'var(--line)' }} className="shrink-0" />
-                    )}
-                    <span className="truncate">{l.title}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </aside>
+    <div className="mx-auto flex max-w-[1180px] flex-col lg:flex-row lg:gap-8">
+      <LessonCurriculum
+        course={course}
+        trackSlug={track.slug}
+        trackColor={track.color}
+        trackTitle={track.shortTitle}
+        activeSlug={params.lesson}
+        activeTitle={lesson.title}
+        doneSlugs={done}
+        pct={pct}
+        doneCount={done.length}
+        totalLessons={lessons.length}
+      />
 
-      <article className="min-w-0 flex-1">
+      <article className="min-w-0 flex-1 pb-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link
             href={`/dashboard/courses/${params.slug}`}
@@ -148,11 +109,11 @@ export default async function LessonPlayerPage({
             className="flex items-center gap-1.5 rounded-full border px-4 py-2 text-[12.5px] font-semibold"
             style={{ borderColor: 'rgba(74,144,226,0.35)', color: 'var(--blue-ink)', background: 'var(--amber-soft)' }}
           >
-            <Bot size={14} /> Ask AI about this lesson
+            <Bot size={14} /> Ask AI
           </Link>
         </div>
 
-        <div className="mono mb-2 flex items-center gap-3 text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
+        <div className="mono mb-2 flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
           <span>
             Lesson {idx + 1} of {lessons.length}
           </span>
@@ -163,19 +124,19 @@ export default async function LessonPlayerPage({
             {lesson.level}
           </span>
         </div>
-        <h1 className="font-display text-[28px] leading-tight sm:text-[32px]">{lesson.title}</h1>
+        <h1 className="break-words font-display text-[26px] leading-tight sm:text-[32px]">{lesson.title}</h1>
         <p className="mt-2 text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
           {lesson.description}
         </p>
 
-        <div className="mt-8">
+        <div className="mt-8 max-w-full overflow-x-auto">
           <LessonBlocks blocks={lesson.content} />
         </div>
 
         <LessonActions
           courseSlug={params.slug}
           lessonSlug={params.lesson}
-          initiallyDone={done.has(params.lesson)}
+          initiallyDone={done.includes(params.lesson)}
           prevHref={prev ? `/dashboard/courses/${params.slug}/${prev.slug}` : null}
           nextHref={next ? `/dashboard/courses/${params.slug}/${next.slug}` : null}
         />
