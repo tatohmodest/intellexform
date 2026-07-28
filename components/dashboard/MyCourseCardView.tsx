@@ -81,12 +81,12 @@ export default function MyCourseCardView({ course: c }: { course: MyCourseCard }
         )}
       </Link>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-2 p-4">
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-2.5 sm:gap-2 sm:p-4">
         <Link href={c.href} className="min-w-0">
-          <div className="flex items-start gap-2.5">
+          <div className="flex items-start gap-2 sm:gap-2.5">
             {c.source === 'tutorial' ? (
               <span
-                className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border"
+                className="mt-0.5 hidden h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border sm:flex"
                 style={{ borderColor: 'var(--line)', background: '#fff' }}
               >
                 <TrackLogo
@@ -98,11 +98,11 @@ export default function MyCourseCardView({ course: c }: { course: MyCourseCard }
               </span>
             ) : null}
             <div className="min-w-0 flex-1">
-              <h3 className="font-display text-[17px] font-semibold leading-snug line-clamp-2">
+              <h3 className="font-display text-[14px] font-semibold leading-snug line-clamp-2 sm:text-[17px]">
                 {c.title}
               </h3>
               <p
-                className="mt-1 line-clamp-2 text-[13px] leading-relaxed"
+                className="mt-1 line-clamp-2 hidden text-[13px] leading-relaxed sm:block"
                 style={{ color: 'var(--ink-soft)' }}
               >
                 {c.tagline}
@@ -112,7 +112,7 @@ export default function MyCourseCardView({ course: c }: { course: MyCourseCard }
         </Link>
 
         <div
-          className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[12px]"
+          className="mt-0.5 hidden flex-wrap gap-x-3 gap-y-1 text-[12px] sm:mt-1 sm:flex"
           style={{ color: 'var(--ink-soft)' }}
         >
           {c.totalLessons > 0 && (
@@ -142,15 +142,15 @@ export default function MyCourseCardView({ course: c }: { course: MyCourseCard }
         </div>
 
         {c.instructorName && (
-          <p className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+          <p className="hidden text-[12px] sm:block" style={{ color: 'var(--ink-soft)' }}>
             Taught by {c.instructorName}
           </p>
         )}
 
-        <div className="mt-auto flex flex-col gap-2 pt-3">
+        <div className="mt-auto flex flex-col gap-1.5 pt-2 sm:gap-2 sm:pt-3">
           <Link
             href={c.href}
-            className="inline-flex w-full items-center justify-center border px-3 py-2.5 text-[13px] font-semibold"
+            className="inline-flex w-full items-center justify-center border px-2 py-2 text-[11.5px] font-semibold sm:px-3 sm:py-2.5 sm:text-[13px]"
             style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
           >
             View details
@@ -165,7 +165,7 @@ export default function MyCourseCardView({ course: c }: { course: MyCourseCard }
           ) : (
             <Link
               href={c.href}
-              className="inline-flex w-full items-center justify-center gap-1.5 px-3 py-2.5 text-[13px] font-semibold text-white"
+              className="inline-flex w-full items-center justify-center gap-1.5 px-2 py-2 text-[11.5px] font-semibold text-white sm:px-3 sm:py-2.5 sm:text-[13px]"
               style={{ background: 'var(--green)' }}
             >
               {c.pricingType === 'FREE' ? 'Open course' : 'Get access'}
