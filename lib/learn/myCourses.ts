@@ -7,6 +7,8 @@ import { prisma } from '@/lib/db/prisma';
 import { getAllCourses } from '@/lib/repo';
 import { getCatalog } from '@/lib/learn/catalog';
 import { getEnrollments, getProgress } from '@/lib/learn/repo';
+import { listPublicTeacherCourses } from '@/lib/learn/ecosystem';
+import { courseDurationHours, type CourseDeliveryMode } from '@/lib/learn/courseTypes';
 
 const INTELLEX_SLUG = 'intellex';
 
@@ -205,8 +207,13 @@ export type MyCourseCard = {
   pct: number;
   href: string;
   continueHref: string;
-  source: 'tutorial' | 'catalogue';
-  kind: 'free' | 'tutoring' | 'self-paced' | 'catalogue';
+  source: 'tutorial' | 'catalogue' | 'instructor';
+  kind: 'free' | 'tutoring' | 'self-paced' | 'catalogue' | 'instructor';
+  /** Instructor-authored course extras */
+  instructorName?: string | null;
+  deliveryMode?: CourseDeliveryMode | null;
+  certificate?: boolean;
+  level?: string | null;
 };
 
 export type MyCourseSection = {
@@ -241,7 +248,7 @@ export async function getMyCourseSections(userId: string): Promise<{
     select: { id: true },
   });
 
-  const [courses, enrollments, progress] = await Promise.all([
+  const [courses, enrollments, progress, instructorCourses] = await Promise.all([
     institution
       ? prisma.course.findMany({
           where: { institutionId: institution.id, status: CourseStatus.PUBLISHED },
@@ -251,6 +258,7 @@ export async function getMyCourseSections(userId: string): Promise<{
       : Promise.resolve([]),
     getEnrollments(userId),
     getProgress(userId),
+    listPublicTeacherCourses(24),
   ]);
 
   const enrolledSlugs = new Set(enrollments.map((e) => e.courseSlug));
@@ -311,6 +319,36 @@ export async function getMyCourseSections(userId: string): Promise<{
     };
   });
 
+  // Courses published by InTelleX instructors (Course Studio).
+  const instructorCards: MyCourseCard[] = instructorCourses.map((c) => {
+    const hours = courseDurationHours(c);
+    return {
+      id: c.id,
+      slug: c.id,
+      title: c.title,
+      subtitle: c.subtitle || '',
+      tagline: c.subtitle || c.description || '',
+      tag: c.category || 'Instructor',
+      color: c.accent || '#00b369',
+      thumbnailUrl: c.coverUrl ?? null,
+      totalLessons: c.lessons?.length || 0,
+      totalMinutes: Math.round(hours * 60),
+      priceXaf: c.priceXAF ?? 0,
+      pricingType: (c.priceXAF ?? 0) > 0 ? 'PAID' : 'FREE',
+      enrolled: false,
+      doneCount: 0,
+      pct: 0,
+      href: `/dashboard/courses/instructor/${c.id}`,
+      continueHref: `/dashboard/courses/instructor/${c.id}`,
+      source: 'instructor',
+      kind: 'instructor',
+      instructorName: c.instructorName || c.authorName,
+      deliveryMode: c.deliveryMode ?? 'self_paced',
+      certificate: Boolean(c.certificate),
+      level: c.level && c.level !== 'all' ? c.level : null,
+    };
+  });
+
   const inProgress = cards.filter((c) => c.enrolled);
   const free = cards.filter((c) => c.kind === 'free' && !c.enrolled);
   const tutoring = cards.filter((c) => c.kind === 'tutoring');
@@ -346,6 +384,12 @@ export async function getMyCourseSections(userId: string): Promise<{
       courses: selfPaced,
     },
     {
+      id: 'instructors',
+      title: 'From InTelleX instructors',
+      subtitle: 'Live and self-paced courses taught by approved instructors',
+      courses: instructorCards,
+    },
+    {
       id: 'catalogue',
       title: 'More courses',
       subtitle: 'Full InTelleX catalogue',
@@ -355,7 +399,7 @@ export async function getMyCourseSections(userId: string): Promise<{
 
   return {
     sections,
-    total: cards.length,
+    total: cards.length + instructorCards.length,
     inProgress: inProgress.length,
   };
 }

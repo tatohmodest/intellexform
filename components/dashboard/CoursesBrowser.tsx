@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
+  Award,
   BookOpen,
   Check,
   ChevronLeft,
@@ -169,7 +170,7 @@ function CourseCard({ course: c }: { course: MyCourseCard }) {
       style={{ borderColor: 'var(--line)' }}
     >
       <Link href={c.href} className="relative block aspect-[16/10] overflow-hidden">
-        {c.source === 'catalogue' && c.thumbnailUrl ? (
+        {c.source !== 'tutorial' && c.thumbnailUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={c.thumbnailUrl}
@@ -256,9 +257,28 @@ function CourseCard({ course: c }: { course: MyCourseCard }) {
             <Clock size={12} /> ~{hours}h
           </span>
           <span className="inline-flex items-center gap-1">
-            <GraduationCap size={12} /> {c.source === 'tutorial' ? 'Track' : 'Catalogue'}
+            <GraduationCap size={12} />
+            {c.source === 'tutorial'
+              ? 'Track'
+              : c.source === 'instructor'
+                ? c.deliveryMode === 'live' || c.deliveryMode === 'hybrid'
+                  ? 'Live'
+                  : 'Self-paced'
+                : 'Catalogue'}
           </span>
+          {c.certificate && (
+            <span className="inline-flex items-center gap-1">
+              <Award size={12} /> Certificate
+            </span>
+          )}
+          {c.level && <span className="capitalize">{c.level}</span>}
         </div>
+
+        {c.instructorName && (
+          <p className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+            Taught by {c.instructorName}
+          </p>
+        )}
 
         <div className="mt-auto flex flex-col gap-2 pt-3">
           <Link
