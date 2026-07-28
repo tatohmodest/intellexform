@@ -39,6 +39,7 @@ export const LEARN_NAV = [
 ] as const;
 
 export const EXPLORE_NAV = [
+  { href: '/about', label: 'About & CEO', desc: 'Tatoh Modest Wilton · Looping Binary' },
   { href: '/ecosystem', label: 'Ecosystem', desc: 'How InTelleX fits together' },
   { href: '/enterprise', label: 'For institutions', desc: 'Campus plans, pricing & onboarding' },
   { href: '/internships', label: 'Internships', desc: 'Real-world experience' },

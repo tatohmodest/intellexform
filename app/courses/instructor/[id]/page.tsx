@@ -5,9 +5,12 @@ import { getSessionUser } from '@/lib/auth/getUser';
 import { findMentor, getTeacherCourse } from '@/lib/learn/ecosystem';
 import { courseDurationHours, deliveryModeLabel } from '@/lib/learn/courseTypes';
 import { absoluteUrl, buildShareMetadata } from '@/lib/seo/share';
+import { breadcrumbJsonLd, courseJsonLd } from '@/lib/seo/schema';
+import { geoImageAlt } from '@/lib/seo/keywords';
 import TopNav from '@/components/landing/TopNav';
 import Footer from '@/components/landing/Footer';
 import ShareCourseButton from '@/components/ShareCourseButton';
+import JsonLd from '@/components/seo/JsonLd';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,13 +22,14 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
   const description =
     course.subtitle ||
     course.description?.slice(0, 200) ||
-    `Learn ${course.title} on InTelleX.`;
+    `Learn ${course.title} on InTelleX - online tech courses in Cameroon.`;
   return buildShareMetadata({
-    title: `${course.title} - InTelleX`,
+    title: `${course.title} - InTelleX Cameroon`,
     description,
     path: `/courses/instructor/${course.id}`,
     image: course.coverUrl,
-    imageAlt: course.title,
+    imageAlt: geoImageAlt(course.title),
+    keywords: [course.title, 'instructor course Cameroon', 'InTelleX course'],
   });
 }
 
@@ -60,6 +64,23 @@ export default async function PublicInstructorCoursePage({
 
   return (
     <>
+      <JsonLd
+        data={[
+          courseJsonLd({
+            name: course.title,
+            description: shareText,
+            url: shareUrl,
+            image: course.coverUrl,
+            instructorName: course.instructorName || course.authorName,
+            priceXAF: course.priceXAF ?? 0,
+          }),
+          breadcrumbJsonLd([
+            { name: 'Home', path: '/' },
+            { name: 'Courses', path: '/courses' },
+            { name: course.title, path: `/courses/instructor/${course.id}` },
+          ]),
+        ]}
+      />
       <TopNav />
       <section className="py-8 sm:py-12" style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
         <div className="wrap max-w-[920px]">

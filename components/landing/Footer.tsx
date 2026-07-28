@@ -74,8 +74,15 @@ export default function Footer() {
           </div>
           <div>
             <h5 className="mb-3.5 text-[12.5px] uppercase tracking-[0.08em]" style={{ color: 'rgba(251,248,240,0.5)' }}>
-              Contact
+              Company
             </h5>
+            <Link href="/about" className="mb-2 block text-sm text-paper/80">About InTelleX</Link>
+            <Link href="/about#ceo" className="mb-2 block text-sm text-paper/80">CEO</Link>
+            <Link href="/about#ceo" className="mb-2 block text-sm text-paper/80">Tatoh Modest Wilton</Link>
+            <a href="https://loopingbinary.com" target="_blank" rel="noopener noreferrer" className="mb-2 block text-sm text-paper/80">
+              Looping Binary
+            </a>
+            <Link href="/contact" className="mb-2 block text-sm text-paper/80">Contact us</Link>
             <a
               href={buildWhatsappLink('Hello Intellex! I have a question about the platform.')}
               target="_blank"
@@ -85,17 +92,14 @@ export default function Footer() {
               WhatsApp
             </a>
             <a href="mailto:loopingbinary@gmail.com" className="mb-2 block text-sm text-paper/80">Email</a>
-            <Link href="/contact" className="mb-2 block text-sm text-paper/80">Contact us</Link>
-            <a href="https://loopingbinary.com" target="_blank" rel="noopener noreferrer" className="mb-2 block text-sm text-paper/80">
-              Looping Binary
-            </a>
+            <a href="/sitemap.xml" className="mb-2 block text-sm text-paper/80">Sitemap</a>
           </div>
         </div>
         <div
           className="flex flex-wrap justify-between gap-2.5 border-t pt-5 text-[12.5px]"
           style={{ borderColor: 'rgba(251,248,240,0.14)' }}
         >
-          <span>© 2026 Intellex, a Looping Binary platform.</span>
+          <span>© 2026 Intellex, a Looping Binary platform. Founder & CEO: Tatoh Modest Wilton.</span>
           <span>Douala, Cameroon · +237 650 318 856</span>
         </div>
       </div>

@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
 import { Star } from 'lucide-react';
 import { Course } from '@/lib/types';
 import { formatXAF } from '@/lib/format';
+import GeoTaggedImage from '@/components/seo/GeoTaggedImage';
 
 function RatingStars({ rating }: { rating: number }) {
   return (
@@ -25,8 +25,8 @@ function RatingStars({ rating }: { rating: number }) {
 }
 
 export default function CourseCard({ course, live = false }: { course: Course; live?: boolean }) {
-  const [imgOk, setImgOk] = useState(Boolean(course.courseImage));
   const discounted = course.originalPrice > course.currentPrice;
+  const hasImage = Boolean(course.courseImage);
 
   return (
     <Link
@@ -41,16 +41,13 @@ export default function CourseCard({ course, live = false }: { course: Course; l
             'repeating-linear-gradient(135deg, var(--paper-dim), var(--paper-dim) 10px, #E1EBF6 10px, #E1EBF6 20px)',
         }}
       >
-        {imgOk && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+        {hasImage ? (
+          <GeoTaggedImage
             src={course.courseImage}
-            alt={course.name}
+            name={course.name}
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            onError={() => setImgOk(false)}
           />
-        )}
-        {!imgOk && (
+        ) : (
           <span className="px-3 text-center font-display text-[13px] sm:px-4 sm:text-base" style={{ color: 'var(--green-deep)' }}>
             {course.name}
           </span>
@@ -78,19 +75,21 @@ export default function CourseCard({ course, live = false }: { course: Course; l
         )}
 
         {course.courseRating > 0 && (
-          <div className="flex min-w-0 items-center gap-1 text-[11px] sm:gap-1.5 sm:text-[12px]">
-            <span className="font-semibold" style={{ color: '#8a5a00' }}>{course.courseRating.toFixed(1)}</span>
+          <div className="flex items-center gap-1 text-[11px] sm:text-[12px]">
+            <span className="font-semibold" style={{ color: 'var(--amber)' }}>{course.courseRating.toFixed(1)}</span>
             <RatingStars rating={course.courseRating} />
             {course.courseNumberOfVotes > 0 && (
-              <span className="truncate" style={{ color: 'var(--ink-soft)' }}>({course.courseNumberOfVotes.toLocaleString('en-US')})</span>
+              <span style={{ color: 'var(--ink-soft)' }}>({course.courseNumberOfVotes.toLocaleString('en-US')})</span>
             )}
           </div>
         )}
 
-        <div className="mt-auto flex min-w-0 flex-wrap items-baseline gap-1.5 pt-1 sm:gap-2 sm:pt-1.5">
+        <div className="mt-auto flex items-baseline gap-2 pt-1">
           <span className="font-display text-[15px] font-semibold sm:text-[17px]">{formatXAF(course.currentPrice)}</span>
           {discounted && (
-            <span className="text-[11px] line-through sm:text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>{formatXAF(course.originalPrice)}</span>
+            <span className="text-[11px] line-through sm:text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+              {formatXAF(course.originalPrice)}
+            </span>
           )}
         </div>
       </div>

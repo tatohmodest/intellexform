@@ -4,11 +4,14 @@ import { Star, Check, Clock, Globe, BadgeCheck, ArrowLeft } from 'lucide-react';
 import { getCourseBySlug } from '@/lib/repo';
 import { formatXAF } from '@/lib/format';
 import { absoluteUrl, buildShareMetadata } from '@/lib/seo/share';
+import { breadcrumbJsonLd, courseJsonLd } from '@/lib/seo/schema';
+import { geoImageAlt } from '@/lib/seo/keywords';
 import TopNav from '@/components/landing/TopNav';
 import Footer from '@/components/landing/Footer';
 import PurchasePanel from '@/components/PurchasePanel';
 import CourseHeroImage from '@/components/CourseHeroImage';
 import ShareCourseButton from '@/components/ShareCourseButton';
+import JsonLd from '@/components/seo/JsonLd';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,13 +21,19 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const description =
     course.shortDescription ||
     course.courseDetails?.slice(0, 200) ||
-    `Learn ${course.name} on InTelleX.`;
+    `Learn ${course.name} on InTelleX - online tech courses in Cameroon (Douala, Yaounde, Bamenda, Buea).`;
   return buildShareMetadata({
-    title: `${course.name} - InTelleX`,
+    title: `${course.name} - InTelleX Cameroon`,
     description,
     path: `/courses/${course.slug}`,
     image: course.courseImage,
-    imageAlt: course.name,
+    imageAlt: geoImageAlt(course.name),
+    keywords: [
+      course.name,
+      `${course.name} Cameroon`,
+      `${course.name} Douala`,
+      'online course Cameroon',
+    ],
   });
 }
 
@@ -39,6 +48,23 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
 
   return (
     <>
+      <JsonLd
+        data={[
+          courseJsonLd({
+            name: course.name,
+            description: shareText,
+            url: shareUrl,
+            image: course.courseImage,
+            instructorName: course.instructor,
+            priceXAF: course.currentPrice,
+          }),
+          breadcrumbJsonLd([
+            { name: 'Home', path: '/' },
+            { name: 'Courses', path: '/courses' },
+            { name: course.name, path: `/courses/${course.slug}` },
+          ]),
+        ]}
+      />
       <TopNav />
 
       {/* Header band */}

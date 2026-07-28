@@ -9,12 +9,13 @@ import CoursesBrowser from '@/components/CoursesBrowser';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = buildShareMetadata({
-  title: 'Courses - InTelleX',
+  title: 'Courses - InTelleX Cameroon',
   description:
-    'Browse every course on InTelleX: web development, data science, cybersecurity, design and more.',
+    'Browse every course on InTelleX: web development, data science, cybersecurity, design and more. Online tech education for Douala, Yaounde, Bamenda, Buea and all Cameroon.',
   path: '/courses',
   image: '/way_selfpaced.webp',
-  imageAlt: 'InTelleX courses',
+  imageAlt: 'InTelleX courses - tech education Cameroon',
+  keywords: ['courses Cameroon', 'coding courses Douala', 'online courses Yaounde'],
 });
 
 export default async function CoursesPage() {

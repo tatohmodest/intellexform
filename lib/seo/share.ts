@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 
 import { CANONICAL_SITE_URL } from '@/lib/platformHosts';
+import { SITE_GEO, SITE_KEYWORDS } from '@/lib/seo/keywords';
 
-/** Public production origin — always used for share / Open Graph links. */
+/** Public production origin - always used for share / Open Graph links. */
 export { CANONICAL_SITE_URL };
 
 const DEFAULT_SHARE_IMAGE = '/way_selfpaced.webp';
@@ -65,12 +66,27 @@ export function absoluteUrl(
   return abs;
 }
 
+/** Geo + Cameroon discovery meta shared across public pages. */
+export function cameroonGeoMeta(): Metadata['other'] {
+  return {
+    'geo.region': SITE_GEO.regionCode,
+    'geo.placename': SITE_GEO.placename,
+    'geo.position': SITE_GEO.geoPosition,
+    ICBM: SITE_GEO.icbm,
+    'DC.title': 'InTelleX',
+    'DC.creator': 'Tatoh Modest Wilton · Looping Binary',
+    'DC.coverage': 'Cameroon - Douala, Yaoundé, Bamenda, Buea, Bafoussam and all regions',
+    'og:locale:alternate': 'fr_CM',
+  };
+}
+
 export type ShareCardInput = {
   title: string;
   description?: string | null;
   path: string;
   image?: string | null;
   imageAlt?: string;
+  keywords?: string[];
 };
 
 /** Open Graph + large Twitter card so WhatsApp / iMessage show the image. */
@@ -83,10 +99,12 @@ export function buildShareMetadata(input: ShareCardInput): Metadata {
   const url = absoluteUrl(input.path);
   const image = absoluteUrl(input.image);
   const alt = input.imageAlt || title;
+  const keywords = [...SITE_KEYWORDS.slice(0, 40), ...(input.keywords || [])];
 
   return {
     title,
     description: description || undefined,
+    keywords,
     metadataBase: new URL(getSiteUrl()),
     alternates: { canonical: url },
     openGraph: {
@@ -94,6 +112,7 @@ export function buildShareMetadata(input: ShareCardInput): Metadata {
       description: description || undefined,
       url,
       siteName: 'InTelleX',
+      locale: 'en_CM',
       type: 'website',
       images: [
         {
@@ -110,5 +129,6 @@ export function buildShareMetadata(input: ShareCardInput): Metadata {
       description: description || undefined,
       images: [image],
     },
+    other: cameroonGeoMeta(),
   };
 }

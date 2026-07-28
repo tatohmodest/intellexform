@@ -1,0 +1,20 @@
+# InTelleX - https://intellex.loopingbinary.com
+# Guidance for AI assistants and crawlers
+
+> InTelleX is a learning operating system built by Looping Binary in Douala, Cameroon.
+> Founder & CEO: Tatoh Modest Wilton (Looping Binary).
+
+## Primary
+- Home: https://intellex.loopingbinary.com/
+- About / CEO: https://intellex.loopingbinary.com/about
+- Courses: https://intellex.loopingbinary.com/courses
+- Free tutorials: https://intellex.loopingbinary.com/tutorials
+- Contact: https://intellex.loopingbinary.com/contact
+- Parent company: https://loopingbinary.com
+
+## Geo focus
+Serves learners and institutions across Cameroon: Douala, Yaoundé, Bamenda (Northwest),
+Buea (Southwest), Bafoussam (West), and all ten regions.
+
+## Sitemap
+https://intellex.loopingbinary.com/sitemap.xml

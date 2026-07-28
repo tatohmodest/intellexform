@@ -3,29 +3,54 @@ import './globals.css';
 import CookieConsent from '@/components/CookieConsent';
 import PwaInstallPrompt from '@/components/PwaInstallPrompt';
 import PwaRegister from '@/components/PwaRegister';
+import JsonLd from '@/components/seo/JsonLd';
 import { BRAND_LOGO_MARK } from '@/lib/brand';
-import { absoluteUrl, getSiteUrl } from '@/lib/seo/share';
+import { organizationJsonLd, websiteJsonLd } from '@/lib/seo/schema';
+import { absoluteUrl, cameroonGeoMeta, getSiteUrl } from '@/lib/seo/share';
+import { SITE_KEYWORDS } from '@/lib/seo/keywords';
+
+const SITE = getSiteUrl();
+const TITLE = 'InTelleX - Learn at your pace | Tech education Cameroon';
+const DESCRIPTION =
+  'InTelleX is Cameroon\'s learning OS: self-paced courses, live mentors, and an AI tutor. Built in Douala by Looping Binary - serving Yaounde, Bamenda, Buea, Bafoussam and every region.';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(getSiteUrl()),
-  title: 'Intellex - Learn at your pace, on your terms',
-  description:
-    'Intellex is where you actually finish what you start - self-paced courses, live mentors, and an AI tutor that studies a book so it can teach it to you, one level at a time. Built in Cameroon.',
+  metadataBase: new URL(SITE),
+  title: {
+    default: TITLE,
+    template: '%s | InTelleX Cameroon',
+  },
+  description: DESCRIPTION,
   applicationName: 'InTelleX',
-  keywords: [
-    'Intellex',
-    'tech education',
-    'Cameroon',
-    'coding courses',
-    'web development',
-    'data science',
-    'cybersecurity',
-    'AI tutor',
-    'live tutoring',
-    'Digital marketing',
-    'Digital skills',
-    'Vocational training',
+  authors: [
+    { name: 'Tatoh Modest Wilton', url: `${SITE}/about` },
+    { name: 'Looping Binary', url: 'https://loopingbinary.com' },
   ],
+  creator: 'Tatoh Modest Wilton · Looping Binary',
+  publisher: 'Looping Binary',
+  category: 'education',
+  classification: 'EdTech / Online Learning / Cameroon',
+  keywords: SITE_KEYWORDS,
+  referrer: 'origin-when-cross-origin',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
+  },
+  alternates: {
+    canonical: SITE,
+    languages: {
+      'en-CM': SITE,
+      'fr-CM': SITE,
+      'x-default': SITE,
+    },
+  },
   icons: {
     icon: [
       { url: BRAND_LOGO_MARK, type: 'image/svg+xml' },
@@ -37,38 +62,39 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: 'InTelleX',
-    // default = light status bar / chrome with dark (black) text & icons
     statusBarStyle: 'default',
   },
   formatDetection: {
-    telephone: false,
+    telephone: true,
+    email: true,
+    address: true,
   },
   openGraph: {
-    title: 'Intellex - Learn at your pace, on your terms',
-    description:
-      'Self-paced courses, live mentors, and an AI tutor. Skills to income, one level at a time.',
+    title: TITLE,
+    description: DESCRIPTION,
     type: 'website',
     siteName: 'InTelleX',
+    locale: 'en_CM',
+    url: SITE,
     images: [
       {
         url: absoluteUrl('/way_selfpaced.webp'),
         width: 1200,
         height: 630,
-        alt: 'InTelleX courses',
+        alt: 'InTelleX courses - tech education in Douala, Cameroon',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Intellex - Learn at your pace, on your terms',
-    description:
-      'Self-paced courses, live mentors, and an AI tutor. Skills to income, one level at a time.',
+    title: TITLE,
+    description: DESCRIPTION,
     images: [absoluteUrl('/way_selfpaced.webp')],
   },
+  other: cameroonGeoMeta(),
 };
 
 export const viewport: Viewport = {
-  // Browser / PWA chrome (address bar, status area) — white with dark system text
   themeColor: '#FFFFFF',
   colorScheme: 'light',
 };
@@ -81,6 +107,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className="bg-paper text-ink font-body antialiased">
+        <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
         {children}
         <CookieConsent />
         <PwaRegister />
