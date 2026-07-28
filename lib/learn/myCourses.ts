@@ -82,7 +82,7 @@ export async function getMyCourseSections(userId: string): Promise<{
     await Promise.all([
       getEnrollments(userId).catch(() => []),
       getProgress(userId).catch(() => []),
-      listPublicTeacherCourses(24).catch(() => []),
+      listPublicTeacherCourses(100).catch(() => []),
       listStudentCourseEnrollments(userId).catch(() => []),
       getAllCourses().catch(() => [] as Course[]),
     ]);
