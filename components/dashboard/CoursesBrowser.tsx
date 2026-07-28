@@ -11,6 +11,7 @@ import {
   GraduationCap,
 } from 'lucide-react';
 import TrackLogo from '@/components/TrackLogo';
+import EnrollButton from '@/components/dashboard/EnrollButton';
 import { getTrackLogo } from '@/lib/techLogos';
 import type { MyCourseCard, MyCourseSection } from '@/lib/learn/myCourses';
 
@@ -259,14 +260,30 @@ function CourseCard({ course: c }: { course: MyCourseCard }) {
           </span>
         </div>
 
-        <div className="mt-auto pt-3">
+        <div className="mt-auto flex flex-col gap-2 pt-3">
           <Link
-            href={c.enrolled ? c.continueHref : c.href}
+            href={c.href}
             className="inline-flex w-full items-center justify-center border px-3 py-2.5 text-[13px] font-semibold"
             style={{ borderColor: 'var(--ink)', color: 'var(--ink)' }}
           >
-            {c.enrolled ? 'Continue' : 'View course'}
+            View course
           </Link>
+          {c.source === 'tutorial' ? (
+            <EnrollButton
+              courseSlug={c.slug}
+              enrolled={c.enrolled}
+              continueHref={c.continueHref}
+              editorial
+            />
+          ) : (
+            <Link
+              href={c.href}
+              className="inline-flex w-full items-center justify-center gap-1.5 px-3 py-2.5 text-[13px] font-semibold text-white"
+              style={{ background: 'var(--green)' }}
+            >
+              {c.pricingType === 'FREE' ? 'Open course' : 'Get access'}
+            </Link>
+          )}
         </div>
       </div>
     </article>
