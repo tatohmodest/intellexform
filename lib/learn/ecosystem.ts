@@ -979,6 +979,26 @@ export async function getTeacherCourse(id: string): Promise<TeacherCourseView | 
   }
 }
 
+/** Batch-load teacher courses (avoids N+1 on My Courses). */
+export async function getTeacherCoursesByIds(ids: string[]): Promise<TeacherCourseView[]> {
+  const unique = Array.from(new Set(ids.map((id) => String(id || '').trim()).filter(Boolean)));
+  if (!unique.length) return [];
+  try {
+    const db = await getDb();
+    const objectIds = unique
+      .filter((id) => ObjectId.isValid(id))
+      .map((id) => new ObjectId(id));
+    if (!objectIds.length) return [];
+    const docs = await db
+      .collection('teacher_courses')
+      .find({ _id: { $in: objectIds } })
+      .toArray();
+    return docs.map((d) => toTeacherCourseView(d as Record<string, unknown>));
+  } catch {
+    return [];
+  }
+}
+
 export async function createTeacherCourse(opts: {
   authorId: string;
   authorName: string;
