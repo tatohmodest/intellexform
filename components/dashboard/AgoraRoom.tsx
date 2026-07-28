@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Loader2,
@@ -29,6 +29,20 @@ type Phase = 'connecting' | 'live' | 'error' | 'left';
 interface RemoteTile {
   uid: string | number;
   hasVideo: boolean;
+}
+
+/** Visible face tiles in the normal 2-col grid (including you). */
+const GRID_VISIBLE = 6;
+/** Visible face tiles in the bottom filmstrip while presenting. */
+const STRIP_VISIBLE = 8;
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join('');
 }
 
 export default function AgoraRoom({
@@ -60,14 +74,12 @@ export default function AgoraRoom({
   const remoteRefs = useRef<Map<string | number, HTMLDivElement>>(new Map());
   const remoteUsersRef = useRef<Map<string | number, IAgoraRTCRemoteUser>>(new Map());
 
-  // Session timer
   useEffect(() => {
     if (phase !== 'live') return;
     const t = setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => clearInterval(t);
   }, [phase]);
 
-  // Keep fullscreen state in sync with browser exits (Esc, etc.)
   useEffect(() => {
     function onFsChange() {
       const el = stageRef.current;
@@ -129,10 +141,9 @@ export default function AgoraRoom({
             return [...others, { uid: user.uid, hasVideo: Boolean(user.videoTrack) }];
           });
           if (mediaType === 'video') {
-            // Wait a tick for the tile div to mount, then play into it.
             setTimeout(() => {
               const el = remoteRefs.current.get(user.uid);
-              if (el) user.videoTrack?.play(el, { fit: 'contain' });
+              if (el) user.videoTrack?.play(el, { fit: 'cover' });
             }, 60);
           }
         });
@@ -193,7 +204,7 @@ export default function AgoraRoom({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channel]);
 
-  // When screen-share UI mounts, play the local screen track into the preview.
+  // Play local screen into the main presenter stage.
   useEffect(() => {
     if (!sharing) return;
     const track = screenTrackRef.current;
@@ -202,7 +213,11 @@ export default function AgoraRoom({
       track.stop();
       track.play(el, { fit: 'contain' });
     }
-  }, [sharing]);
+    // Keep camera preview in the filmstrip while presenting.
+    if (camTrackRef.current && camOn && localVideoRef.current) {
+      camTrackRef.current.play(localVideoRef.current, { fit: 'cover' });
+    }
+  }, [sharing, camOn]);
 
   async function toggleMic() {
     const track = micTrackRef.current;
@@ -217,7 +232,7 @@ export default function AgoraRoom({
     const next = !camOn;
     await track.setEnabled(next);
     setCamOn(next);
-    if (next && localVideoRef.current && !sharing) {
+    if (next && localVideoRef.current) {
       track.play(localVideoRef.current, { fit: 'cover' });
     }
   }
@@ -238,20 +253,19 @@ export default function AgoraRoom({
         const screenTrack = Array.isArray(screen) ? screen[0] : screen;
         screenTrackRef.current = screenTrack;
 
-        // Swap camera publish for screen publish (one video track out).
+        // Publish screen instead of camera to the room, but keep local cam preview.
         if (camTrackRef.current) {
-          camTrackRef.current.stop();
           await client.unpublish(camTrackRef.current);
         }
         await client.publish(screenTrack);
-
-        // Show local preview of what you are sharing (dedicated container).
         setSharing(true);
-        // play happens in useEffect after the preview tile mounts
+
         requestAnimationFrame(() => {
-          const el = screenPreviewRef.current;
-          if (el && screenTrackRef.current) {
-            screenTrackRef.current.play(el, { fit: 'contain' });
+          if (screenPreviewRef.current && screenTrackRef.current) {
+            screenTrackRef.current.play(screenPreviewRef.current, { fit: 'contain' });
+          }
+          if (camTrackRef.current && camOn && localVideoRef.current) {
+            camTrackRef.current.play(localVideoRef.current, { fit: 'cover' });
           }
         });
 
@@ -318,7 +332,133 @@ export default function AgoraRoom({
 
   const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
   const secs = String(elapsed % 60).padStart(2, '0');
-  const showCamPlaceholder = !sharing && (!camOn || phase === 'connecting');
+
+  const faceBudget = sharing ? STRIP_VISIBLE : GRID_VISIBLE;
+  // Slots: 1 for you + remotes. Reserve one slot for "+N" when overflowing.
+  const totalFaces = 1 + remotes.length;
+  const needsOverflow = totalFaces > faceBudget;
+  const remoteSlots = needsOverflow ? faceBudget - 2 : faceBudget - 1; // -1 for you, -1 more for +N
+  const visibleRemotes = remotes.slice(0, Math.max(0, remoteSlots));
+  const hiddenCount = Math.max(0, remotes.length - visibleRemotes.length);
+
+  const gridCols = useMemo(() => {
+    if (sharing) return undefined;
+    const shown = 1 + visibleRemotes.length + (hiddenCount > 0 ? 1 : 0);
+    if (shown <= 1) return '1fr';
+    if (shown === 2) return '1fr 1fr';
+    return '1fr 1fr'; // Meet-style 2-column grid
+  }, [sharing, visibleRemotes.length, hiddenCount]);
+
+  function bindRemote(uid: string | number, el: HTMLDivElement | null) {
+    if (!el) {
+      remoteRefs.current.delete(uid);
+      return;
+    }
+    remoteRefs.current.set(uid, el);
+    const user = remoteUsersRef.current.get(uid);
+    if (user?.videoTrack) {
+      user.videoTrack.play(el, { fit: 'cover' });
+    }
+  }
+
+  const localTile = (
+    <div
+      className="relative overflow-hidden rounded-xl"
+      style={{
+        background: '#151c23',
+        aspectRatio: '16 / 9',
+        minWidth: sharing ? 140 : undefined,
+        width: sharing ? 160 : undefined,
+        flex: sharing ? '0 0 auto' : undefined,
+      }}
+    >
+      <div
+        ref={localVideoRef}
+        className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover"
+      />
+      {(phase === 'connecting' || !camOn) && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-white/70">
+          {phase === 'connecting' ? (
+            <>
+              <Loader2 size={22} className="animate-spin" />
+              <span className="text-[12px]">Joining…</span>
+            </>
+          ) : (
+            <>
+              <span
+                className="flex h-12 w-12 items-center justify-center rounded-full text-[16px] font-bold text-white"
+                style={{ background: 'linear-gradient(135deg, #00b369, #1f5fa8)' }}
+              >
+                {initials(displayName)}
+              </span>
+              <span className="text-[11px]">Camera off</span>
+            </>
+          )}
+        </div>
+      )}
+      <span className="absolute bottom-1.5 left-2 rounded bg-black/55 px-1.5 py-0.5 text-[10.5px] font-medium text-white">
+        {displayName} (you)
+      </span>
+      {!micOn && (
+        <span className="absolute bottom-1.5 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/55 text-white">
+          <MicOff size={12} />
+        </span>
+      )}
+    </div>
+  );
+
+  const remoteTiles = visibleRemotes.map((r) => (
+    <div
+      key={String(r.uid)}
+      className="relative overflow-hidden rounded-xl"
+      style={{
+        background: '#151c23',
+        aspectRatio: '16 / 9',
+        minWidth: sharing ? 140 : undefined,
+        width: sharing ? 160 : undefined,
+        flex: sharing ? '0 0 auto' : undefined,
+      }}
+    >
+      <div
+        ref={(el) => bindRemote(r.uid, el)}
+        className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover"
+      />
+      {!r.hasVideo && (
+        <div className="absolute inset-0 flex items-center justify-center text-white/60">
+          <span
+            className="flex h-12 w-12 items-center justify-center rounded-full text-white"
+            style={{ background: '#37474f' }}
+          >
+            <Users size={18} />
+          </span>
+        </div>
+      )}
+      <span className="absolute bottom-1.5 left-2 rounded bg-black/55 px-1.5 py-0.5 text-[10.5px] font-medium text-white">
+        Participant {String(r.uid).slice(-4)}
+      </span>
+    </div>
+  ));
+
+  const overflowTile =
+    hiddenCount > 0 ? (
+      <div
+        className="relative flex items-center justify-center overflow-hidden rounded-xl border border-dashed border-white/20"
+        style={{
+          background: '#1a222b',
+          aspectRatio: '16 / 9',
+          minWidth: sharing ? 140 : undefined,
+          width: sharing ? 160 : undefined,
+          flex: sharing ? '0 0 auto' : undefined,
+          color: 'rgba(255,255,255,0.85)',
+        }}
+        title={`${hiddenCount} more participant${hiddenCount === 1 ? '' : 's'}`}
+      >
+        <div className="text-center">
+          <div className="font-display text-[28px] leading-none">+{hiddenCount}</div>
+          <div className="mt-1 text-[11px] text-white/55">others</div>
+        </div>
+      </div>
+    ) : null;
 
   if (phase === 'error') {
     return (
@@ -345,7 +485,6 @@ export default function AgoraRoom({
 
   return (
     <div className="mx-auto max-w-[1100px]">
-      {/* Room header */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-[22px] leading-tight">{title}</h1>
@@ -357,7 +496,9 @@ export default function AgoraRoom({
               />
               {phase === 'live' ? 'LIVE' : 'Connecting…'}
             </span>
-            <span className="mono">{mins}:{secs}</span>
+            <span className="mono">
+              {mins}:{secs}
+            </span>
             <span className="flex items-center gap-1">
               <Users size={12} /> {remotes.length + 1} in room
             </span>
@@ -379,47 +520,38 @@ export default function AgoraRoom({
             {isFullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
             {isFullscreen ? 'Exit' : 'Fullscreen'}
           </button>
-          <span className="mono rounded-full border px-3 py-1 text-[11px]" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
+          <span
+            className="mono rounded-full border px-3 py-1 text-[11px]"
+            style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}
+          >
             room: {channel}
           </span>
         </div>
       </div>
 
-      {/* Stage (fullscreen target includes controls) */}
       <div
         ref={stageRef}
-        className="rounded-3xl p-3"
+        className="flex flex-col rounded-3xl p-3"
         style={{
           background: '#0C1116',
           minHeight: isFullscreen ? '100vh' : undefined,
-          display: isFullscreen ? 'flex' : 'block',
-          flexDirection: isFullscreen ? 'column' : undefined,
         }}
       >
-        {/* Video grid */}
-        <div
-          className="grid flex-1 gap-3"
-          style={{
-            gridTemplateColumns: sharing
-              ? remotes.length === 0
-                ? '1fr'
-                : 'minmax(0, 2.2fr) minmax(220px, 1fr)'
-              : remotes.length === 0
-                ? '1fr'
-                : 'repeat(auto-fit, minmax(280px, 1fr))',
-          }}
-        >
-          {/* Screen share is the main tile while sharing */}
-          {sharing ? (
+        {sharing ? (
+          /* Meet-style presenting: big screen on top, faces in a strip underneath */
+          <div className="flex min-h-0 flex-1 flex-col gap-3">
             <div
-              className="relative overflow-hidden rounded-2xl"
+              className="relative min-h-0 flex-1 overflow-hidden rounded-2xl"
               style={{
                 background: '#0a0e12',
-                minHeight: isFullscreen ? 'min(70vh, 720px)' : undefined,
-                aspectRatio: isFullscreen ? undefined : '16 / 9',
+                minHeight: isFullscreen ? '55vh' : 360,
+                maxHeight: isFullscreen ? 'calc(100vh - 220px)' : 520,
               }}
             >
-              <div ref={screenPreviewRef} className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-contain" />
+              <div
+                ref={screenPreviewRef}
+                className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-contain"
+              />
               <span className="absolute bottom-2.5 left-3 rounded-md bg-black/55 px-2 py-1 text-[11.5px] font-medium text-white">
                 Your screen · sharing
               </span>
@@ -427,96 +559,45 @@ export default function AgoraRoom({
                 You are presenting
               </span>
             </div>
-          ) : null}
 
-          {/* Local camera tile (PiP-style while sharing) */}
-          <div
-            className={
-              sharing
-                ? 'relative aspect-video overflow-hidden rounded-2xl'
-                : 'relative aspect-video overflow-hidden rounded-2xl'
-            }
-            style={{ background: '#151c23' }}
-          >
-            <div
-              ref={localVideoRef}
-              className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover"
-            />
-            {showCamPlaceholder && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/70">
-                {phase === 'connecting' ? (
-                  <>
-                    <Loader2 size={26} className="animate-spin" />
-                    <span className="text-[13px]">Joining room…</span>
-                  </>
-                ) : (
-                  <>
-                    <span
-                      className="flex h-16 w-16 items-center justify-center rounded-full text-[22px] font-bold text-white"
-                      style={{ background: 'linear-gradient(135deg, #00b369, #1f5fa8)' }}
-                    >
-                      {displayName
-                        .split(/\s+/)
-                        .slice(0, 2)
-                        .map((w) => w[0]?.toUpperCase())
-                        .join('')}
-                    </span>
-                    <span className="text-[13px]">Camera off</span>
-                  </>
-                )}
-              </div>
-            )}
-            <span className="absolute bottom-2.5 left-3 rounded-md bg-black/55 px-2 py-1 text-[11.5px] font-medium text-white">
-              {displayName} (you){sharing ? ' · camera' : ''}
-            </span>
-            {!micOn && (
-              <span className="absolute bottom-2.5 right-3 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white">
-                <MicOff size={13} />
-              </span>
-            )}
-          </div>
-
-          {/* Remote tiles */}
-          {remotes.map((r) => (
-            <div key={String(r.uid)} className="relative aspect-video overflow-hidden rounded-2xl" style={{ background: '#151c23' }}>
-              <div
-                ref={(el) => {
-                  if (el) {
-                    remoteRefs.current.set(r.uid, el);
-                    const user = remoteUsersRef.current.get(r.uid);
-                    if (user?.videoTrack) {
-                      user.videoTrack.play(el, { fit: 'contain' });
-                    }
-                  }
-                }}
-                className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-contain"
-              />
-              {!r.hasVideo && (
-                <div className="absolute inset-0 flex items-center justify-center text-white/60">
-                  <span
-                    className="flex h-16 w-16 items-center justify-center rounded-full text-[20px] font-bold text-white"
-                    style={{ background: '#37474f' }}
-                  >
-                    <Users size={22} />
-                  </span>
+            <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+              {localTile}
+              {remoteTiles}
+              {overflowTile}
+              {remotes.length === 0 && phase === 'live' ? (
+                <div
+                  className="flex items-center justify-center rounded-xl border border-dashed border-white/15 px-4 text-[12px] text-white/45"
+                  style={{ minWidth: 160, aspectRatio: '16 / 9' }}
+                >
+                  Waiting for others…
                 </div>
-              )}
-              <span className="absolute bottom-2.5 left-3 rounded-md bg-black/55 px-2 py-1 text-[11.5px] font-medium text-white">
-                Participant {String(r.uid).slice(-4)}
-              </span>
+              ) : null}
             </div>
-          ))}
+          </div>
+        ) : (
+          /* Normal call: 2-column Meet-style grid + overflow tile */
+          <div
+            className="grid flex-1 gap-3"
+            style={{
+              gridTemplateColumns: gridCols,
+              alignContent: 'center',
+            }}
+          >
+            {localTile}
+            {remoteTiles}
+            {overflowTile}
+            {remotes.length === 0 && phase === 'live' ? (
+              <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/15 text-white/50">
+                <Users size={26} />
+                <span className="text-[13.5px]">Waiting for others to join…</span>
+                <span className="text-[12px] text-white/35">
+                  Share this session link only with Intellex members.
+                </span>
+              </div>
+            ) : null}
+          </div>
+        )}
 
-          {remotes.length === 0 && phase === 'live' && !sharing && (
-            <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 text-white/50">
-              <Users size={26} />
-              <span className="text-[13.5px]">Waiting for others to join…</span>
-              <span className="text-[12px] text-white/35">Share this session link only with Intellex members.</span>
-            </div>
-          )}
-        </div>
-
-        {/* Controls */}
         <div
           className="mt-4 flex flex-wrap items-center justify-center gap-3"
           style={isFullscreen ? { paddingBottom: 12 } : undefined}
@@ -527,7 +608,11 @@ export default function AgoraRoom({
             className="flex h-12 w-12 items-center justify-center rounded-full border transition-colors"
             style={
               micOn
-                ? { borderColor: 'rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.08)', color: '#fff' }
+                ? {
+                    borderColor: 'rgba(255,255,255,0.18)',
+                    background: 'rgba(255,255,255,0.08)',
+                    color: '#fff',
+                  }
                 : { borderColor: 'transparent', background: '#e5484d', color: '#fff' }
             }
             title={micOn ? 'Mute microphone' : 'Unmute microphone'}
@@ -540,7 +625,11 @@ export default function AgoraRoom({
             className="flex h-12 w-12 items-center justify-center rounded-full border transition-colors"
             style={
               camOn
-                ? { borderColor: 'rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.08)', color: '#fff' }
+                ? {
+                    borderColor: 'rgba(255,255,255,0.18)',
+                    background: 'rgba(255,255,255,0.08)',
+                    color: '#fff',
+                  }
                 : { borderColor: 'transparent', background: '#e5484d', color: '#fff' }
             }
             title={camOn ? 'Turn camera off' : 'Turn camera on'}
@@ -554,7 +643,11 @@ export default function AgoraRoom({
             style={
               sharing
                 ? { borderColor: 'transparent', background: 'var(--green)', color: '#fff' }
-                : { borderColor: 'rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.08)', color: '#fff' }
+                : {
+                    borderColor: 'rgba(255,255,255,0.18)',
+                    background: 'rgba(255,255,255,0.08)',
+                    color: '#fff',
+                  }
             }
             title={sharing ? 'Stop sharing' : 'Share your screen'}
           >
