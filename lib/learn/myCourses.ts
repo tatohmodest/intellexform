@@ -6,6 +6,7 @@ import {
   listStudentCourseEnrollments,
   getTeacherCoursesByIds,
 } from '@/lib/learn/ecosystem';
+import { getLiveClassesForCourses } from '@/lib/learn/courseClassSessions';
 import { courseDurationHours, type CourseDeliveryMode } from '@/lib/learn/courseTypes';
 import type { Course } from '@/lib/types';
 
@@ -45,6 +46,13 @@ export type MyCourseCard = {
   deliveryMode?: CourseDeliveryMode | null;
   certificate?: boolean;
   level?: string | null;
+  /** Live course class currently in progress (students can join). */
+  liveSession?: {
+    id: string;
+    channel: string;
+    startAt: string;
+    instructorName: string;
+  } | null;
 };
 
 export type MyCourseSection = {
@@ -174,6 +182,7 @@ export async function getMyCourseSections(userId: string): Promise<{
       (await getTeacherCoursesByIds(enrolledTeacherIds)).map((c) => [c.id, c]),
     );
     const enrolledTeacherIdSet = new Set(enrolledTeacherIds);
+    const liveByCourse = await getLiveClassesForCourses(enrolledTeacherIds);
 
     enrolledTeacherCards = myEnrollments
       .map((e): MyCourseCard | null => {
@@ -181,6 +190,15 @@ export async function getMyCourseSections(userId: string): Promise<{
         if (!courseId) return null;
         const c = teacherById.get(courseId);
         const price = Number(e.priceXAF) || 0;
+        const live = liveByCourse.get(courseId) || null;
+        const liveSession = live
+          ? {
+              id: live.id,
+              channel: live.channel,
+              startAt: live.startAt,
+              instructorName: live.instructorName,
+            }
+          : null;
         if (!c) {
           return {
             id: courseId,
@@ -202,6 +220,7 @@ export async function getMyCourseSections(userId: string): Promise<{
             continueHref: `/dashboard/courses/instructor/${courseId}`,
             source: 'instructor',
             kind: 'instructor',
+            liveSession,
           };
         }
         const hours = courseDurationHours(c);
@@ -235,6 +254,7 @@ export async function getMyCourseSections(userId: string): Promise<{
           deliveryMode: c.deliveryMode ?? 'self_paced',
           certificate: Boolean(c.certificate),
           level: c.level && c.level !== 'all' ? c.level : null,
+          liveSession,
         };
       })
       .filter((c): c is MyCourseCard => c != null);
@@ -290,6 +310,7 @@ export async function getMyCourseSections(userId: string): Promise<{
       id: 'enrolled',
       title: 'Your courses',
       subtitle: 'Courses you are enrolled in right now',
+      live: inProgress.some((c) => Boolean(c.liveSession)),
       courses: inProgress,
     },
     {

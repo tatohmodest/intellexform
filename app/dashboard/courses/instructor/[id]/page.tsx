@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { findMentor, getTeacherCourse, isEnrolledInCourse } from '@/lib/learn/ecosystem';
+import { getLiveClassForCourse } from '@/lib/learn/courseClassSessions';
 import { courseDurationHours, deliveryModeLabel } from '@/lib/learn/courseTypes';
 import { isDirectVideo, toEmbedUrl } from '@/lib/learn/videoEmbed';
 import { absoluteUrl, buildShareMetadata } from '@/lib/seo/share';
@@ -61,6 +62,8 @@ export default async function InstructorCoursePage({
   const isPaid = (course.priceXAF ?? 0) > 0;
   const isLive = course.deliveryMode === 'live' || course.deliveryMode === 'hybrid';
   const enrolled = isTeacher || (await isEnrolledInCourse(course.id, session.uid));
+  const liveClass =
+    enrolled || isTeacher ? await getLiveClassForCourse(course.id) : null;
 
   // Non-teachers see preview lessons until enrolled (purchase or instructor add).
   const visibleLessons = enrolled
@@ -93,6 +96,40 @@ export default async function InstructorCoursePage({
           />
         ) : null}
       </div>
+
+      {liveClass ? (
+        <div
+          className="mb-6 flex flex-wrap items-center justify-between gap-3 border px-4 py-3.5"
+          style={{
+            borderColor: 'rgba(220,38,38,0.35)',
+            background: 'rgba(220,38,38,0.05)',
+          }}
+        >
+          <div className="min-w-0">
+            <p
+              className="inline-flex items-center gap-1.5 text-[14px] font-semibold"
+              style={{ color: '#b91c1c' }}
+            >
+              <Radio size={15} className="animate-pulse" /> Session in progress
+            </p>
+            <p className="mt-0.5 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+              {liveClass.instructorName} started class at{' '}
+              {new Date(liveClass.startAt).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+              . Join while it is open.
+            </p>
+          </div>
+          <Link
+            href={`/dashboard/sessions/${liveClass.channel}`}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-semibold text-white"
+            style={{ background: '#b91c1c' }}
+          >
+            <Video size={14} /> Join live class
+          </Link>
+        </div>
+      ) : null}
 
       <header className="mb-8 grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-start">
         <div className="min-w-0">

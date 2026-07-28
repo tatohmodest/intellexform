@@ -152,8 +152,19 @@ export async function markNotificationsRead(
 export async function resolveAssignmentAudience(opts: {
   authorId: string;
   institutionSlug?: string | null;
+  courseId?: string | null;
 }): Promise<string[]> {
   const db = await getDb();
+
+  // Prefer course roster when the assessment is tied to a teacher course.
+  if (opts.courseId) {
+    const ids = await db
+      .collection('course_enrollments')
+      .distinct('studentId', { courseId: opts.courseId })
+      .catch(() => [] as string[]);
+    return (ids as string[]).filter((id) => id && id !== opts.authorId);
+  }
+
   if (opts.institutionSlug) {
     const members = await db
       .collection('institution_members')
@@ -164,6 +175,16 @@ export async function resolveAssignmentAudience(opts: {
       .map((m) => String(m.userId || ''))
       .filter((id) => id && id !== opts.authorId);
   }
+
+  // Fallback: students enrolled in any of this instructor's courses
+  const roster = await db
+    .collection('course_enrollments')
+    .distinct('studentId', { instructorId: opts.authorId })
+    .catch(() => [] as string[]);
+  if ((roster as string[]).length) {
+    return (roster as string[]).filter((id) => id && id !== opts.authorId);
+  }
+
   const enrolled = await db.collection('enrollments').distinct('userId');
   return (enrolled as string[]).filter((id) => id && id !== opts.authorId);
 }
