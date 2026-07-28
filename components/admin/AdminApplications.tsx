@@ -17,7 +17,7 @@ import {
 import {
   MENTOR_DOC_REQUEST_ITEMS,
   type MentorDocRequestItem,
-} from '@/lib/learn/ecosystem';
+} from '@/lib/learn/mentorApplication';
 
 type MentorApp = {
   id: string;

@@ -20,7 +20,7 @@ import IntroVideoRecorder from '@/components/dashboard/IntroVideoRecorder';
 import MentorRevisionPortal from '@/components/dashboard/MentorRevisionPortal';
 import { MAX_MENTOR_DOC_BYTES, prepareMentorDocForUpload } from '@/lib/compressImage';
 import { INTRO_VIDEO_MAX_SECONDS, INTRO_VIDEO_MIN_SECONDS } from '@/lib/learn/compressVideo';
-import type { MentorApplicationDoc } from '@/lib/learn/ecosystem';
+import type { MentorApplicationDoc } from '@/lib/learn/mentorApplication';
 import { uploadMentorAsset } from '@/lib/learn/mentorUpload';
 
 const DAYS = ['Today', 'Tomorrow', 'In 2 days', 'In 3 days', 'In 4 days', 'In 5 days', 'In 6 days'];

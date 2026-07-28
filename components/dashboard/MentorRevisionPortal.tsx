@@ -8,7 +8,7 @@ import {
   MENTOR_DOC_REQUEST_ITEMS,
   type MentorApplicationDoc,
   type MentorDocRequestItem,
-} from '@/lib/learn/ecosystem';
+} from '@/lib/learn/mentorApplication';
 import { INTRO_VIDEO_MAX_SECONDS, INTRO_VIDEO_MIN_SECONDS } from '@/lib/learn/compressVideo';
 import { uploadMentorAsset } from '@/lib/learn/mentorUpload';
 

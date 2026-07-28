@@ -5,8 +5,8 @@ import {
   approveMentorApplication,
   rejectMentorApplication,
   requestMentorDocuments,
-  type MentorDocRequestItem,
 } from '@/lib/learn/ecosystem';
+import type { MentorDocRequestItem } from '@/lib/learn/mentorApplication';
 
 export const dynamic = 'force-dynamic';
 
