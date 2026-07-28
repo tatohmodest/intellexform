@@ -1,6 +1,8 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import CookieConsent from '@/components/CookieConsent';
+import PwaInstallPrompt from '@/components/PwaInstallPrompt';
+import PwaRegister from '@/components/PwaRegister';
 import { BRAND_LOGO_MARK } from '@/lib/brand';
 import { absoluteUrl, getSiteUrl } from '@/lib/seo/share';
 
@@ -9,6 +11,7 @@ export const metadata: Metadata = {
   title: 'Intellex - Learn at your pace, on your terms',
   description:
     'Intellex is where you actually finish what you start - self-paced courses, live mentors, and an AI tutor that studies a book so it can teach it to you, one level at a time. Built in Cameroon.',
+  applicationName: 'InTelleX',
   keywords: [
     'Intellex',
     'tech education',
@@ -21,11 +24,23 @@ export const metadata: Metadata = {
     'live tutoring',
     'Digital marketing',
     'Digital skills',
-    'Vocational training'
+    'Vocational training',
   ],
   icons: {
-    icon: [{ url: BRAND_LOGO_MARK, type: 'image/svg+xml' }],
-    apple: [{ url: BRAND_LOGO_MARK }],
+    icon: [
+      { url: BRAND_LOGO_MARK, type: 'image/svg+xml' },
+      { url: '/pwa/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/pwa/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/pwa/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'InTelleX',
+    statusBarStyle: 'black-translucent',
+  },
+  formatDetection: {
+    telephone: false,
   },
   openGraph: {
     title: 'Intellex - Learn at your pace, on your terms',
@@ -51,6 +66,14 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#00b369' },
+    { media: '(prefers-color-scheme: dark)', color: '#0C1116' },
+  ],
+  colorScheme: 'light',
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -61,6 +84,8 @@ export default function RootLayout({
       <body className="bg-paper text-ink font-body antialiased">
         {children}
         <CookieConsent />
+        <PwaRegister />
+        <PwaInstallPrompt />
       </body>
     </html>
   );
