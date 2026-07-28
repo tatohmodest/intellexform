@@ -71,7 +71,11 @@ function ReturnInner() {
               <CheckCircle size={34} style={{ color: 'var(--green-deep)' }} />
             </div>
             <h1 className="mb-2 font-display text-[26px]">
-              {kind === 'session_booking' ? 'Session booked!' : 'Payment confirmed!'}
+              {kind === 'session_booking'
+                ? 'Session booked!'
+                : kind === 'cert_subscription'
+                  ? 'Certification unlocked!'
+                  : 'Payment confirmed!'}
             </h1>
             <p className="mb-1 text-sm" style={{ color: 'var(--ink-soft)' }}>
               {result.fullName}, your payment of <strong>{formatXAF(result.amountXAF)}</strong> for
@@ -82,7 +86,9 @@ function ReturnInner() {
                 ? 'You are enrolled. Open the course and start learning on InTelleX.'
                 : kind === 'session_booking'
                   ? 'Your session is on your Mentorship dashboard. Join from there when it starts.'
-                  : 'is confirmed and saved to your account. Message us on WhatsApp to receive your course access.'}
+                  : kind === 'cert_subscription'
+                    ? 'Intermediate through Pro on free courses are unlocked. Continue learning and earn your certificate.'
+                    : 'is confirmed and saved to your account. Message us on WhatsApp to receive your course access.'}
             </p>
             {kind === 'catalogue' && result.whatsappUrl && (
               <a href={result.whatsappUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary w-full">
@@ -91,7 +97,11 @@ function ReturnInner() {
             )}
             {kind !== 'catalogue' && (
               <Link href={continueHref} className="btn btn-primary w-full">
-                {kind === 'session_booking' ? 'Open Mentorship' : 'Open your course'}
+                {kind === 'session_booking'
+                  ? 'Open Mentorship'
+                  : kind === 'cert_subscription'
+                    ? 'Back to My Courses'
+                    : 'Open your course'}
               </Link>
             )}
             <Link href="/dashboard/courses" className="mt-3 inline-block text-sm" style={{ color: 'var(--green-deep)' }}>

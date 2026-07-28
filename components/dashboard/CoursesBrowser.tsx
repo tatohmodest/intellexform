@@ -50,11 +50,11 @@ export default function CoursesBrowser({
       >
         <div className="max-w-[520px]">
           <p className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: 'var(--ink-soft)' }}>
-            One catalogue · Supabase
+            Enrolled first · suggestions below
           </p>
           <p className="mt-2 text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-            Free tracks, tutoring, and self-paced programmes — synced into one place so you can
-            browse by category.
+            Your active courses up top. Scroll down for instructor courses and suggested tracks.
+            Free tracks: beginner is open; Intermediate to Pro need a certification plan.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
@@ -167,7 +167,7 @@ function CourseCard({ course: c }: { course: MyCourseCard }) {
   return (
     <article
       className="group flex h-full min-w-0 flex-col overflow-hidden border bg-paper transition-shadow hover:shadow-card"
-      style={{ borderColor: 'var(--line)' }}
+      style={{ borderColor: 'var(--ink)' }}
     >
       <Link href={c.href} className="relative block aspect-[16/10] overflow-hidden">
         {c.source !== 'tutorial' && c.thumbnailUrl ? (
@@ -284,9 +284,9 @@ function CourseCard({ course: c }: { course: MyCourseCard }) {
           <Link
             href={c.href}
             className="inline-flex w-full items-center justify-center border px-3 py-2.5 text-[13px] font-semibold"
-            style={{ borderColor: 'var(--ink)', color: 'var(--ink)' }}
+            style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
           >
-            View course
+            View details
           </Link>
           {c.source === 'tutorial' ? (
             <EnrollButton

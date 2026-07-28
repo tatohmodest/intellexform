@@ -1,12 +1,14 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft, BookOpen, CheckCircle2, Circle, Clock, GraduationCap } from 'lucide-react';
+import { ArrowLeft, BookOpen, CheckCircle2, Circle, Clock, GraduationCap, Lock } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getEnrollments, getProgress } from '@/lib/learn/repo';
 import { getCatalogTrack, getNextLesson } from '@/lib/learn/catalog';
 import { getTutorial } from '@/lib/tutorials';
 import EnrollButton from '@/components/dashboard/EnrollButton';
 import TrackLogo from '@/components/TrackLogo';
+import { hasActiveCertSubscription } from '@/lib/learn/certSubscription';
+import { CERT_MONTHLY_XAF } from '@/lib/learn/certPricing';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,9 +24,10 @@ export default async function CourseDetailPage({
   const course = getTutorial(params.slug);
   if (!track || !course) notFound();
 
-  const [enrollments, progress] = await Promise.all([
+  const [enrollments, progress, hasCert] = await Promise.all([
     getEnrollments(session.uid),
     getProgress(session.uid, params.slug),
+    hasActiveCertSubscription(session.uid),
   ]);
   const enrolled = enrollments.some((e) => e.courseSlug === params.slug);
   const done = new Set(progress.map((p) => p.lessonSlug));
@@ -105,12 +108,21 @@ export default async function CourseDetailPage({
 
       <p className="mb-8 max-w-2xl text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
         {track.description}
+        {!hasCert && (
+          <>
+            {' '}
+            Beginner is free. Intermediate through Pro unlock with Subscribe to get certified (
+            {CERT_MONTHLY_XAF.toLocaleString()} XAF/month).
+          </>
+        )}
       </p>
 
       <h2 className="mb-4 font-display text-[22px] sm:text-[24px]">Curriculum</h2>
       <div className="space-y-3 sm:space-y-4">
         {course.sections.map((section, si) => {
           const sectionDone = section.lessons.filter((l) => done.has(l.slug)).length;
+          const locked =
+            !hasCert && (section.level === 'intermediate' || section.level === 'advanced');
           return (
             <div
               key={section.id}
@@ -124,10 +136,12 @@ export default async function CourseDetailPage({
                 <div className="min-w-0">
                   <div className="font-mono text-[10.5px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
                     Section {si + 1} · {section.level}
+                    {locked ? ' · locked' : ''}
                   </div>
                   <div className="text-[14px] font-semibold sm:text-[15px]">{section.title}</div>
                 </div>
-                <span className="shrink-0 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+                <span className="inline-flex shrink-0 items-center gap-1.5 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+                  {locked ? <Lock size={12} /> : null}
                   {sectionDone}/{section.lessons.length} done
                 </span>
               </div>
@@ -142,6 +156,8 @@ export default async function CourseDetailPage({
                       >
                         {isDone ? (
                           <CheckCircle2 size={17} className="shrink-0" style={{ color: 'var(--green)' }} />
+                        ) : locked ? (
+                          <Lock size={17} className="shrink-0" style={{ color: 'var(--ink-soft)' }} />
                         ) : (
                           <Circle size={17} className="shrink-0" style={{ color: 'var(--line)' }} />
                         )}

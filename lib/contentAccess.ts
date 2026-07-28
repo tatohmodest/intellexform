@@ -1,5 +1,6 @@
 import { getDb } from '@/lib/repo';
 import type { LessonLevel } from '@/lib/tutorials/types';
+import { hasActiveCertSubscription } from '@/lib/learn/certSubscription';
 
 export type { LessonLevel };
 
@@ -40,9 +41,9 @@ export interface ContentPurchase {
 }
 
 const DEFAULT_LEVEL_PRICES: LevelPrices = {
-  beginner: 4999,
-  intermediate: 7999,
-  advanced: 9999,
+  beginner: 0,
+  intermediate: 4999,
+  advanced: 4999,
 };
 
 export function defaultAccessConfig(
@@ -229,8 +230,14 @@ export async function recordContentPurchase(input: {
 
 export type AccessGate =
   | { allowed: true }
-  | { allowed: false; reason: 'login_required' | 'subscribe_required' };
+  | { allowed: false; reason: 'login_required' | 'subscribe_required' | 'cert_required' };
 
+/**
+ * Free tracks: beginner is open to signed-in students.
+ * Intermediate → Pro require an active “Subscribe to get certified” plan
+ * (4,999 XAF/month, or yearly with 10% off).
+ * Admin-priced tracks still use one_time / per_level purchases.
+ */
 export async function canAccessContent(opts: {
   userId: string | null | undefined;
   kind: ContentKind;
@@ -241,16 +248,26 @@ export async function canAccessContent(opts: {
   const config =
     opts.config ?? (await getContentAccess(opts.kind, opts.slug));
 
-  // Free tracks are for registered students only — never open to anonymous visitors.
-  if (config.mode === 'free') {
-    if (!opts.userId) return { allowed: false, reason: 'login_required' };
-    return { allowed: true };
-  }
-
   if (!opts.userId) return { allowed: false, reason: 'login_required' };
+
+  // Free tracks — beginner open; Intermediate/Pro need cert subscription.
+  if (config.mode === 'free') {
+    if (opts.level === 'beginner') return { allowed: true };
+    if (await hasActiveCertSubscription(opts.userId)) return { allowed: true };
+    return { allowed: false, reason: 'cert_required' };
+  }
 
   const purchases = await getUserPurchases(opts.userId, opts.kind, opts.slug);
   if (purchases.some((p) => p.scope === 'full')) return { allowed: true };
+
+  // Cert subscription also unlocks Intermediate→Pro on payable tracks that
+  // still want the platform cert plan as an alternate path.
+  if (
+    (opts.level === 'intermediate' || opts.level === 'advanced') &&
+    (await hasActiveCertSubscription(opts.userId))
+  ) {
+    return { allowed: true };
+  }
 
   if (config.mode === 'one_time') {
     return { allowed: false, reason: 'subscribe_required' };
@@ -259,6 +276,9 @@ export async function canAccessContent(opts: {
   // per_level: full unlock OR matching level
   if (purchases.some((p) => p.scope === opts.level)) return { allowed: true };
 
-  // Intermediate access does not include beginner, etc. — exact level or full only.
+  if (opts.level === 'beginner' && (config.levelPrices.beginner || 0) <= 0) {
+    return { allowed: true };
+  }
+
   return { allowed: false, reason: 'subscribe_required' };
 }

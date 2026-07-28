@@ -259,6 +259,56 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // ── Certification subscription (Intermediate → Pro on free tracks) ──────
+    if (kind === 'cert_subscription') {
+      const { priceForCertPlan } = await import('@/lib/learn/certSubscription');
+      const planRaw = String(body.plan || 'monthly').toLowerCase();
+      const plan = planRaw === 'yearly' ? 'yearly' as const : 'monthly' as const;
+      const amount = priceForCertPlan(plan);
+      const productName =
+        plan === 'yearly'
+          ? 'InTelleX certification · yearly (10% off)'
+          : 'InTelleX certification · monthly';
+
+      await createOrder({
+        fullName,
+        whatsapp,
+        email,
+        phone,
+        courseId: `cert-${plan}`,
+        courseSlug: `cert-subscription-${plan}`,
+        courseName: productName,
+        amountXAF: amount,
+        paymentMethod: 'PayUnit',
+        gateway,
+        transactionId,
+        status: 'pending',
+        createdAt: new Date(),
+        paidAt: null,
+        kind: 'cert_subscription',
+        userId: session.uid,
+        productId: plan,
+        certPlan: plan,
+        fulfilled: false,
+      });
+
+      const transactionUrl = await buildCheckoutUrl({
+        useLive,
+        callbackBase,
+        origin,
+        transactionId,
+        amount,
+        productName,
+        about: 'Unlock Intermediate to Pro on free courses and earn certificates.',
+        meta: { kind: 'cert_subscription', plan, userId: session.uid },
+      });
+
+      return NextResponse.json(
+        { success: true, transactionId, transactionUrl, plan, amountXAF: amount },
+        { status: 201 },
+      );
+    }
+
     return NextResponse.json({ error: 'Unknown payment kind' }, { status: 400 });
   } catch (error) {
     console.error('Payment initialize error:', error);

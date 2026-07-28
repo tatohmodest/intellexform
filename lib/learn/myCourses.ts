@@ -452,48 +452,49 @@ export async function getMyCourseSections(userId: string): Promise<{
     ...enrolledTeacherCards,
   ];
   const free = cards.filter((c) => c.kind === 'free' && !c.enrolled);
-  const tutoring = cards.filter((c) => c.kind === 'tutoring');
+  const tutoring = cards.filter((c) => c.kind === 'tutoring' && !c.enrolled);
   const selfPaced = cards.filter((c) => c.kind === 'self-paced' && !c.enrolled);
   const paidCatalogue = cards.filter(
     (c) => c.kind === 'catalogue' && c.pricingType !== 'FREE' && !c.enrolled,
   );
 
+  // Enrolled courses first; everything else is a suggestion below.
   const sections: MyCourseSection[] = [
     {
-      id: 'in-progress',
-      title: 'Continue learning',
-      subtitle: 'Courses you are enrolled in, including ones your instructor added you to',
+      id: 'enrolled',
+      title: 'Your courses',
+      subtitle: 'Courses you are enrolled in right now',
       courses: inProgress,
     },
     {
-      id: 'free',
-      title: 'Free courses',
-      subtitle: 'Tutorial tracks for registered students',
+      id: 'instructors',
+      title: 'From instructors',
+      subtitle: 'Courses created by InTelleX instructors',
+      courses: instructorCards,
+    },
+    {
+      id: 'suggested-free',
+      title: 'Suggested free tracks',
+      subtitle: 'Beginner is free · Intermediate to Pro need a certification plan',
       courses: free,
     },
     {
-      id: 'tutoring',
-      title: 'Tutoring & live',
-      subtitle: 'Instructor-led programmes',
+      id: 'suggested-tutoring',
+      title: 'Suggested tutoring',
+      subtitle: 'Instructor-led programmes you can join next',
       live: true,
       courses: tutoring,
     },
     {
-      id: 'self-paced',
-      title: 'Self-paced catalogue',
-      subtitle: 'Guided programmes you take at your speed',
+      id: 'suggested-self-paced',
+      title: 'Suggested self-paced',
+      subtitle: 'Guided programmes at your speed',
       courses: selfPaced,
     },
     {
-      id: 'instructors',
-      title: 'From InTelleX instructors',
-      subtitle: 'Live and self-paced courses taught by approved instructors',
-      courses: instructorCards,
-    },
-    {
-      id: 'catalogue',
-      title: 'More courses',
-      subtitle: 'Full InTelleX catalogue',
+      id: 'suggested-catalogue',
+      title: 'More to explore',
+      subtitle: 'Catalogue courses you have not started yet',
       courses: paidCatalogue,
     },
   ].filter((s) => s.courses.length > 0);

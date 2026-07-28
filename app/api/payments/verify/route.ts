@@ -70,7 +70,9 @@ export async function POST(req: NextRequest) {
         ? `/dashboard/courses/instructor/${order.productId}`
         : kind === 'session_booking'
           ? '/dashboard/mentorship'
-          : '/courses';
+          : kind === 'cert_subscription'
+            ? '/dashboard/courses'
+            : '/courses';
 
     return NextResponse.json({
       status,

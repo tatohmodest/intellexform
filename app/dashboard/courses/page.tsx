@@ -34,8 +34,8 @@ export default async function CoursesPage() {
           courses
         </h1>
         <p className="mt-4 max-w-[420px] text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-          Free courses, tutoring, and catalogue programmes from one Supabase source — swipe sideways
-          on mobile to browse each category.
+          Courses you are enrolled in come first. Suggestions and instructor courses sit below —
+          swipe sideways on mobile to browse each row.
         </p>
       </header>
 

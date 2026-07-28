@@ -110,7 +110,7 @@ export interface ContactRequest {
 }
 
 /** What the student is buying through PayUnit. */
-export type OrderKind = 'catalogue' | 'teacher_course' | 'session_booking';
+export type OrderKind = 'catalogue' | 'teacher_course' | 'session_booking' | 'cert_subscription';
 
 /**
  * A purchase order created from a checkout flow. Stored in the `orders`
@@ -152,4 +152,6 @@ export interface Order {
     topic: string;
     durationMinutes: number;
   };
+  /** Cert subscription plan (kind === cert_subscription). */
+  certPlan?: 'monthly' | 'yearly';
 }

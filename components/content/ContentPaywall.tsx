@@ -30,9 +30,11 @@ export default function ContentPaywall({
           </p>
           <h1 className="font-display text-[32px] leading-tight sm:text-[38px]">{title}</h1>
           <p className="mt-3 text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-            This track is set to payable by the platform admin. Choose a plan below to unlock
-            {config.mode === 'per_level' ? ` the ${level} level` : ' the full curriculum'}
-            {config.certificateGuarantee ? ' — with a certificate guarantee on completion.' : '.'}
+            {config.mode === 'free'
+              ? 'Beginner lessons are free. Intermediate through Pro unlock when you subscribe to get certified — 4,999 XAF/month, or yearly with 10% off.'
+              : `This track is set to payable by the platform admin. Choose a plan below to unlock${
+                  config.mode === 'per_level' ? ` the ${level} level` : ' the full curriculum'
+                }${config.certificateGuarantee ? ' — with a certificate guarantee on completion.' : '.'}`}
           </p>
           <div className="mt-8">
             <SubscribePanel
@@ -41,6 +43,7 @@ export default function ContentPaywall({
               returnPath={returnPath}
               kind={kind}
               slug={slug}
+              gateReason={config.mode === 'free' ? 'cert_required' : 'subscribe_required'}
             />
           </div>
         </div>

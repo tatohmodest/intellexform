@@ -105,6 +105,17 @@ export async function fulfillPaidOrder(transactionId: string): Promise<Order | n
         }
       }
     }
+
+    if (kind === 'cert_subscription' && order.userId) {
+      const { activateCertSubscription } = await import('@/lib/learn/certSubscription');
+      const plan = order.certPlan === 'yearly' ? 'yearly' : 'monthly';
+      await activateCertSubscription({
+        userId: order.userId,
+        plan,
+        priceXAF: order.amountXAF,
+        transactionId,
+      });
+    }
   } catch (err) {
     console.error('fulfillPaidOrder failed:', err);
     // Leave fulfilled=false so notify/verify can retry.

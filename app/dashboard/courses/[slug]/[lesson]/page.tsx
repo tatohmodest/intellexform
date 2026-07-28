@@ -52,11 +52,15 @@ export default async function LessonPlayerPage({
           <ArrowLeft size={14} /> {track.shortTitle}
         </Link>
         <p className="mono mb-2 text-[11px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
-          Locked · subscribe to continue
+          {gate.reason === 'cert_required'
+            ? 'Locked · subscribe to get certified'
+            : 'Locked · subscribe to continue'}
         </p>
-        <h1 className="font-display text-[28px] leading-tight sm:text-[32px]">{course.title}</h1>
+        <h1 className="font-display text-[28px] leading-tight sm:text-[32px]">{lesson.title}</h1>
         <p className="mt-2 text-[15px]" style={{ color: 'var(--ink-soft)' }}>
-          Admin set this track as payable. Unlock full access or the {lesson.level} level to keep learning.
+          {gate.reason === 'cert_required'
+            ? 'Beginner is free. Intermediate through Pro unlock with a certification subscription (4,999 XAF/month, or yearly with 10% off).'
+            : `Admin set this track as payable. Unlock full access or the ${lesson.level} level to keep learning.`}
         </p>
         <div className="mt-8">
           <SubscribePanel
@@ -65,6 +69,7 @@ export default async function LessonPlayerPage({
             returnPath={`/dashboard/courses/${params.slug}/${params.lesson}`}
             kind="tutorial"
             slug={params.slug}
+            gateReason={gate.reason === 'cert_required' ? 'cert_required' : 'subscribe_required'}
           />
         </div>
       </div>
