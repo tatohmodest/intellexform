@@ -212,7 +212,7 @@ function CourseCard({ course: c }: { course: MyCourseCard }) {
             <span className="bg-black/55 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-white">
               Free
             </span>
-          ) : c.priceXaf > 0 ? (
+          ) : typeof c.priceXaf === 'number' && c.priceXaf > 0 ? (
             <span className="bg-black/55 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-white">
               {c.priceXaf.toLocaleString()} XAF
             </span>

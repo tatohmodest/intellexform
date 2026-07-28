@@ -229,8 +229,13 @@ export default async function InstructorCoursePage({
             ) : (
               <div className="space-y-6">
                 {visibleLessons.map((lesson, i) => {
-                  const embed = toEmbedUrl(lesson.videoUrl, lesson.videoProvider);
-                  const direct = isDirectVideo(lesson.videoUrl, lesson.videoProvider);
+                  const hasVideo = Boolean(lesson.videoUrl?.trim());
+                  const embed = hasVideo
+                    ? toEmbedUrl(lesson.videoUrl, lesson.videoProvider)
+                    : '';
+                  const direct = hasVideo
+                    ? isDirectVideo(lesson.videoUrl, lesson.videoProvider)
+                    : false;
                   return (
                     <div key={lesson.id} className="border-t pt-4" style={{ borderColor: 'var(--line)' }}>
                       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
@@ -242,20 +247,26 @@ export default async function InstructorCoursePage({
                           {lesson.durationMinutes ? ` · ${lesson.durationMinutes} min` : ''}
                         </span>
                       </div>
-                      <div className="overflow-hidden" style={{ background: '#0C1116' }}>
-                        {direct ? (
-                          // eslint-disable-next-line jsx-a11y/media-has-caption
-                          <video src={embed} controls className="aspect-video w-full" />
-                        ) : (
-                          <iframe
-                            title={lesson.title}
-                            src={embed}
-                            className="aspect-video w-full"
-                            allow="autoplay; encrypted-media"
-                            allowFullScreen
-                          />
-                        )}
-                      </div>
+                      {hasVideo && embed ? (
+                        <div className="overflow-hidden" style={{ background: '#0C1116' }}>
+                          {direct ? (
+                            // eslint-disable-next-line jsx-a11y/media-has-caption
+                            <video src={embed} controls className="aspect-video w-full" />
+                          ) : (
+                            <iframe
+                              title={lesson.title}
+                              src={embed}
+                              className="aspect-video w-full"
+                              allow="autoplay; encrypted-media"
+                              allowFullScreen
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+                          Video link coming soon.
+                        </p>
+                      )}
                       {lesson.notes && (
                         <p className="mt-2 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
                           {lesson.notes}

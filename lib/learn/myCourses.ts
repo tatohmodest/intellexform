@@ -258,12 +258,15 @@ export async function getMyCourseSections(userId: string): Promise<{
           where: { institutionId: institution.id, status: CourseStatus.PUBLISHED },
           include: { category: { select: { slug: true, name: true } } },
           orderBy: [{ isFeatured: 'desc' }, { title: 'asc' }],
+        }).catch((err) => {
+          console.error('prisma courses failed:', err);
+          return [];
         })
       : Promise.resolve([]),
-    getEnrollments(userId),
-    getProgress(userId),
-    listPublicTeacherCourses(24),
-    listStudentCourseEnrollments(userId),
+    getEnrollments(userId).catch(() => []),
+    getProgress(userId).catch(() => []),
+    listPublicTeacherCourses(24).catch(() => []),
+    listStudentCourseEnrollments(userId).catch(() => []),
   ]);
 
   const enrolledSlugs = new Set(enrollments.map((e) => e.courseSlug));
@@ -325,100 +328,124 @@ export async function getMyCourseSections(userId: string): Promise<{
   });
 
   // Courses published by InTelleX instructors (Course Studio).
-  const enrolledTeacherIds = new Set(myEnrollments.map((e) => e.courseId));
+  let enrolledTeacherCards: MyCourseCard[] = [];
+  let instructorCards: MyCourseCard[] = [];
 
-  const enrolledTeacherCards: MyCourseCard[] = (
-    await Promise.all(
-      myEnrollments.map(async (e) => {
-        const c = await getTeacherCourse(e.courseId);
-        if (!c) {
+  try {
+    const enrolledTeacherIds = new Set(
+      myEnrollments.map((e) => String(e.courseId || '')).filter(Boolean),
+    );
+
+    const enrolledRaw = await Promise.all(
+      myEnrollments.map(async (e): Promise<MyCourseCard | null> => {
+        try {
+          const courseId = String(e.courseId || '');
+          if (!courseId) return null;
+          const c = await getTeacherCourse(courseId);
+          const price = Number(e.priceXAF) || 0;
+          if (!c) {
+            return {
+              id: courseId,
+              slug: courseId,
+              title: String(e.courseTitle || 'Course'),
+              subtitle: '',
+              tagline: e.source === 'instructor' ? 'Added by your instructor' : 'Enrolled',
+              tag: 'Enrolled',
+              color: '#00b369',
+              thumbnailUrl: null,
+              totalLessons: 0,
+              totalMinutes: 0,
+              priceXaf: price,
+              pricingType: price > 0 ? 'PAID' : 'FREE',
+              enrolled: true,
+              doneCount: 0,
+              pct: 5,
+              href: `/dashboard/courses/instructor/${courseId}`,
+              continueHref: `/dashboard/courses/instructor/${courseId}`,
+              source: 'instructor',
+              kind: 'instructor',
+            };
+          }
+          const hours = courseDurationHours(c);
+          const lessons = Array.isArray(c.lessons) ? c.lessons : [];
           return {
-            id: e.courseId,
-            slug: e.courseId,
-            title: e.courseTitle,
-            subtitle: '',
-            tagline: e.source === 'instructor' ? 'Added by your instructor' : 'Enrolled',
-            tag: 'Enrolled',
-            color: '#00b369',
-            thumbnailUrl: null,
-            totalLessons: 0,
-            totalMinutes: 0,
-            priceXaf: e.priceXAF,
-            pricingType: e.priceXAF > 0 ? 'PAID' : 'FREE',
+            id: c.id,
+            slug: c.id,
+            title: String(c.title || e.courseTitle || 'Course'),
+            subtitle: String(c.subtitle || ''),
+            tagline:
+              e.source === 'instructor'
+                ? 'Added by your instructor'
+                : price > 0
+                  ? 'Purchased'
+                  : 'Enrolled',
+            tag: String(c.category || 'Enrolled'),
+            color: String(c.accent || '#00b369'),
+            thumbnailUrl: c.coverUrl ? String(c.coverUrl) : null,
+            totalLessons: lessons.length,
+            totalMinutes: Math.round(hours * 60) || 0,
+            priceXaf: Number(c.priceXAF) || 0,
+            pricingType: (Number(c.priceXAF) || 0) > 0 ? 'PAID' : 'FREE',
             enrolled: true,
             doneCount: 0,
             pct: 5,
-            href: `/dashboard/courses/instructor/${e.courseId}`,
-            continueHref: `/dashboard/courses/instructor/${e.courseId}`,
-            source: 'instructor' as const,
-            kind: 'instructor' as const,
+            href: `/dashboard/courses/instructor/${c.id}`,
+            continueHref: `/dashboard/courses/instructor/${c.id}`,
+            source: 'instructor',
+            kind: 'instructor',
+            instructorName: c.instructorName || c.authorName || null,
+            deliveryMode: c.deliveryMode ?? 'self_paced',
+            certificate: Boolean(c.certificate),
+            level: c.level && c.level !== 'all' ? c.level : null,
           };
+        } catch (err) {
+          console.error('enrolled teacher card failed:', err);
+          return null;
         }
-        const hours = courseDurationHours(c);
-        return {
-          id: c.id,
-          slug: c.id,
-          title: c.title,
-          subtitle: c.subtitle || '',
-          tagline:
-            e.source === 'instructor'
-              ? 'Added by your instructor'
-              : e.priceXAF > 0
-                ? 'Purchased'
-                : 'Enrolled',
-          tag: c.category || 'Enrolled',
-          color: c.accent || '#00b369',
-          thumbnailUrl: c.coverUrl ?? null,
-          totalLessons: c.lessons?.length || 0,
-          totalMinutes: Math.round(hours * 60),
-          priceXaf: c.priceXAF ?? 0,
-          pricingType: (c.priceXAF ?? 0) > 0 ? 'PAID' : 'FREE',
-          enrolled: true,
-          doneCount: 0,
-          pct: 5,
-          href: `/dashboard/courses/instructor/${c.id}`,
-          continueHref: `/dashboard/courses/instructor/${c.id}`,
-          source: 'instructor' as const,
-          kind: 'instructor' as const,
-          instructorName: c.instructorName || c.authorName,
-          deliveryMode: c.deliveryMode ?? 'self_paced',
-          certificate: Boolean(c.certificate),
-          level: c.level && c.level !== 'all' ? c.level : null,
-        };
       }),
-    )
-  );
+    );
+    enrolledTeacherCards = enrolledRaw.filter((c): c is MyCourseCard => c != null);
 
-  const instructorCards: MyCourseCard[] = instructorCourses
-    .filter((c) => !enrolledTeacherIds.has(c.id))
-    .map((c) => {
-    const hours = courseDurationHours(c);
-    return {
-      id: c.id,
-      slug: c.id,
-      title: c.title,
-      subtitle: c.subtitle || '',
-      tagline: c.subtitle || c.description || '',
-      tag: c.category || 'Instructor',
-      color: c.accent || '#00b369',
-      thumbnailUrl: c.coverUrl ?? null,
-      totalLessons: c.lessons?.length || 0,
-      totalMinutes: Math.round(hours * 60),
-      priceXaf: c.priceXAF ?? 0,
-      pricingType: (c.priceXAF ?? 0) > 0 ? 'PAID' : 'FREE',
-      enrolled: false,
-      doneCount: 0,
-      pct: 0,
-      href: `/dashboard/courses/instructor/${c.id}`,
-      continueHref: `/dashboard/courses/instructor/${c.id}`,
-      source: 'instructor',
-      kind: 'instructor',
-      instructorName: c.instructorName || c.authorName,
-      deliveryMode: c.deliveryMode ?? 'self_paced',
-      certificate: Boolean(c.certificate),
-      level: c.level && c.level !== 'all' ? c.level : null,
-    };
-  });
+    instructorCards = instructorCourses
+      .filter((c) => c?.id && !enrolledTeacherIds.has(c.id))
+      .map((c): MyCourseCard | null => {
+        try {
+          const hours = courseDurationHours(c);
+          const lessons = Array.isArray(c.lessons) ? c.lessons : [];
+          return {
+            id: c.id,
+            slug: c.id,
+            title: String(c.title || 'Course'),
+            subtitle: String(c.subtitle || ''),
+            tagline: String(c.subtitle || c.description || ''),
+            tag: String(c.category || 'Instructor'),
+            color: String(c.accent || '#00b369'),
+            thumbnailUrl: c.coverUrl ? String(c.coverUrl) : null,
+            totalLessons: lessons.length,
+            totalMinutes: Math.round(hours * 60) || 0,
+            priceXaf: Number(c.priceXAF) || 0,
+            pricingType: (Number(c.priceXAF) || 0) > 0 ? 'PAID' : 'FREE',
+            enrolled: false,
+            doneCount: 0,
+            pct: 0,
+            href: `/dashboard/courses/instructor/${c.id}`,
+            continueHref: `/dashboard/courses/instructor/${c.id}`,
+            source: 'instructor',
+            kind: 'instructor',
+            instructorName: c.instructorName || c.authorName || null,
+            deliveryMode: c.deliveryMode ?? 'self_paced',
+            certificate: Boolean(c.certificate),
+            level: c.level && c.level !== 'all' ? c.level : null,
+          };
+        } catch (err) {
+          console.error('instructor card failed:', err);
+          return null;
+        }
+      })
+      .filter((c): c is MyCourseCard => c != null);
+  } catch (err) {
+    console.error('instructor course sections failed:', err);
+  }
 
   const inProgress = [
     ...cards.filter((c) => c.enrolled),
@@ -435,7 +462,7 @@ export async function getMyCourseSections(userId: string): Promise<{
     {
       id: 'in-progress',
       title: 'Continue learning',
-      subtitle: 'Courses you are enrolled in — including ones your instructor added you to',
+      subtitle: 'Courses you are enrolled in, including ones your instructor added you to',
       courses: inProgress,
     },
     {
@@ -471,9 +498,11 @@ export async function getMyCourseSections(userId: string): Promise<{
     },
   ].filter((s) => s.courses.length > 0);
 
-  return {
+  // Strip any non-plain values before handing to the client CoursesBrowser.
+  const payload = {
     sections,
     total: cards.length + instructorCards.length + enrolledTeacherCards.length,
     inProgress: inProgress.length,
   };
+  return JSON.parse(JSON.stringify(payload)) as typeof payload;
 }

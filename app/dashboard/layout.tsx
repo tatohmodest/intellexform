@@ -53,6 +53,13 @@ export default async function DashboardLayout({
     }
   }
 
+  // Strip Date fields so Client Components never receive non-serializable props.
+  const affiliations = (learner?.affiliations ?? []).map((a) => ({
+    ...a,
+    joinedAt: a.joinedAt ? new Date(a.joinedAt).toISOString() : new Date().toISOString(),
+    verifiedAt: a.verifiedAt ? new Date(a.verifiedAt).toISOString() : null,
+  }));
+
   return (
     <DashboardShell
       user={{
@@ -63,7 +70,7 @@ export default async function DashboardLayout({
         streakCount: learner?.streakCount ?? 0,
         roles: learner?.roles ?? ['student'],
         primaryIntent: learner?.primaryIntent ?? null,
-        affiliations: learner?.affiliations ?? [],
+        affiliations,
         activeContext: ctx,
         onboardingComplete: isOnboardingComplete(learner),
       }}

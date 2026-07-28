@@ -95,13 +95,11 @@ export type TeacherCourseView = TeacherCourseBase & { id: string };
 /** Hours of content: explicit duration, else summed lesson minutes. */
 export function courseDurationHours(course: {
   durationHours?: number | null;
-  lessons?: TeacherLesson[];
+  lessons?: TeacherLesson[] | null;
 }): number {
   if (course.durationHours && course.durationHours > 0) return course.durationHours;
-  const minutes = (course.lessons || []).reduce(
-    (sum, l) => sum + (Number(l.durationMinutes) || 0),
-    0,
-  );
+  const lessons = Array.isArray(course.lessons) ? course.lessons : [];
+  const minutes = lessons.reduce((sum, l) => sum + (Number(l?.durationMinutes) || 0), 0);
   return minutes > 0 ? Math.round((minutes / 60) * 10) / 10 : 0;
 }
 
