@@ -11,7 +11,7 @@ export type CourseClassSessionDoc = {
   courseTitle: string;
   instructorId: string;
   instructorName: string;
-  /** Agora channel — students join via /dashboard/sessions/{channel} */
+  /** Agora channel - students join via /dashboard/sessions/{channel} */
   channel: string;
   status: CourseClassSessionStatus;
   startAt: Date;
@@ -156,6 +156,77 @@ export async function listLiveClassesForInstructor(
       .sort({ startAt: -1 })
       .toArray();
     return docs.map((d) => toView(d as Record<string, unknown>));
+  } catch {
+    return [];
+  }
+}
+
+export type OngoingClassForUser = CourseClassSessionView & {
+  role: 'instructor' | 'student';
+};
+
+/**
+ * Live classes the user should see on the dashboard:
+ * - as instructor (hosting), or
+ * - as enrolled student in that course.
+ */
+export async function listOngoingClassesForUser(
+  userId: string,
+): Promise<OngoingClassForUser[]> {
+  try {
+    await ensureCourseClassSessionCollection();
+    const db = await getDb();
+
+    const [asInstructor, enrollments] = await Promise.all([
+      db
+        .collection('course_class_sessions')
+        .find({ instructorId: userId, status: 'live' })
+        .sort({ startAt: -1 })
+        .toArray(),
+      db
+        .collection('course_enrollments')
+        .find({ studentId: userId })
+        .project({ courseId: 1 })
+        .toArray()
+        .catch(() => [] as Array<{ courseId?: string }>),
+    ]);
+
+    const enrolledIds = Array.from(
+      new Set(
+        enrollments
+          .map((e) => String((e as { courseId?: string }).courseId || ''))
+          .filter(Boolean),
+      ),
+    );
+
+    const asStudent =
+      enrolledIds.length > 0
+        ? await db
+            .collection('course_class_sessions')
+            .find({
+              courseId: { $in: enrolledIds },
+              status: 'live',
+              instructorId: { $ne: userId },
+            })
+            .sort({ startAt: -1 })
+            .toArray()
+        : [];
+
+    const byId = new Map<string, OngoingClassForUser>();
+    for (const doc of asInstructor) {
+      const view = toView(doc as Record<string, unknown>);
+      byId.set(view.id, { ...view, role: 'instructor' });
+    }
+    for (const doc of asStudent) {
+      const view = toView(doc as Record<string, unknown>);
+      if (!byId.has(view.id)) {
+        byId.set(view.id, { ...view, role: 'student' });
+      }
+    }
+
+    return Array.from(byId.values()).sort(
+      (a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime(),
+    );
   } catch {
     return [];
   }
