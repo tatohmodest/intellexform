@@ -1496,6 +1496,15 @@ export interface InstitutionDoc {
    * institutions pay instructors off-platform.
    */
   allowInstructorSales?: boolean;
+  /** Active custom hostname for this campus (Platform-approved). */
+  customDomain?: string | null;
+  /** Optional platform subdomain label (e.g. aso → aso.intellex.cm). */
+  subdomain?: string | null;
+  /** none | pending | active | rejected */
+  domainStatus?: 'none' | 'pending' | 'active' | 'rejected';
+  pendingCustomDomain?: string | null;
+  domainVerifiedAt?: Date | string | null;
+  domainNotes?: string | null;
   ownerId: string;
   ownerName: string;
   memberCount: number;

@@ -19,6 +19,7 @@ import {
 } from '@/lib/eduos/capabilities';
 import { getDb } from '@/lib/repo';
 import { slugify } from '@/lib/learn/ecosystem';
+import { platformCnameTarget } from '@/lib/learn/institutionDomains';
 
 function isPack(v: string): v is CapabilityPack {
   return v === 'foundation' || v === 'professional' || v === 'enterprise' || v === 'custom';
@@ -295,6 +296,12 @@ export async function syncMongoInstitutionsIntoPrisma() {
           country: (d.country as string) || null,
           isPlatformHome: slug === 'intellex',
           verified: slug === 'intellex',
+          customDomain: (d.customDomain as string) || null,
+          subdomain: (d.subdomain as string) || null,
+          domainStatus: String(d.domainStatus || 'none'),
+          pendingCustomDomain: (d.pendingCustomDomain as string) || null,
+          domainVerifiedAt: d.domainVerifiedAt ? new Date(d.domainVerifiedAt as string) : null,
+          domainNotes: (d.domainNotes as string) || null,
         },
         update: {
           // Never wipe admin edits - only fill blanks / keep Mongo branding in sync when set
@@ -307,6 +314,26 @@ export async function syncMongoInstitutionsIntoPrisma() {
           ...(d.coverUrl !== undefined ? { coverUrl: (d.coverUrl as string) || null } : {}),
           ...(d.capabilityPack ? { capabilityPack: pack } : {}),
           ...(Array.isArray(d.enabledModules) ? { enabledModules } : {}),
+          ...(d.customDomain !== undefined
+            ? { customDomain: (d.customDomain as string) || null }
+            : {}),
+          ...(d.subdomain !== undefined ? { subdomain: (d.subdomain as string) || null } : {}),
+          ...(d.domainStatus !== undefined
+            ? { domainStatus: String(d.domainStatus || 'none') }
+            : {}),
+          ...(d.pendingCustomDomain !== undefined
+            ? { pendingCustomDomain: (d.pendingCustomDomain as string) || null }
+            : {}),
+          ...(d.domainVerifiedAt !== undefined
+            ? {
+                domainVerifiedAt: d.domainVerifiedAt
+                  ? new Date(d.domainVerifiedAt as string)
+                  : null,
+              }
+            : {}),
+          ...(d.domainNotes !== undefined
+            ? { domainNotes: (d.domainNotes as string) || null }
+            : {}),
         },
       });
     }
@@ -386,6 +413,7 @@ export async function getInstitutionDetail(id: string) {
 
   return {
     ...inst,
+    cnameTarget: platformCnameTarget(),
     resolvedModules: resolveCampusModules({
       capabilityPack: isPack(inst.capabilityPack) ? inst.capabilityPack : 'foundation',
       enabledModules: inst.enabledModules as ModuleId[],

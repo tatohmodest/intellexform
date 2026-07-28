@@ -16,6 +16,7 @@ import {
   Plus,
   Trash2,
   Shield,
+  Globe2,
 } from 'lucide-react';
 import { CAPABILITY_PACKS, MODULE_CATALOG, type CapabilityPack } from '@/lib/eduos/capabilities';
 import { COMMERCIAL_PLANS, type CommercialPlanId } from '@/lib/eduos/plans';
@@ -359,6 +360,12 @@ export default function PlatformControlPlane({
                     <p className="mt-2 text-xs" style={{ color: 'var(--ink-soft)' }}>
                       {(inst._count as { memberships?: number; courses?: number })?.memberships ?? 0} members ·{' '}
                       {(inst._count as { courses?: number })?.courses ?? 0} courses
+                      {inst.customDomain || inst.pendingCustomDomain ? (
+                        <span className="mt-1 block text-[11px]" style={{ color: 'var(--ink-soft)' }}>
+                          Domain: {String(inst.customDomain || inst.pendingCustomDomain)}
+                          {inst.pendingCustomDomain ? ' · pending' : ''}
+                        </span>
+                      ) : null}
                     </p>
                   </button>
                   <a
@@ -403,6 +410,14 @@ export default function PlatformControlPlane({
                 }}
                 onSuspendMember={async (membershipId, suspend) => {
                   await run('suspend_membership', { membershipId, suspend });
+                }}
+                onDomain={async (payload) => {
+                  const result = (await run('manage_institution_domain', {
+                    slug: selectedInst.slug,
+                    id: selectedInst.id,
+                    ...payload,
+                  })) as { institution?: Record<string, unknown> };
+                  if (result?.institution) setSelectedInst(result.institution);
                 }}
               />
             )}
@@ -644,6 +659,7 @@ function InstitutionDetail({
   onStatus,
   onBrand,
   onSuspendMember,
+  onDomain,
 }: {
   inst: Record<string, unknown>;
   busy: boolean;
@@ -652,6 +668,12 @@ function InstitutionDetail({
   onStatus: (status: string) => Promise<unknown>;
   onBrand: (fields: Record<string, string | null>) => Promise<unknown>;
   onSuspendMember: (membershipId: string, suspend: boolean) => Promise<unknown>;
+  onDomain: (payload: {
+    domainAction: string;
+    domain?: string;
+    subdomain?: string | null;
+    notes?: string;
+  }) => Promise<unknown>;
 }) {
   const [pack, setPack] = useState<CapabilityPack>(
     (inst.capabilityPack as CapabilityPack) || 'foundation',
@@ -663,6 +685,11 @@ function InstitutionDetail({
   const [coverUrl, setCoverUrl] = useState(String(inst.coverUrl || ''));
   const [primaryColor, setPrimaryColor] = useState(String(inst.primaryColor || '#00b369'));
   const [description, setDescription] = useState(String(inst.description || ''));
+  const [domainInput, setDomainInput] = useState(
+    String(inst.pendingCustomDomain || inst.customDomain || ''),
+  );
+  const [subdomainInput, setSubdomainInput] = useState(String(inst.subdomain || ''));
+  const [domainNotes, setDomainNotes] = useState('');
 
   useEffect(() => {
     setPack((inst.capabilityPack as CapabilityPack) || 'foundation');
@@ -671,12 +698,17 @@ function InstitutionDetail({
     setCoverUrl(String(inst.coverUrl || ''));
     setPrimaryColor(String(inst.primaryColor || '#00b369'));
     setDescription(String(inst.description || ''));
+    setDomainInput(String(inst.pendingCustomDomain || inst.customDomain || ''));
+    setSubdomainInput(String(inst.subdomain || ''));
   }, [inst]);
 
   const memberships = (inst.memberships as Array<Record<string, unknown>>) || [];
   const courses = (inst.courses as Array<Record<string, unknown>>) || [];
   const withdrawals = (inst.withdrawalRequests as Array<Record<string, unknown>>) || [];
   const federation = inst.federationLink as Record<string, unknown> | null;
+  const cnameTarget = String(inst.cnameTarget || 'cname.intellex.cm');
+  const domainStatus = String(inst.domainStatus || 'none');
+  const hasPending = Boolean(inst.pendingCustomDomain);
 
   return (
     <div className="space-y-5">
@@ -714,6 +746,111 @@ function InstitutionDetail({
       <div className="grid gap-3 sm:grid-cols-2">
         <Stat label="Members" value={(inst._count as { memberships?: number })?.memberships ?? memberships.length} />
         <Stat label="Courses" value={(inst._count as { courses?: number })?.courses ?? courses.length} />
+      </div>
+
+      <div className="space-y-2 overflow-hidden rounded-xl border p-4" style={{ borderColor: 'var(--line)' }}>
+        <div className="flex items-center gap-2">
+          <Globe2 size={14} />
+          <h4 className="font-semibold">Campus domain</h4>
+        </div>
+        <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>
+          Approve owner requests or set/change the hostname so this campus opens on its own domain.
+          CNAME target: <code>{cnameTarget}</code>
+        </p>
+        <div className="rounded-lg border px-3 py-2 text-xs" style={{ borderColor: 'var(--line)' }}>
+          <div>Status: <strong>{domainStatus}</strong></div>
+          {inst.customDomain ? <div>Active: {String(inst.customDomain)}</div> : null}
+          {hasPending ? <div>Pending: {String(inst.pendingCustomDomain)}</div> : null}
+          {inst.subdomain ? (
+            <div>
+              Subdomain: {String(inst.subdomain)}.{cnameTarget}
+            </div>
+          ) : null}
+          {inst.domainNotes ? <div className="mt-1 opacity-80">{String(inst.domainNotes)}</div> : null}
+        </div>
+        <input
+          className="form-input !rounded-none"
+          placeholder="learn.school.edu"
+          value={domainInput}
+          onChange={(e) => setDomainInput(e.target.value)}
+        />
+        <input
+          className="form-input !rounded-none"
+          placeholder="Optional subdomain label"
+          value={subdomainInput}
+          onChange={(e) => setSubdomainInput(e.target.value)}
+        />
+        <input
+          className="form-input !rounded-none"
+          placeholder="Admin notes (optional)"
+          value={domainNotes}
+          onChange={(e) => setDomainNotes(e.target.value)}
+        />
+        <div className="flex flex-wrap gap-2">
+          {hasPending ? (
+            <>
+              <button
+                type="button"
+                className="btn btn-primary !rounded-none"
+                disabled={busy}
+                onClick={() =>
+                  onDomain({
+                    domainAction: 'approve',
+                    domain: String(inst.pendingCustomDomain),
+                    subdomain: subdomainInput || null,
+                    notes: domainNotes || undefined,
+                  })
+                }
+              >
+                Approve pending
+              </button>
+              <button
+                type="button"
+                className="btn !rounded-none"
+                disabled={busy}
+                onClick={() =>
+                  onDomain({
+                    domainAction: 'reject',
+                    notes: domainNotes || 'Rejected by Platform Admin',
+                  })
+                }
+              >
+                Reject
+              </button>
+            </>
+          ) : null}
+          <button
+            type="button"
+            className="btn btn-primary !rounded-none"
+            disabled={busy || !domainInput.trim()}
+            onClick={() =>
+              onDomain({
+                domainAction: 'set',
+                domain: domainInput.trim(),
+                subdomain: subdomainInput || null,
+                notes: domainNotes || undefined,
+              })
+            }
+          >
+            Set / change domain
+          </button>
+          {inst.customDomain || hasPending ? (
+            <button
+              type="button"
+              className="btn !rounded-none"
+              style={{ color: '#b91c1c' }}
+              disabled={busy}
+              onClick={() =>
+                onDomain({
+                  domainAction: 'revoke',
+                  notes: domainNotes || 'Domain revoked by Platform Admin',
+                })
+              }
+            >
+              Revoke domain
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className="space-y-2 overflow-hidden rounded-xl border p-4" style={{ borderColor: 'var(--line)' }}>
