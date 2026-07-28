@@ -68,9 +68,10 @@ export default function PwaInstallPrompt() {
     window.addEventListener('appinstalled', onInstalled);
 
     // Let the cookie banner settle first so prompts don't stack.
+    let cancelled = false;
     let attempts = 0;
     const maybeOpen = () => {
-      if (isStandalone()) return;
+      if (cancelled || isStandalone()) return;
       try {
         const cookieDone = Boolean(localStorage.getItem(COOKIE_KEY));
         if (!cookieDone && attempts < 16) {
@@ -81,11 +82,12 @@ export default function PwaInstallPrompt() {
       } catch {
         /* ignore */
       }
-      setOpen(true);
+      if (!cancelled) setOpen(true);
     };
     const timer = window.setTimeout(maybeOpen, 2400);
 
     return () => {
+      cancelled = true;
       window.clearTimeout(timer);
       window.removeEventListener('beforeinstallprompt', onBip);
       window.removeEventListener('appinstalled', onInstalled);
