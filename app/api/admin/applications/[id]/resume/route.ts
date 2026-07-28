@@ -16,11 +16,12 @@ function isCloudinaryUrl(url: string): boolean {
 }
 
 function safeFilename(name: string, format: string): string {
-  const base = (name || 'applicant')
-    .toLowerCase()
-    .replace(/[^\w.-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60) || 'applicant';
+  const base =
+    (name || 'applicant')
+      .toLowerCase()
+      .replace(/[^\w.-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60) || 'applicant';
   const ext = (format || 'pdf').toLowerCase().replace(/[^a-z0-9]/g, '') || 'pdf';
   return `cv-${base}.${ext === 'jpeg' ? 'jpg' : ext}`;
 }
@@ -33,7 +34,6 @@ function parseCloudinaryAsset(url: string): {
   try {
     const u = new URL(url);
     const parts = u.pathname.split('/').filter(Boolean);
-    // /{cloud}/{resource}/upload/...
     if (parts.length < 4) return null;
     const resourceType = parts[1];
     if (resourceType !== 'raw' && resourceType !== 'image' && resourceType !== 'video') {
@@ -50,7 +50,6 @@ function parseCloudinaryAsset(url: string): {
         i += 1;
         break;
       }
-      // Skip signatures / transformation segments before version or public_id.
       if (seg.startsWith('s--') || seg.includes(',') || /^(c_|w_|h_|q_|f_|fl_)/.test(seg)) {
         i += 1;
         continue;
@@ -62,9 +61,10 @@ function parseCloudinaryAsset(url: string): {
     if (!publicPath) return null;
 
     const formatMatch = publicPath.match(/\.([a-z0-9]+)$/i);
-    const format = formatMatch?.[1]?.toLowerCase() || (resourceType === 'raw' ? 'pdf' : '');
+    const format =
+      formatMatch?.[1]?.toLowerCase() || (resourceType === 'raw' ? 'pdf' : '');
     const publicId = formatMatch
-      ? publicPath.slice(0, -(formatMatch[0].length))
+      ? publicPath.slice(0, -formatMatch[0].length)
       : publicPath;
 
     return { resourceType, publicId, format };
@@ -73,34 +73,61 @@ function parseCloudinaryAsset(url: string): {
   }
 }
 
-function looksLikeJson(bytes: ArrayBuffer): boolean {
-  const view = new Uint8Array(bytes);
-  let i = 0;
-  while (i < view.length && (view[i] === 0x20 || view[i] === 0x0a || view[i] === 0x0d || view[i] === 0x09)) {
-    i += 1;
+type CloudResource = {
+  public_id: string;
+  format?: string;
+  resource_type?: string;
+  secure_url?: string;
+  url?: string;
+};
+
+async function lookupResource(
+  publicId: string,
+  preferred?: string,
+): Promise<CloudResource | null> {
+  const types = [preferred, 'raw', 'image', 'auto'].filter(
+    (v, i, a): v is string => Boolean(v) && a.indexOf(v) === i,
+  );
+  const idVariants = [publicId];
+  // Some raw uploads keep the extension inside public_id.
+  if (!/\.[a-z0-9]+$/i.test(publicId)) {
+    for (const ext of ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg', 'webp']) {
+      idVariants.push(`${publicId}.${ext}`);
+    }
   }
-  return view[i] === 0x7b || view[i] === 0x5b; // { or [
+
+  for (const resourceType of types) {
+    for (const id of idVariants) {
+      try {
+        const resource = (await cloudinary.api.resource(id, {
+          resource_type: resourceType,
+        })) as CloudResource;
+        if (resource?.public_id) return { ...resource, resource_type: resourceType };
+      } catch {
+        /* try next */
+      }
+    }
+  }
+  return null;
 }
 
-function looksLikePdf(bytes: ArrayBuffer): boolean {
-  const view = new Uint8Array(bytes);
-  return view.length >= 4 && view[0] === 0x25 && view[1] === 0x50 && view[2] === 0x44 && view[3] === 0x46; // %PDF
-}
-
-async function fetchBytes(url: string): Promise<{ bytes: ArrayBuffer; contentType: string } | null> {
-  const res = await fetch(url, { cache: 'no-store', redirect: 'follow' });
-  if (!res.ok) return null;
-  const bytes = await res.arrayBuffer();
-  if (!bytes.byteLength || looksLikeJson(bytes)) return null;
-  return {
-    bytes,
-    contentType: res.headers.get('content-type') || 'application/octet-stream',
-  };
+function signedDownloadUrl(
+  publicId: string,
+  format: string,
+  resourceType: string,
+): string {
+  return cloudinary.utils.private_download_url(publicId, format || 'pdf', {
+    resource_type: resourceType || 'raw',
+    type: 'upload',
+    attachment: true,
+    expires_at: Math.floor(Date.now() / 1000) + 600,
+  });
 }
 
 /**
  * GET /api/admin/applications/[id]/resume
- * Streams the original CV bytes (PDF/DOC/image) with Content-Disposition: attachment.
+ * Redirects the admin browser to a short-lived Cloudinary download URL for the
+ * original CV (PDF/DOC/image) — avoids proxying bytes and JSON error downloads.
  */
 export async function GET(
   req: NextRequest,
@@ -108,6 +135,9 @@ export async function GET(
 ) {
   if (!assertAdmin(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (!isCloudinaryConfigured()) {
+    return NextResponse.json({ error: 'upload_unavailable' }, { status: 503 });
   }
 
   let oid: ObjectId;
@@ -121,70 +151,70 @@ export async function GET(
     const db = await getDb();
     const app = await db.collection('mentor_applications').findOne(
       { _id: oid },
-      { projection: { resumeUrl: 1, name: 1 } },
+      {
+        projection: {
+          resumeUrl: 1,
+          resumePublicId: 1,
+          resumeResourceType: 1,
+          resumeFormat: 1,
+          name: 1,
+        },
+      },
     );
+
     const resumeUrl = typeof app?.resumeUrl === 'string' ? app.resumeUrl : '';
     if (!resumeUrl || !isCloudinaryUrl(resumeUrl)) {
       return NextResponse.json({ error: 'resume_missing' }, { status: 404 });
     }
 
     const parsed = parseCloudinaryAsset(resumeUrl);
-    const filename = safeFilename(
-      String(app?.name ?? 'applicant'),
-      parsed?.format || 'pdf',
-    );
+    const storedPublicId =
+      typeof app?.resumePublicId === 'string' && app.resumePublicId
+        ? app.resumePublicId
+        : parsed?.publicId;
+    const storedType =
+      typeof app?.resumeResourceType === 'string' && app.resumeResourceType
+        ? app.resumeResourceType
+        : parsed?.resourceType;
+    const storedFormat =
+      typeof app?.resumeFormat === 'string' && app.resumeFormat
+        ? app.resumeFormat
+        : parsed?.format || 'pdf';
 
-    // 1) Direct fetch of the stored delivery URL.
-    let file = await fetchBytes(resumeUrl);
-
-    // 2) Signed Cloudinary download API (works for raw PDFs / restricted delivery).
-    if (!file && isCloudinaryConfigured() && parsed) {
-      try {
-        const resourceTypes: Array<'raw' | 'image' | 'video'> = [
-          parsed.resourceType,
-          'raw',
-          'image',
-        ].filter((v, idx, arr) => arr.indexOf(v) === idx) as Array<'raw' | 'image' | 'video'>;
-
-        for (const resourceType of resourceTypes) {
-          const format = parsed.format || (resourceType === 'raw' ? 'pdf' : '');
-          const downloadUrl = cloudinary.utils.private_download_url(
-            parsed.publicId,
-            format,
-            {
-              resource_type: resourceType,
-              type: 'upload',
-              attachment: true,
-              expires_at: Math.floor(Date.now() / 1000) + 300,
-            },
-          );
-          file = await fetchBytes(downloadUrl);
-          if (file) break;
-        }
-      } catch (err) {
-        console.error('Cloudinary private_download_url failed:', err);
-      }
+    if (!storedPublicId) {
+      return NextResponse.json({ error: 'resume_missing' }, { status: 404 });
     }
 
-    if (!file) {
-      return NextResponse.json({ error: 'resume_fetch_failed' }, { status: 502 });
+    const resource = await lookupResource(storedPublicId, storedType);
+    const publicId = resource?.public_id || storedPublicId;
+    const format = (resource?.format || storedFormat || 'pdf').replace(/^\./, '');
+    const resourceType = resource?.resource_type || storedType || 'raw';
+
+    const downloadUrl = signedDownloadUrl(publicId, format, resourceType);
+
+    // Prefer a browser redirect so Cloudinary streams the real file as an attachment.
+    // ?proxy=1 keeps the older byte-stream path for debugging.
+    if (req.nextUrl.searchParams.get('proxy') !== '1') {
+      return NextResponse.redirect(downloadUrl, 302);
     }
 
-    const contentType =
-      looksLikePdf(file.bytes)
-        ? 'application/pdf'
-        : file.contentType.includes('json')
-          ? 'application/octet-stream'
-          : file.contentType;
-
-    return new NextResponse(file.bytes, {
+    const upstream = await fetch(downloadUrl, { cache: 'no-store', redirect: 'follow' });
+    if (!upstream.ok) {
+      // Last resort: original delivery URL (may open inline, but better than JSON).
+      return NextResponse.redirect(resumeUrl, 302);
+    }
+    const bytes = await upstream.arrayBuffer();
+    const filename = safeFilename(String(app?.name ?? 'applicant'), format);
+    return new NextResponse(bytes, {
       status: 200,
       headers: {
-        'Content-Type': contentType,
+        'Content-Type':
+          format === 'pdf'
+            ? 'application/pdf'
+            : upstream.headers.get('content-type') || 'application/octet-stream',
         'Content-Disposition': `attachment; filename="${filename}"`,
-        'Content-Length': String(file.bytes.byteLength),
+        'Content-Length': String(bytes.byteLength),
         'Cache-Control': 'private, no-store',
-        'X-Content-Type-Options': 'nosniff',
       },
     });
   } catch (err) {

@@ -230,6 +230,9 @@ export async function submitMentorApplication(opts: {
   githubUrl?: string;
   portfolioUrl?: string;
   resumeUrl: string;
+  resumePublicId?: string;
+  resumeResourceType?: string;
+  resumeFormat?: string;
   idFrontUrl: string;
   idBackUrl: string;
   introVideoUrl: string;
@@ -258,6 +261,9 @@ export async function submitMentorApplication(opts: {
     githubUrl: opts.githubUrl ?? null,
     portfolioUrl: opts.portfolioUrl ?? null,
     resumeUrl: opts.resumeUrl,
+    resumePublicId: opts.resumePublicId ?? null,
+    resumeResourceType: opts.resumeResourceType ?? null,
+    resumeFormat: opts.resumeFormat ?? null,
     idFrontUrl: opts.idFrontUrl,
     idBackUrl: opts.idBackUrl,
     introVideoUrl: opts.introVideoUrl,

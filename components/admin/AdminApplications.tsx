@@ -203,43 +203,14 @@ function ApplicationCard({
     setDlBusy(true);
     onError?.('');
     try {
-      const res = await fetch(`/api/admin/applications/${app.id}/resume`, {
-        credentials: 'same-origin',
-        cache: 'no-store',
-      });
-      const contentType = res.headers.get('content-type') || '';
-
-      // Never save JSON error payloads as "the CV".
-      if (!res.ok || contentType.includes('application/json')) {
-        const data = await res.json().catch(() => ({}));
-        onError?.(
-          typeof data.error === 'string'
-            ? `Could not download CV (${data.error}).`
-            : 'Could not download CV. Try again.',
-        );
-        return;
+      // Server issues a 302 to a signed Cloudinary attachment URL — open it
+      // directly so the browser downloads the real PDF (not a JSON error body).
+      const url = `/api/admin/applications/${app.id}/resume`;
+      const win = window.open(url, '_blank', 'noopener,noreferrer');
+      if (!win) {
+        // Popup blocked — navigate same tab.
+        window.location.assign(url);
       }
-
-      const blob = await res.blob();
-      if (!blob.size || blob.type.includes('json')) {
-        onError?.('Could not download CV — file was empty or invalid.');
-        return;
-      }
-
-      const cd = res.headers.get('content-disposition') || '';
-      const matched = cd.match(/filename="([^"]+)"/i);
-      const filename =
-        matched?.[1] ||
-        `cv-${(app.name || 'applicant').replace(/\s+/g, '-').toLowerCase()}.pdf`;
-
-      const objectUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = objectUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(objectUrl);
     } catch {
       onError?.('Could not download CV. Check your connection and try again.');
     } finally {
