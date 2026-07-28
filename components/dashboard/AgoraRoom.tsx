@@ -105,6 +105,9 @@ export default function AgoraRoom({
   const [chatInput, setChatInput] = useState('');
   const [chat, setChat] = useState<ChatMsg[]>([]);
   const [reactions, setReactions] = useState<FloatReaction[]>([]);
+  /** uid → volume level (0-100) for users currently speaking */
+  const [speakingMap, setSpeakingMap] = useState<Record<string, number>>({});
+  const [localSpeaking, setLocalSpeaking] = useState(false);
 
   const clientRef = useRef<IAgoraRTCClient | null>(null);
   const micTrackRef = useRef<IMicrophoneAudioTrack | null>(null);
@@ -120,6 +123,7 @@ export default function AgoraRoom({
   const remoteSharingRef = useRef<Set<string>>(new Set());
   const sharingRef = useRef(false);
   const displayNameRef = useRef(displayName);
+  const localUidRef = useRef<string | number | null>(null);
 
   useEffect(() => {
     displayNameRef.current = displayName;
@@ -395,6 +399,27 @@ export default function AgoraRoom({
         });
 
         await client.join(data.appId, data.channel, data.token ?? null, data.uid);
+        localUidRef.current = data.uid;
+
+        // Glow the tile of whoever is talking.
+        try {
+          (client as IAgoraRTCClient & { enableAudioVolumeIndicator?: () => void })
+            .enableAudioVolumeIndicator?.();
+        } catch {
+          /* older SDK builds */
+        }
+        client.on('volume-indicator', (volumes: Array<{ uid: string | number; level: number }>) => {
+          const next: Record<string, number> = {};
+          let meSpeaking = false;
+          const myUid = localUidRef.current;
+          for (const v of volumes) {
+            if (v.level < 40) continue;
+            next[String(v.uid)] = v.level;
+            if (myUid != null && String(v.uid) === String(myUid)) meSpeaking = true;
+          }
+          setSpeakingMap(next);
+          setLocalSpeaking(meSpeaking);
+        });
 
         const [micTrack, camTrack] = await Promise.all([
           AgoraRTC.createMicrophoneAudioTrack().catch(() => null),
@@ -675,6 +700,7 @@ export default function AgoraRoom({
   const tileShell = (opts: {
     key?: string;
     active?: boolean;
+    speaking?: boolean;
     onClick?: () => void;
     children: ReactNode;
     strip?: boolean;
@@ -684,18 +710,30 @@ export default function AgoraRoom({
       key={opts.key}
       type="button"
       onClick={opts.onClick}
-      className="group relative overflow-hidden rounded-xl text-left transition-transform hover:scale-[1.02] focus:outline-none"
+      className="group relative overflow-hidden rounded-xl text-left transition-shadow transition-transform hover:scale-[1.02] focus:outline-none"
       style={{
         background: '#151c23',
         aspectRatio: '16 / 9',
         minWidth: opts.strip ? 140 : undefined,
         width: opts.strip ? 160 : undefined,
         flex: opts.strip ? '0 0 auto' : undefined,
-        boxShadow: opts.active ? '0 0 0 2px #00b369' : undefined,
+        boxShadow: opts.speaking
+          ? '0 0 0 3px #00b369, 0 0 20px rgba(0,179,105,0.7)'
+          : opts.active
+            ? '0 0 0 2px #00b369'
+            : undefined,
         cursor: opts.onClick ? 'pointer' : 'default',
       }}
       title={opts.onClick ? `Click to focus: ${opts.label}` : opts.label}
     >
+      {opts.speaking ? (
+        <span
+          className="pointer-events-none absolute left-2 top-2 z-10 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-white"
+          style={{ background: '#00b369' }}
+        >
+          Speaking
+        </span>
+      ) : null}
       {opts.children}
     </button>
   );
@@ -705,6 +743,7 @@ export default function AgoraRoom({
       key: 'local',
       strip,
       active: isActive,
+      speaking: localSpeaking && micOn,
       label: `${displayName} (you)`,
       onClick: () => focusTile({ kind: 'local' }),
       children: (
@@ -750,6 +789,7 @@ export default function AgoraRoom({
       key: 'screen',
       strip,
       active: isActive,
+      speaking: localSpeaking && micOn,
       label: 'Shared screen',
       onClick: () => focusTile({ kind: 'screen' }),
       children: (
@@ -776,6 +816,7 @@ export default function AgoraRoom({
       key: `remote-${r.uid}`,
       strip,
       active: isActive || Boolean(r.sharing),
+      speaking: Boolean(speakingMap[String(r.uid)]),
       label: r.sharing
         ? `${r.name || 'Participant'} screen`
         : r.name || `Participant ${String(r.uid).slice(-4)}`,
@@ -1038,10 +1079,19 @@ export default function AgoraRoom({
           {focused ? (
             <div className="flex flex-col gap-3">
               <div
-                className="relative w-full overflow-hidden rounded-2xl"
+                className="relative w-full overflow-hidden rounded-2xl transition-shadow duration-200"
                 style={{
                   background: '#0a0e12',
                   height: isFullscreen ? 'calc(100vh - 260px)' : 420,
+                  boxShadow:
+                    (spotlight?.kind === 'local' || spotlight?.kind === 'screen') &&
+                    localSpeaking &&
+                    micOn
+                      ? '0 0 0 3px #00b369, 0 0 28px rgba(0,179,105,0.55)'
+                      : spotlight?.kind === 'remote' &&
+                          speakingMap[String(spotlight.uid)]
+                        ? '0 0 0 3px #00b369, 0 0 28px rgba(0,179,105,0.55)'
+                        : undefined,
                 }}
               >
                 {stageContent}
