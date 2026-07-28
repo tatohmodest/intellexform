@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import {
   ArrowRight,
   BadgeCheck,
@@ -9,6 +10,7 @@ import {
   Users,
   Video,
 } from 'lucide-react';
+import { getSessionUser } from '@/lib/auth/getUser';
 import { getAllCourses } from '@/lib/repo';
 import TopNav from '@/components/landing/TopNav';
 import Rail from '@/components/landing/Rail';
@@ -76,6 +78,11 @@ const VALUE_PILLARS = [
 ];
 
 export default async function HomePage() {
+  // Belt-and-suspenders with middleware: signed-in users never see the marketing home.
+  if (getSessionUser()) {
+    redirect('/dashboard');
+  }
+
   const all = await getAllCourses();
   const trending = all
     .filter((c) => c.bestSeller || c.featured)
