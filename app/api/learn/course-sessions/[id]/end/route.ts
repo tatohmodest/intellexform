@@ -10,7 +10,7 @@ import { createNotificationsForUsers } from '@/lib/learn/notifications';
 export const dynamic = 'force-dynamic';
 
 /**
- * POST /api/learn/course-sessions/[id]/end — instructor ends a live class.
+ * POST /api/learn/course-sessions/[id]/end - instructor ends a live class.
  * Records endAt so platform admins can verify the class was held.
  */
 export async function POST(
@@ -32,7 +32,7 @@ export async function POST(
   const ended = await endCourseClass(params.id, session.uid);
   if (!ended) return NextResponse.json({ error: 'end_failed' }, { status: 500 });
 
-  // Optional quiet notice — class ended (no need to spam; skip if already ended before).
+  // Optional quiet notice - class ended (skip if already ended before).
   if (existing.status === 'live') {
     try {
       const studentIds = await listStudentIdsForCourse(ended.courseId);

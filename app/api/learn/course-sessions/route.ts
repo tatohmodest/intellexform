@@ -39,7 +39,7 @@ export async function GET(req: Request) {
 }
 
 /**
- * POST /api/learn/course-sessions — instructor starts a live class for a course.
+ * POST /api/learn/course-sessions - instructor starts a live class for a course.
  * Body: { courseId }
  */
 export async function POST(req: Request) {
