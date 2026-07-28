@@ -36,8 +36,21 @@ export default function NotificationBell({ accent = '#00b369' }: { accent?: stri
     function onDoc(e: MouseEvent) {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
     document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    // Keep the page from shifting under the mobile modal.
+    if (window.matchMedia('(max-width: 639px)').matches) {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
   }, [open]);
 
   async function markAllRead() {
@@ -76,6 +89,7 @@ export default function NotificationBell({ accent = '#00b369' }: { accent?: stri
         className="relative flex h-9 w-9 items-center justify-center rounded-full border"
         style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
         aria-label={unread ? `${unread} unread notifications` : 'Notifications'}
+        aria-expanded={open}
         title="Notifications"
       >
         <Bell size={16} />
@@ -90,77 +104,96 @@ export default function NotificationBell({ accent = '#00b369' }: { accent?: stri
       </button>
 
       {open && (
-        <div
-          className="absolute right-0 top-[calc(100%+8px)] z-50 w-[min(360px,calc(100vw-24px))] border bg-paper shadow-lg"
-          style={{ borderColor: 'var(--line)' }}
-        >
+        <>
+          {/* Mobile scrim - tap outside to close */}
+          <button
+            type="button"
+            className="fixed inset-0 z-[60] bg-black/40 sm:hidden"
+            aria-label="Close notifications"
+            onClick={() => setOpen(false)}
+          />
+
+          {/*
+            Mobile: fixed + centered under the header (no left overflow).
+            Desktop: dropdown anchored to the bell.
+          */}
           <div
-            className="flex items-center justify-between border-b px-3 py-2.5"
+            role="dialog"
+            aria-label="Notifications"
+            className="fixed left-1/2 top-[68px] z-[70] w-[min(360px,calc(100vw-24px))] -translate-x-1/2 border bg-paper shadow-lg sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+8px)] sm:z-50 sm:w-[min(360px,calc(100vw-24px))] sm:translate-x-0"
             style={{ borderColor: 'var(--line)' }}
           >
-            <span className="text-[13px] font-semibold">Notifications</span>
-            <div className="flex items-center gap-2">
-              {unread > 0 && (
-                <button
-                  type="button"
-                  onClick={markAllRead}
+            <div
+              className="flex items-center justify-between border-b px-3 py-2.5"
+              style={{ borderColor: 'var(--line)' }}
+            >
+              <span className="text-[13px] font-semibold">Notifications</span>
+              <div className="flex items-center gap-2">
+                {unread > 0 && (
+                  <button
+                    type="button"
+                    onClick={markAllRead}
+                    className="text-[11px] font-semibold"
+                    style={{ color: accent }}
+                  >
+                    Mark all read
+                  </button>
+                )}
+                <Link
+                  href="/dashboard/notifications"
+                  onClick={() => setOpen(false)}
                   className="text-[11px] font-semibold"
-                  style={{ color: accent }}
+                  style={{ color: 'var(--ink-soft)' }}
                 >
-                  Mark all read
-                </button>
+                  View all
+                </Link>
+              </div>
+            </div>
+            <div className="max-h-[min(360px,calc(100dvh-120px))] overflow-y-auto">
+              {loading && items.length === 0 ? (
+                <p className="px-3 py-6 text-center text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+                  Loading…
+                </p>
+              ) : items.length === 0 ? (
+                <p className="px-3 py-6 text-center text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+                  No notifications yet. When a tutor publishes an assignment, it shows up here.
+                </p>
+              ) : (
+                items.slice(0, 8).map((n) => (
+                  <Link
+                    key={n.id}
+                    href={n.href || '/dashboard/notifications'}
+                    onClick={() => openItem(n)}
+                    className="block border-b px-3 py-3 transition-colors hover:bg-black/[0.03]"
+                    style={{
+                      borderColor: 'var(--line)',
+                      background: n.readAt ? undefined : `${accent}0d`,
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 text-[13px] font-semibold leading-snug">{n.title}</div>
+                      {!n.readAt && (
+                        <span
+                          className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full"
+                          style={{ background: accent }}
+                        />
+                      )}
+                    </div>
+                    <p className="mt-0.5 line-clamp-2 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                      {n.body}
+                    </p>
+                    <p
+                      className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em]"
+                      style={{ color: 'var(--ink-soft)' }}
+                    >
+                      {new Date(n.createdAt).toLocaleString()}
+                    </p>
+                  </Link>
+                ))
               )}
-              <Link
-                href="/dashboard/notifications"
-                onClick={() => setOpen(false)}
-                className="text-[11px] font-semibold"
-                style={{ color: 'var(--ink-soft)' }}
-              >
-                View all
-              </Link>
             </div>
           </div>
-          <div className="max-h-[360px] overflow-y-auto">
-            {loading && items.length === 0 ? (
-              <p className="px-3 py-6 text-center text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                Loading…
-              </p>
-            ) : items.length === 0 ? (
-              <p className="px-3 py-6 text-center text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                No notifications yet. When a tutor publishes an assignment, it shows up here.
-              </p>
-            ) : (
-              items.slice(0, 8).map((n) => (
-                <Link
-                  key={n.id}
-                  href={n.href || '/dashboard/notifications'}
-                  onClick={() => openItem(n)}
-                  className="block border-b px-3 py-3 transition-colors hover:bg-black/[0.03]"
-                  style={{
-                    borderColor: 'var(--line)',
-                    background: n.readAt ? undefined : `${accent}0d`,
-                  }}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 text-[13px] font-semibold leading-snug">{n.title}</div>
-                    {!n.readAt && (
-                      <span
-                        className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full"
-                        style={{ background: accent }}
-                      />
-                    )}
-                  </div>
-                  <p className="mt-0.5 line-clamp-2 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-                    {n.body}
-                  </p>
-                  <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
-                    {new Date(n.createdAt).toLocaleString()}
-                  </p>
-                </Link>
-              ))
-            )}
-          </div>
-        </div>
+        </>
       )}
     </div>
   );
