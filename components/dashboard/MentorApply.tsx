@@ -17,7 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import IntroVideoRecorder from '@/components/dashboard/IntroVideoRecorder';
-import MentorRevisionPortal from '@/components/dashboard/MentorRevisionPortal';
+import MentorApplicationStatus from '@/components/dashboard/MentorApplicationStatus';
 import { MAX_MENTOR_DOC_BYTES, prepareMentorDocForUpload } from '@/lib/compressImage';
 import { INTRO_VIDEO_MAX_SECONDS, INTRO_VIDEO_MIN_SECONDS } from '@/lib/learn/compressVideo';
 import type { MentorApplicationDoc } from '@/lib/learn/mentorApplication';
@@ -253,48 +253,17 @@ export default function MentorApply() {
   }
 
   if (submitted) {
-    const openRequest =
-      pendingApp?.documentRequest?.status === 'open' &&
-      Array.isArray(pendingApp.documentRequest.items) &&
-      pendingApp.documentRequest.items.length > 0;
-
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mx-auto max-w-[720px] border-t pt-10"
-        style={{ borderColor: 'var(--line)' }}
-      >
-        <p className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: 'var(--ink-soft)' }}>
-          Instructor application
-        </p>
-        <h1 className="mt-2 font-display text-[32px] leading-[0.95] tracking-tight">
-          {openRequest ? 'Updates requested' : 'Under review'}
-        </h1>
-        <p className="mt-3 max-w-md text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-          {openRequest
-            ? 'Admins need specific documents again. Use the portal below — only the listed items.'
-            : 'Your CV, ID, and intro video are with InTelleX admins. Mentor Studio unlocks only after approval.'}
-        </p>
-
-        {openRequest && pendingApp && (
-          <MentorRevisionPortal
-            application={pendingApp}
-            onDone={(app) => {
-              setPendingApp(app);
-            }}
-          />
-        )}
-
-        <button
-          type="button"
-          onClick={() => router.push('/dashboard')}
-          className="mt-8 inline-flex items-center gap-2 px-5 py-2.5 text-[13.5px] font-semibold text-white"
-          style={{ background: 'var(--green)' }}
-        >
-          Back to dashboard
-        </button>
-      </motion.div>
+      <MentorApplicationStatus
+        application={
+          pendingApp ??
+          ({
+            id: 'pending',
+            status: 'submitted',
+            createdAt: new Date().toISOString(),
+          } as MentorApplicationDoc)
+        }
+      />
     );
   }
 

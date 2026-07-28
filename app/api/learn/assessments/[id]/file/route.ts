@@ -3,6 +3,7 @@ import { getSessionUser } from '@/lib/auth/getUser';
 import { isCloudinaryConfigured } from '@/lib/cloudinary';
 import {
   contentTypeForFormat,
+  fetchFirstWorkingCandidate,
   isCloudinaryUrl,
   resolveCloudinaryDelivery,
   safeDownloadFilename,
@@ -39,10 +40,7 @@ export async function GET(
   const submission = await getSubmission(params.id, studentId);
   if (!submission) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
-  const fileUrl =
-    (typeof (submission as { fileUrl?: string }).fileUrl === 'string'
-      ? (submission as { fileUrl?: string }).fileUrl
-      : '') || '';
+  const fileUrl = submission.fileUrl || '';
   const driveUrl = submission.driveUrl || '';
 
   // Legacy Drive submissions.
@@ -58,18 +56,11 @@ export async function GET(
   const disposition =
     req.nextUrl.searchParams.get('disposition') === 'inline' ? 'inline' : 'attachment';
 
-  const meta = submission as {
-    filePublicId?: string;
-    fileResourceType?: string;
-    fileFormat?: string;
-    fileName?: string;
-  };
-
   const resolved = await resolveCloudinaryDelivery({
     url,
-    publicId: meta.filePublicId || null,
-    resourceType: meta.fileResourceType || null,
-    format: meta.fileFormat || null,
+    publicId: submission.filePublicId || null,
+    resourceType: submission.fileResourceType || null,
+    format: submission.fileFormat || null,
     attachment: disposition === 'attachment',
   });
 
@@ -77,22 +68,21 @@ export async function GET(
     return NextResponse.json({ error: resolved.error }, { status: 404 });
   }
 
-  const upstream = await fetch(resolved.deliveryUrl, {
-    cache: 'no-store',
-    redirect: 'follow',
-  });
-  if (!upstream.ok) {
-    return NextResponse.redirect(url, 302);
+  const hit = await fetchFirstWorkingCandidate(resolved.candidates);
+  if (!hit) {
+    return NextResponse.json(
+      {
+        error: 'cloudinary_delivery_blocked',
+        hint:
+          'Cloudinary refused delivery. In Settings → Security, allow delivery of PDF and ZIP files.',
+      },
+      { status: 502 },
+    );
   }
 
-  const contentType = upstream.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) {
-    return NextResponse.json({ error: 'cloudinary_json_error' }, { status: 502 });
-  }
-
-  const bytes = await upstream.arrayBuffer();
+  const bytes = await hit.response.arrayBuffer();
   const filename = safeDownloadFilename(
-    meta.fileName || `${submission.studentName || 'submission'}`,
+    submission.fileName || submission.studentName || 'submission',
     resolved.format,
   );
 

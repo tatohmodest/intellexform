@@ -14,11 +14,15 @@
 
 import { cloudinary, isCloudinaryConfigured } from '@/lib/cloudinary';
 import {
-  isCloudinaryUrl,
-  isPreviewableFormat,
+  cloudinaryDownloadUrl,
+  cloudinaryInlineUrl,
 } from '@/lib/cloudinaryFormats';
 
 export {
+  cloudinaryDownloadUrl,
+  cloudinaryInlineUrl,
+  cloudinaryUrlWithFlag,
+  ensureCloudinaryExtension,
   extFromFilenameOrMime,
   isCloudinaryUrl,
   isPreviewableFormat,
@@ -150,7 +154,11 @@ export function safeDownloadFilename(name: string, format: string): string {
 }
 
 /**
- * Resolve a stored Cloudinary asset to a temporary delivery URL.
+ * Resolve a stored Cloudinary asset to delivery URLs, best candidate first.
+ *
+ * 1. Plain delivery URL ending in the real extension (…/raw/upload/v1/cv.pdf),
+ *    with `fl_attachment` when a download is requested.
+ * 2. Signed private_download_url as a fallback when delivery is restricted.
  */
 export async function resolveCloudinaryDelivery(opts: {
   url?: string | null;
@@ -162,6 +170,7 @@ export async function resolveCloudinaryDelivery(opts: {
   | {
       ok: true;
       deliveryUrl: string;
+      candidates: string[];
       publicId: string;
       format: string;
       resourceType: string;
@@ -172,32 +181,57 @@ export async function resolveCloudinaryDelivery(opts: {
 
   const parsed = opts.url ? parseCloudinaryAsset(opts.url) : null;
   const publicId = (opts.publicId || parsed?.publicId || '').trim();
-  if (!publicId) return { ok: false, error: 'file_missing' };
+  if (!publicId && !opts.url) return { ok: false, error: 'file_missing' };
 
   const preferredType = opts.resourceType || parsed?.resourceType || 'raw';
   const preferredFormat = (opts.format || parsed?.format || 'pdf').replace(/^\./, '');
 
-  const resource = await lookupCloudinaryResource(publicId, preferredType);
+  const resource = publicId ? await lookupCloudinaryResource(publicId, preferredType) : null;
   const resolvedId = resource?.public_id || publicId;
   const format = (resource?.format || preferredFormat || 'pdf').replace(/^\./, '');
   const resourceType = resource?.resource_type || preferredType || 'raw';
+  const attachment = opts.attachment !== false;
 
-  if (opts.attachment === false && resource?.secure_url && isPreviewableFormat(format)) {
-    return {
-      ok: true,
-      deliveryUrl: resource.secure_url,
-      publicId: resolvedId,
-      format,
-      resourceType,
-    };
+  const candidates: string[] = [];
+  const base = resource?.secure_url || opts.url || '';
+  if (base) {
+    candidates.push(
+      attachment ? cloudinaryDownloadUrl(base, format) : cloudinaryInlineUrl(base, format),
+    );
   }
+  if (resolvedId) {
+    candidates.push(
+      signedCloudinaryFileUrl({ publicId: resolvedId, format, resourceType, attachment }),
+    );
+  }
+  if (base && !candidates.includes(base)) candidates.push(base);
 
-  const deliveryUrl = signedCloudinaryFileUrl({
+  if (!candidates.length) return { ok: false, error: 'file_missing' };
+
+  return {
+    ok: true,
+    deliveryUrl: candidates[0],
+    candidates,
     publicId: resolvedId,
     format,
     resourceType,
-    attachment: opts.attachment !== false,
-  });
+  };
+}
 
-  return { ok: true, deliveryUrl, publicId: resolvedId, format, resourceType };
+/** Fetch the first candidate that returns real bytes (not a Cloudinary JSON error). */
+export async function fetchFirstWorkingCandidate(
+  candidates: string[],
+): Promise<{ response: Response; url: string } | null> {
+  for (const url of candidates) {
+    try {
+      const res = await fetch(url, { cache: 'no-store', redirect: 'follow' });
+      if (!res.ok) continue;
+      const type = res.headers.get('content-type') || '';
+      if (type.includes('application/json')) continue;
+      return { response: res, url };
+    } catch {
+      /* try next */
+    }
+  }
+  return null;
 }

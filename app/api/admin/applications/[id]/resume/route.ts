@@ -4,6 +4,7 @@ import { assertAdmin } from '@/lib/adminAuth';
 import { isCloudinaryConfigured } from '@/lib/cloudinary';
 import {
   contentTypeForFormat,
+  fetchFirstWorkingCandidate,
   isCloudinaryUrl,
   resolveCloudinaryDelivery,
   safeDownloadFilename,
@@ -15,7 +16,9 @@ export const dynamic = 'force-dynamic';
 /**
  * GET /api/admin/applications/[id]/resume
  * ?disposition=attachment|inline
- * Streams or redirects to a short-lived Cloudinary URL for the CV.
+ *
+ * Streams the CV through our origin so PDFs preview inline and DOC/DOCX
+ * download cleanly, regardless of Cloudinary PDF-delivery restrictions.
  */
 export async function GET(
   req: NextRequest,
@@ -37,7 +40,6 @@ export async function GET(
 
   const disposition =
     req.nextUrl.searchParams.get('disposition') === 'inline' ? 'inline' : 'attachment';
-  const useProxy = req.nextUrl.searchParams.get('proxy') === '1' || disposition === 'inline';
 
   try {
     const db = await getDb();
@@ -81,28 +83,19 @@ export async function GET(
       return NextResponse.json({ error: resolved.error }, { status: 404 });
     }
 
-    if (!useProxy) {
-      return NextResponse.redirect(resolved.deliveryUrl, 302);
-    }
-
-    const upstream = await fetch(resolved.deliveryUrl, {
-      cache: 'no-store',
-      redirect: 'follow',
-    });
-    if (!upstream.ok) {
-      // Fallback: original delivery URL (public upload assets).
-      return NextResponse.redirect(resumeUrl, 302);
-    }
-
-    const contentType = upstream.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) {
+    const hit = await fetchFirstWorkingCandidate(resolved.candidates);
+    if (!hit) {
       return NextResponse.json(
-        { error: 'cloudinary_json_error', hint: 'Check API credentials and asset public_id/format.' },
+        {
+          error: 'cloudinary_delivery_blocked',
+          hint:
+            'Cloudinary refused delivery. In Settings → Security, allow delivery of PDF and ZIP files, and make sure raw uploads are enabled.',
+        },
         { status: 502 },
       );
     }
 
-    const bytes = await upstream.arrayBuffer();
+    const bytes = await hit.response.arrayBuffer();
     const filename = safeDownloadFilename(String(app?.name ?? 'applicant-cv'), resolved.format);
     return new NextResponse(bytes, {
       status: 200,

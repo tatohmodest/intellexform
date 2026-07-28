@@ -15,9 +15,11 @@ import {
   getBookEarnings,
   getMentorBookings,
   getMentorProfile,
+  getPendingMentorApplication,
   listBooksByAuthor,
 } from '@/lib/learn/ecosystem';
 import MentorApply from '@/components/dashboard/MentorApply';
+import MentorApplicationStatus from '@/components/dashboard/MentorApplicationStatus';
 import NewBookButton from '@/components/dashboard/NewBookButton';
 
 export const dynamic = 'force-dynamic';
@@ -28,6 +30,16 @@ export default async function MentorStudioPage() {
 
   const profile = await getMentorProfile(session.uid);
   if (!profile) {
+    // Resolve the pending application on the server so applicants never see the
+    // full form again while they are waiting or fixing requested documents.
+    const pending = await getPendingMentorApplication(session.uid);
+    if (pending) {
+      return (
+        <MentorApplicationStatus
+          application={JSON.parse(JSON.stringify(pending)) as typeof pending}
+        />
+      );
+    }
     return <MentorApply />;
   }
 
