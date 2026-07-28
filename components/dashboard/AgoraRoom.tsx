@@ -4,8 +4,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Loader2,
+  Maximize,
   Mic,
   MicOff,
+  Minimize,
   MonitorUp,
   PhoneOff,
   ScreenShare,
@@ -46,13 +48,17 @@ export default function AgoraRoom({
   const [sharing, setSharing] = useState(false);
   const [remotes, setRemotes] = useState<RemoteTile[]>([]);
   const [elapsed, setElapsed] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const clientRef = useRef<IAgoraRTCClient | null>(null);
   const micTrackRef = useRef<IMicrophoneAudioTrack | null>(null);
   const camTrackRef = useRef<ICameraVideoTrack | null>(null);
   const screenTrackRef = useRef<ILocalVideoTrack | null>(null);
   const localVideoRef = useRef<HTMLDivElement>(null);
+  const screenPreviewRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const remoteRefs = useRef<Map<string | number, HTMLDivElement>>(new Map());
+  const remoteUsersRef = useRef<Map<string | number, IAgoraRTCRemoteUser>>(new Map());
 
   // Session timer
   useEffect(() => {
@@ -60,6 +66,24 @@ export default function AgoraRoom({
     const t = setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => clearInterval(t);
   }, [phase]);
+
+  // Keep fullscreen state in sync with browser exits (Esc, etc.)
+  useEffect(() => {
+    function onFsChange() {
+      const el = stageRef.current;
+      const active =
+        document.fullscreenElement === el ||
+        // @ts-expect-error vendor-prefixed APIs
+        document.webkitFullscreenElement === el;
+      setIsFullscreen(Boolean(active));
+    }
+    document.addEventListener('fullscreenchange', onFsChange);
+    document.addEventListener('webkitfullscreenchange', onFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFsChange);
+      document.removeEventListener('webkitfullscreenchange', onFsChange);
+    };
+  }, []);
 
   const leave = useCallback(async () => {
     const client = clientRef.current;
@@ -98,6 +122,7 @@ export default function AgoraRoom({
 
         client.on('user-published', async (user: IAgoraRTCRemoteUser, mediaType) => {
           await client.subscribe(user, mediaType);
+          remoteUsersRef.current.set(user.uid, user);
           if (mediaType === 'audio') user.audioTrack?.play();
           setRemotes((prev) => {
             const others = prev.filter((r) => r.uid !== user.uid);
@@ -107,7 +132,7 @@ export default function AgoraRoom({
             // Wait a tick for the tile div to mount, then play into it.
             setTimeout(() => {
               const el = remoteRefs.current.get(user.uid);
-              if (el) user.videoTrack?.play(el);
+              if (el) user.videoTrack?.play(el, { fit: 'contain' });
             }, 60);
           }
         });
@@ -121,6 +146,7 @@ export default function AgoraRoom({
         client.on('user-left', (user: IAgoraRTCRemoteUser) => {
           setRemotes((prev) => prev.filter((r) => r.uid !== user.uid));
           remoteRefs.current.delete(user.uid);
+          remoteUsersRef.current.delete(user.uid);
         });
 
         await client.join(data.appId, data.channel, data.token ?? null, data.uid);
@@ -145,7 +171,9 @@ export default function AgoraRoom({
           | ICameraVideoTrack
         )[];
         if (tracks.length) await client.publish(tracks);
-        if (camTrack && localVideoRef.current) camTrack.play(localVideoRef.current);
+        if (camTrack && localVideoRef.current) {
+          camTrack.play(localVideoRef.current, { fit: 'cover' });
+        }
 
         setPhase('live');
       } catch (err) {
@@ -165,6 +193,17 @@ export default function AgoraRoom({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channel]);
 
+  // When screen-share UI mounts, play the local screen track into the preview.
+  useEffect(() => {
+    if (!sharing) return;
+    const track = screenTrackRef.current;
+    const el = screenPreviewRef.current;
+    if (track && el) {
+      track.stop();
+      track.play(el, { fit: 'contain' });
+    }
+  }, [sharing]);
+
   async function toggleMic() {
     const track = micTrackRef.current;
     if (!track) return;
@@ -175,9 +214,12 @@ export default function AgoraRoom({
   async function toggleCam() {
     const track = camTrackRef.current;
     if (!track) return;
-    await track.setEnabled(!camOn);
-    setCamOn(!camOn);
-    if (!camOn && localVideoRef.current) track.play(localVideoRef.current);
+    const next = !camOn;
+    await track.setEnabled(next);
+    setCamOn(next);
+    if (next && localVideoRef.current && !sharing) {
+      track.play(localVideoRef.current, { fit: 'cover' });
+    }
   }
 
   async function toggleShare() {
@@ -186,14 +228,36 @@ export default function AgoraRoom({
     const AgoraRTC = (await import('agora-rtc-sdk-ng')).default;
     if (!sharing) {
       try {
-        const screen = await AgoraRTC.createScreenVideoTrack({}, 'disable');
+        const screen = await AgoraRTC.createScreenVideoTrack(
+          {
+            encoderConfig: '1080p_1',
+            optimizationMode: 'detail',
+          },
+          'disable',
+        );
         const screenTrack = Array.isArray(screen) ? screen[0] : screen;
         screenTrackRef.current = screenTrack;
-        if (camTrackRef.current) await client.unpublish(camTrackRef.current);
+
+        // Swap camera publish for screen publish (one video track out).
+        if (camTrackRef.current) {
+          camTrackRef.current.stop();
+          await client.unpublish(camTrackRef.current);
+        }
         await client.publish(screenTrack);
-        if (localVideoRef.current) screenTrack.play(localVideoRef.current);
-        screenTrack.on('track-ended', () => stopShare());
+
+        // Show local preview of what you are sharing (dedicated container).
         setSharing(true);
+        // play happens in useEffect after the preview tile mounts
+        requestAnimationFrame(() => {
+          const el = screenPreviewRef.current;
+          if (el && screenTrackRef.current) {
+            screenTrackRef.current.play(el, { fit: 'contain' });
+          }
+        });
+
+        screenTrack.on('track-ended', () => {
+          void stopShare();
+        });
       } catch {
         /* user cancelled the picker */
       }
@@ -207,23 +271,54 @@ export default function AgoraRoom({
     const screenTrack = screenTrackRef.current;
     if (client && screenTrack) {
       await client.unpublish(screenTrack).catch(() => {});
+      screenTrack.stop();
       screenTrack.close();
       screenTrackRef.current = null;
       if (camTrackRef.current) {
         await client.publish(camTrackRef.current).catch(() => {});
-        if (localVideoRef.current && camOn) camTrackRef.current.play(localVideoRef.current);
+        if (localVideoRef.current && camOn) {
+          camTrackRef.current.play(localVideoRef.current, { fit: 'cover' });
+        }
       }
     }
     setSharing(false);
   }
 
+  async function toggleFullscreen() {
+    const el = stageRef.current;
+    if (!el) return;
+    try {
+      const active =
+        document.fullscreenElement === el ||
+        // @ts-expect-error vendor-prefixed APIs
+        document.webkitFullscreenElement === el;
+      if (active) {
+        if (document.exitFullscreen) await document.exitFullscreen();
+        // @ts-expect-error vendor-prefixed APIs
+        else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
+      } else if (el.requestFullscreen) {
+        await el.requestFullscreen();
+        // @ts-expect-error vendor-prefixed APIs
+      } else if (el.webkitRequestFullscreen) {
+        // @ts-expect-error vendor-prefixed APIs
+        await el.webkitRequestFullscreen();
+      }
+    } catch (err) {
+      console.error('Fullscreen failed:', err);
+    }
+  }
+
   async function handleLeave() {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen().catch(() => {});
+    }
     await leave();
     router.push('/dashboard/mentorship');
   }
 
   const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
   const secs = String(elapsed % 60).padStart(2, '0');
+  const showCamPlaceholder = !sharing && (!camOn || phase === 'connecting');
 
   if (phase === 'error') {
     return (
@@ -266,138 +361,227 @@ export default function AgoraRoom({
             <span className="flex items-center gap-1">
               <Users size={12} /> {remotes.length + 1} in room
             </span>
+            {sharing ? (
+              <span className="flex items-center gap-1 font-semibold" style={{ color: 'var(--green-deep)' }}>
+                <MonitorUp size={12} /> Sharing screen
+              </span>
+            ) : null}
           </div>
         </div>
-        <span className="mono rounded-full border px-3 py-1 text-[11px]" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
-          room: {channel}
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold"
+            style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+            title={isFullscreen ? 'Exit fullscreen' : 'Go fullscreen'}
+          >
+            {isFullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
+            {isFullscreen ? 'Exit' : 'Fullscreen'}
+          </button>
+          <span className="mono rounded-full border px-3 py-1 text-[11px]" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
+            room: {channel}
+          </span>
+        </div>
       </div>
 
-      {/* Video grid */}
+      {/* Stage (fullscreen target includes controls) */}
       <div
-        className="grid gap-3 rounded-3xl p-3"
+        ref={stageRef}
+        className="rounded-3xl p-3"
         style={{
           background: '#0C1116',
-          gridTemplateColumns:
-            remotes.length === 0 ? '1fr' : 'repeat(auto-fit, minmax(280px, 1fr))',
+          minHeight: isFullscreen ? '100vh' : undefined,
+          display: isFullscreen ? 'flex' : 'block',
+          flexDirection: isFullscreen ? 'column' : undefined,
         }}
       >
-        {/* Local tile */}
-        <div className="relative aspect-video overflow-hidden rounded-2xl" style={{ background: '#151c23' }}>
-          <div ref={localVideoRef} className="h-full w-full" />
-          {(!camOn || phase === 'connecting') && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/70">
-              {phase === 'connecting' ? (
-                <>
-                  <Loader2 size={26} className="animate-spin" />
-                  <span className="text-[13px]">Joining room…</span>
-                </>
-              ) : (
-                <>
-                  <span
-                    className="flex h-16 w-16 items-center justify-center rounded-full text-[22px] font-bold text-white"
-                    style={{ background: 'linear-gradient(135deg, #00b369, #1f5fa8)' }}
-                  >
-                    {displayName
-                      .split(/\s+/)
-                      .slice(0, 2)
-                      .map((w) => w[0]?.toUpperCase())
-                      .join('')}
-                  </span>
-                  <span className="text-[13px]">Camera off</span>
-                </>
-              )}
-            </div>
-          )}
-          <span className="absolute bottom-2.5 left-3 rounded-md bg-black/55 px-2 py-1 text-[11.5px] font-medium text-white">
-            {displayName} (you){sharing ? ' · sharing screen' : ''}
-          </span>
-          {!micOn && (
-            <span className="absolute bottom-2.5 right-3 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white">
-              <MicOff size={13} />
-            </span>
-          )}
-        </div>
-
-        {/* Remote tiles */}
-        {remotes.map((r) => (
-          <div key={String(r.uid)} className="relative aspect-video overflow-hidden rounded-2xl" style={{ background: '#151c23' }}>
+        {/* Video grid */}
+        <div
+          className="grid flex-1 gap-3"
+          style={{
+            gridTemplateColumns: sharing
+              ? remotes.length === 0
+                ? '1fr'
+                : 'minmax(0, 2.2fr) minmax(220px, 1fr)'
+              : remotes.length === 0
+                ? '1fr'
+                : 'repeat(auto-fit, minmax(280px, 1fr))',
+          }}
+        >
+          {/* Screen share is the main tile while sharing */}
+          {sharing ? (
             <div
-              ref={(el) => {
-                if (el) remoteRefs.current.set(r.uid, el);
+              className="relative overflow-hidden rounded-2xl"
+              style={{
+                background: '#0a0e12',
+                minHeight: isFullscreen ? 'min(70vh, 720px)' : undefined,
+                aspectRatio: isFullscreen ? undefined : '16 / 9',
               }}
-              className="h-full w-full"
+            >
+              <div ref={screenPreviewRef} className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-contain" />
+              <span className="absolute bottom-2.5 left-3 rounded-md bg-black/55 px-2 py-1 text-[11.5px] font-medium text-white">
+                Your screen · sharing
+              </span>
+              <span className="absolute right-3 top-3 rounded-md bg-[var(--green)] px-2 py-1 text-[11px] font-semibold text-white">
+                You are presenting
+              </span>
+            </div>
+          ) : null}
+
+          {/* Local camera tile (PiP-style while sharing) */}
+          <div
+            className={
+              sharing
+                ? 'relative aspect-video overflow-hidden rounded-2xl'
+                : 'relative aspect-video overflow-hidden rounded-2xl'
+            }
+            style={{ background: '#151c23' }}
+          >
+            <div
+              ref={localVideoRef}
+              className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover"
             />
-            {!r.hasVideo && (
-              <div className="absolute inset-0 flex items-center justify-center text-white/60">
-                <span
-                  className="flex h-16 w-16 items-center justify-center rounded-full text-[20px] font-bold text-white"
-                  style={{ background: '#37474f' }}
-                >
-                  <Users size={22} />
-                </span>
+            {showCamPlaceholder && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/70">
+                {phase === 'connecting' ? (
+                  <>
+                    <Loader2 size={26} className="animate-spin" />
+                    <span className="text-[13px]">Joining room…</span>
+                  </>
+                ) : (
+                  <>
+                    <span
+                      className="flex h-16 w-16 items-center justify-center rounded-full text-[22px] font-bold text-white"
+                      style={{ background: 'linear-gradient(135deg, #00b369, #1f5fa8)' }}
+                    >
+                      {displayName
+                        .split(/\s+/)
+                        .slice(0, 2)
+                        .map((w) => w[0]?.toUpperCase())
+                        .join('')}
+                    </span>
+                    <span className="text-[13px]">Camera off</span>
+                  </>
+                )}
               </div>
             )}
             <span className="absolute bottom-2.5 left-3 rounded-md bg-black/55 px-2 py-1 text-[11.5px] font-medium text-white">
-              Participant {String(r.uid).slice(-4)}
+              {displayName} (you){sharing ? ' · camera' : ''}
             </span>
+            {!micOn && (
+              <span className="absolute bottom-2.5 right-3 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white">
+                <MicOff size={13} />
+              </span>
+            )}
           </div>
-        ))}
 
-        {remotes.length === 0 && phase === 'live' && (
-          <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 text-white/50">
-            <Users size={26} />
-            <span className="text-[13.5px]">Waiting for your mentor to join…</span>
-            <span className="text-[12px] text-white/35">Share this dashboard session link only with Intellex members.</span>
-          </div>
-        )}
-      </div>
+          {/* Remote tiles */}
+          {remotes.map((r) => (
+            <div key={String(r.uid)} className="relative aspect-video overflow-hidden rounded-2xl" style={{ background: '#151c23' }}>
+              <div
+                ref={(el) => {
+                  if (el) {
+                    remoteRefs.current.set(r.uid, el);
+                    const user = remoteUsersRef.current.get(r.uid);
+                    if (user?.videoTrack) {
+                      user.videoTrack.play(el, { fit: 'contain' });
+                    }
+                  }
+                }}
+                className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-contain"
+              />
+              {!r.hasVideo && (
+                <div className="absolute inset-0 flex items-center justify-center text-white/60">
+                  <span
+                    className="flex h-16 w-16 items-center justify-center rounded-full text-[20px] font-bold text-white"
+                    style={{ background: '#37474f' }}
+                  >
+                    <Users size={22} />
+                  </span>
+                </div>
+              )}
+              <span className="absolute bottom-2.5 left-3 rounded-md bg-black/55 px-2 py-1 text-[11.5px] font-medium text-white">
+                Participant {String(r.uid).slice(-4)}
+              </span>
+            </div>
+          ))}
 
-      {/* Controls */}
-      <div className="mt-5 flex items-center justify-center gap-3">
-        <button
-          onClick={toggleMic}
-          className="flex h-12 w-12 items-center justify-center rounded-full border transition-colors"
-          style={
-            micOn
-              ? { borderColor: 'var(--line)', background: 'var(--paper)' }
-              : { borderColor: 'transparent', background: '#e5484d', color: '#fff' }
-          }
-          title={micOn ? 'Mute microphone' : 'Unmute microphone'}
+          {remotes.length === 0 && phase === 'live' && !sharing && (
+            <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 text-white/50">
+              <Users size={26} />
+              <span className="text-[13.5px]">Waiting for others to join…</span>
+              <span className="text-[12px] text-white/35">Share this session link only with Intellex members.</span>
+            </div>
+          )}
+        </div>
+
+        {/* Controls */}
+        <div
+          className="mt-4 flex flex-wrap items-center justify-center gap-3"
+          style={isFullscreen ? { paddingBottom: 12 } : undefined}
         >
-          {micOn ? <Mic size={18} /> : <MicOff size={18} />}
-        </button>
-        <button
-          onClick={toggleCam}
-          className="flex h-12 w-12 items-center justify-center rounded-full border transition-colors"
-          style={
-            camOn
-              ? { borderColor: 'var(--line)', background: 'var(--paper)' }
-              : { borderColor: 'transparent', background: '#e5484d', color: '#fff' }
-          }
-          title={camOn ? 'Turn camera off' : 'Turn camera on'}
-        >
-          {camOn ? <Video size={18} /> : <VideoOff size={18} />}
-        </button>
-        <button
-          onClick={toggleShare}
-          className="flex h-12 w-12 items-center justify-center rounded-full border transition-colors"
-          style={
-            sharing
-              ? { borderColor: 'transparent', background: 'var(--green)', color: '#fff' }
-              : { borderColor: 'var(--line)', background: 'var(--paper)' }
-          }
-          title={sharing ? 'Stop sharing' : 'Share your screen'}
-        >
-          {sharing ? <MonitorUp size={18} /> : <ScreenShare size={18} />}
-        </button>
-        <button
-          onClick={handleLeave}
-          className="btn !px-7 !py-3 text-[14px] text-white"
-          style={{ background: '#e5484d' }}
-        >
-          <PhoneOff size={16} /> Leave
-        </button>
+          <button
+            type="button"
+            onClick={toggleMic}
+            className="flex h-12 w-12 items-center justify-center rounded-full border transition-colors"
+            style={
+              micOn
+                ? { borderColor: 'rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.08)', color: '#fff' }
+                : { borderColor: 'transparent', background: '#e5484d', color: '#fff' }
+            }
+            title={micOn ? 'Mute microphone' : 'Unmute microphone'}
+          >
+            {micOn ? <Mic size={18} /> : <MicOff size={18} />}
+          </button>
+          <button
+            type="button"
+            onClick={toggleCam}
+            className="flex h-12 w-12 items-center justify-center rounded-full border transition-colors"
+            style={
+              camOn
+                ? { borderColor: 'rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.08)', color: '#fff' }
+                : { borderColor: 'transparent', background: '#e5484d', color: '#fff' }
+            }
+            title={camOn ? 'Turn camera off' : 'Turn camera on'}
+          >
+            {camOn ? <Video size={18} /> : <VideoOff size={18} />}
+          </button>
+          <button
+            type="button"
+            onClick={toggleShare}
+            className="flex h-12 w-12 items-center justify-center rounded-full border transition-colors"
+            style={
+              sharing
+                ? { borderColor: 'transparent', background: 'var(--green)', color: '#fff' }
+                : { borderColor: 'rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.08)', color: '#fff' }
+            }
+            title={sharing ? 'Stop sharing' : 'Share your screen'}
+          >
+            {sharing ? <MonitorUp size={18} /> : <ScreenShare size={18} />}
+          </button>
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="flex h-12 w-12 items-center justify-center rounded-full border transition-colors"
+            style={{
+              borderColor: 'rgba(255,255,255,0.18)',
+              background: 'rgba(255,255,255,0.08)',
+              color: '#fff',
+            }}
+            title={isFullscreen ? 'Exit fullscreen' : 'Go fullscreen'}
+          >
+            {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+          </button>
+          <button
+            type="button"
+            onClick={handleLeave}
+            className="btn !px-7 !py-3 text-[14px] text-white"
+            style={{ background: '#e5484d' }}
+          >
+            <PhoneOff size={16} /> Leave
+          </button>
+        </div>
       </div>
     </div>
   );
