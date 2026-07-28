@@ -1,19 +1,35 @@
 import type { Metadata } from 'next';
 
-const DEFAULT_SITE = 'https://intellex.cm';
+/** Public production origin — always used for share / Open Graph links. */
+export const CANONICAL_SITE_URL = 'https://intellex.loopingbinary.com';
+
 const DEFAULT_SHARE_IMAGE = '/way_selfpaced.webp';
+
+function normalizeOrigin(raw: string): string {
+  const trimmed = String(raw || '')
+    .trim()
+    .replace(/\/$/, '');
+  if (!trimmed) return '';
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const u = new URL(withProtocol);
+    const host = u.hostname.toLowerCase();
+    // Never expose Vercel deployment hosts in shared / OG links.
+    if (host.endsWith('.vercel.app') || host === 'localhost' || host === '127.0.0.1') {
+      return '';
+    }
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return '';
+  }
+}
 
 /** Public site origin for absolute Open Graph / share URLs. */
 export function getSiteUrl(): string {
-  const raw =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.APP_PUBLIC_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '') ||
-    DEFAULT_SITE;
-  const trimmed = String(raw).trim().replace(/\/$/, '');
-  if (!trimmed) return DEFAULT_SITE;
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  return `https://${trimmed}`;
+  const fromEnv =
+    normalizeOrigin(process.env.NEXT_PUBLIC_APP_URL || '') ||
+    normalizeOrigin(process.env.APP_PUBLIC_URL || '');
+  return fromEnv || CANONICAL_SITE_URL;
 }
 
 /** Resolve a path or URL to an absolute HTTPS URL for link previews. */
@@ -25,7 +41,18 @@ export function absoluteUrl(
   const pick = (value: string) => {
     const v = value.trim();
     if (!v) return `${site}${fallback.startsWith('/') ? fallback : `/${fallback}`}`;
-    if (/^https?:\/\//i.test(v)) return v;
+    if (/^https?:\/\//i.test(v)) {
+      // Rewrite accidental Vercel hosts to the canonical domain.
+      try {
+        const u = new URL(v);
+        if (u.hostname.toLowerCase().endsWith('.vercel.app')) {
+          return `${site}${u.pathname}${u.search}${u.hash}`;
+        }
+      } catch {
+        /* keep as-is below */
+      }
+      return v;
+    }
     if (v.startsWith('//')) return `https:${v}`;
     return `${site}${v.startsWith('/') ? v : `/${v}`}`;
   };
@@ -58,6 +85,7 @@ export function buildShareMetadata(input: ShareCardInput): Metadata {
   return {
     title,
     description: description || undefined,
+    metadataBase: new URL(getSiteUrl()),
     alternates: { canonical: url },
     openGraph: {
       title,

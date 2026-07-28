@@ -5,6 +5,22 @@ import { Check, Share2 } from 'lucide-react';
 
 type Variant = 'light' | 'dark' | 'outline';
 
+const CANONICAL_ORIGIN = 'https://intellex.loopingbinary.com';
+
+/** Always share the loopingbinary domain — never a Vercel preview host. */
+function toPublicShareUrl(url: string): string {
+  try {
+    const u = new URL(url, CANONICAL_ORIGIN);
+    if (u.hostname.toLowerCase().endsWith('.vercel.app') || u.hostname === 'localhost') {
+      return `${CANONICAL_ORIGIN}${u.pathname}${u.search}${u.hash}`;
+    }
+    return u.toString();
+  } catch {
+    if (url.startsWith('/')) return `${CANONICAL_ORIGIN}${url}`;
+    return url;
+  }
+}
+
 /**
  * Native share sheet when available (WhatsApp, etc.), otherwise copy link.
  * Pass the public absolute URL so link previews resolve correctly.
@@ -28,6 +44,7 @@ export default function ShareCourseButton({
 }) {
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
+  const shareUrl = toPublicShareUrl(url);
 
   async function share() {
     if (busy) return;
@@ -38,7 +55,7 @@ export default function ShareCourseButton({
           await navigator.share({
             title,
             text: text || title,
-            url,
+            url: shareUrl,
           });
           return;
         } catch (err) {
@@ -48,10 +65,10 @@ export default function ShareCourseButton({
       }
 
       if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(url);
+        await navigator.clipboard.writeText(shareUrl);
       } else {
         const input = document.createElement('input');
-        input.value = url;
+        input.value = shareUrl;
         document.body.appendChild(input);
         input.select();
         document.execCommand('copy');
