@@ -8,6 +8,8 @@ import type {
   TeacherLesson,
   VideoProvider,
 } from '@/lib/learn/courseTypes';
+import { awardXp } from '@/lib/learn/repo';
+import { XP, countInstructorEnrollsToday } from '@/lib/learn/xp';
 
 export type {
   CourseAudience,
@@ -1045,6 +1047,7 @@ export async function createTeacherCourse(opts: {
     updatedAt: now,
   };
   const res = await db.collection('teacher_courses').insertOne(doc as unknown as Record<string, unknown>);
+  await awardXp(opts.authorId, XP.CREATE_COURSE).catch(() => {});
   return res.insertedId.toString();
 }
 
@@ -1086,13 +1089,18 @@ export async function updateTeacherCourse(
   patch: TeacherCoursePatch,
 ) {
   const db = await getDb();
-  await db.collection('teacher_courses').updateOne(
-    {
-      _id: new ObjectId(id),
-      $or: [{ authorId: editorId }, { instructorId: editorId }],
-    },
-    { $set: { ...patch, updatedAt: new Date() } },
-  );
+  const oid = new ObjectId(id);
+  const filter = {
+    _id: oid,
+    $or: [{ authorId: editorId }, { instructorId: editorId }],
+  };
+  const existing = await db.collection('teacher_courses').findOne(filter);
+  await db.collection('teacher_courses').updateOne(filter, {
+    $set: { ...patch, updatedAt: new Date() },
+  });
+  if (patch.published === true && existing && !existing.published) {
+    await awardXp(editorId, XP.PUBLISH_COURSE).catch(() => {});
+  }
 }
 
 /** Published courses taught by this instructor (author or allocated). */
@@ -1239,7 +1247,16 @@ export async function enrollStudentInCourse(opts: {
     },
     { upsert: true },
   );
-  return { created: res.upsertedCount > 0 };
+  const created = res.upsertedCount > 0;
+  await maybeAwardInstructorEnrollXp(instructorId, created);
+  return { created };
+}
+
+async function maybeAwardInstructorEnrollXp(instructorId: string, created: boolean) {
+  if (!created || !instructorId) return;
+  const todayCount = await countInstructorEnrollsToday(instructorId);
+  if (todayCount > XP.ENROLL_STUDENT_DAILY_CAP) return;
+  await awardXp(instructorId, XP.ENROLL_STUDENT).catch(() => {});
 }
 
 export async function removeCourseEnrollment(courseId: string, studentId: string) {

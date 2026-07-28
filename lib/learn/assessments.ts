@@ -1,6 +1,8 @@
 import { ObjectId } from 'mongodb';
 import { getDb } from '@/lib/repo';
 import { ensureLearnCollections } from '@/lib/learn/ecosystem';
+import { awardXp } from '@/lib/learn/repo';
+import { XP } from '@/lib/learn/xp';
 
 export type AssessmentKind = 'assignment' | 'exam';
 export type QuestionType = 'mcq' | 'structural';
@@ -195,6 +197,7 @@ export async function createAssessment(opts: {
     updatedAt: now,
   };
   const res = await db.collection('assessments').insertOne(doc as unknown as Record<string, unknown>);
+  await awardXp(opts.authorId, XP.CREATE_ASSESSMENT).catch(() => {});
   return res.insertedId.toString();
 }
 
@@ -307,10 +310,15 @@ export async function updateAssessment(
   >,
 ) {
   const db = await getDb();
+  const oid = new ObjectId(id);
+  const existing = await db.collection('assessments').findOne({ _id: oid, authorId });
   await db.collection('assessments').updateOne(
-    { _id: new ObjectId(id), authorId },
+    { _id: oid, authorId },
     { $set: { ...patch, updatedAt: new Date() } },
   );
+  if (patch.published === true && existing && !existing.published) {
+    await awardXp(authorId, XP.PUBLISH_ASSESSMENT).catch(() => {});
+  }
 }
 
 export async function getSubmission(
