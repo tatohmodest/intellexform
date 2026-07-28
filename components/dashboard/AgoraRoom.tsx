@@ -69,10 +69,51 @@ export default function AgoraRoom({
   const camTrackRef = useRef<ICameraVideoTrack | null>(null);
   const screenTrackRef = useRef<ILocalVideoTrack | null>(null);
   const localVideoRef = useRef<HTMLDivElement | null>(null);
-  const screenPreviewRef = useRef<HTMLDivElement | null>(null);
+  /** Native <video> for presenter local preview (clone of screen track). */
+  const screenVideoRef = useRef<HTMLVideoElement | null>(null);
+  const screenPreviewCloneRef = useRef<MediaStreamTrack | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const remoteRefs = useRef<Map<string | number, HTMLDivElement>>(new Map());
   const remoteUsersRef = useRef<Map<string | number, IAgoraRTCRemoteUser>>(new Map());
+
+  const clearLocalScreenPreview = useCallback(() => {
+    const video = screenVideoRef.current;
+    if (video) {
+      video.pause();
+      video.srcObject = null;
+    }
+    if (screenPreviewCloneRef.current) {
+      screenPreviewCloneRef.current.stop();
+      screenPreviewCloneRef.current = null;
+    }
+  }, []);
+
+  /**
+   * Presenter local preview must NOT use Agora track.play() on the same
+   * published screen track - that often goes blank for the sharer while
+   * remotes still receive video. Clone the MediaStreamTrack into a native
+   * <video> instead.
+   */
+  const playLocalScreenPreview = useCallback(() => {
+    const track = screenTrackRef.current;
+    const video = screenVideoRef.current;
+    if (!track || !video) return;
+
+    clearLocalScreenPreview();
+    try {
+      const mediaTrack = track.getMediaStreamTrack();
+      const clone = mediaTrack.clone();
+      screenPreviewCloneRef.current = clone;
+      video.srcObject = new MediaStream([clone]);
+      video.muted = true;
+      video.playsInline = true;
+      void video.play().catch((err) => {
+        console.error('Local screen preview play failed:', err);
+      });
+    } catch (err) {
+      console.error('Local screen preview attach failed:', err);
+    }
+  }, [clearLocalScreenPreview]);
 
   useEffect(() => {
     if (phase !== 'live') return;
@@ -99,12 +140,13 @@ export default function AgoraRoom({
 
   const leave = useCallback(async () => {
     const client = clientRef.current;
+    clearLocalScreenPreview();
     micTrackRef.current?.close();
     camTrackRef.current?.close();
     screenTrackRef.current?.close();
     if (client) await client.leave().catch(() => {});
     setPhase('left');
-  }, []);
+  }, [clearLocalScreenPreview]);
 
   useEffect(() => {
     let cancelled = false;
@@ -204,32 +246,20 @@ export default function AgoraRoom({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channel]);
 
-  // Play local screen into the main presenter stage once the node exists.
-  // Do NOT call track.stop() here - that blanks the preview. Parent must have
-  // an explicit height so Agora's video (height:100%) actually paints.
-  const attachScreenPreview = useCallback((el: HTMLDivElement | null) => {
-    screenPreviewRef.current = el;
-    const track = screenTrackRef.current;
-    if (!el || !track) return;
-    try {
-      track.play(el, { fit: 'contain' });
-    } catch (err) {
-      console.error('Screen preview play failed:', err);
-    }
-  }, []);
+  // Attach local screen preview when the presenter <video> mounts / sharing flips on.
+  const attachScreenVideo = useCallback(
+    (el: HTMLVideoElement | null) => {
+      screenVideoRef.current = el;
+      if (el && screenTrackRef.current) {
+        playLocalScreenPreview();
+      }
+    },
+    [playLocalScreenPreview],
+  );
 
   useEffect(() => {
     if (!sharing) return;
-    const el = screenPreviewRef.current;
-    const track = screenTrackRef.current;
-    if (el && track) {
-      try {
-        track.play(el, { fit: 'contain' });
-      } catch {
-        /* ignore */
-      }
-    }
-    // Keep camera preview in the filmstrip while presenting (local only).
+    playLocalScreenPreview();
     if (camTrackRef.current && camOn && localVideoRef.current) {
       try {
         camTrackRef.current.play(localVideoRef.current, { fit: 'cover' });
@@ -237,7 +267,7 @@ export default function AgoraRoom({
         /* ignore */
       }
     }
-  }, [sharing, camOn]);
+  }, [sharing, camOn, playLocalScreenPreview]);
 
   async function toggleMic() {
     const track = micTrackRef.current;
@@ -280,16 +310,11 @@ export default function AgoraRoom({
         await client.publish(screenTrack);
         setSharing(true);
 
-        // Retry play after layout paints with a real height.
-        const playPreview = () => {
-          const el = screenPreviewRef.current;
-          if (el && screenTrackRef.current) {
-            try {
-              screenTrackRef.current.play(el, { fit: 'contain' });
-            } catch (err) {
-              console.error('Screen preview play failed:', err);
-            }
-          }
+        // Native <video> preview for the presenter (students already get the published track).
+        requestAnimationFrame(() => {
+          playLocalScreenPreview();
+          window.setTimeout(playLocalScreenPreview, 150);
+          window.setTimeout(playLocalScreenPreview, 450);
           if (camTrackRef.current && camOn && localVideoRef.current) {
             try {
               camTrackRef.current.play(localVideoRef.current, { fit: 'cover' });
@@ -297,11 +322,6 @@ export default function AgoraRoom({
               /* ignore */
             }
           }
-        };
-        requestAnimationFrame(() => {
-          playPreview();
-          window.setTimeout(playPreview, 120);
-          window.setTimeout(playPreview, 400);
         });
 
         screenTrack.on('track-ended', () => {
@@ -318,6 +338,7 @@ export default function AgoraRoom({
   async function stopShare() {
     const client = clientRef.current;
     const screenTrack = screenTrackRef.current;
+    clearLocalScreenPreview();
     if (client && screenTrack) {
       await client.unpublish(screenTrack).catch(() => {});
       screenTrack.stop();
@@ -579,13 +600,16 @@ export default function AgoraRoom({
               className="relative w-full overflow-hidden rounded-2xl"
               style={{
                 background: '#0a0e12',
-                // Explicit height (not only minHeight) so Agora's height:100% video paints.
                 height: isFullscreen ? 'calc(100vh - 220px)' : 420,
               }}
             >
-              <div
-                ref={attachScreenPreview}
-                className="absolute inset-0 [&_video]:!h-full [&_video]:!w-full [&_video]:!object-contain [&_video]:!bg-black"
+              {/* Native video + cloned track so the presenter sees what students see */}
+              <video
+                ref={attachScreenVideo}
+                autoPlay
+                playsInline
+                muted
+                className="absolute inset-0 h-full w-full bg-black object-contain"
               />
               <span className="pointer-events-none absolute bottom-2.5 left-3 z-10 rounded-md bg-black/55 px-2 py-1 text-[11.5px] font-medium text-white">
                 Your screen · sharing
@@ -593,6 +617,9 @@ export default function AgoraRoom({
               <span className="pointer-events-none absolute right-3 top-3 z-10 rounded-md bg-[var(--green)] px-2 py-1 text-[11px] font-semibold text-white">
                 You are presenting
               </span>
+              <p className="pointer-events-none absolute bottom-2.5 right-3 z-10 max-w-[220px] text-right text-[10.5px] text-white/55">
+                Tip: share a Window or Tab for a clearer preview than Entire Screen
+              </p>
             </div>
 
             <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
