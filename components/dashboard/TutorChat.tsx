@@ -29,12 +29,12 @@ const SUGGESTIONS = [
   {
     icon: Zap,
     label: 'Quiz me',
-    prompt: 'Quiz me on JavaScript async/await - 5 questions, then grade me.',
+    prompt: 'Quiz me on JavaScript - one question at a time, and grade my answers.',
   },
   {
     icon: BookOpen,
-    label: 'What next?',
-    prompt: 'What should I learn next to become a backend developer on InTelleX?',
+    label: 'Build my plan',
+    prompt: 'Make a 3-week learning plan to become a backend developer on InTelleX.',
   },
   {
     icon: Sparkles,
@@ -43,9 +43,17 @@ const SUGGESTIONS = [
   },
 ];
 
+/** Strip engine state markers so learners never see quiz/plan payloads. */
+function visibleTutorText(text: string): string {
+  return text
+    .replace(/<!--intellex-quiz:[\s\S]*?-->/g, '')
+    .replace(/<!--intellex-plan:[\s\S]*?-->/g, '')
+    .trim();
+}
+
 /** Markdown-ish renderer: colored code fences, bold, inline code, colorful links. */
 function RichText({ text }: { text: string }) {
-  const parts = text.split(/```/);
+  const parts = visibleTutorText(text).split(/```/);
   return (
     <>
       {parts.map((part, i) => {
@@ -282,7 +290,7 @@ export default function TutorChat() {
               className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em]"
               style={{ color: 'var(--green-deep)' }}
             >
-              Ready when you are
+              InTelleX AI · ready when you are
             </p>
             <h1 className="font-display text-[34px] leading-[1.05] tracking-tight sm:text-[44px]">
               What do you want
@@ -293,8 +301,8 @@ export default function TutorChat() {
               className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed"
               style={{ color: 'var(--ink-soft)' }}
             >
-              Your tutor knows the InTelleX curriculum - ask anything, get a clear answer, then jump
-              straight into the matching lesson.
+              Quiz you. Build a plan. Explain anything. Debug with you. Grounded in the InTelleX
+              curriculum - interactive like a real tutor.
             </p>
           </motion.div>
         ) : (
@@ -304,7 +312,7 @@ export default function TutorChat() {
                 className="font-mono text-[10.5px] uppercase tracking-[0.16em]"
                 style={{ color: 'var(--ink-soft)' }}
               >
-                AI Tutor · live
+                InTelleX AI · live
               </p>
               <h1 className="font-display text-[22px] leading-tight sm:text-[26px]">Keep going</h1>
             </div>
@@ -398,7 +406,7 @@ export default function TutorChat() {
                           className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.14em]"
                           style={{ color: 'var(--ink-soft)' }}
                         >
-                          Tutor
+                          InTelleX AI
                         </p>
                         {m.content ? (
                           <div>
@@ -452,7 +460,7 @@ export default function TutorChat() {
             }}
           >
             <label className="min-w-0 flex-1 py-1.5">
-              <span className="sr-only">Ask the AI Tutor</span>
+              <span className="sr-only">Ask InTelleX AI</span>
               <textarea
                 ref={textareaRef}
                 value={input}
@@ -466,7 +474,7 @@ export default function TutorChat() {
                   }
                 }}
                 rows={1}
-                placeholder="Ask anything - explain, quiz me, plan my path…"
+                placeholder="Ask InTelleX AI - explain, quiz me, build a plan…"
                 className="max-h-[160px] min-h-[28px] w-full resize-none bg-transparent py-2 text-[15px] leading-relaxed outline-none placeholder:text-[var(--ink-soft)]"
                 style={{ color: 'var(--ink)' }}
               />

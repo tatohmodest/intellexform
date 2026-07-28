@@ -33,7 +33,7 @@ const TABS: Tab[] = [
   },
   {
     href: '/dashboard/tutor',
-    label: 'Tutor',
+    label: 'InTelleX AI',
     icon: Bot,
     match: (p) => p.startsWith('/dashboard/tutor'),
   },

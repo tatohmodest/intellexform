@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/getUser';
 import {
-  curriculumTutorAnswer,
   findRelevantCatalogueCourses,
+  interactiveTutorAnswer,
   isLLMConfigured,
   llmTutorStream,
   type ChatMessage,
@@ -13,7 +13,7 @@ export const maxDuration = 60;
 
 /**
  * POST /api/learn/tutor  { messages: [{role, content}, ...] }
- * Streams the tutor's reply as plain text.
+ * Streams InTelleX AI's reply as plain text.
  */
 export async function POST(req: NextRequest) {
   const user = getSessionUser();
@@ -39,13 +39,16 @@ export async function POST(req: NextRequest) {
         headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Tutor-Engine': 'llm' },
       });
     } catch (err) {
-      console.error('LLM tutor failed, falling back to curriculum tutor:', err);
+      console.error('LLM tutor failed, falling back to interactive InTelleX AI:', err);
     }
   }
 
   const catalogueHits = await findRelevantCatalogueCourses(lastUser.content, 4);
-  const answer = curriculumTutorAnswer(lastUser.content, catalogueHits);
+  const answer = interactiveTutorAnswer(messages, catalogueHits);
   return new Response(answer, {
-    headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Tutor-Engine': 'curriculum' },
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'X-Tutor-Engine': 'interactive',
+    },
   });
 }

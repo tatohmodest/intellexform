@@ -50,7 +50,7 @@ const NAV = [
   { href: '/dashboard/mentorship', label: 'Mentorship', icon: Users },
   { href: '/dashboard/library', label: 'Library', icon: BookMarked },
   { href: '/dashboard/videos', label: 'Video Hall', icon: Youtube },
-  { href: '/dashboard/tutor', label: 'AI Tutor', icon: Bot },
+  { href: '/dashboard/tutor', label: 'InTelleX AI', icon: Bot },
   { href: '/dashboard/institutions', label: 'Institutions', icon: Building2 },
   { href: '/dashboard/achievements', label: 'Achievements', icon: Trophy },
   { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
