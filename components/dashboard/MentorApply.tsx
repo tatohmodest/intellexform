@@ -28,7 +28,7 @@ const DAYS = ['Today', 'Tomorrow', 'In 2 days', 'In 3 days', 'In 4 days', 'In 5 
 const STEPS = [
   { id: 'profile', label: 'Profile', icon: GraduationCap },
   { id: 'schedule', label: 'Schedule', icon: CheckCircle2 },
-  { id: 'resume', label: 'CV (Drive)', icon: FileText },
+  { id: 'resume', label: 'CV / Resume', icon: FileText },
   { id: 'id', label: 'ID', icon: CreditCard },
   { id: 'video', label: 'Intro video', icon: Video },
   { id: 'review', label: 'Submit', icon: Upload },
@@ -54,7 +54,7 @@ export default function MentorApply() {
     { dayOffset: 1, time: '18:00' },
   ]);
 
-  const [resumeDriveUrl, setResumeDriveUrl] = useState('');
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [idFront, setIdFront] = useState<File | null>(null);
   const [idBack, setIdBack] = useState<File | null>(null);
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
@@ -104,9 +104,7 @@ export default function MentorApply() {
       if (slots.length === 0) return 'Add at least one availability slot.';
     }
     if (i === 2) {
-      if (!resumeDriveUrl.trim()) {
-        return 'Paste a public Google Drive link to your CV.';
-      }
+      if (!resumeFile) return 'Upload your CV as PDF, DOC, or DOCX (PDF preferred).';
     }
     if (i === 3) {
       if (!idFront || !idBack) return 'Upload the front and back of your ID.';
@@ -145,13 +143,18 @@ export default function MentorApply() {
         return;
       }
     }
-    if (!resumeDriveUrl.trim() || !idFront || !idBack || !videoBlob) return;
+    if (!resumeFile || !idFront || !idBack || !videoBlob) return;
 
     setBusy(true);
     setError('');
     setUploadPct(0);
     try {
+      setUploadLabel('Uploading CV…');
+      const resume = await uploadMentorAsset('resume', resumeFile, resumeFile.name, setUploadPct);
+      if (!resume.url) throw new Error('CV upload did not return a URL.');
+
       setUploadLabel('Uploading ID (front)…');
+      setUploadPct(0);
       const front = await uploadMentorAsset('id_front', idFront, idFront.name, setUploadPct);
       if (!front.url) throw new Error('ID front upload did not return a URL.');
 
@@ -198,8 +201,11 @@ export default function MentorApply() {
           priceXAF,
           sessionMinutes,
           slots,
-          resumeUrl: resumeDriveUrl.trim(),
-          resumeSource: 'google_drive',
+          resumeUrl: resume.url,
+          resumePublicId: resume.publicId,
+          resumeResourceType: resume.resourceType,
+          resumeFormat: resume.format,
+          resumeSource: 'cloudinary',
           institutionSlug,
           institutionName,
           idFrontUrl: front.url,
@@ -215,13 +221,11 @@ export default function MentorApply() {
             ? 'Documents are required before submission.'
             : data.error === 'missing_fields'
               ? 'Please complete every step before submitting.'
-              : data.error === 'invalid_resume_url'
-                ? 'CV must be a public Google Drive or Docs share link.'
-                : data.error === 'invalid_document_url'
-                  ? 'A document URL was invalid. Re-upload your files and try again.'
-                  : data.error === 'db_unavailable'
-                    ? 'Could not save your application right now. Try again shortly.'
-                    : 'Could not submit your application. Please try again.',
+              : data.error === 'invalid_resume_url' || data.error === 'invalid_document_url'
+                ? 'A document URL was invalid. Re-upload your files and try again.'
+                : data.error === 'db_unavailable'
+                  ? 'Could not save your application right now. Try again shortly.'
+                  : 'Could not submit your application. Please try again.',
         );
         return;
       }
@@ -526,36 +530,20 @@ export default function MentorApply() {
                   <p className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
                     Step 03
                   </p>
-                  <h2 className="font-display text-[22px]">Share your CV on Google Drive</h2>
+                  <h2 className="font-display text-[22px]">Upload your CV</h2>
                 </div>
                 <p className="text-[14px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                  Upload your CV to Google Drive, set sharing to{' '}
-                  <strong style={{ color: 'var(--ink)' }}>Anyone with the link (Viewer)</strong>, then paste
-                  the link below. Admins open it inside InTelleX — no file upload needed.
+                  PDF preferred for in-platform preview. DOC / DOCX also accepted. Up to 10 MB —
+                  files go to Cloudinary securely.
                 </p>
-                <ol className="space-y-1.5 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                  <li>1. Open Drive and upload your PDF/Doc.</li>
-                  <li>2. Right-click → Share → Anyone with the link → Viewer.</li>
-                  <li>3. Copy link and paste it here.</li>
-                </ol>
-                <a
-                  href="https://drive.google.com/drive/my-drive"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex text-[13px] font-semibold"
-                  style={{ color: 'var(--green-deep)' }}
-                >
-                  Open Google Drive →
-                </a>
-                <div>
-                  <label className="mb-1.5 block text-[13px] font-semibold">Public Google Drive / Docs link</label>
-                  <input
-                    className="form-input !rounded-none"
-                    placeholder="https://drive.google.com/file/d/…/view?usp=sharing"
-                    value={resumeDriveUrl}
-                    onChange={(e) => setResumeDriveUrl(e.target.value)}
-                  />
-                </div>
+                <FileDrop
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
+                  label="Drop CV here or browse"
+                  file={resumeFile}
+                  onFile={setResumeFile}
+                  optimize="resume"
+                  onError={setError}
+                />
               </section>
             )}
 
@@ -625,7 +613,7 @@ export default function MentorApply() {
                   <ReviewRow label="Price" value={`${priceXAF.toLocaleString()} XAF · ${sessionMinutes} min`} />
                   <ReviewRow
                     label="CV"
-                    value={resumeDriveUrl.trim() ? 'Google Drive link ready' : '-'}
+                    value={resumeFile ? `${resumeFile.name} (${fmtBytes(resumeFile.size)})` : '-'}
                   />
                   <ReviewRow label="ID" value={idFront && idBack ? 'Front + back attached' : '-'} />
                   <ReviewRow

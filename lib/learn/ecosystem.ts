@@ -524,7 +524,7 @@ export async function fulfillMentorDocumentRequest(
     if (item === 'resume') {
       if (!updates.resumeUrl) return { ok: false, error: 'resume_required' };
       $set.resumeUrl = updates.resumeUrl;
-      $set.resumeSource = updates.resumeSource || 'google_drive';
+      $set.resumeSource = updates.resumeSource || 'cloudinary';
       if (updates.resumePublicId) $set.resumePublicId = updates.resumePublicId;
       if (updates.resumeResourceType) $set.resumeResourceType = updates.resumeResourceType;
       if (updates.resumeFormat) $set.resumeFormat = updates.resumeFormat;

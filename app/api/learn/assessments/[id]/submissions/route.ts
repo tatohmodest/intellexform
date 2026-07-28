@@ -9,6 +9,11 @@ import {
   toDriveEmbedUrl,
   upsertSubmission,
 } from '@/lib/learn/assessments';
+import { isCloudinaryUrl } from '@/lib/cloudinaryFormats';
+
+function isCloudinaryHost(url: string): boolean {
+  return isCloudinaryUrl(url);
+}
 
 export async function GET(
   _req: NextRequest,
@@ -93,21 +98,56 @@ export async function POST(
         { status: 403 },
       );
     }
+
+    const fileUrl = String(body.fileUrl || '').trim();
     const driveRaw = String(body.driveUrl || '').trim();
-    if (!driveRaw) return NextResponse.json({ error: 'drive_url_required' }, { status: 400 });
-    const norm = toDriveEmbedUrl(driveRaw);
-    const submission = await upsertSubmission({
-      assessmentId: params.id,
-      studentId: session.uid,
-      studentName,
-      patch: {
-        driveUrl: norm.url,
-        driveEmbedUrl: norm.embedUrl,
-        status: 'submitted',
-        submittedAt: new Date(),
-      },
-    });
-    return NextResponse.json({ submission });
+
+    // Preferred: Cloudinary upload (PDF / DOC / DOCX).
+    if (fileUrl) {
+      if (!isCloudinaryHost(fileUrl)) {
+        return NextResponse.json({ error: 'invalid_file_url' }, { status: 400 });
+      }
+      const submission = await upsertSubmission({
+        assessmentId: params.id,
+        studentId: session.uid,
+        studentName,
+        patch: {
+          fileUrl,
+          filePublicId: String(body.filePublicId || '').trim() || undefined,
+          fileResourceType: String(body.fileResourceType || '').trim() || undefined,
+          fileFormat: String(body.fileFormat || '').trim() || undefined,
+          fileName: String(body.fileName || '').trim().slice(0, 180) || undefined,
+          fileBytes:
+            typeof body.fileBytes === 'number' && Number.isFinite(body.fileBytes)
+              ? body.fileBytes
+              : undefined,
+          driveUrl: undefined,
+          driveEmbedUrl: undefined,
+          status: 'submitted',
+          submittedAt: new Date(),
+        },
+      });
+      return NextResponse.json({ submission });
+    }
+
+    // Legacy Drive link (still accepted for older clients).
+    if (driveRaw) {
+      const norm = toDriveEmbedUrl(driveRaw);
+      const submission = await upsertSubmission({
+        assessmentId: params.id,
+        studentId: session.uid,
+        studentName,
+        patch: {
+          driveUrl: norm.url,
+          driveEmbedUrl: norm.embedUrl,
+          status: 'submitted',
+          submittedAt: new Date(),
+        },
+      });
+      return NextResponse.json({ submission });
+    }
+
+    return NextResponse.json({ error: 'file_required' }, { status: 400 });
   }
 
   // exam submit

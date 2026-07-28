@@ -54,9 +54,16 @@ export interface AssessmentSubmissionDoc {
   assessmentId: string;
   studentId: string;
   studentName: string;
-  /** Assignment: Drive / Docs / PDF share link */
+  /** @deprecated Prefer Cloudinary file* fields; kept for legacy Drive submissions */
   driveUrl?: string;
   driveEmbedUrl?: string;
+  /** Assignment: Cloudinary-hosted file */
+  fileUrl?: string;
+  filePublicId?: string;
+  fileResourceType?: string;
+  fileFormat?: string;
+  fileName?: string;
+  fileBytes?: number;
   /** Exam answers keyed by question id */
   answers?: Record<string, string | number>;
   status: SubmissionStatus;
@@ -175,7 +182,7 @@ export async function createAssessment(opts: {
     instructions: '',
     studentTips:
       opts.kind === 'assignment'
-        ? 'Upload your work to Google Drive or Google Docs → Share → Anyone with the link (viewer) → paste the link here. Your instructor opens it inside InTelleX - you do not need to email files.'
+        ? 'Upload a PDF (preferred for in-app preview), or DOC / DOCX, up to 10 MB. Your instructor opens and downloads it inside InTelleX.'
         : 'This exam is one question at a time. You cannot go back. Leaving this tab or window ends the exam.',
     questions: [],
     durationMinutes: opts.kind === 'exam' ? 60 : null,
@@ -313,6 +320,12 @@ export async function upsertSubmission(opts: {
       AssessmentSubmissionDoc,
       | 'driveUrl'
       | 'driveEmbedUrl'
+      | 'fileUrl'
+      | 'filePublicId'
+      | 'fileResourceType'
+      | 'fileFormat'
+      | 'fileName'
+      | 'fileBytes'
       | 'answers'
       | 'status'
       | 'score'

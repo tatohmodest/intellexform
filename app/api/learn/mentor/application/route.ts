@@ -4,18 +4,9 @@ import {
   fulfillMentorDocumentRequest,
   getPendingMentorApplication,
 } from '@/lib/learn/ecosystem';
-import { isGoogleDriveShareUrl, toDriveEmbedUrl } from '@/lib/learn/assessments';
+import { isCloudinaryUrl } from '@/lib/cloudinaryFormats';
 
 export const dynamic = 'force-dynamic';
-
-function isCloudinaryUrl(url: string): boolean {
-  try {
-    const u = new URL(url);
-    return u.protocol === 'https:' && u.hostname.includes('cloudinary.com');
-  } catch {
-    return false;
-  }
-}
 
 /** GET /api/learn/mentor/application - current pending application (incl. open doc requests). */
 export async function GET() {
@@ -43,16 +34,16 @@ export async function PATCH(req: NextRequest) {
   const updates: Parameters<typeof fulfillMentorDocumentRequest>[1] = {};
 
   if (typeof body.resumeUrl === 'string' && body.resumeUrl.trim()) {
-    const raw = body.resumeUrl.trim();
-    if (isGoogleDriveShareUrl(raw)) {
-      updates.resumeUrl = toDriveEmbedUrl(raw).url;
-      updates.resumeSource = 'google_drive';
-    } else if (isCloudinaryUrl(raw)) {
-      updates.resumeUrl = raw;
-      updates.resumeSource = 'cloudinary';
-    } else {
+    if (!isCloudinaryUrl(body.resumeUrl.trim())) {
       return NextResponse.json({ error: 'invalid_resume_url' }, { status: 400 });
     }
+    updates.resumeUrl = body.resumeUrl.trim();
+    updates.resumeSource = 'cloudinary';
+    if (typeof body.resumePublicId === 'string') updates.resumePublicId = body.resumePublicId;
+    if (typeof body.resumeResourceType === 'string') {
+      updates.resumeResourceType = body.resumeResourceType;
+    }
+    if (typeof body.resumeFormat === 'string') updates.resumeFormat = body.resumeFormat;
   }
 
   if (typeof body.idFrontUrl === 'string' && body.idFrontUrl.trim()) {

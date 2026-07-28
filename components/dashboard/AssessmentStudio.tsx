@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import type { AssessmentView, ExamQuestion, SubmissionView } from '@/lib/learn/assessments';
 import DriveDocViewer from '@/components/dashboard/DriveDocViewer';
+import CloudinaryDocViewer from '@/components/dashboard/CloudinaryDocViewer';
 import { formatCountdown, toDatetimeLocalValue } from '@/lib/learn/countdown';
 
 export default function AssessmentStudio({
@@ -542,7 +543,16 @@ export default function AssessmentStudio({
                           </div>
                         </div>
                       </div>
-                      {s.driveEmbedUrl && (
+                      {s.fileUrl && (
+                        <CloudinaryDocViewer
+                          title={`${s.studentName} submission`}
+                          format={s.fileFormat}
+                          fileName={s.fileName}
+                          viewUrl={`/api/learn/assessments/${draft.id}/file?studentId=${encodeURIComponent(s.studentId)}&disposition=inline`}
+                          downloadUrl={`/api/learn/assessments/${draft.id}/file?studentId=${encodeURIComponent(s.studentId)}&disposition=attachment`}
+                        />
+                      )}
+                      {!s.fileUrl && s.driveEmbedUrl && (
                         <DriveDocViewer embedUrl={s.driveEmbedUrl} title={`${s.studentName} submission`} />
                       )}
                       {s.answers && (

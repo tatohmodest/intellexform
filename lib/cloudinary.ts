@@ -1,7 +1,8 @@
 import { v2 as cloudinary } from 'cloudinary';
-import type { MentorUploadKind } from '@/lib/learn/mentorUploadKinds';
+import type { MediaUploadKind, MentorUploadKind } from '@/lib/learn/mentorUploadKinds';
+import { extFromFilenameOrMime } from '@/lib/cloudinaryFormats';
 
-export type { MentorUploadKind };
+export type { MentorUploadKind, MediaUploadKind };
 
 const cloudName = process.env.CLOUDINARY_CLOUD_NAME ?? '';
 const apiKey = process.env.CLOUDINARY_API_KEY ?? '';
@@ -16,18 +17,19 @@ if (cloudName && apiKey && apiSecret) {
   });
 }
 
-const FOLDERS: Record<MentorUploadKind, string> = {
+const FOLDERS: Record<MediaUploadKind, string> = {
   resume: 'intellex/mentor-applications/resumes',
   id_front: 'intellex/mentor-applications/ids',
   id_back: 'intellex/mentor-applications/ids',
   intro_video: 'intellex/mentor-applications/videos',
+  assignment: 'intellex/assignments',
 };
 
 export function isCloudinaryConfigured(): boolean {
   return Boolean(cloudName && apiKey && apiSecret);
 }
 
-function resumeResourceType(
+function documentResourceType(
   mimeType?: string,
   filename?: string,
 ): 'image' | 'raw' {
@@ -36,15 +38,18 @@ function resumeResourceType(
   if (mime.startsWith('image/') || /\.(png|jpe?g|webp|gif|heic)$/i.test(name)) {
     return 'image';
   }
-  // PDF / DOC / DOCX and anything else — raw keeps the original file downloadable.
+  // PDF / DOC / DOCX — must be `raw` so Cloudinary keeps the original bytes.
   return 'raw';
 }
 
 /**
  * Signed upload params for direct browser → Cloudinary uploads.
+ *
+ * For raw PDF/DOC/DOCX we put the extension in `public_id` (e.g. resume_123.pdf).
+ * Without that, Cloudinary delivery/download often fails or returns the wrong type.
  */
-export function signMentorUpload(opts: {
-  kind: MentorUploadKind;
+export function signMediaUpload(opts: {
+  kind: MediaUploadKind;
   lbId: string;
   mimeType?: string;
   filename?: string;
@@ -56,6 +61,7 @@ export function signMentorUpload(opts: {
   publicId: string;
   signature: string;
   resourceType: 'image' | 'raw' | 'video' | 'auto';
+  format: string;
   transformation?: string;
 } {
   if (!isCloudinaryConfigured()) {
@@ -64,16 +70,22 @@ export function signMentorUpload(opts: {
 
   const timestamp = Math.round(Date.now() / 1000);
   const folder = `${FOLDERS[opts.kind]}/${opts.lbId}`;
-  const publicId = `${opts.kind}_${timestamp}`;
+  const format = extFromFilenameOrMime(opts.filename, opts.mimeType);
 
   let resourceType: 'image' | 'raw' | 'video' | 'auto';
   if (opts.kind === 'intro_video') {
     resourceType = 'video';
-  } else if (opts.kind === 'resume') {
-    resourceType = resumeResourceType(opts.mimeType, opts.filename);
+  } else if (opts.kind === 'resume' || opts.kind === 'assignment') {
+    resourceType = documentResourceType(opts.mimeType, opts.filename);
   } else {
     resourceType = 'image';
   }
+
+  // Raw assets: include extension in public_id so delivery URLs end in .pdf/.docx.
+  const publicId =
+    resourceType === 'raw'
+      ? `${opts.kind}_${timestamp}.${format}`
+      : `${opts.kind}_${timestamp}`;
 
   const paramsToSign: Record<string, string | number> = {
     timestamp,
@@ -81,12 +93,14 @@ export function signMentorUpload(opts: {
     public_id: publicId,
   };
 
-  // Keep upload transforms conservative — `f_auto` / bitrate eager often reject at upload time.
   let transformation: string | undefined;
   if (opts.kind === 'id_front' || opts.kind === 'id_back') {
     transformation = 'c_limit,w_1600,q_auto:good';
     paramsToSign.transformation = transformation;
-  } else if (opts.kind === 'resume' && resourceType === 'image') {
+  } else if (
+    (opts.kind === 'resume' || opts.kind === 'assignment') &&
+    resourceType === 'image'
+  ) {
     transformation = 'c_limit,w_1800,q_auto:good';
     paramsToSign.transformation = transformation;
   }
@@ -101,8 +115,19 @@ export function signMentorUpload(opts: {
     publicId,
     signature,
     resourceType,
+    format,
     transformation,
   };
+}
+
+/** @deprecated use signMediaUpload */
+export function signMentorUpload(opts: {
+  kind: MentorUploadKind;
+  lbId: string;
+  mimeType?: string;
+  filename?: string;
+}) {
+  return signMediaUpload(opts);
 }
 
 export { cloudinary };

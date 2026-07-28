@@ -241,6 +241,7 @@ function ApplicationCard({
     setDlBusy(true);
     onError?.('');
     try {
+      // Prefer our Cloudinary envelope API (handles PDF/DOC/DOCX correctly).
       const isDrive =
         app.resumeSource === 'google_drive' ||
         /drive\.google\.com|docs\.google\.com/i.test(app.resumeUrl);
@@ -248,7 +249,7 @@ function ApplicationCard({
         window.open(app.resumeUrl, '_blank', 'noopener,noreferrer');
         return;
       }
-      const url = `/api/admin/applications/${app.id}/resume`;
+      const url = `/api/admin/applications/${app.id}/resume?disposition=attachment`;
       const win = window.open(url, '_blank', 'noopener,noreferrer');
       if (!win) {
         window.location.assign(url);
@@ -346,6 +347,22 @@ function ApplicationCard({
           <span className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] opacity-50" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
             <Download size={12} /> CV missing
           </span>
+        )}
+        {app.resumeUrl &&
+          !(
+            app.resumeSource === 'google_drive' ||
+            /drive\.google\.com|docs\.google\.com/i.test(app.resumeUrl)
+          ) && (
+          <a
+            href={`/api/admin/applications/${app.id}/resume?disposition=inline&proxy=1`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors hover:border-[var(--green-deep)]"
+            style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+          >
+            <ExternalLink size={12} style={{ color: 'var(--green-deep)' }} />
+            View CV
+          </a>
         )}
         <DocLink href={app.idFrontUrl} icon={CreditCard} label="ID front" />
         <DocLink href={app.idBackUrl} icon={CreditCard} label="ID back" />

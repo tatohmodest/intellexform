@@ -30,7 +30,7 @@ export default function MentorRevisionPortal({
   ) as MentorDocRequestItem[];
 
   const need = new Set(items);
-  const [resumeDriveUrl, setResumeDriveUrl] = useState('');
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [idFront, setIdFront] = useState<File | null>(null);
   const [idBack, setIdBack] = useState<File | null>(null);
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
@@ -58,8 +58,8 @@ export default function MentorRevisionPortal({
 
   async function submit() {
     setError('');
-    if (need.has('resume') && !resumeDriveUrl.trim()) {
-      setError('Paste a public Google Drive link for your CV.');
+    if (need.has('resume') && !resumeFile) {
+      setError('Upload a new CV as PDF, DOC, or DOCX.');
       return;
     }
     if (need.has('id_front') && !idFront) {
@@ -86,8 +86,13 @@ export default function MentorRevisionPortal({
     try {
       const body: Record<string, unknown> = {};
 
-      if (need.has('resume')) {
-        body.resumeUrl = resumeDriveUrl.trim();
+      if (need.has('resume') && resumeFile) {
+        setUploadLabel('Uploading CV…');
+        const resume = await uploadMentorAsset('resume', resumeFile, resumeFile.name, setUploadPct);
+        body.resumeUrl = resume.url;
+        body.resumePublicId = resume.publicId;
+        body.resumeResourceType = resume.resourceType;
+        body.resumeFormat = resume.format;
       }
       if (need.has('id_front') && idFront) {
         setUploadLabel('Uploading ID (front)…');
@@ -123,8 +128,8 @@ export default function MentorRevisionPortal({
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(
-          data.error === 'invalid_resume_url'
-            ? 'CV must be a public Google Drive or Docs share link.'
+          data.error === 'invalid_resume_url' || data.error === 'invalid_document_url'
+            ? 'Upload failed validation. Re-upload your files and try again.'
             : data.error === 'no_open_request'
               ? 'This request was already completed. Refresh the page.'
               : 'Could not send documents. Please try again.',
@@ -183,24 +188,14 @@ export default function MentorRevisionPortal({
 
       <div className="mt-6 space-y-6">
         {need.has('resume') && (
-          <section className="space-y-3">
-            <h3 className="text-[14px] font-semibold">New CV (Google Drive link)</h3>
-            <a
-              href="https://drive.google.com/drive/my-drive"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex text-[13px] font-semibold"
-              style={{ color: 'var(--green-deep)' }}
-            >
-              Open Google Drive →
-            </a>
-            <input
-              className="form-input !rounded-none"
-              placeholder="https://drive.google.com/file/d/…/view?usp=sharing"
-              value={resumeDriveUrl}
-              onChange={(e) => setResumeDriveUrl(e.target.value)}
-            />
-          </section>
+          <RevisionFile
+            label="New CV (PDF / DOC / DOCX)"
+            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            file={resumeFile}
+            onFile={setResumeFile}
+            onError={setError}
+            optimize="resume"
+          />
         )}
 
         {need.has('id_front') && (
@@ -276,12 +271,14 @@ function RevisionFile({
   file,
   onFile,
   onError,
+  optimize = 'id',
 }: {
   label: string;
   accept: string;
   file: File | null;
   onFile: (f: File | null) => void;
   onError: (msg: string) => void;
+  optimize?: 'id' | 'resume';
 }) {
   return (
     <section>
@@ -307,14 +304,20 @@ function RevisionFile({
             e.target.value = '';
             if (!raw) return;
             try {
-              const prepared = await prepareMentorDocForUpload(raw, 'id');
-              onFile(prepared);
+              if (raw.type.startsWith('image/')) {
+                const prepared = await prepareMentorDocForUpload(raw, optimize);
+                onFile(prepared);
+              } else {
+                onFile(raw);
+              }
               onError('');
             } catch (err) {
               onFile(null);
-              onError(err instanceof Error && err.message === 'file_too_large'
-                ? 'File must be 10 MB or smaller.'
-                : 'Could not prepare that image.');
+              onError(
+                err instanceof Error && err.message === 'file_too_large'
+                  ? 'File must be 10 MB or smaller.'
+                  : 'Could not prepare that file.',
+              );
             }
           }}
         />

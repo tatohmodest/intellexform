@@ -1,11 +1,14 @@
-import type { MentorUploadKind } from '@/lib/learn/mentorUploadKinds';
+import type { MediaUploadKind } from '@/lib/learn/mentorUploadKinds';
 import { MAX_MENTOR_DOC_BYTES, prepareMentorDocForUpload } from '@/lib/compressImage';
+import { extFromFilenameOrMime } from '@/lib/cloudinaryFormats';
 
 export type UploadedAsset = {
   url: string;
   bytes: number;
   publicId: string;
   resourceType: string;
+  format: string;
+  originalFilename: string;
 };
 
 function friendlyUploadError(raw: string): string {
@@ -21,7 +24,7 @@ function friendlyUploadError(raw: string): string {
     return 'Upload signature failed. Refresh the page and try again.';
   }
   if (msg.includes('file format') || msg.includes('format')) {
-    return 'That file format was rejected. Use PDF for CV, or JPG/PNG for ID photos.';
+    return 'That file format was rejected. Use PDF, DOC, or DOCX for documents; JPG/PNG for ID photos.';
   }
   if (raw && raw !== 'upload_failed' && raw !== 'network_error' && raw !== 'sign_failed') {
     return raw;
@@ -32,7 +35,7 @@ function friendlyUploadError(raw: string): string {
 
 /** Sign + upload a file directly to Cloudinary (keeps large videos off Next.js). */
 export async function uploadMentorAsset(
-  kind: MentorUploadKind,
+  kind: MediaUploadKind,
   file: Blob,
   filename: string,
   onProgress?: (pct: number) => void,
@@ -44,22 +47,25 @@ export async function uploadMentorAsset(
     throw new Error('file_too_large');
   }
 
-  // Every ID / resume image (any size ≤ 10 MB) is re-encoded smaller before upload.
+  // Shrink ID / photo resumes; leave PDF/DOC/DOCX untouched.
   if (
     typeof File !== 'undefined' &&
     file instanceof File &&
-    (kind === 'id_front' || kind === 'id_back' || kind === 'resume')
+    (kind === 'id_front' || kind === 'id_back' || kind === 'resume' || kind === 'assignment')
   ) {
-    try {
-      const prepared = await prepareMentorDocForUpload(
-        file,
-        kind === 'resume' ? 'resume' : 'id',
-      );
-      uploadBlob = prepared;
-      uploadName = prepared.name || filename;
-    } catch (err) {
-      if (err instanceof Error && err.message === 'file_too_large') throw err;
-      // Fall through with original file.
+    const isImage =
+      file.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|heic)$/i.test(file.name);
+    if (isImage) {
+      try {
+        const prepared = await prepareMentorDocForUpload(
+          file,
+          kind === 'id_front' || kind === 'id_back' ? 'id' : 'resume',
+        );
+        uploadBlob = prepared;
+        uploadName = prepared.name || filename;
+      } catch (err) {
+        if (err instanceof Error && err.message === 'file_too_large') throw err;
+      }
     }
   }
 
@@ -124,10 +130,19 @@ export async function uploadMentorAsset(
     throw new Error('Upload completed without a file URL. Please try again.');
   }
 
+  const format =
+    String(result.format || signed.format || '').replace(/^\./, '') ||
+    extFromFilenameOrMime(uploadName, mimeType);
+
   return {
     url,
     bytes: Number(result.bytes ?? uploadBlob.size),
     publicId: String(result.public_id ?? signed.publicId),
     resourceType: String(result.resource_type ?? signed.resourceType),
+    format,
+    originalFilename: uploadName,
   };
 }
+
+/** Alias for assignment / general media uploads. */
+export const uploadMediaAsset = uploadMentorAsset;

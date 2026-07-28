@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Clock, Loader2, Lock } from 'lucide-react';
+import { ArrowLeft, Clock, Loader2, Lock, Upload } from 'lucide-react';
+import CloudinaryDocViewer from '@/components/dashboard/CloudinaryDocViewer';
 import DriveDocViewer from '@/components/dashboard/DriveDocViewer';
 import type { AssessmentView, SubmissionView } from '@/lib/learn/assessments';
 import { formatCountdown } from '@/lib/learn/countdown';
+import { uploadMediaAsset } from '@/lib/learn/mentorUpload';
 
 function useCountdown(dueAt: string | Date | null | undefined) {
   const [now, setNow] = useState(() => Date.now());
@@ -26,28 +28,44 @@ export default function AssignmentSubmitClient({
   assessment: AssessmentView;
   initial: SubmissionView | null;
 }) {
-  const [driveUrl, setDriveUrl] = useState(initial?.driveUrl || '');
+  const [file, setFile] = useState<File | null>(null);
   const [submission, setSubmission] = useState(initial);
   const [busy, setBusy] = useState(false);
+  const [uploadPct, setUploadPct] = useState(0);
   const [error, setError] = useState('');
-  const [preview, setPreview] = useState(initial?.driveEmbedUrl || '');
   const countdown = useCountdown(assessment.dueAt);
   const locked =
     Boolean(countdown.expired) &&
     !(submission?.status === 'submitted' || submission?.status === 'graded');
+
+  const hasCloudinary = Boolean(submission?.fileUrl);
+  const fileApiBase = `/api/learn/assessments/${assessment.id}/file`;
 
   async function submit() {
     if (locked) {
       setError('The deadline has passed. You can no longer submit.');
       return;
     }
+    if (!file) {
+      setError('Choose a PDF, DOC, or DOCX file to upload.');
+      return;
+    }
     setBusy(true);
     setError('');
+    setUploadPct(0);
     try {
+      const uploaded = await uploadMediaAsset('assignment', file, file.name, setUploadPct);
       const res = await fetch(`/api/learn/assessments/${assessment.id}/submissions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ driveUrl }),
+        body: JSON.stringify({
+          fileUrl: uploaded.url,
+          filePublicId: uploaded.publicId,
+          fileResourceType: uploaded.resourceType,
+          fileFormat: uploaded.format,
+          fileName: uploaded.originalFilename,
+          fileBytes: uploaded.bytes,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -58,11 +76,17 @@ export default function AssignmentSubmitClient({
         );
       }
       setSubmission(data.submission);
-      setPreview(data.submission.driveEmbedUrl || '');
+      setFile(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Submit failed');
+      const msg = e instanceof Error ? e.message : 'Submit failed';
+      setError(
+        msg === 'file_too_large'
+          ? 'File must be 10 MB or smaller.'
+          : msg,
+      );
     } finally {
       setBusy(false);
+      setUploadPct(0);
     }
   }
 
@@ -100,20 +124,11 @@ export default function AssignmentSubmitClient({
       </p>
 
       <div className="mt-6 border p-4" style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}>
-        <p className="font-semibold text-[14px]">How to submit (Google Drive)</p>
+        <p className="font-semibold text-[14px]">How to submit</p>
         <p className="mt-2 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
           {assessment.studentTips ||
-            'Create a Google Doc or upload a PDF to Drive → Share → Anyone with the link (Viewer) → paste the link below. Your instructor opens it inside InTelleX.'}
+            'Upload a PDF (best for in-app preview), DOC, or DOCX — up to 10 MB. Your instructor opens it inside InTelleX.'}
         </p>
-        <a
-          href="https://drive.google.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-3 inline-flex text-[13px] font-semibold"
-          style={{ color: 'var(--green-deep)' }}
-        >
-          Open Google Drive →
-        </a>
       </div>
 
       {(assessment.questions || []).length > 0 && (
@@ -148,44 +163,81 @@ export default function AssignmentSubmitClient({
             <Lock size={16} /> Submissions closed
           </p>
           <p className="mt-2 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-            The deadline elapsed before you submitted a Google Drive link.
+            The deadline elapsed before you submitted your file.
           </p>
         </div>
+      ) : submission?.status === 'submitted' ? (
+        <p className="mt-8 text-[13px]" style={{ color: 'var(--green-deep)' }}>
+          Submitted {submission.submittedAt ? new Date(submission.submittedAt).toLocaleString() : ''}. Waiting for marks.
+        </p>
       ) : (
         <div className="mt-8 space-y-3">
           <label className="font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
-            Google Drive / Docs / PDF link (public viewer)
+            Upload PDF / DOC / DOCX
           </label>
-          <input
-            className="form-input !rounded-none"
-            placeholder="https://docs.google.com/document/d/… or Drive file link"
-            value={driveUrl}
-            onChange={(e) => setDriveUrl(e.target.value)}
-            disabled={Boolean(submission?.status === 'submitted')}
-          />
-          {submission?.status === 'submitted' ? (
-            <p className="text-[13px]" style={{ color: 'var(--green-deep)' }}>
-              Submitted {submission.submittedAt ? new Date(submission.submittedAt).toLocaleString() : ''}. Waiting for marks.
-            </p>
-          ) : (
-            <button
-              type="button"
-              onClick={submit}
-              disabled={busy || !driveUrl.trim()}
-              className="btn btn-primary disabled:opacity-40"
-            >
-              {busy ? <Loader2 className="animate-spin" size={16} /> : null}
-              Submit assignment
-            </button>
+          <label
+            className="flex cursor-pointer flex-col items-center justify-center border border-dashed px-4 py-10 text-center"
+            style={{ borderColor: 'var(--line)' }}
+          >
+            <Upload size={20} style={{ color: 'var(--ink-soft)' }} />
+            <span className="mt-2 text-[13.5px] font-semibold">
+              {file ? file.name : 'Drop file here or browse'}
+            </span>
+            <span className="mt-1 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+              PDF preferred for preview · max 10 MB
+            </span>
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              className="hidden"
+              onChange={(e) => {
+                setFile(e.target.files?.[0] || null);
+                setError('');
+                e.target.value = '';
+              }}
+            />
+          </label>
+          {busy && (
+            <div>
+              <div className="mb-1 flex justify-between text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                <span>Uploading…</span>
+                <span>{uploadPct}%</span>
+              </div>
+              <div className="h-1" style={{ background: 'var(--paper-dim)' }}>
+                <div className="h-full" style={{ width: `${uploadPct}%`, background: 'var(--green-deep)' }} />
+              </div>
+            </div>
           )}
+          <button
+            type="button"
+            onClick={submit}
+            disabled={busy || !file}
+            className="btn btn-primary disabled:opacity-40"
+          >
+            {busy ? <Loader2 className="animate-spin" size={16} /> : null}
+            Submit assignment
+          </button>
           {error && <p className="text-[13px]" style={{ color: '#b91c1c' }}>{error}</p>}
         </div>
       )}
 
-      {preview && (
+      {hasCloudinary && submission && (
         <div className="mt-8">
-          <h2 className="mb-3 font-display text-[20px]">Your document (preview)</h2>
-          <DriveDocViewer embedUrl={preview} title="Your submission" />
+          <h2 className="mb-3 font-display text-[20px]">Your document</h2>
+          <CloudinaryDocViewer
+            title="Your submission"
+            format={submission.fileFormat}
+            fileName={submission.fileName}
+            viewUrl={`${fileApiBase}?disposition=inline`}
+            downloadUrl={`${fileApiBase}?disposition=attachment`}
+          />
+        </div>
+      )}
+
+      {!hasCloudinary && submission?.driveEmbedUrl && (
+        <div className="mt-8">
+          <h2 className="mb-3 font-display text-[20px]">Your document (Drive)</h2>
+          <DriveDocViewer embedUrl={submission.driveEmbedUrl} title="Your submission" />
         </div>
       )}
     </div>

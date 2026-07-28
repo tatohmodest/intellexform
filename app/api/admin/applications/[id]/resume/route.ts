@@ -1,133 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { assertAdmin } from '@/lib/adminAuth';
-import { cloudinary, isCloudinaryConfigured } from '@/lib/cloudinary';
+import { isCloudinaryConfigured } from '@/lib/cloudinary';
+import {
+  contentTypeForFormat,
+  isCloudinaryUrl,
+  resolveCloudinaryDelivery,
+  safeDownloadFilename,
+} from '@/lib/cloudinaryDocs';
 import { getDb } from '@/lib/repo';
 
 export const dynamic = 'force-dynamic';
 
-function isCloudinaryUrl(url: string): boolean {
-  try {
-    const u = new URL(url);
-    return u.protocol === 'https:' && u.hostname.includes('cloudinary.com');
-  } catch {
-    return false;
-  }
-}
-
-function safeFilename(name: string, format: string): string {
-  const base =
-    (name || 'applicant')
-      .toLowerCase()
-      .replace(/[^\w.-]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 60) || 'applicant';
-  const ext = (format || 'pdf').toLowerCase().replace(/[^a-z0-9]/g, '') || 'pdf';
-  return `cv-${base}.${ext === 'jpeg' ? 'jpg' : ext}`;
-}
-
-function parseCloudinaryAsset(url: string): {
-  resourceType: 'raw' | 'image' | 'video';
-  publicId: string;
-  format: string;
-} | null {
-  try {
-    const u = new URL(url);
-    const parts = u.pathname.split('/').filter(Boolean);
-    if (parts.length < 4) return null;
-    const resourceType = parts[1];
-    if (resourceType !== 'raw' && resourceType !== 'image' && resourceType !== 'video') {
-      return null;
-    }
-    const uploadIdx = parts.indexOf('upload');
-    if (uploadIdx < 0) return null;
-
-    const after = parts.slice(uploadIdx + 1);
-    let i = 0;
-    while (i < after.length) {
-      const seg = after[i];
-      if (/^v\d+$/.test(seg)) {
-        i += 1;
-        break;
-      }
-      if (seg.startsWith('s--') || seg.includes(',') || /^(c_|w_|h_|q_|f_|fl_)/.test(seg)) {
-        i += 1;
-        continue;
-      }
-      break;
-    }
-
-    const publicPath = after.slice(i).join('/');
-    if (!publicPath) return null;
-
-    const formatMatch = publicPath.match(/\.([a-z0-9]+)$/i);
-    const format =
-      formatMatch?.[1]?.toLowerCase() || (resourceType === 'raw' ? 'pdf' : '');
-    const publicId = formatMatch
-      ? publicPath.slice(0, -formatMatch[0].length)
-      : publicPath;
-
-    return { resourceType, publicId, format };
-  } catch {
-    return null;
-  }
-}
-
-type CloudResource = {
-  public_id: string;
-  format?: string;
-  resource_type?: string;
-  secure_url?: string;
-  url?: string;
-};
-
-async function lookupResource(
-  publicId: string,
-  preferred?: string,
-): Promise<CloudResource | null> {
-  const types = [preferred, 'raw', 'image', 'auto'].filter(
-    (v, i, a): v is string => Boolean(v) && a.indexOf(v) === i,
-  );
-  const idVariants = [publicId];
-  // Some raw uploads keep the extension inside public_id.
-  if (!/\.[a-z0-9]+$/i.test(publicId)) {
-    for (const ext of ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg', 'webp']) {
-      idVariants.push(`${publicId}.${ext}`);
-    }
-  }
-
-  for (const resourceType of types) {
-    for (const id of idVariants) {
-      try {
-        const resource = (await cloudinary.api.resource(id, {
-          resource_type: resourceType,
-        })) as CloudResource;
-        if (resource?.public_id) return { ...resource, resource_type: resourceType };
-      } catch {
-        /* try next */
-      }
-    }
-  }
-  return null;
-}
-
-function signedDownloadUrl(
-  publicId: string,
-  format: string,
-  resourceType: string,
-): string {
-  return cloudinary.utils.private_download_url(publicId, format || 'pdf', {
-    resource_type: resourceType || 'raw',
-    type: 'upload',
-    attachment: true,
-    expires_at: Math.floor(Date.now() / 1000) + 600,
-  });
-}
-
 /**
  * GET /api/admin/applications/[id]/resume
- * Redirects the admin browser to a short-lived Cloudinary download URL for the
- * original CV (PDF/DOC/image) — avoids proxying bytes and JSON error downloads.
+ * ?disposition=attachment|inline
+ * Streams or redirects to a short-lived Cloudinary URL for the CV.
  */
 export async function GET(
   req: NextRequest,
@@ -146,6 +34,10 @@ export async function GET(
   } catch {
     return NextResponse.json({ error: 'invalid_id' }, { status: 400 });
   }
+
+  const disposition =
+    req.nextUrl.searchParams.get('disposition') === 'inline' ? 'inline' : 'attachment';
+  const useProxy = req.nextUrl.searchParams.get('proxy') === '1' || disposition === 'inline';
 
   try {
     const db = await getDb();
@@ -167,7 +59,7 @@ export async function GET(
       return NextResponse.json({ error: 'resume_missing' }, { status: 404 });
     }
 
-    // Google Drive / Docs public share — redirect admins to the file.
+    // Legacy Drive links — open externally.
     if (/drive\.google\.com|docs\.google\.com/i.test(resumeUrl)) {
       return NextResponse.redirect(resumeUrl, 302);
     }
@@ -176,52 +68,47 @@ export async function GET(
       return NextResponse.json({ error: 'resume_missing' }, { status: 404 });
     }
 
-    const parsed = parseCloudinaryAsset(resumeUrl);
-    const storedPublicId =
-      typeof app?.resumePublicId === 'string' && app.resumePublicId
-        ? app.resumePublicId
-        : parsed?.publicId;
-    const storedType =
-      typeof app?.resumeResourceType === 'string' && app.resumeResourceType
-        ? app.resumeResourceType
-        : parsed?.resourceType;
-    const storedFormat =
-      typeof app?.resumeFormat === 'string' && app.resumeFormat
-        ? app.resumeFormat
-        : parsed?.format || 'pdf';
+    const resolved = await resolveCloudinaryDelivery({
+      url: resumeUrl,
+      publicId: typeof app?.resumePublicId === 'string' ? app.resumePublicId : null,
+      resourceType:
+        typeof app?.resumeResourceType === 'string' ? app.resumeResourceType : null,
+      format: typeof app?.resumeFormat === 'string' ? app.resumeFormat : null,
+      attachment: disposition === 'attachment',
+    });
 
-    if (!storedPublicId) {
-      return NextResponse.json({ error: 'resume_missing' }, { status: 404 });
+    if (!resolved.ok) {
+      return NextResponse.json({ error: resolved.error }, { status: 404 });
     }
 
-    const resource = await lookupResource(storedPublicId, storedType);
-    const publicId = resource?.public_id || storedPublicId;
-    const format = (resource?.format || storedFormat || 'pdf').replace(/^\./, '');
-    const resourceType = resource?.resource_type || storedType || 'raw';
-
-    const downloadUrl = signedDownloadUrl(publicId, format, resourceType);
-
-    // Prefer a browser redirect so Cloudinary streams the real file as an attachment.
-    // ?proxy=1 keeps the older byte-stream path for debugging.
-    if (req.nextUrl.searchParams.get('proxy') !== '1') {
-      return NextResponse.redirect(downloadUrl, 302);
+    if (!useProxy) {
+      return NextResponse.redirect(resolved.deliveryUrl, 302);
     }
 
-    const upstream = await fetch(downloadUrl, { cache: 'no-store', redirect: 'follow' });
+    const upstream = await fetch(resolved.deliveryUrl, {
+      cache: 'no-store',
+      redirect: 'follow',
+    });
     if (!upstream.ok) {
-      // Last resort: original delivery URL (may open inline, but better than JSON).
+      // Fallback: original delivery URL (public upload assets).
       return NextResponse.redirect(resumeUrl, 302);
     }
+
+    const contentType = upstream.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      return NextResponse.json(
+        { error: 'cloudinary_json_error', hint: 'Check API credentials and asset public_id/format.' },
+        { status: 502 },
+      );
+    }
+
     const bytes = await upstream.arrayBuffer();
-    const filename = safeFilename(String(app?.name ?? 'applicant'), format);
+    const filename = safeDownloadFilename(String(app?.name ?? 'applicant-cv'), resolved.format);
     return new NextResponse(bytes, {
       status: 200,
       headers: {
-        'Content-Type':
-          format === 'pdf'
-            ? 'application/pdf'
-            : upstream.headers.get('content-type') || 'application/octet-stream',
-        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Type': contentTypeForFormat(resolved.format),
+        'Content-Disposition': `${disposition}; filename="${filename}"`,
         'Content-Length': String(bytes.byteLength),
         'Cache-Control': 'private, no-store',
       },

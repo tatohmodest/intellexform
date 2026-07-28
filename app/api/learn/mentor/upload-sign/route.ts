@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/getUser';
-import { isCloudinaryConfigured, signMentorUpload } from '@/lib/cloudinary';
-import type { MentorUploadKind } from '@/lib/learn/mentorUploadKinds';
+import { isCloudinaryConfigured, signMediaUpload } from '@/lib/cloudinary';
+import { MEDIA_UPLOAD_KINDS, type MediaUploadKind } from '@/lib/learn/mentorUploadKinds';
 
 export const dynamic = 'force-dynamic';
 
-const KINDS: MentorUploadKind[] = ['resume', 'id_front', 'id_back', 'intro_video'];
-
 /**
  * POST /api/learn/mentor/upload-sign
- * Returns a short-lived Cloudinary signature for direct browser upload.
+ * Returns a short-lived Cloudinary signature for direct browser upload
+ * (mentor docs + assignment files).
  */
 export async function POST(req: NextRequest) {
   const user = getSessionUser();
@@ -20,13 +19,13 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const kind = String(body.kind ?? '') as MentorUploadKind;
-  if (!KINDS.includes(kind)) {
+  const kind = String(body.kind ?? '') as MediaUploadKind;
+  if (!MEDIA_UPLOAD_KINDS.includes(kind)) {
     return NextResponse.json({ error: 'invalid_kind' }, { status: 400 });
   }
 
   try {
-    const signed = signMentorUpload({
+    const signed = signMediaUpload({
       kind,
       lbId: user.uid,
       mimeType: typeof body.mimeType === 'string' ? body.mimeType : undefined,
