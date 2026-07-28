@@ -44,6 +44,9 @@ export async function POST(req: NextRequest) {
     : [];
 
   const resumeUrl = String(body.resumeUrl ?? '').trim();
+  const resumePublicId = String(body.resumePublicId ?? '').trim() || undefined;
+  const resumeResourceType = String(body.resumeResourceType ?? '').trim() || undefined;
+  const resumeFormat = String(body.resumeFormat ?? '').trim() || undefined;
   const idFrontUrl = String(body.idFrontUrl ?? '').trim();
   const idBackUrl = String(body.idBackUrl ?? '').trim();
   const introVideoUrl = String(body.introVideoUrl ?? '').trim();
@@ -76,6 +79,9 @@ export async function POST(req: NextRequest) {
       githubUrl: String(body.githubUrl ?? '').trim() || undefined,
       portfolioUrl: String(body.portfolioUrl ?? '').trim() || undefined,
       resumeUrl,
+      resumePublicId,
+      resumeResourceType,
+      resumeFormat,
       idFrontUrl,
       idBackUrl,
       introVideoUrl,

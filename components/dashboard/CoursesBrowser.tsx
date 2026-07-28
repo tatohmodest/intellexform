@@ -1,116 +1,87 @@
 'use client';
 
+import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
-import { BookOpen, Check, Clock, GraduationCap } from 'lucide-react';
-import EnrollButton from '@/components/dashboard/EnrollButton';
+import {
+  BookOpen,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  GraduationCap,
+} from 'lucide-react';
 import TrackLogo from '@/components/TrackLogo';
 import { getTrackLogo } from '@/lib/techLogos';
+import type { MyCourseCard, MyCourseSection } from '@/lib/learn/myCourses';
 
-export type CourseListItem = {
-  slug: string;
-  shortTitle: string;
-  title: string;
-  tagline: string;
-  tag: string;
-  color: string;
-  totalLessons: number;
-  totalMinutes: number;
-  enrolled: boolean;
-  doneCount: number;
-  pct: number;
-  continueHref: string;
-};
+export type { MyCourseCard, MyCourseSection };
 
 export default function CoursesBrowser({
-  tracks,
+  sections,
+  total,
+  inProgress,
 }: {
-  tracks: CourseListItem[];
+  sections: MyCourseSection[];
+  total: number;
+  inProgress: number;
 }) {
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<'all' | 'mine' | 'browse'>('all');
 
-  const filtered = useMemo(() => {
+  const filteredSections = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return tracks.filter((t) => {
-      if (filter === 'mine' && !t.enrolled) return false;
-      if (filter === 'browse' && t.enrolled) return false;
-      if (!q) return true;
-      return `${t.shortTitle} ${t.title} ${t.tagline} ${t.tag}`.toLowerCase().includes(q);
-    });
-  }, [tracks, query, filter]);
-
-  const mineCount = tracks.filter((t) => t.enrolled).length;
+    if (!q) return sections;
+    return sections
+      .map((s) => ({
+        ...s,
+        courses: s.courses.filter((c) =>
+          `${c.title} ${c.subtitle} ${c.tagline} ${c.tag}`.toLowerCase().includes(q),
+        ),
+      }))
+      .filter((s) => s.courses.length > 0);
+  }, [sections, query]);
 
   return (
     <div>
       <div
-        className="mb-10 flex flex-col gap-6 border-b pb-8 sm:flex-row sm:items-end sm:justify-between"
+        className="mb-8 flex flex-col gap-6 border-b pb-8 sm:flex-row sm:items-end sm:justify-between"
         style={{ borderColor: 'var(--line)' }}
       >
         <div className="max-w-[520px]">
           <p className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: 'var(--ink-soft)' }}>
-            Self-paced tracks
+            One catalogue · Supabase
           </p>
           <p className="mt-2 text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-            Real curricula with progress, XP, and certificates. Enroll once — pick up any lesson when
-            you are ready.
+            Free tracks, tutoring, and self-paced programmes — synced into one place so you can
+            browse by category.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
-          <span>{mineCount} in progress</span>
+          <span>{inProgress} in progress</span>
           <span style={{ color: 'var(--line)' }}>·</span>
-          <span>{tracks.length} tracks</span>
+          <span>{total} courses</span>
         </div>
       </div>
 
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <label className="block min-w-0 flex-1">
-          <span className="sr-only">Search tracks</span>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by track, tag, or skill…"
-            className="form-input w-full max-w-md !rounded-none border-0 border-b !px-0 !py-3 text-[16px] !shadow-none"
-            style={{ borderColor: 'var(--line)', background: 'transparent' }}
-          />
-        </label>
-        <div className="flex flex-wrap gap-2">
-          {(
-            [
-              ['all', 'All'],
-              ['mine', 'In progress'],
-              ['browse', 'Not enrolled'],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setFilter(id)}
-              className="px-3 py-1.5 text-[12.5px] font-semibold"
-              style={
-                filter === id
-                  ? { background: 'var(--ink)', color: '#fff' }
-                  : { background: 'var(--paper-dim)', color: 'var(--ink-soft)' }
-              }
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <label className="mb-10 block max-w-md">
+        <span className="sr-only">Search courses</span>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by course, tag, or skill…"
+          className="form-input w-full !rounded-none border-0 border-b !px-0 !py-3 text-[16px] !shadow-none"
+          style={{ borderColor: 'var(--line)', background: 'transparent' }}
+        />
+      </label>
 
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        {filtered.map((t) => (
-          <CourseTrackCard key={t.slug} track={t} />
-        ))}
-      </div>
+      {filteredSections.map((section) => (
+        <CourseSectionRow key={section.id} section={section} />
+      ))}
 
-      {filtered.length === 0 && (
+      {filteredSections.length === 0 && (
         <div className="border-t py-16 text-center" style={{ borderColor: 'var(--line)' }}>
-          <p className="font-display text-[22px]">No tracks match</p>
+          <p className="font-display text-[22px]">No courses match</p>
           <p className="mt-2 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-            Try another search, or clear the filter.
+            Try another search.
           </p>
         </div>
       )}
@@ -118,44 +89,116 @@ export default function CoursesBrowser({
   );
 }
 
-function CourseTrackCard({ track: t }: { track: CourseListItem }) {
-  const hours = Math.max(1, Math.round(t.totalMinutes / 60));
-  const logoSrc = getTrackLogo(t.slug);
+function CourseSectionRow({ section }: { section: MyCourseSection }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  const scroll = (dir: number) => {
+    const el = ref.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.max(el.clientWidth * 0.85, 260), behavior: 'smooth' });
+  };
+
+  return (
+    <section className="mb-10 sm:mb-12">
+      <div className="mb-3.5 flex items-end justify-between gap-3 sm:mb-4">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            {section.live && (
+              <span
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-wide text-white"
+                style={{ background: 'var(--green)' }}
+              >
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> Live
+              </span>
+            )}
+            <h2 className="font-display text-[19px] leading-tight sm:text-[24px]">{section.title}</h2>
+          </div>
+          {section.subtitle && (
+            <p className="mt-0.5 text-[13px] sm:text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
+              {section.subtitle}
+            </p>
+          )}
+        </div>
+        <div className="hidden shrink-0 gap-2 sm:flex">
+          <button
+            type="button"
+            onClick={() => scroll(-1)}
+            aria-label="Scroll left"
+            className="flex h-9 w-9 items-center justify-center border transition-colors hover:bg-[var(--paper-dim)]"
+            style={{ borderColor: 'var(--line)' }}
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => scroll(1)}
+            aria-label="Scroll right"
+            className="flex h-9 w-9 items-center justify-center border transition-colors hover:bg-[var(--paper-dim)]"
+            style={{ borderColor: 'var(--line)' }}
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      </div>
+
+      <div
+        ref={ref}
+        className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:gap-4 sm:px-0"
+      >
+        {section.courses.map((c) => (
+          <div
+            key={c.id}
+            className="w-[min(78vw,280px)] flex-shrink-0 snap-start sm:w-[280px]"
+          >
+            <CourseCard course={c} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CourseCard({ course: c }: { course: MyCourseCard }) {
+  const hours = Math.max(1, Math.round((c.totalMinutes || 60) / 60));
+  const logoSrc = c.source === 'tutorial' ? getTrackLogo(c.slug) : c.thumbnailUrl;
 
   return (
     <article
       className="group flex h-full min-w-0 flex-col overflow-hidden border bg-paper transition-shadow hover:shadow-card"
       style={{ borderColor: 'var(--line)' }}
     >
-      {/* Cover: color wash + big low-opacity logo watermark on the left */}
-      <Link href={`/dashboard/courses/${t.slug}`} className="relative block aspect-[16/10] overflow-hidden">
-        <div
-          className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.03]"
-          style={{
-            background: `linear-gradient(145deg, ${t.color} 0%, ${t.color}bb 42%, #0C1116 100%)`,
-          }}
-        />
-        <div
-          className="absolute inset-0 opacity-25"
-          style={{
-            background:
-              'radial-gradient(ellipse 70% 60% at 85% 15%, rgba(255,255,255,0.4), transparent 55%)',
-          }}
-        />
-        {logoSrc ? (
+      <Link href={c.href} className="relative block aspect-[16/10] overflow-hidden">
+        {c.source === 'catalogue' && c.thumbnailUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={logoSrc}
+            src={c.thumbnailUrl}
             alt=""
-            aria-hidden
-            className="pointer-events-none absolute -left-6 bottom-[-18%] h-[125%] w-auto max-w-[78%] object-contain opacity-[0.16] brightness-0 invert sm:-left-4 sm:opacity-[0.2]"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />
-        ) : null}
+        ) : (
+          <>
+            <div
+              className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.03]"
+              style={{
+                background: `linear-gradient(145deg, ${c.color} 0%, ${c.color}bb 42%, #0C1116 100%)`,
+              }}
+            />
+            {logoSrc ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={logoSrc}
+                alt=""
+                aria-hidden
+                className="pointer-events-none absolute -left-6 bottom-[-18%] h-[125%] w-auto max-w-[78%] object-contain opacity-[0.16] brightness-0 invert"
+              />
+            ) : null}
+          </>
+        )}
         <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
           <span className="bg-white/95 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--ink)]">
-            {t.tag}
+            {c.tag}
           </span>
-          {t.enrolled && (
+          {c.enrolled && (
             <span
               className="inline-flex items-center gap-1 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-white"
               style={{ background: 'var(--green-deep)' }}
@@ -163,77 +206,67 @@ function CourseTrackCard({ track: t }: { track: CourseListItem }) {
               <Check size={10} /> Enrolled
             </span>
           )}
+          {c.pricingType === 'FREE' ? (
+            <span className="bg-black/55 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-white">
+              Free
+            </span>
+          ) : c.priceXaf > 0 ? (
+            <span className="bg-black/55 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-white">
+              {c.priceXaf.toLocaleString()} XAF
+            </span>
+          ) : null}
         </div>
-        {t.enrolled && t.pct > 0 && (
+        {c.enrolled && c.pct > 0 && (
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/25">
-            <div className="h-full bg-white" style={{ width: `${Math.min(100, Math.max(t.pct, 2))}%` }} />
+            <div className="h-full bg-white" style={{ width: `${Math.min(100, Math.max(c.pct, 2))}%` }} />
           </div>
         )}
       </Link>
 
-      {/* Body: tiny circular logo beside the course name */}
-      <div className="flex min-w-0 flex-1 flex-col gap-2 p-4 sm:p-5">
-        <Link href={`/dashboard/courses/${t.slug}`} className="min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col gap-2 p-4">
+        <Link href={c.href} className="min-w-0">
           <div className="flex items-start gap-2.5">
-            <span
-              className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border sm:h-10 sm:w-10"
-              style={{ borderColor: 'var(--line)', background: '#fff' }}
-            >
-              <TrackLogo slug={t.slug} color={t.color} size={26} className="!rounded-full !bg-transparent" />
-            </span>
+            {c.source === 'tutorial' ? (
+              <span
+                className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border"
+                style={{ borderColor: 'var(--line)', background: '#fff' }}
+              >
+                <TrackLogo slug={c.slug} color={c.color} size={24} className="!rounded-full !bg-transparent" />
+              </span>
+            ) : null}
             <div className="min-w-0 flex-1">
-              <h3 className="font-display text-[17px] font-semibold leading-snug line-clamp-2 transition-opacity group-hover:opacity-80 sm:text-[19px]">
-                {t.title}
+              <h3 className="font-display text-[17px] font-semibold leading-snug line-clamp-2">
+                {c.title}
               </h3>
-              <p className="mt-1 line-clamp-2 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                {t.tagline}
+              <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                {c.tagline}
               </p>
             </div>
           </div>
         </Link>
 
-        <div
-          className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[12px]"
-          style={{ color: 'var(--ink-soft)' }}
-        >
-          <span className="inline-flex items-center gap-1">
-            <BookOpen size={12} /> {t.totalLessons} lessons
-          </span>
+        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+          {c.totalLessons > 0 && (
+            <span className="inline-flex items-center gap-1">
+              <BookOpen size={12} /> {c.totalLessons} lessons
+            </span>
+          )}
           <span className="inline-flex items-center gap-1">
             <Clock size={12} /> ~{hours}h
           </span>
           <span className="inline-flex items-center gap-1">
-            <GraduationCap size={12} /> Certificate
+            <GraduationCap size={12} /> {c.source === 'tutorial' ? 'Track' : 'Catalogue'}
           </span>
         </div>
 
-        {t.enrolled && (
-          <div className="mt-1 flex items-center justify-between gap-3 text-[12px]">
-            <span style={{ color: 'var(--ink-soft)' }}>
-              {t.doneCount}/{t.totalLessons} complete
-            </span>
-            <span className="font-semibold" style={{ color: 'var(--green-deep)' }}>
-              {t.pct}%
-            </span>
-          </div>
-        )}
-
-        <div className="mt-auto flex flex-col gap-2 pt-3 sm:flex-row">
+        <div className="mt-auto pt-3">
           <Link
-            href={`/dashboard/courses/${t.slug}`}
-            className="inline-flex flex-1 items-center justify-center border px-3 py-2.5 text-[13px] font-semibold"
+            href={c.enrolled ? c.continueHref : c.href}
+            className="inline-flex w-full items-center justify-center border px-3 py-2.5 text-[13px] font-semibold"
             style={{ borderColor: 'var(--ink)', color: 'var(--ink)' }}
           >
-            View course
+            {c.enrolled ? 'Continue' : 'View course'}
           </Link>
-          <div className="flex-1">
-            <EnrollButton
-              courseSlug={t.slug}
-              enrolled={t.enrolled}
-              continueHref={t.continueHref}
-              editorial
-            />
-          </div>
         </div>
       </div>
     </article>
