@@ -26,6 +26,7 @@ import {
   Sparkles,
   ClipboardList,
   Video,
+  School,
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 import MobileBottomNav from '@/components/dashboard/MobileBottomNav';
@@ -50,6 +51,7 @@ export interface ShellUser {
 const NAV = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, exact: true },
   { href: '/dashboard/courses', label: 'My Courses', icon: BookOpen },
+  { href: '/dashboard/classroom', label: 'My Classroom', icon: School },
   { href: '/dashboard/mentorship', label: 'Mentorship', icon: Users },
   { href: '/dashboard/library', label: 'Library', icon: BookMarked },
   { href: '/dashboard/videos', label: 'Video Hall', icon: Youtube },
@@ -234,6 +236,22 @@ function NavLinks({
                 strokeWidth={pathname.startsWith('/dashboard/students') ? 2.4 : 2}
               />
               My Students
+            </Link>
+            <Link
+              href="/dashboard/classroom"
+              onClick={onNavigate}
+              className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
+              style={
+                pathname.startsWith('/dashboard/classroom')
+                  ? { background: activeBg, color: activeColor }
+                  : { color: 'var(--ink-soft)' }
+              }
+            >
+              <School
+                size={17}
+                strokeWidth={pathname.startsWith('/dashboard/classroom') ? 2.4 : 2}
+              />
+              My Classroom
             </Link>
             <Link
               href="/dashboard/teach/assessments"
