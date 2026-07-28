@@ -1,15 +1,21 @@
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import { getAllCourses } from '@/lib/repo';
+import { buildShareMetadata } from '@/lib/seo/share';
 import TopNav from '@/components/landing/TopNav';
 import Footer from '@/components/landing/Footer';
 import CoursesBrowser from '@/components/CoursesBrowser';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
-  title: 'Courses - Intellex',
-  description: 'Browse every course on Intellex: web development, data science, cybersecurity, design and more.',
-};
+export const metadata: Metadata = buildShareMetadata({
+  title: 'Courses - InTelleX',
+  description:
+    'Browse every course on InTelleX: web development, data science, cybersecurity, design and more.',
+  path: '/courses',
+  image: '/way_selfpaced.webp',
+  imageAlt: 'InTelleX courses',
+});
 
 export default async function CoursesPage() {
   const courses = await getAllCourses();
