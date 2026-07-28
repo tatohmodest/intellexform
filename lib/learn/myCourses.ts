@@ -7,7 +7,11 @@ import { prisma } from '@/lib/db/prisma';
 import { getAllCourses } from '@/lib/repo';
 import { getCatalog } from '@/lib/learn/catalog';
 import { getEnrollments, getProgress } from '@/lib/learn/repo';
-import { listPublicTeacherCourses } from '@/lib/learn/ecosystem';
+import {
+  listPublicTeacherCourses,
+  listStudentCourseEnrollments,
+  getTeacherCourse,
+} from '@/lib/learn/ecosystem';
 import { courseDurationHours, type CourseDeliveryMode } from '@/lib/learn/courseTypes';
 
 const INTELLEX_SLUG = 'intellex';
@@ -248,7 +252,7 @@ export async function getMyCourseSections(userId: string): Promise<{
     select: { id: true },
   });
 
-  const [courses, enrollments, progress, instructorCourses] = await Promise.all([
+  const [courses, enrollments, progress, instructorCourses, myEnrollments] = await Promise.all([
     institution
       ? prisma.course.findMany({
           where: { institutionId: institution.id, status: CourseStatus.PUBLISHED },
@@ -259,6 +263,7 @@ export async function getMyCourseSections(userId: string): Promise<{
     getEnrollments(userId),
     getProgress(userId),
     listPublicTeacherCourses(24),
+    listStudentCourseEnrollments(userId),
   ]);
 
   const enrolledSlugs = new Set(enrollments.map((e) => e.courseSlug));
@@ -320,7 +325,73 @@ export async function getMyCourseSections(userId: string): Promise<{
   });
 
   // Courses published by InTelleX instructors (Course Studio).
-  const instructorCards: MyCourseCard[] = instructorCourses.map((c) => {
+  const enrolledTeacherIds = new Set(myEnrollments.map((e) => e.courseId));
+
+  const enrolledTeacherCards: MyCourseCard[] = (
+    await Promise.all(
+      myEnrollments.map(async (e) => {
+        const c = await getTeacherCourse(e.courseId);
+        if (!c) {
+          return {
+            id: e.courseId,
+            slug: e.courseId,
+            title: e.courseTitle,
+            subtitle: '',
+            tagline: e.source === 'instructor' ? 'Added by your instructor' : 'Enrolled',
+            tag: 'Enrolled',
+            color: '#00b369',
+            thumbnailUrl: null,
+            totalLessons: 0,
+            totalMinutes: 0,
+            priceXaf: e.priceXAF,
+            pricingType: e.priceXAF > 0 ? 'PAID' : 'FREE',
+            enrolled: true,
+            doneCount: 0,
+            pct: 5,
+            href: `/dashboard/courses/instructor/${e.courseId}`,
+            continueHref: `/dashboard/courses/instructor/${e.courseId}`,
+            source: 'instructor' as const,
+            kind: 'instructor' as const,
+          };
+        }
+        const hours = courseDurationHours(c);
+        return {
+          id: c.id,
+          slug: c.id,
+          title: c.title,
+          subtitle: c.subtitle || '',
+          tagline:
+            e.source === 'instructor'
+              ? 'Added by your instructor'
+              : e.priceXAF > 0
+                ? 'Purchased'
+                : 'Enrolled',
+          tag: c.category || 'Enrolled',
+          color: c.accent || '#00b369',
+          thumbnailUrl: c.coverUrl ?? null,
+          totalLessons: c.lessons?.length || 0,
+          totalMinutes: Math.round(hours * 60),
+          priceXaf: c.priceXAF ?? 0,
+          pricingType: (c.priceXAF ?? 0) > 0 ? 'PAID' : 'FREE',
+          enrolled: true,
+          doneCount: 0,
+          pct: 5,
+          href: `/dashboard/courses/instructor/${c.id}`,
+          continueHref: `/dashboard/courses/instructor/${c.id}`,
+          source: 'instructor' as const,
+          kind: 'instructor' as const,
+          instructorName: c.instructorName || c.authorName,
+          deliveryMode: c.deliveryMode ?? 'self_paced',
+          certificate: Boolean(c.certificate),
+          level: c.level && c.level !== 'all' ? c.level : null,
+        };
+      }),
+    )
+  );
+
+  const instructorCards: MyCourseCard[] = instructorCourses
+    .filter((c) => !enrolledTeacherIds.has(c.id))
+    .map((c) => {
     const hours = courseDurationHours(c);
     return {
       id: c.id,
@@ -349,7 +420,10 @@ export async function getMyCourseSections(userId: string): Promise<{
     };
   });
 
-  const inProgress = cards.filter((c) => c.enrolled);
+  const inProgress = [
+    ...cards.filter((c) => c.enrolled),
+    ...enrolledTeacherCards,
+  ];
   const free = cards.filter((c) => c.kind === 'free' && !c.enrolled);
   const tutoring = cards.filter((c) => c.kind === 'tutoring');
   const selfPaced = cards.filter((c) => c.kind === 'self-paced' && !c.enrolled);
@@ -361,7 +435,7 @@ export async function getMyCourseSections(userId: string): Promise<{
     {
       id: 'in-progress',
       title: 'Continue learning',
-      subtitle: 'Pick up where you left off',
+      subtitle: 'Courses you are enrolled in — including ones your instructor added you to',
       courses: inProgress,
     },
     {
@@ -399,7 +473,7 @@ export async function getMyCourseSections(userId: string): Promise<{
 
   return {
     sections,
-    total: cards.length + instructorCards.length,
+    total: cards.length + instructorCards.length + enrolledTeacherCards.length,
     inProgress: inProgress.length,
   };
 }

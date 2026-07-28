@@ -11,6 +11,7 @@ import {
 import { JoinCampusButton } from '@/components/dashboard/CampusActions';
 import CampusProfileComplete from '@/components/dashboard/CampusProfileComplete';
 import CampusCapabilityView from '@/components/dashboard/CampusCapabilityView';
+import CampusInstructorSalesToggle from '@/components/dashboard/CampusInstructorSalesToggle';
 import {
   getModuleMeta,
   resolveCampusModules,
@@ -196,6 +197,14 @@ export default async function CampusPage({
               {new Date(inst.createdAt).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
             </div>
           </div>
+
+          {membership === 'owner' && (
+            <CampusInstructorSalesToggle
+              slug={inst.slug}
+              initial={Boolean(inst.allowInstructorSales)}
+              accent={accent}
+            />
+          )}
 
           <div className="overflow-hidden border-t pt-5" style={{ borderColor: 'var(--line)' }}>
             <h3 className="mb-2 font-display text-[18px]">Capabilities</h3>

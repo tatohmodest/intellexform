@@ -13,9 +13,10 @@ import {
   Video,
 } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
-import { findMentor, getTeacherCourse } from '@/lib/learn/ecosystem';
+import { findMentor, getTeacherCourse, isEnrolledInCourse } from '@/lib/learn/ecosystem';
 import { courseDurationHours, deliveryModeLabel } from '@/lib/learn/courseTypes';
 import { isDirectVideo, toEmbedUrl } from '@/lib/learn/videoEmbed';
+import EnrollTeacherCourseButton from '@/components/dashboard/EnrollTeacherCourseButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,9 +41,10 @@ export default async function InstructorCoursePage({
   const accent = course.accent || '#00b369';
   const isPaid = (course.priceXAF ?? 0) > 0;
   const isLive = course.deliveryMode === 'live' || course.deliveryMode === 'hybrid';
+  const enrolled = isTeacher || (await isEnrolledInCourse(course.id, session.uid));
 
-  // Non-teachers see preview lessons until enrolment/payment exists for this course.
-  const visibleLessons = isTeacher
+  // Non-teachers see preview lessons until enrolled (purchase or instructor add).
+  const visibleLessons = enrolled
     ? course.lessons || []
     : (course.lessons || []).filter((l) => l.preview || !isPaid);
   const lockedCount = (course.lessons?.length || 0) - visibleLessons.length;
@@ -162,13 +164,29 @@ export default async function InstructorCoursePage({
                   ? 'Available to members of the owning institution.'
                   : 'Open enrolment on InTelleX.'}
             </p>
-            {mentor && (
+            {isTeacher ? (
               <Link
-                href={`/dashboard/mentorship/${mentor.id}`}
+                href="/dashboard/teach/courses"
                 className="mt-4 inline-flex w-full items-center justify-center px-4 py-2.5 text-[13.5px] font-semibold text-white"
                 style={{ background: accent }}
               >
-                {isPaid ? 'Contact instructor to enrol' : 'Start learning'}
+                Edit in Course Studio
+              </Link>
+            ) : (
+              <EnrollTeacherCourseButton
+                courseId={course.id}
+                priceXAF={course.priceXAF ?? 0}
+                accent={accent}
+                audience={course.audience}
+              />
+            )}
+            {mentor && !isTeacher && (
+              <Link
+                href={`/dashboard/mentorship/${mentor.id}`}
+                className="mt-2 inline-flex w-full items-center justify-center px-4 py-2 text-[13px] font-semibold"
+                style={{ color: accent }}
+              >
+                View instructor profile →
               </Link>
             )}
           </div>

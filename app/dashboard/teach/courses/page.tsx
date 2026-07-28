@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
-import { getMentorProfile, getMembership } from '@/lib/learn/ecosystem';
+import { getMentorProfile, getMembership, getInstitution } from '@/lib/learn/ecosystem';
 import { getLearner } from '@/lib/learn/repo';
 import CourseStudio from '@/components/dashboard/CourseStudio';
 
@@ -17,10 +17,11 @@ export default async function TeachingCourseStudioPage({
   if (!session) redirect('/login?next=/dashboard/teach/courses');
 
   const campus = searchParams?.campus || null;
-  const [profile, learner, membership] = await Promise.all([
+  const [profile, learner, membership, institution] = await Promise.all([
     getMentorProfile(session.uid),
     getLearner(session.uid),
     campus ? getMembership(campus, session.uid) : Promise.resolve(null),
+    campus ? getInstitution(campus) : Promise.resolve(null),
   ]);
 
   const affiliation = campus
@@ -42,7 +43,9 @@ export default async function TeachingCourseStudioPage({
   }
 
   const campusName =
-    affiliation?.institutionName || (campus ? campus.replace(/-/g, ' ') : undefined);
+    institution?.name ||
+    affiliation?.institutionName ||
+    (campus ? campus.replace(/-/g, ' ') : undefined);
 
   return (
     <div className="mx-auto max-w-[1100px]">
@@ -56,8 +59,9 @@ export default async function TeachingCourseStudioPage({
       <CourseStudio
         institutionSlug={campus}
         campusName={campusName}
-        accent={campus ? '#1f5fa8' : '#00b369'}
+        accent={campus ? institution?.color || '#1f5fa8' : '#00b369'}
         canAllocateInstructor={membership === 'owner'}
+        allowInstructorSales={Boolean(institution?.allowInstructorSales)}
       />
     </div>
   );

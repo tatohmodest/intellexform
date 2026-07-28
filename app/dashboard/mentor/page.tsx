@@ -13,6 +13,7 @@ import {
 import { getSessionUser } from '@/lib/auth/getUser';
 import {
   getBookEarnings,
+  getInstructorIncome,
   getMentorBookings,
   getMentorProfile,
   getPendingMentorApplication,
@@ -43,10 +44,11 @@ export default async function MentorStudioPage() {
     return <MentorApply />;
   }
 
-  const [bookings, books, bookEarnings] = await Promise.all([
+  const [bookings, books, bookEarnings, income] = await Promise.all([
     getMentorBookings(session.uid),
     listBooksByAuthor(session.uid),
     getBookEarnings(session.uid),
+    getInstructorIncome(session.uid).catch(() => null),
   ]);
 
   const now = Date.now();
@@ -55,14 +57,15 @@ export default async function MentorStudioPage() {
   );
   const past = bookings.filter((b) => b.status !== 'cancelled' && new Date(b.scheduledAt).getTime() <= now);
   const students = new Set(bookings.map((b) => b.userId)).size;
-  const sessionRevenue = bookings
-    .filter((b) => b.status !== 'cancelled')
-    .reduce((sum, b) => sum + (b.priceXAF ?? 0), 0);
+  const sessionRevenue = income?.sessions.instructorXAF
+    ?? bookings
+      .filter((b) => b.status !== 'cancelled')
+      .reduce((sum, b) => sum + ((b as { instructorXAF?: number }).instructorXAF ?? 0), 0);
 
   const stats = [
     { icon: CalendarClock, label: 'Upcoming sessions', value: String(upcoming.length), tint: 'rgba(0,179,105,0.1)', color: 'var(--green-deep)' },
     { icon: Users, label: 'Students mentored', value: String(students), tint: 'rgba(74,144,226,0.12)', color: 'var(--blue-ink)' },
-    { icon: Wallet, label: 'Session revenue', value: `${sessionRevenue.toLocaleString()} XAF`, tint: 'rgba(124,58,237,0.1)', color: '#6d28d9' },
+    { icon: Wallet, label: 'Your session share', value: `${sessionRevenue.toLocaleString()} XAF`, tint: 'rgba(124,58,237,0.1)', color: '#6d28d9' },
     { icon: BookMarked, label: 'Book earnings', value: `${bookEarnings.toLocaleString()} XAF`, tint: 'rgba(255,122,0,0.1)', color: '#c2570a' },
   ];
 
@@ -90,6 +93,12 @@ export default async function MentorStudioPage() {
           )}
         </div>
         <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:gap-2.5">
+          <Link
+            href="/dashboard/mentor/income"
+            className="btn btn-ghost !py-2.5 w-full whitespace-nowrap text-[13.5px] sm:w-auto"
+          >
+            <Wallet size={15} /> Income
+          </Link>
           <Link
             href="/dashboard/mentor/profile"
             className="btn btn-ghost !py-2.5 w-full whitespace-nowrap text-[13.5px] sm:w-auto"

@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   CalendarClock,
   Loader2,
+  Lock,
   Star,
   Video,
   X,
@@ -66,14 +67,37 @@ export default function MentorDirectory({
     setBusy(true);
     setError(null);
     const slot = booking.slots[slotIdx];
+    const scheduledAt = slotDate(slot.dayOffset, slot.time).toISOString();
+    const topicText = topic || `Mentorship with ${booking.name}`;
+    const isPaid = (booking.priceXAF || 0) > 0;
     try {
+      if (isPaid) {
+        const res = await fetch('/api/payments/initialize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            kind: 'session_booking',
+            mentorId: booking.id,
+            scheduledAt,
+            topic: topicText,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.transactionUrl) {
+          setError(data.error || 'Could not start payment. Please try again.');
+          return;
+        }
+        window.location.href = data.transactionUrl;
+        return;
+      }
+
       const res = await fetch('/api/learn/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mentorId: booking.id,
-          scheduledAt: slotDate(slot.dayOffset, slot.time).toISOString(),
-          topic: topic || `Mentorship with ${booking.name}`,
+          scheduledAt,
+          topic: topicText,
         }),
       });
       if (!res.ok) {
@@ -81,7 +105,9 @@ export default function MentorDirectory({
         setError(
           data.error === 'db_unavailable'
             ? 'Could not save your booking - database unavailable. Try again shortly.'
-            : 'Could not create the booking. Please try again.',
+            : data.error === 'payment_required'
+              ? 'Pay for this session first.'
+              : 'Could not create the booking. Please try again.',
         );
         return;
       }
@@ -257,7 +283,8 @@ export default function MentorDirectory({
             onClick={() => !busy && setBooking(null)}
           >
             <motion.div
-              className="w-full max-w-[460px] rounded-3xl bg-paper p-6"
+              className="w-full max-w-[460px] rounded-3xl p-6"
+              style={{ background: 'var(--paper)', color: 'var(--ink)' }}
               initial={{ y: 40, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 40, opacity: 0 }}
@@ -266,22 +293,28 @@ export default function MentorDirectory({
             >
               <div className="mb-5 flex items-start justify-between">
                 <div>
-                  <h3 className="font-display text-[21px]">Book {booking.name.split(' ')[0]}</h3>
+                  <h3 className="font-display text-[21px]" style={{ color: 'var(--ink)' }}>
+                    Book {booking.name.split(' ')[0]}
+                  </h3>
                   <p className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
                     {booking.sessionMinutes}-minute live video session ·{' '}
-                    {booking.priceXAF.toLocaleString()} XAF
+                    {booking.priceXAF > 0
+                      ? `${booking.priceXAF.toLocaleString()} XAF`
+                      : 'Free'}
                   </p>
                 </div>
                 <button
                   onClick={() => setBooking(null)}
                   className="flex h-8 w-8 items-center justify-center rounded-full"
-                  style={{ background: 'var(--paper-dim)' }}
+                  style={{ background: 'var(--paper-dim)', color: 'var(--ink)' }}
                 >
                   <X size={15} />
                 </button>
               </div>
 
-              <label className="mb-1.5 block text-[13px] font-semibold">Pick a time</label>
+              <label className="mb-1.5 block text-[13px] font-semibold" style={{ color: 'var(--ink)' }}>
+                Pick a time
+              </label>
               <div className="mb-4 grid gap-2">
                 {booking.slots.map((s, i) => {
                   const d = slotDate(s.dayOffset, s.time);
@@ -290,25 +323,27 @@ export default function MentorDirectory({
                     <button
                       key={`${s.dayOffset}-${s.time}`}
                       onClick={() => setSlotIdx(i)}
-                      className="flex items-center justify-between rounded-xl border px-4 py-3 text-left text-[13.5px]"
-                      style={
-                        active
-                          ? { borderColor: 'var(--green)', background: 'rgba(0,179,105,0.07)', fontWeight: 600 }
-                          : { borderColor: 'var(--line)' }
-                      }
+                      className="flex items-center justify-between rounded-xl border px-4 py-3 text-left text-[13.5px] font-medium"
+                      style={{
+                        borderColor: active ? 'var(--green-deep)' : 'var(--line)',
+                        background: active ? 'rgba(0,179,105,0.1)' : 'var(--paper)',
+                        color: 'var(--ink)',
+                        fontWeight: active ? 600 : 500,
+                      }}
                     >
-                      {fmtSlot(d)}
+                      <span style={{ color: 'var(--ink)' }}>{fmtSlot(d)}</span>
                       {active && <span style={{ color: 'var(--green-deep)' }}>✓</span>}
                     </button>
                   );
                 })}
               </div>
 
-              <label className="mb-1.5 block text-[13px] font-semibold">
+              <label className="mb-1.5 block text-[13px] font-semibold" style={{ color: 'var(--ink)' }}>
                 What do you want to work on?
               </label>
               <textarea
                 className="form-input"
+                style={{ color: 'var(--ink)', background: 'var(--paper)' }}
                 rows={2}
                 placeholder="e.g. Review my portfolio project and plan my next steps"
                 value={topic}
@@ -316,7 +351,7 @@ export default function MentorDirectory({
               />
 
               {error && (
-                <p className="mt-3 text-[13px]" style={{ color: '#a14d18' }}>
+                <p className="mt-3 text-[13px]" style={{ color: '#b91c1c' }}>
                   {error}
                 </p>
               )}
@@ -326,11 +361,21 @@ export default function MentorDirectory({
                 disabled={busy}
                 className="btn btn-primary mt-5 w-full !py-3.5 text-[14px]"
               >
-                {busy ? <Loader2 size={16} className="animate-spin" /> : <Video size={16} />}
-                Confirm booking
+                {busy ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : booking.priceXAF > 0 ? (
+                  <Lock size={16} />
+                ) : (
+                  <Video size={16} />
+                )}
+                {booking.priceXAF > 0
+                  ? `Pay ${booking.priceXAF.toLocaleString()} XAF & book`
+                  : 'Confirm booking'}
               </button>
               <p className="mt-3 text-center text-[11.5px]" style={{ color: 'var(--ink-soft)' }}>
-                You&apos;ll join the session from your dashboard - live HD video powered by Agora.
+                {booking.priceXAF > 0
+                  ? 'Payment opens first (PayUnit). Your session is booked only after payment succeeds.'
+                  : "You'll join the session from your dashboard — live HD video powered by Agora."}
               </p>
             </motion.div>
           </motion.div>

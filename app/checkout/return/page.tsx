@@ -15,6 +15,9 @@ interface VerifyResult {
   amountXAF: number;
   fullName: string;
   whatsappUrl: string | null;
+  kind?: string;
+  continueHref?: string;
+  isTrial?: boolean;
 }
 
 function ReturnInner() {
@@ -49,6 +52,9 @@ function ReturnInner() {
     })();
   }, [transactionId, outcome]);
 
+  const kind = result?.kind || 'catalogue';
+  const continueHref = result?.continueHref || '/courses';
+
   return (
     <div className="flex min-h-[70vh] items-center justify-center px-4 py-16">
       <div className="w-full max-w-md rounded-[20px] border p-8 text-center shadow-card" style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}>
@@ -64,21 +70,32 @@ function ReturnInner() {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'rgba(0,179,105,0.15)' }}>
               <CheckCircle size={34} style={{ color: 'var(--green-deep)' }} />
             </div>
-            <h1 className="mb-2 font-display text-[26px]">Successfully purchased!</h1>
+            <h1 className="mb-2 font-display text-[26px]">
+              {kind === 'session_booking' ? 'Session booked!' : 'Payment confirmed!'}
+            </h1>
             <p className="mb-1 text-sm" style={{ color: 'var(--ink-soft)' }}>
               {result.fullName}, your payment of <strong>{formatXAF(result.amountXAF)}</strong> for
             </p>
             <p className="mb-5 font-display text-lg">{result.courseName}</p>
             <p className="mb-6 text-sm" style={{ color: 'var(--ink-soft)' }}>
-              is confirmed and saved to your account. Message us on WhatsApp to receive your course access.
+              {kind === 'teacher_course'
+                ? 'You are enrolled. Open the course and start learning on InTelleX.'
+                : kind === 'session_booking'
+                  ? 'Your session is on your Mentorship dashboard. Join from there when it starts.'
+                  : 'is confirmed and saved to your account. Message us on WhatsApp to receive your course access.'}
             </p>
-            {result.whatsappUrl && (
+            {kind === 'catalogue' && result.whatsappUrl && (
               <a href={result.whatsappUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary w-full">
                 <MessageCircle size={18} /> Contact us on WhatsApp for the course
               </a>
             )}
-            <Link href="/courses" className="mt-3 inline-block text-sm" style={{ color: 'var(--green-deep)' }}>
-              Browse more courses →
+            {kind !== 'catalogue' && (
+              <Link href={continueHref} className="btn btn-primary w-full">
+                {kind === 'session_booking' ? 'Open Mentorship' : 'Open your course'}
+              </Link>
+            )}
+            <Link href="/dashboard/courses" className="mt-3 inline-block text-sm" style={{ color: 'var(--green-deep)' }}>
+              Go to My Courses →
             </Link>
           </>
         )}
@@ -93,7 +110,7 @@ function ReturnInner() {
               Your payment is <strong>{result.status}</strong>. If you were charged, please contact us and
               we&apos;ll sort it out.
             </p>
-            <Link href="/courses" className="btn btn-primary w-full">Back to courses</Link>
+            <Link href={continueHref} className="btn btn-primary w-full">Try again</Link>
           </>
         )}
 

@@ -77,6 +77,13 @@ export interface BookingDoc {
   durationMinutes: number;
   channel: string;
   priceXAF?: number;
+  /** True when the student paid via PayUnit before the booking was created. */
+  paid?: boolean;
+  platformXAF?: number;
+  instructorXAF?: number;
+  commissionRate?: number;
+  isTrial?: boolean;
+  transactionId?: string;
   status: 'upcoming' | 'completed' | 'cancelled';
   createdAt: Date;
 }

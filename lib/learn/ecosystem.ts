@@ -671,6 +671,10 @@ export async function getMentorBookings(mentorId: string) {
       channel: d.channel as string,
       status: d.status as string,
       priceXAF: (d.priceXAF as number) ?? 0,
+      paid: Boolean(d.paid),
+      platformXAF: (d.platformXAF as number) ?? 0,
+      instructorXAF: (d.instructorXAF as number) ?? 0,
+      isTrial: Boolean(d.isTrial),
     }));
   } catch {
     return [];
@@ -1094,6 +1098,328 @@ export async function listCoursesByInstructor(
   }
 }
 
+// ── Course enrolments (purchase or instructor-added) ─────────────────────────
+
+export type CourseEnrollmentSource = 'purchase' | 'instructor' | 'free';
+
+export interface CourseEnrollmentDoc {
+  _id?: ObjectId;
+  courseId: string;
+  courseTitle: string;
+  studentId: string;
+  studentName: string;
+  studentEmail?: string | null;
+  instructorId: string;
+  source: CourseEnrollmentSource;
+  /** Gross amount the student paid (0 for free / instructor-added). */
+  priceXAF: number;
+  /** Platform commission recorded at purchase time. */
+  platformXAF: number;
+  instructorXAF: number;
+  commissionRate: number;
+  isTrial: boolean;
+  createdAt: Date;
+}
+
+export type CourseEnrollmentView = Omit<CourseEnrollmentDoc, '_id'> & { id: string };
+
+async function ensureCourseEnrollmentCollection() {
+  await ensureLearnCollections();
+  const db = await getDb();
+  const names = new Set(
+    (await db.listCollections({}, { nameOnly: true }).toArray()).map((c) => c.name),
+  );
+  if (!names.has('course_enrollments')) {
+    await db.createCollection('course_enrollments').catch(() => {});
+  }
+  await Promise.all([
+    db
+      .collection('course_enrollments')
+      .createIndex({ courseId: 1, studentId: 1 }, { unique: true }),
+    db.collection('course_enrollments').createIndex({ studentId: 1, createdAt: -1 }),
+    db.collection('course_enrollments').createIndex({ instructorId: 1, createdAt: -1 }),
+  ]).catch(() => {});
+}
+
+/** How many times this student already paid this instructor (drives commission). */
+export async function countPaidPurchases(
+  instructorId: string,
+  studentId: string,
+): Promise<number> {
+  try {
+    await ensureCourseEnrollmentCollection();
+    const db = await getDb();
+    const [courses, sessions] = await Promise.all([
+      db.collection('course_enrollments').countDocuments({
+        instructorId,
+        studentId,
+        priceXAF: { $gt: 0 },
+      }),
+      db.collection('bookings').countDocuments({
+        mentorId: instructorId,
+        userId: studentId,
+        paid: true,
+        priceXAF: { $gt: 0 },
+        status: { $ne: 'cancelled' },
+      }),
+    ]);
+    return courses + sessions;
+  } catch {
+    return 0;
+  }
+}
+
+export async function isEnrolledInCourse(
+  courseId: string,
+  studentId: string,
+): Promise<boolean> {
+  try {
+    await ensureCourseEnrollmentCollection();
+    const db = await getDb();
+    const doc = await db.collection('course_enrollments').findOne({ courseId, studentId });
+    return Boolean(doc);
+  } catch {
+    return false;
+  }
+}
+
+export async function enrollStudentInCourse(opts: {
+  course: TeacherCourseView;
+  studentId: string;
+  studentName: string;
+  studentEmail?: string | null;
+  source: CourseEnrollmentSource;
+  priceXAF: number;
+  platformXAF: number;
+  instructorXAF: number;
+  commissionRate: number;
+  isTrial: boolean;
+}): Promise<{ created: boolean }> {
+  await ensureCourseEnrollmentCollection();
+  const db = await getDb();
+  const instructorId = opts.course.instructorId || opts.course.authorId;
+  const res = await db.collection('course_enrollments').updateOne(
+    { courseId: opts.course.id, studentId: opts.studentId },
+    {
+      $setOnInsert: {
+        courseId: opts.course.id,
+        courseTitle: opts.course.title,
+        studentId: opts.studentId,
+        studentName: opts.studentName,
+        studentEmail: opts.studentEmail ?? null,
+        instructorId,
+        source: opts.source,
+        priceXAF: opts.priceXAF,
+        platformXAF: opts.platformXAF,
+        instructorXAF: opts.instructorXAF,
+        commissionRate: opts.commissionRate,
+        isTrial: opts.isTrial,
+        createdAt: new Date(),
+      },
+    },
+    { upsert: true },
+  );
+  return { created: res.upsertedCount > 0 };
+}
+
+export async function removeCourseEnrollment(courseId: string, studentId: string) {
+  await ensureCourseEnrollmentCollection();
+  const db = await getDb();
+  await db.collection('course_enrollments').deleteOne({ courseId, studentId });
+}
+
+export async function listCourseEnrollments(
+  courseId: string,
+): Promise<CourseEnrollmentView[]> {
+  try {
+    await ensureCourseEnrollmentCollection();
+    const db = await getDb();
+    const docs = await db
+      .collection('course_enrollments')
+      .find({ courseId })
+      .sort({ createdAt: -1 })
+      .toArray();
+    return docs.map((d) => {
+      const { _id, ...rest } = d as unknown as CourseEnrollmentDoc & { _id: ObjectId };
+      return { ...(rest as Omit<CourseEnrollmentDoc, '_id'>), id: _id.toString() };
+    });
+  } catch {
+    return [];
+  }
+}
+
+/** Courses a student was added to or bought. */
+export async function listStudentCourseEnrollments(
+  studentId: string,
+): Promise<CourseEnrollmentView[]> {
+  try {
+    await ensureCourseEnrollmentCollection();
+    const db = await getDb();
+    const docs = await db
+      .collection('course_enrollments')
+      .find({ studentId })
+      .sort({ createdAt: -1 })
+      .toArray();
+    return docs.map((d) => {
+      const { _id, ...rest } = d as unknown as CourseEnrollmentDoc & { _id: ObjectId };
+      return { ...(rest as Omit<CourseEnrollmentDoc, '_id'>), id: _id.toString() };
+    });
+  } catch {
+    return [];
+  }
+}
+
+/** Instructor course revenue after platform commission. */
+export async function getCourseEarnings(
+  instructorId: string,
+): Promise<{ grossXAF: number; instructorXAF: number; platformXAF: number; students: number }> {
+  try {
+    await ensureCourseEnrollmentCollection();
+    const db = await getDb();
+    const rows = await db
+      .collection('course_enrollments')
+      .aggregate([
+        { $match: { instructorId } },
+        {
+          $group: {
+            _id: null,
+            grossXAF: { $sum: '$priceXAF' },
+            instructorXAF: { $sum: '$instructorXAF' },
+            platformXAF: { $sum: '$platformXAF' },
+            students: { $addToSet: '$studentId' },
+          },
+        },
+      ])
+      .toArray();
+    const r = rows[0];
+    return {
+      grossXAF: (r?.grossXAF as number) ?? 0,
+      instructorXAF: (r?.instructorXAF as number) ?? 0,
+      platformXAF: (r?.platformXAF as number) ?? 0,
+      students: ((r?.students as string[]) ?? []).length,
+    };
+  } catch {
+    return { grossXAF: 0, instructorXAF: 0, platformXAF: 0, students: 0 };
+  }
+}
+
+/** Paid mentorship sessions after platform commission. */
+export async function getSessionEarnings(
+  mentorId: string,
+): Promise<{ grossXAF: number; instructorXAF: number; platformXAF: number; sessions: number }> {
+  try {
+    const db = await getDb();
+    const rows = await db
+      .collection('bookings')
+      .aggregate([
+        {
+          $match: {
+            mentorId,
+            status: { $ne: 'cancelled' },
+            $or: [{ paid: true }, { priceXAF: { $gt: 0 } }],
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            grossXAF: { $sum: '$priceXAF' },
+            instructorXAF: { $sum: { $ifNull: ['$instructorXAF', 0] } },
+            platformXAF: { $sum: { $ifNull: ['$platformXAF', 0] } },
+            sessions: { $sum: 1 },
+          },
+        },
+      ])
+      .toArray();
+    const r = rows[0];
+    const grossXAF = (r?.grossXAF as number) ?? 0;
+    let instructorXAF = (r?.instructorXAF as number) ?? 0;
+    let platformXAF = (r?.platformXAF as number) ?? 0;
+    // Legacy unpaid-tracked bookings: treat full price as gross with unknown split.
+    if (grossXAF > 0 && instructorXAF === 0 && platformXAF === 0) {
+      platformXAF = 0;
+      instructorXAF = 0;
+    }
+    return {
+      grossXAF,
+      instructorXAF,
+      platformXAF,
+      sessions: (r?.sessions as number) ?? 0,
+    };
+  } catch {
+    return { grossXAF: 0, instructorXAF: 0, platformXAF: 0, sessions: 0 };
+  }
+}
+
+/** Combined income ledger for the instructor dashboard. */
+export async function getInstructorIncome(instructorId: string) {
+  const [courses, sessions, bookEarnings] = await Promise.all([
+    getCourseEarnings(instructorId),
+    getSessionEarnings(instructorId),
+    getBookEarnings(instructorId),
+  ]);
+  return {
+    courses,
+    sessions,
+    booksXAF: bookEarnings,
+    yourTotalXAF: courses.instructorXAF + sessions.instructorXAF + bookEarnings,
+    platformTotalXAF: courses.platformXAF + sessions.platformXAF,
+    grossTotalXAF: courses.grossXAF + sessions.grossXAF + bookEarnings,
+  };
+}
+
+/** Owner toggles whether campus instructors may sell extra courses/books. */
+export async function updateInstitutionPolicy(
+  slug: string,
+  ownerId: string,
+  patch: { allowInstructorSales?: boolean },
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const db = await getDb();
+    const inst = await db.collection('institutions').findOne({ slug });
+    if (!inst) return { error: 'not_found' };
+    if (String(inst.ownerId) !== ownerId) return { error: 'forbidden' };
+    const $set: Record<string, unknown> = {};
+    if (typeof patch.allowInstructorSales === 'boolean') {
+      $set.allowInstructorSales = patch.allowInstructorSales;
+    }
+    if (Object.keys($set).length === 0) return { error: 'empty' };
+    await db.collection('institutions').updateOne({ slug }, { $set });
+    return { ok: true };
+  } catch {
+    return { error: 'db_unavailable' };
+  }
+}
+
+/** Search learners by name or email so instructors can add them to a course. */
+export async function searchLearners(
+  query: string,
+  limit = 12,
+): Promise<{ lbId: string; name: string; email: string; avatar?: string | null }[]> {
+  const q = query.trim();
+  if (q.length < 2) return [];
+  try {
+    const db = await getDb();
+    const safe = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const rx = new RegExp(safe, 'i');
+    const docs = await db
+      .collection('learners')
+      .find(
+        { $or: [{ name: rx }, { email: rx }] },
+        { projection: { lbId: 1, name: 1, email: 1, avatar: 1 } },
+      )
+      .limit(limit)
+      .toArray();
+    return docs.map((d) => ({
+      lbId: String(d.lbId),
+      name: String(d.name || 'Learner'),
+      email: String(d.email || ''),
+      avatar: (d.avatar as string) ?? null,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 /** Institutions this person belongs to (for instructor profiles). */
 export async function listUserInstitutions(
   userId: string,
@@ -1164,6 +1490,12 @@ export interface InstitutionDoc {
     secondaryColor?: string;
     accentColor?: string;
   };
+  /**
+   * When true, campus instructors may price and sell their own extra courses
+   * (and books) on InTelleX. Core campus teaching stays free either way —
+   * institutions pay instructors off-platform.
+   */
+  allowInstructorSales?: boolean;
   ownerId: string;
   ownerName: string;
   memberCount: number;

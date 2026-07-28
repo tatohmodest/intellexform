@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrderByTransaction, updateOrderStatus } from '@/lib/repo';
 import { extractTransactionId, getPaymentStatus, isPayunitConfigured } from '@/lib/payunit';
+import { fulfillPaidOrder } from '@/lib/payments/fulfill';
 
 /**
  * PayUnit server-to-server notification (notify_url). PayUnit posts the
@@ -16,8 +17,14 @@ export async function POST(req: NextRequest) {
       const order = await getOrderByTransaction(transactionId);
       if (order && order.status === 'pending') {
         const gwStatus = await getPaymentStatus(transactionId);
-        if (gwStatus === 'SUCCESS') await updateOrderStatus(transactionId, 'paid');
-        else if (gwStatus === 'FAILED') await updateOrderStatus(transactionId, 'failed');
+        if (gwStatus === 'SUCCESS') {
+          await updateOrderStatus(transactionId, 'paid');
+          await fulfillPaidOrder(transactionId);
+        } else if (gwStatus === 'FAILED') {
+          await updateOrderStatus(transactionId, 'failed');
+        }
+      } else if (order && order.status === 'paid' && !order.fulfilled) {
+        await fulfillPaidOrder(transactionId);
       }
     }
 

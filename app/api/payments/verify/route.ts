@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOrderByTransaction, updateOrderStatus } from '@/lib/repo';
 import { getPaymentStatus, isPayunitConfigured } from '@/lib/payunit';
 import { buildWhatsappLink, purchaseMessage } from '@/lib/whatsapp';
+import { fulfillPaidOrder } from '@/lib/payments/fulfill';
 
 /**
  * Confirms an order after the buyer returns from PayUnit.
@@ -29,7 +30,6 @@ export async function POST(req: NextRequest) {
       if (outcome === 'cancel') {
         status = 'failed';
       } else if (order.gateway === 'payunit') {
-        // Double-check with the gateway; trust the success redirect otherwise.
         let gw: 'SUCCESS' | 'FAILED' | 'PENDING' = 'PENDING';
         if (isPayunitConfigured()) {
           try {
@@ -41,21 +41,36 @@ export async function POST(req: NextRequest) {
         if (gw === 'SUCCESS') status = 'paid';
         else if (gw === 'FAILED') status = 'failed';
         else if (outcome === 'success') status = 'paid';
+      } else if (order.gateway === 'mock' && outcome === 'success') {
+        status = 'paid';
       }
       if (status !== order.status) await updateOrderStatus(transactionId, status);
     }
 
     const paid = status === 'paid';
-    const whatsappUrl = paid
-      ? buildWhatsappLink(
-          purchaseMessage({
-            fullName: order.fullName,
-            courseName: order.courseName,
-            amountXAF: order.amountXAF,
-            paymentMethod: 'PayUnit (paid online)',
-          }),
-        )
-      : null;
+    if (paid) {
+      await fulfillPaidOrder(transactionId);
+    }
+
+    const kind = order.kind || 'catalogue';
+    const whatsappUrl =
+      paid && kind === 'catalogue'
+        ? buildWhatsappLink(
+            purchaseMessage({
+              fullName: order.fullName,
+              courseName: order.courseName,
+              amountXAF: order.amountXAF,
+              paymentMethod: 'PayUnit (paid online)',
+            }),
+          )
+        : null;
+
+    const continueHref =
+      kind === 'teacher_course' && order.productId
+        ? `/dashboard/courses/instructor/${order.productId}`
+        : kind === 'session_booking'
+          ? '/dashboard/mentorship'
+          : '/courses';
 
     return NextResponse.json({
       status,
@@ -64,6 +79,9 @@ export async function POST(req: NextRequest) {
       amountXAF: order.amountXAF,
       fullName: order.fullName,
       whatsappUrl,
+      kind,
+      continueHref,
+      isTrial: Boolean(order.isTrial),
     });
   } catch (error) {
     console.error('Payment verify error:', error);

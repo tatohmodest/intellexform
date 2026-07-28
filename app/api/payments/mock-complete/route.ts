@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrderByTransaction, updateOrderStatus } from '@/lib/repo';
+import { fulfillPaidOrder } from '@/lib/payments/fulfill';
 
 /**
  * Mock payment completion - only valid for orders created against the sandbox
@@ -18,7 +19,11 @@ export async function POST(req: NextRequest) {
     if (order.gateway !== 'mock') {
       return NextResponse.json({ error: 'Mock not allowed for live PayUnit orders' }, { status: 400 });
     }
-    await updateOrderStatus(transactionId, outcome === 'success' ? 'paid' : 'failed');
+    const status = outcome === 'success' ? 'paid' : 'failed';
+    await updateOrderStatus(transactionId, status);
+    if (status === 'paid') {
+      await fulfillPaidOrder(transactionId);
+    }
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Mock complete error:', error);

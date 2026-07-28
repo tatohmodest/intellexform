@@ -109,10 +109,14 @@ export interface ContactRequest {
   createdAt: Date;
 }
 
+/** What the student is buying through PayUnit. */
+export type OrderKind = 'catalogue' | 'teacher_course' | 'session_booking';
+
 /**
- * A course purchase order created from the checkout flow. Stored in the
- * `orders` collection and surfaced in the admin dashboard. Payment is handled
- * through PayUnit; `status` moves from `pending` to `paid` (or `failed`).
+ * A purchase order created from a checkout flow. Stored in the `orders`
+ * collection. Payment is handled through PayUnit; `status` moves from
+ * `pending` to `paid` (or `failed`). Catalogue courses keep the original
+ * shape; teacher courses and session bookings add `kind` + fulfillment meta.
  */
 export interface Order {
   fullName: string;
@@ -129,4 +133,23 @@ export interface Order {
   status: 'pending' | 'paid' | 'failed';
   createdAt: Date;
   paidAt?: Date | null;
+  /** Defaults to catalogue when omitted (legacy orders). */
+  kind?: OrderKind;
+  /** Signed-in learner who started checkout (teacher course / session). */
+  userId?: string;
+  /** Teacher-course id or mentor id depending on kind. */
+  productId?: string;
+  instructorId?: string;
+  platformXAF?: number;
+  instructorXAF?: number;
+  commissionRate?: number;
+  isTrial?: boolean;
+  /** Set once enrolment / booking has been created after payment. */
+  fulfilled?: boolean;
+  /** Session booking details (kind === session_booking). */
+  booking?: {
+    scheduledAt: string;
+    topic: string;
+    durationMinutes: number;
+  };
 }

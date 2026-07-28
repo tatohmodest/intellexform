@@ -28,6 +28,7 @@ import type {
 } from '@/lib/learn/courseTypes';
 import { isDirectVideo, toEmbedUrl } from '@/lib/learn/videoEmbed';
 import { uploadMediaAsset } from '@/lib/learn/mentorUpload';
+import CourseRoster from '@/components/dashboard/CourseRoster';
 
 const VIS: Array<{ id: ContentVisibility; label: string; hint: string }> = [
   { id: 'private', label: 'Private', hint: 'Only your campus / your students' },
@@ -91,11 +92,14 @@ export default function CourseStudio({
   campusName,
   accent = '#00b369',
   canAllocateInstructor = false,
+  allowInstructorSales = false,
 }: {
   institutionSlug?: string | null;
   campusName?: string;
   accent?: string;
   canAllocateInstructor?: boolean;
+  /** Campus policy: may instructors price/sell extra courses? */
+  allowInstructorSales?: boolean;
 }) {
   const [courses, setCourses] = useState<TeacherCourseView[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -106,8 +110,10 @@ export default function CourseStudio({
   const [coverBusy, setCoverBusy] = useState(false);
   const [error, setError] = useState('');
   const [newTitle, setNewTitle] = useState('');
-  const [tab, setTab] = useState<'overview' | 'delivery' | 'lessons'>('overview');
+  const [tab, setTab] = useState<'overview' | 'delivery' | 'lessons' | 'students'>('overview');
   const [instructors, setInstructors] = useState<InstructorOption[]>([]);
+
+  const campusSalesLocked = Boolean(institutionSlug) && !allowInstructorSales;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -248,7 +254,7 @@ export default function CourseStudio({
           tags: draft.tags,
           deliveryMode: draft.deliveryMode,
           durationHours: draft.durationHours ?? null,
-          priceXAF: draft.priceXAF ?? 0,
+          priceXAF: campusSalesLocked ? 0 : draft.priceXAF ?? 0,
           audience: draft.audience,
           seats: draft.seats ?? null,
           certificate: draft.certificate ?? false,
@@ -405,6 +411,7 @@ export default function CourseStudio({
                   ['overview', 'Overview'],
                   ['delivery', 'Delivery & pricing'],
                   ['lessons', `Lessons (${draft.lessons?.length || 0})`],
+                  ['students', 'Students'],
                 ] as const
               ).map(([id, label]) => (
                 <button
@@ -600,12 +607,15 @@ export default function CourseStudio({
                       type="number"
                       min={0}
                       step={500}
-                      className="form-input !rounded-none text-[13px]"
-                      value={draft.priceXAF ?? 0}
+                      disabled={campusSalesLocked}
+                      className="form-input !rounded-none text-[13px] disabled:opacity-60"
+                      value={campusSalesLocked ? 0 : draft.priceXAF ?? 0}
                       onChange={(e) => patch({ priceXAF: Number(e.target.value) || 0 })}
                     />
                     <p className="mt-1 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-                      0 = free
+                      {campusSalesLocked
+                        ? 'Campus courses are free. Your institution admin can enable instructor sales for extra paid courses.'
+                        : '0 = free. Paid courses checkout via PayUnit.'}
                     </p>
                   </div>
                   <div>
@@ -852,7 +862,7 @@ export default function CourseStudio({
                           </button>
                         </div>
                         <label className="mb-1 block font-mono text-[10px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
-                          Google Drive / YouTube / video URL
+                          Google Drive / YouTube / Cloudinary URL (plays in-app — do not upload the video file here)
                         </label>
                         <input
                           className="form-input !rounded-none mb-3 text-[13px]"
@@ -921,6 +931,10 @@ export default function CourseStudio({
                   })}
                 </div>
               </div>
+            )}
+
+            {tab === 'students' && (
+              <CourseRoster courseId={draft.id} accent={accent} />
             )}
 
             {error && (
