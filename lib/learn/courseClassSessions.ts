@@ -165,6 +165,57 @@ export type OngoingClassForUser = CourseClassSessionView & {
   role: 'instructor' | 'student';
 };
 
+export type ClassroomSessionRow = OngoingClassForUser;
+
+export type ClassroomCourseGroup = {
+  courseId: string;
+  courseTitle: string;
+  role: 'instructor' | 'student';
+  instructorName: string;
+  live: ClassroomSessionRow | null;
+  past: ClassroomSessionRow[];
+  sessionCount: number;
+};
+
+async function loadUserClassSessionDocs(userId: string) {
+  await ensureCourseClassSessionCollection();
+  const db = await getDb();
+
+  const enrollments = await db
+    .collection('course_enrollments')
+    .find({ studentId: userId })
+    .project({ courseId: 1 })
+    .toArray()
+    .catch(() => [] as Array<{ courseId?: string }>);
+
+  const enrolledIds = Array.from(
+    new Set(
+      enrollments
+        .map((e) => String((e as { courseId?: string }).courseId || ''))
+        .filter(Boolean),
+    ),
+  );
+
+  const or: Record<string, unknown>[] = [{ instructorId: userId }];
+  if (enrolledIds.length) {
+    or.push({ courseId: { $in: enrolledIds } });
+  }
+
+  const docs = await db
+    .collection('course_class_sessions')
+    .find({ $or: or })
+    .sort({ startAt: -1 })
+    .limit(200)
+    .toArray();
+
+  return docs.map((doc) => {
+    const view = toView(doc as Record<string, unknown>);
+    const role: 'instructor' | 'student' =
+      view.instructorId === userId ? 'instructor' : 'student';
+    return { ...view, role } satisfies ClassroomSessionRow;
+  });
+}
+
 /**
  * Live classes the user should see on the dashboard:
  * - as instructor (hosting), or
@@ -174,61 +225,64 @@ export async function listOngoingClassesForUser(
   userId: string,
 ): Promise<OngoingClassForUser[]> {
   try {
-    await ensureCourseClassSessionCollection();
-    const db = await getDb();
-
-    const [asInstructor, enrollments] = await Promise.all([
-      db
-        .collection('course_class_sessions')
-        .find({ instructorId: userId, status: 'live' })
-        .sort({ startAt: -1 })
-        .toArray(),
-      db
-        .collection('course_enrollments')
-        .find({ studentId: userId })
-        .project({ courseId: 1 })
-        .toArray()
-        .catch(() => [] as Array<{ courseId?: string }>),
-    ]);
-
-    const enrolledIds = Array.from(
-      new Set(
-        enrollments
-          .map((e) => String((e as { courseId?: string }).courseId || ''))
-          .filter(Boolean),
-      ),
-    );
-
-    const asStudent =
-      enrolledIds.length > 0
-        ? await db
-            .collection('course_class_sessions')
-            .find({
-              courseId: { $in: enrolledIds },
-              status: 'live',
-              instructorId: { $ne: userId },
-            })
-            .sort({ startAt: -1 })
-            .toArray()
-        : [];
-
-    const byId = new Map<string, OngoingClassForUser>();
-    for (const doc of asInstructor) {
-      const view = toView(doc as Record<string, unknown>);
-      byId.set(view.id, { ...view, role: 'instructor' });
-    }
-    for (const doc of asStudent) {
-      const view = toView(doc as Record<string, unknown>);
-      if (!byId.has(view.id)) {
-        byId.set(view.id, { ...view, role: 'student' });
-      }
-    }
-
-    return Array.from(byId.values()).sort(
-      (a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime(),
-    );
+    const rows = await loadUserClassSessionDocs(userId);
+    return rows.filter((r) => r.status === 'live');
   } catch {
     return [];
+  }
+}
+
+/**
+ * My Classroom: live + past sessions grouped by course for students and instructors.
+ */
+export async function listClassroomForUser(userId: string): Promise<{
+  live: ClassroomSessionRow[];
+  groups: ClassroomCourseGroup[];
+  totalSessions: number;
+}> {
+  try {
+    const rows = await loadUserClassSessionDocs(userId);
+    const live = rows.filter((r) => r.status === 'live');
+
+    const byCourse = new Map<string, ClassroomSessionRow[]>();
+    for (const row of rows) {
+      const list = byCourse.get(row.courseId) || [];
+      list.push(row);
+      byCourse.set(row.courseId, list);
+    }
+
+    const groups: ClassroomCourseGroup[] = Array.from(byCourse.entries()).map(
+      ([courseId, sessions]) => {
+        const sorted = [...sessions].sort(
+          (a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime(),
+        );
+        const liveSession = sorted.find((s) => s.status === 'live') || null;
+        const past = sorted.filter((s) => s.status === 'ended');
+        const primary = liveSession || past[0] || sorted[0];
+        return {
+          courseId,
+          courseTitle: primary.courseTitle,
+          role: primary.role,
+          instructorName: primary.instructorName,
+          live: liveSession,
+          past,
+          sessionCount: sessions.length,
+        };
+      },
+    );
+
+    groups.sort((a, b) => {
+      const aLive = a.live ? 1 : 0;
+      const bLive = b.live ? 1 : 0;
+      if (bLive !== aLive) return bLive - aLive;
+      const aAt = a.live?.startAt || a.past[0]?.startAt || '';
+      const bAt = b.live?.startAt || b.past[0]?.startAt || '';
+      return new Date(bAt).getTime() - new Date(aAt).getTime();
+    });
+
+    return { live, groups, totalSessions: rows.length };
+  } catch {
+    return { live: [], groups: [], totalSessions: 0 };
   }
 }
 

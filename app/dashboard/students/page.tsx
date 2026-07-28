@@ -48,8 +48,15 @@ export default async function MyStudentsPage() {
         </h1>
         <p className="mt-4 max-w-[420px] text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
           Everyone enrolled in your courses, organised by what they signed up for. Assign exams or
-          assignments per course.
+          assignments per course. Start class here, then review past live sessions in My Classroom.
         </p>
+        <Link
+          href="/dashboard/classroom"
+          className="mt-5 inline-flex text-[13.5px] font-semibold"
+          style={{ color: 'var(--green-deep)' }}
+        >
+          Open My Classroom for live & past classes →
+        </Link>
       </header>
 
       <MyStudentsPanel groups={payload} totalStudents={totalStudents} />

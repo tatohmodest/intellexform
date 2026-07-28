@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getMyCourseSections } from '@/lib/learn/myCourses';
@@ -37,6 +38,13 @@ export default async function CoursesPage() {
           Courses you are enrolled in come first. Suggestions and instructor courses sit below -
           swipe sideways on mobile, or tap Show more for the full list.
         </p>
+        <Link
+          href="/dashboard/classroom"
+          className="mt-5 inline-flex text-[13.5px] font-semibold"
+          style={{ color: 'var(--green-deep)' }}
+        >
+          Open My Classroom for live & past classes →
+        </Link>
       </header>
 
       <CoursesBrowser sections={sections} total={total} inProgress={inProgress} />
