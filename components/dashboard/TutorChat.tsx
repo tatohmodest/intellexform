@@ -43,7 +43,6 @@ const SUGGESTIONS = [
   },
 ];
 
-/** Strip engine state markers so learners never see quiz/plan payloads. */
 function visibleTutorText(text: string): string {
   return text
     .replace(/<!--intellex-quiz:[\s\S]*?-->/g, '')
@@ -51,7 +50,6 @@ function visibleTutorText(text: string): string {
     .trim();
 }
 
-/** Markdown-ish renderer: colored code fences, bold, inline code, colorful links. */
 function RichText({ text }: { text: string }) {
   const parts = visibleTutorText(text).split(/```/);
   return (
@@ -66,7 +64,7 @@ function RichText({ text }: { text: string }) {
           return (
             <pre
               key={i}
-              className="mono my-3 overflow-x-auto rounded-2xl p-4 text-[12.5px] leading-relaxed"
+              className="mono my-3 overflow-x-auto p-4 text-[12.5px] leading-relaxed"
               style={{ background: '#0C1116', color: '#d7e2ec' }}
             >
               <HighlightedCode code={code} language={language} />
@@ -112,7 +110,7 @@ function renderInlineTokens(line: string) {
       return (
         <code
           key={ti}
-          className="mono rounded-md px-1.5 py-0.5 text-[12.5px]"
+          className="mono px-1.5 py-0.5 text-[12.5px]"
           style={{ background: 'rgba(47, 111, 173, 0.10)', color: '#1f5fa8' }}
         >
           {tok.slice(1, -1)}
@@ -121,13 +119,7 @@ function renderInlineTokens(line: string) {
     }
     if (tok.startsWith('http://') || tok.startsWith('https://')) {
       return (
-        <a
-          key={ti}
-          href={tok}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={linkClass(tok)}
-        >
+        <a key={ti} href={tok} target="_blank" rel="noopener noreferrer" className={linkClass(tok)}>
           {linkLabel(tok)}
         </a>
       );
@@ -171,14 +163,14 @@ function InlineText({ text }: { text: string }) {
 
 function TypingDots() {
   return (
-    <span className="inline-flex items-center gap-1 py-1" aria-label="Thinking">
+    <span className="inline-flex items-center gap-1.5 py-1" aria-label="Thinking">
       {[0, 1, 2].map((i) => (
         <motion.span
           key={i}
           className="h-1.5 w-1.5 rounded-full"
-          style={{ background: 'var(--green-deep)' }}
-          animate={{ opacity: [0.3, 1, 0.3], y: [0, -3, 0] }}
-          transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.15 }}
+          style={{ background: 'var(--ink)' }}
+          animate={{ opacity: [0.25, 1, 0.25] }}
+          transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.16 }}
         />
       ))}
     </span>
@@ -191,9 +183,9 @@ export default function TutorChat() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState(topic ? `Teach me about: ${topic}` : '');
   const [busy, setBusy] = useState(false);
-  const [focused, setFocused] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -202,8 +194,8 @@ export default function TutorChat() {
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
-    el.style.height = '0px';
-    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(Math.max(el.scrollHeight, 24), 140)}px`;
   }, [input]);
 
   async function send(text?: string) {
@@ -252,58 +244,53 @@ export default function TutorChat() {
   }
 
   const empty = messages.length === 0;
+  const canSend = Boolean(input.trim()) && !busy;
 
   return (
-    <div className="relative mx-auto flex min-h-[calc(100dvh-140px)] max-w-[820px] flex-col">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] opacity-90"
-        style={{
-          background:
-            'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0,179,105,0.14), transparent 55%), radial-gradient(ellipse 50% 40% at 100% 10%, rgba(74,144,226,0.10), transparent 50%)',
-        }}
-      />
-
+    <div className="relative mx-auto flex min-h-[calc(100dvh-140px)] max-w-[1080px] flex-col overflow-x-hidden">
+      {/* Editorial header - same language as My Courses */}
       <header
-        className={`shrink-0 ${empty ? 'pb-2 pt-2 text-center sm:pt-6' : 'border-b pb-5'}`}
+        className={`shrink-0 ${empty ? 'mb-2 border-b pb-8' : 'mb-0 border-b pb-5'}`}
         style={{ borderColor: 'var(--line)' }}
       >
         {empty ? (
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-            className="mx-auto max-w-lg"
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span
-              className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[22px]"
-              style={{
-                background:
-                  'linear-gradient(145deg, rgba(0,179,105,0.22), rgba(74,144,226,0.16))',
-                color: 'var(--green-deep)',
-                boxShadow: '0 12px 40px rgba(0,179,105,0.18)',
-              }}
-            >
-              <Bot size={30} />
-            </span>
             <p
               className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em]"
-              style={{ color: 'var(--green-deep)' }}
-            >
-              InTelleX AI · ready when you are
-            </p>
-            <h1 className="font-display text-[34px] leading-[1.05] tracking-tight sm:text-[44px]">
-              What do you want
-              <br />
-              to learn next?
-            </h1>
-            <p
-              className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed"
               style={{ color: 'var(--ink-soft)' }}
             >
-              Quiz you. Build a plan. Explain anything. Debug with you. Grounded in the InTelleX
-              curriculum - interactive like a real tutor.
+              Your curriculum · interactive tutor
             </p>
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+              <div className="max-w-[520px]">
+                <h1 className="font-display text-[40px] leading-[0.95] tracking-tight sm:text-[52px]">
+                  InTelleX
+                  <br />
+                  AI
+                </h1>
+                <p
+                  className="mt-4 text-[15px] leading-relaxed"
+                  style={{ color: 'var(--ink-soft)' }}
+                >
+                  Quiz you. Build a plan. Explain anything. Debug with you. Same editorial feel as
+                  My Courses - built to make you want the next question.
+                </p>
+              </div>
+              <div
+                className="flex flex-wrap gap-2 font-mono text-[11px] uppercase tracking-[0.12em]"
+                style={{ color: 'var(--ink-soft)' }}
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <Bot size={12} /> Live
+                </span>
+                <span style={{ color: 'var(--line)' }}>·</span>
+                <span>Grounded answers</span>
+              </div>
+            </div>
           </motion.div>
         ) : (
           <div className="flex items-center justify-between gap-3">
@@ -312,7 +299,7 @@ export default function TutorChat() {
                 className="font-mono text-[10.5px] uppercase tracking-[0.16em]"
                 style={{ color: 'var(--ink-soft)' }}
               >
-                InTelleX AI · live
+                InTelleX AI · session
               </p>
               <h1 className="font-display text-[22px] leading-tight sm:text-[26px]">Keep going</h1>
             </div>
@@ -322,8 +309,8 @@ export default function TutorChat() {
                 setMessages([]);
                 setInput('');
               }}
-              className="shrink-0 border px-3 py-2 text-[12.5px] font-semibold transition-colors hover:bg-[var(--paper-dim)]"
-              style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}
+              className="shrink-0 px-3 py-2 text-[12.5px] font-semibold transition-colors hover:bg-[var(--paper-dim)]"
+              style={{ color: 'var(--ink-soft)' }}
             >
               New chat
             </button>
@@ -331,77 +318,90 @@ export default function TutorChat() {
         )}
       </header>
 
+      {/* Thread */}
       <div
-        className={`min-h-0 flex-1 ${empty ? 'pt-8' : 'pt-6'} pb-[calc(8.75rem+env(safe-area-inset-bottom,0px))] lg:pb-36`}
+        ref={listRef}
+        className={`min-h-0 flex-1 ${empty ? 'pt-8' : 'pt-6'} pb-[calc(7.75rem+env(safe-area-inset-bottom,0px))] lg:pb-32`}
       >
         {empty ? (
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            {SUGGESTIONS.map((s, i) => {
-              const Icon = s.icon;
-              return (
-                <motion.button
-                  key={s.label}
-                  type="button"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.08 + i * 0.05, duration: 0.35 }}
-                  onClick={() => send(s.prompt)}
-                  className="group flex items-start gap-3 rounded-2xl border bg-white/80 px-4 py-3.5 text-left backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(12,17,22,0.08)]"
-                  style={{ borderColor: 'var(--line)' }}
-                >
-                  <span
-                    className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-                    style={{ background: 'rgba(0,179,105,0.12)', color: 'var(--green-deep)' }}
+          <section>
+            <div className="mb-4">
+              <h2 className="font-display text-[19px] leading-tight sm:text-[24px]">Start here</h2>
+              <p className="mt-0.5 text-[13px] sm:text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
+                Tap a prompt - or type your own below
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {SUGGESTIONS.map((s, i) => {
+                const Icon = s.icon;
+                return (
+                  <motion.button
+                    key={s.label}
+                    type="button"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.05 + i * 0.04, duration: 0.3 }}
+                    onClick={() => send(s.prompt)}
+                    className="group flex h-full min-w-0 flex-col bg-paper p-4 text-left transition-shadow hover:shadow-card"
+                    style={{ border: '1px solid var(--ink)' }}
                   >
-                    <Icon size={16} />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-[13px] font-semibold">{s.label}</span>
                     <span
-                      className="mt-0.5 block text-[12.5px] leading-snug"
+                      className="mb-3 inline-flex h-9 w-9 items-center justify-center"
+                      style={{
+                        background: 'var(--paper-dim)',
+                        color: 'var(--ink)',
+                      }}
+                    >
+                      <Icon size={16} />
+                    </span>
+                    <span className="font-display text-[16px] font-semibold leading-snug sm:text-[17px]">
+                      {s.label}
+                    </span>
+                    <span
+                      className="mt-1.5 line-clamp-2 text-[13px] leading-snug"
                       style={{ color: 'var(--ink-soft)' }}
                     >
                       {s.prompt}
                     </span>
-                  </span>
-                </motion.button>
-              );
-            })}
-          </div>
+                    <span
+                      className="mt-3 text-[12px] font-semibold uppercase tracking-[0.1em]"
+                      style={{ color: 'var(--green-deep)' }}
+                    >
+                      Ask this →
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </section>
         ) : (
-          <div className="mx-auto max-w-[720px] space-y-6">
+          <div className="mx-auto max-w-[720px] space-y-7">
             <AnimatePresence initial={false}>
               {messages.map((m, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.28 }}
-                  className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  transition={{ duration: 0.25 }}
                 >
                   {m.role === 'user' ? (
-                    <div
-                      className="max-w-[85%] rounded-[22px] rounded-br-md px-4 py-3 text-[14.5px] leading-relaxed text-white sm:max-w-[75%]"
-                      style={{
-                        background: 'var(--ink)',
-                        boxShadow: '0 8px 24px rgba(12,17,22,0.12)',
-                      }}
-                    >
-                      {m.content}
+                    <div className="flex justify-end">
+                      <div
+                        className="max-w-[88%] px-4 py-3 text-[14.5px] leading-relaxed text-white sm:max-w-[75%]"
+                        style={{ background: 'var(--ink)' }}
+                      >
+                        {m.content}
+                      </div>
                     </div>
                   ) : (
-                    <div className="flex max-w-full gap-3 sm:max-w-[95%]">
+                    <div className="flex gap-3">
                       <span
-                        className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-                        style={{
-                          background:
-                            'linear-gradient(145deg, rgba(0,179,105,0.2), rgba(74,144,226,0.14))',
-                          color: 'var(--green-deep)',
-                        }}
+                        className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center"
+                        style={{ background: 'var(--paper-dim)', color: 'var(--ink)' }}
                       >
                         <Bot size={15} />
                       </span>
-                      <div className="min-w-0 flex-1 pt-0.5">
+                      <div className="min-w-0 flex-1">
                         <p
                           className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.14em]"
                           style={{ color: 'var(--ink-soft)' }}
@@ -414,7 +414,7 @@ export default function TutorChat() {
                             {busy && i === messages.length - 1 && (
                               <span
                                 className="ml-0.5 inline-block h-[1.05em] w-[2px] animate-pulse align-middle"
-                                style={{ background: 'var(--green)' }}
+                                style={{ background: 'var(--ink)' }}
                               />
                             )}
                           </div>
@@ -433,16 +433,15 @@ export default function TutorChat() {
       </div>
 
       {/*
-        Claude/ChatGPT-style floating composer.
-        Fixed slightly above the mobile bottom nav on this page only;
-        near the viewport bottom on desktop (no bottom nav).
+        Fixed composer above mobile bottom nav.
+        Zero borders / outlines / rings - soft lift only.
       */}
       <div
-        className="pointer-events-none fixed inset-x-0 z-30 px-3 bottom-[calc(4.65rem+env(safe-area-inset-bottom,0px)+0.4rem)] sm:px-6 lg:bottom-5 lg:left-[268px] lg:px-10"
+        className="pointer-events-none fixed inset-x-0 z-30 px-3 bottom-[calc(4.65rem+env(safe-area-inset-bottom,0px)+0.35rem)] sm:px-6 lg:bottom-5 lg:left-[268px] lg:px-10"
       >
-        <div className="pointer-events-auto mx-auto w-full max-w-[820px]">
+        <div className="pointer-events-auto mx-auto w-full max-w-[720px]">
           <div
-            className="pointer-events-none absolute inset-x-0 -top-14 h-14"
+            className="pointer-events-none absolute inset-x-0 -top-12 h-12"
             style={{ background: 'linear-gradient(to top, var(--paper), transparent)' }}
             aria-hidden
           />
@@ -451,21 +450,17 @@ export default function TutorChat() {
               e.preventDefault();
               send();
             }}
-            className="relative flex items-end gap-2 rounded-[28px] bg-white p-2 pl-4 backdrop-blur-md transition-shadow"
+            className="flex items-end gap-2 bg-[var(--paper)] px-1 py-1"
             style={{
-              boxShadow: focused
-                ? '0 10px 36px rgba(12,17,22,0.14)'
-                : '0 8px 28px rgba(12,17,22,0.10)',
+              boxShadow: '0 16px 48px rgba(12, 17, 22, 0.14)',
             }}
           >
-            <label className="min-w-0 flex-1 py-1.5">
+            <label className="min-w-0 flex-1 bg-[var(--paper-dim)] px-4 py-3">
               <span className="sr-only">Ask InTelleX AI</span>
               <textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onFocus={() => setFocused(true)}
-                onBlur={() => setFocused(false)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -473,20 +468,22 @@ export default function TutorChat() {
                   }
                 }}
                 rows={1}
-                placeholder="Ask InTelleX AI - explain, quiz me, build a plan…"
-                className="max-h-[160px] min-h-[28px] w-full resize-none bg-transparent py-2 text-[15px] leading-relaxed outline-none placeholder:text-[var(--ink-soft)]"
-                style={{ color: 'var(--ink)' }}
+                placeholder="Ask InTelleX AI…"
+                className="max-h-[140px] min-h-[24px] w-full resize-none border-0 bg-transparent p-0 text-[15px] leading-relaxed shadow-none outline-none ring-0 placeholder:text-[var(--ink-soft)] focus:border-0 focus:outline-none focus:ring-0"
+                style={{
+                  color: 'var(--ink)',
+                  border: 'none',
+                  outline: 'none',
+                  boxShadow: 'none',
+                  WebkitAppearance: 'none',
+                }}
               />
             </label>
             <button
               type="submit"
-              disabled={busy || !input.trim()}
-              className="mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition-all disabled:opacity-35"
-              style={{
-                background: input.trim()
-                  ? 'linear-gradient(145deg, #00b369, #009a5a)'
-                  : 'var(--ink-soft)',
-              }}
+              disabled={!canSend}
+              className="mb-0 flex h-12 w-12 shrink-0 items-center justify-center text-white transition-opacity disabled:opacity-30"
+              style={{ background: canSend ? 'var(--green)' : 'var(--ink-soft)' }}
               aria-label="Send"
             >
               {busy ? (
@@ -497,10 +494,10 @@ export default function TutorChat() {
             </button>
           </form>
           <p
-            className="mt-2 hidden text-center font-mono text-[10.5px] uppercase tracking-[0.12em] sm:block"
+            className="mt-2 text-center font-mono text-[10px] uppercase tracking-[0.12em]"
             style={{ color: 'var(--ink-soft)' }}
           >
-            Grounded in InTelleX lessons · Enter to send
+            Enter to send · Shift+Enter for a new line
           </p>
         </div>
       </div>
