@@ -328,13 +328,13 @@ function gradeAnswer(userText: string, item: QuizItem): boolean {
   const u = userText.toLowerCase().trim();
   if (!u) return false;
   if (u === item.answer.toLowerCase()) return true;
-  const hits = item.keywords.filter((k) => u.includes(k.toLowerCase()));
-  if (hits.length >= Math.max(1, Math.ceil(item.keywords.length * 0.4))) return true;
+  const hits = item.keywords.filter((k) => u.includes(k.toLowerCase().replace(/\.$/, '')));
+  if (hits.length >= 1) return true;
   // soft credit for close paraphrases of the answer string
   const answerTokens = tokenize(item.answer);
   const userTokens = new Set(tokenize(u));
   const overlap = answerTokens.filter((t) => userTokens.has(t)).length;
-  return answerTokens.length > 0 && overlap / answerTokens.length >= 0.5;
+  return answerTokens.length > 0 && overlap / answerTokens.length >= 0.35;
 }
 
 function extractTopic(question: string): string {
