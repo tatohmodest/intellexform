@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 
+import { CANONICAL_SITE_URL } from '@/lib/platformHosts';
+
 /** Public production origin — always used for share / Open Graph links. */
-export const CANONICAL_SITE_URL = 'https://intellex.loopingbinary.com';
+export { CANONICAL_SITE_URL };
 
 const DEFAULT_SHARE_IMAGE = '/way_selfpaced.webp';
 

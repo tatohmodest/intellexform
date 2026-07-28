@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isPlatformHostname } from '@/lib/platformHosts';
 
 const SESSION_COOKIE = 'intellex_session';
 
@@ -11,26 +12,6 @@ function hostnameOf(req: NextRequest): string {
   return raw.split(':')[0].toLowerCase();
 }
 
-function isLikelyPlatformHost(host: string): boolean {
-  if (!host || host === 'localhost' || host === '127.0.0.1') return true;
-  if (host.endsWith('.vercel.app')) return true;
-  const configured = [
-    process.env.APP_PUBLIC_URL,
-    process.env.NEXT_PUBLIC_APP_URL,
-    process.env.VERCEL_URL,
-    ...(process.env.PLATFORM_HOSTS || '').split(','),
-  ]
-    .filter(Boolean)
-    .map((h) =>
-      String(h)
-        .replace(/^https?:\/\//, '')
-        .replace(/\/$/, '')
-        .split(':')[0]
-        .toLowerCase(),
-    );
-  return configured.includes(host);
-}
-
 /**
  * - Custom campus hosts rewrite landing paths to the campus gateway
  * - Signed-in visitors on the platform host hitting `/` go to the dashboard
@@ -40,7 +21,7 @@ function isLikelyPlatformHost(host: string): boolean {
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const host = hostnameOf(req);
-  const customHost = Boolean(host) && !isLikelyPlatformHost(host);
+  const customHost = Boolean(host) && !isPlatformHostname(host);
   const hasSession = Boolean(req.cookies.get(SESSION_COOKIE)?.value);
 
   const requestHeaders = new Headers(req.headers);
@@ -50,6 +31,7 @@ export function middleware(req: NextRequest) {
   }
 
   // Custom domain landing → campus gateway (resolves Host → institution).
+  // Never run this for intellex.loopingbinary.com — that is the main app.
   if (
     customHost &&
     (pathname === '/' ||

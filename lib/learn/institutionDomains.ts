@@ -7,6 +7,11 @@
 
 import { getDb } from '@/lib/repo';
 import { prisma } from '@/lib/db/prisma';
+import {
+  CANONICAL_SITE_URL,
+  isPlatformHostname,
+  platformHostSet,
+} from '@/lib/platformHosts';
 
 export type DomainStatus = 'none' | 'pending' | 'active' | 'rejected';
 
@@ -23,31 +28,12 @@ export type InstitutionDomainView = {
   cnameTarget: string;
 };
 
-const PLATFORM_HOSTS = new Set(
-  [
-    'localhost',
-    '127.0.0.1',
-    process.env.APP_PUBLIC_URL,
-    process.env.NEXT_PUBLIC_APP_URL,
-    process.env.VERCEL_URL,
-    ...(process.env.PLATFORM_HOSTS || '').split(','),
-  ]
-    .filter(Boolean)
-    .map((h) =>
-      String(h)
-        .replace(/^https?:\/\//, '')
-        .replace(/\/$/, '')
-        .split(':')[0]
-        .toLowerCase(),
-    ),
-);
-
 export function platformCnameTarget(): string {
   const raw =
     process.env.CAMPUS_CNAME_TARGET ||
     process.env.APP_PUBLIC_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
-    'cname.intellex.cm';
+    CANONICAL_SITE_URL;
   return String(raw)
     .replace(/^https?:\/\//, '')
     .replace(/\/$/, '')
@@ -71,12 +57,7 @@ export function normalizeHostname(raw: string | null | undefined): string | null
 }
 
 export function isPlatformHost(host: string | null | undefined): boolean {
-  const h = normalizeHostname(host);
-  if (!h) return true;
-  if (PLATFORM_HOSTS.has(h)) return true;
-  // Vercel preview / default hosts stay on the main app.
-  if (h.endsWith('.vercel.app')) return true;
-  return false;
+  return isPlatformHostname(host);
 }
 
 export function domainLabel(status: DomainStatus): string {
@@ -163,7 +144,7 @@ export async function resolveInstitutionByHost(
       const label = parts[0];
       const parent = parts.slice(1).join('.');
       const parentIsPlatform =
-        PLATFORM_HOSTS.has(parent) ||
+        platformHostSet().has(parent) ||
         parent === cnameTarget ||
         host === `${label}.${cnameTarget}` ||
         (cnameTarget.includes('.') && parent === cnameTarget);
