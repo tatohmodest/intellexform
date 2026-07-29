@@ -267,8 +267,8 @@ export async function POST(req: NextRequest) {
       const amount = priceForCertPlan(plan);
       const productName =
         plan === 'yearly'
-          ? 'InTelleX certification · yearly (10% off)'
-          : 'InTelleX certification · monthly';
+          ? 'InTelleX Student membership · yearly (10% off)'
+          : 'InTelleX Student membership · monthly';
 
       await createOrder({
         fullName,

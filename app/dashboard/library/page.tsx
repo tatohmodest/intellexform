@@ -1,15 +1,23 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { BookMarked, Feather, FileText, Layers } from 'lucide-react';
+import { Award, BookMarked, Feather, FileText, Layers, Sparkles } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
-import { getPurchasedBookIds, getRoles, listPublishedBooks } from '@/lib/learn/ecosystem';
+import {
+  getPurchasedBookIds,
+  getRoles,
+  listPublishedBooks,
+} from '@/lib/learn/ecosystem';
+import { hasActiveCertSubscription } from '@/lib/learn/certSubscription';
+import { listBookRequestsByUser } from '@/lib/learn/bookRequests';
 import {
   getPurchasedNoteIds,
   listLibraryNotes,
   studentOwnsNote,
 } from '@/lib/learn/notes';
+import { STUDENT_MONTHLY_XAF } from '@/lib/learn/studentMembership';
 import GetBookButton from '@/components/dashboard/GetBookButton';
 import GetNoteButton from '@/components/dashboard/GetNoteButton';
+import BookRequestForm from '@/components/dashboard/BookRequestForm';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,15 +25,24 @@ export default async function LibraryPage() {
   const session = getSessionUser();
   if (!session) redirect('/login?next=/dashboard/library');
 
-  const [books, purchased, roles, libraryNotes, purchasedNotes] = await Promise.all([
-    listPublishedBooks(),
-    getPurchasedBookIds(session.uid),
-    getRoles(session.uid),
-    listLibraryNotes(),
-    getPurchasedNoteIds(session.uid),
-  ]);
+  const [books, purchased, roles, libraryNotes, purchasedNotes, isMember, myRequests] =
+    await Promise.all([
+      listPublishedBooks(),
+      getPurchasedBookIds(session.uid),
+      getRoles(session.uid),
+      listLibraryNotes(),
+      getPurchasedNoteIds(session.uid),
+      hasActiveCertSubscription(session.uid),
+      listBookRequestsByUser(session.uid),
+    ]);
 
-  const myShelf = books.filter((b) => purchased.has(b.id) || b.authorId === session.uid);
+  const myShelf = books.filter(
+    (b) =>
+      purchased.has(b.id) ||
+      b.authorId === session.uid ||
+      b.priceXAF === 0 ||
+      isMember,
+  );
   const categories = Array.from(new Set(books.map((b) => b.category)));
 
   const noteOwnership = await Promise.all(
@@ -46,8 +63,8 @@ export default async function LibraryPage() {
           </div>
           <h1 className="font-display text-[30px] leading-tight">Library</h1>
           <p className="mt-1 max-w-xl text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-            Books, handbooks, cheatsheets, and class notes - written by Intellex and by mentors
-            across the ecosystem. Free to read or priced by the author.
+            Books from InTelleX and mentors. Request titles you need. Student members read paid
+            books free.
           </p>
         </div>
         <Link
@@ -59,6 +76,56 @@ export default async function LibraryPage() {
           {roles.includes('mentor') ? 'Write & sell your own book' : 'Become a mentor to publish'}
         </Link>
       </div>
+
+      {!isMember ? (
+        <div
+          className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border p-5"
+          style={{
+            borderColor: 'rgba(0,179,105,0.35)',
+            background: 'rgba(0,179,105,0.07)',
+          }}
+        >
+          <div className="flex gap-3">
+            <Sparkles size={20} style={{ color: 'var(--green-deep)', marginTop: 2 }} />
+            <div>
+              <div className="text-[15px] font-semibold" style={{ color: 'var(--green-deep)' }}>
+                InTelleX Student · {STUDENT_MONTHLY_XAF.toLocaleString('en-US')} XAF/month
+              </div>
+              <p className="mt-0.5 max-w-xl text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
+                Unlock 1,000+ courses with certifications, Intermediate→Pro free tracks, and every
+                priced library book included.
+              </p>
+            </div>
+          </div>
+          <Link href="/membership" className="btn btn-g shrink-0">
+            <Award size={14} /> Become a student
+          </Link>
+        </div>
+      ) : (
+        <div
+          className="mb-8 rounded-2xl border px-5 py-4 text-[13.5px]"
+          style={{ borderColor: 'rgba(0,179,105,0.3)', background: 'rgba(0,179,105,0.06)', color: 'var(--green-deep)' }}
+        >
+          Active InTelleX Student membership - priced library books are free for you.
+        </div>
+      )}
+
+      <section className="mb-10">
+        <BookRequestForm />
+        {myRequests.length > 0 && (
+          <div className="mt-4 rounded-2xl border p-4" style={{ borderColor: 'var(--line)' }}>
+            <div className="mb-2 text-[13px] font-semibold">Your recent requests</div>
+            <ul className="space-y-2 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+              {myRequests.slice(0, 5).map((r) => (
+                <li key={r.id} className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-medium" style={{ color: 'var(--ink)' }}>{r.title}</span>
+                  <span className="capitalize">{r.status}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
 
       {myShelf.length > 0 && (
         <section className="mb-10">
@@ -154,7 +221,11 @@ export default async function LibraryPage() {
             {books
               .filter((b) => b.category === cat)
               .map((b) => {
-                const owned = purchased.has(b.id) || b.priceXAF === 0 || b.authorId === session.uid;
+                const owned =
+                  purchased.has(b.id) ||
+                  b.priceXAF === 0 ||
+                  b.authorId === session.uid ||
+                  isMember;
                 return (
                   <div
                     key={b.id}
@@ -182,10 +253,20 @@ export default async function LibraryPage() {
                         {b.subtitle || b.description}
                       </p>
                       <div className="mt-auto flex items-center justify-between pt-2">
-                        <span className="text-[13px] font-bold" style={{ color: b.priceXAF > 0 ? 'var(--ink)' : 'var(--green-deep)' }}>
-                          {b.priceXAF > 0 ? `${b.priceXAF.toLocaleString()} XAF` : 'Free'}
+                        <span className="text-[13px] font-bold" style={{ color: b.priceXAF > 0 && !isMember ? 'var(--ink)' : 'var(--green-deep)' }}>
+                          {b.priceXAF > 0
+                            ? isMember
+                              ? 'Included'
+                              : `${b.priceXAF.toLocaleString()} XAF`
+                            : 'Free'}
                         </span>
-                        <GetBookButton bookId={b.id} priceXAF={b.priceXAF} owned={owned} compact />
+                        <GetBookButton
+                          bookId={b.id}
+                          priceXAF={b.priceXAF}
+                          owned={owned}
+                          isMember={isMember}
+                          compact
+                        />
                       </div>
                     </div>
                   </div>

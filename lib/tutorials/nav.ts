@@ -40,6 +40,7 @@ export const LEARN_NAV = [
 ] as const;
 
 export const EXPLORE_NAV = [
+  { href: '/membership', label: 'Become a Student', desc: '4,999 XAF/mo · courses, certs & library' },
   { href: '/about', label: 'About & CEO', desc: 'Tatoh Modest Wilton · Looping Binary' },
   { href: '/ecosystem', label: 'Ecosystem', desc: 'How InTelleX fits together' },
   { href: '/enterprise', label: 'For institutions', desc: 'Campus plans, pricing & onboarding' },

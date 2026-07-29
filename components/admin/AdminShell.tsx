@@ -28,6 +28,7 @@ const NAV = [
   { href: '/admin/onboarding', label: 'Onboarding', icon: ClipboardCheck },
   { href: '/admin/connections', label: 'Connections', icon: Network },
   { href: '/admin/content', label: 'Content pricing', icon: Tags },
+  { href: '/admin/library', label: 'Library', icon: BookOpen },
   { href: '/admin/catalogue', label: 'Catalogue', icon: Trash2 },
   { href: '/admin/legacy/learning', label: 'Learning', icon: GraduationCap },
   { href: '/admin/legacy/requests', label: 'Requests', icon: MessageSquare },

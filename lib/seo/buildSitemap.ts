@@ -55,6 +55,8 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
   }[] = [
     { path: '/', priority: 1, changeFrequency: 'daily' },
     { path: '/about', priority: 0.95, changeFrequency: 'monthly' },
+    { path: '/membership', priority: 0.95, changeFrequency: 'weekly' },
+    { path: '/register/student', priority: 0.85, changeFrequency: 'monthly' },
     { path: '/courses', priority: 0.95, changeFrequency: 'daily' },
     { path: '/tutorials', priority: 0.9, changeFrequency: 'weekly' },
     { path: '/ecosystem', priority: 0.85, changeFrequency: 'monthly' },

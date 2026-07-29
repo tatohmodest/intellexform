@@ -810,6 +810,73 @@ export async function updateBook(
     );
 }
 
+/** Platform admin can edit any book (publish + free/paid pricing). */
+export async function updateBookAsAdmin(
+  id: string,
+  patch: Partial<
+    Pick<
+      BookDoc,
+      | 'title'
+      | 'subtitle'
+      | 'description'
+      | 'category'
+      | 'coverColor'
+      | 'coverEmoji'
+      | 'priceXAF'
+      | 'chapters'
+      | 'published'
+      | 'authorName'
+    >
+  >,
+) {
+  const db = await getDb();
+  await db.collection('books').updateOne(
+    { _id: new ObjectId(id) },
+    { $set: { ...patch, updatedAt: new Date() } },
+  );
+}
+
+export async function listAllBooks(limit = 200): Promise<BookView[]> {
+  try {
+    await ensureLearnCollections();
+    const db = await getDb();
+    const docs = await db
+      .collection('books')
+      .find({})
+      .sort({ updatedAt: -1 })
+      .limit(limit)
+      .toArray();
+    return docs.map((d) => toBookView(d as Record<string, unknown>));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Free books, authors, purchasers, and active InTelleX Student members
+ * (cert subscription) can read the full book.
+ */
+export async function studentCanReadBook(
+  userId: string,
+  book: BookView,
+  opts?: { purchasedIds?: Set<string>; isMember?: boolean },
+): Promise<boolean> {
+  if (!book) return false;
+  if (book.priceXAF === 0) return true;
+  if (book.authorId === userId) return true;
+  if (opts?.isMember) return true;
+  if (opts?.purchasedIds?.has(book.id)) return true;
+  if (opts?.purchasedIds === undefined) {
+    const purchased = await getPurchasedBookIds(userId);
+    if (purchased.has(book.id)) return true;
+  }
+  if (opts?.isMember === undefined) {
+    const { hasActiveCertSubscription } = await import('@/lib/learn/certSubscription');
+    if (await hasActiveCertSubscription(userId)) return true;
+  }
+  return false;
+}
+
 export async function purchaseBook(userId: string, book: BookView) {
   const db = await getDb();
   const res = await db.collection('book_purchases').updateOne(

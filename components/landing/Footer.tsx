@@ -78,6 +78,7 @@ export default function Footer() {
             <h5 className="mb-3.5 text-[12.5px] uppercase tracking-[0.08em]" style={{ color: 'rgba(251,248,240,0.5)' }}>
               Company
             </h5>
+            <Link href="/membership" className="mb-2 block text-sm text-paper/80">Become a Student</Link>
             <Link href="/about" className="mb-2 block text-sm text-paper/80">About InTelleX</Link>
             <Link href="/about#ceo" className="mb-2 block text-sm text-paper/80">CEO</Link>
             <Link href="/about#ceo" className="mb-2 block text-sm text-paper/80">Tatoh Modest Wilton</Link>

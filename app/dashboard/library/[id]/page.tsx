@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Lock } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getBook, getPurchasedBookIds } from '@/lib/learn/ecosystem';
+import { hasActiveCertSubscription } from '@/lib/learn/certSubscription';
 import MarkdownLite from '@/components/dashboard/MarkdownLite';
 import GetBookButton from '@/components/dashboard/GetBookButton';
 
@@ -21,9 +22,15 @@ export default async function BookReaderPage({
   const book = await getBook(params.id);
   if (!book || (!book.published && book.authorId !== session.uid)) notFound();
 
-  const purchased = await getPurchasedBookIds(session.uid);
+  const [purchased, isMember] = await Promise.all([
+    getPurchasedBookIds(session.uid),
+    hasActiveCertSubscription(session.uid),
+  ]);
   const owned =
-    book.priceXAF === 0 || purchased.has(book.id) || book.authorId === session.uid;
+    book.priceXAF === 0 ||
+    purchased.has(book.id) ||
+    book.authorId === session.uid ||
+    isMember;
 
   const chIdx = Math.max(
     0,
@@ -89,7 +96,15 @@ export default async function BookReaderPage({
           >
             <ArrowLeft size={14} /> Library
           </Link>
-          {!owned && <GetBookButton bookId={book.id} priceXAF={book.priceXAF} owned={false} compact />}
+          {!owned && (
+            <GetBookButton
+              bookId={book.id}
+              priceXAF={book.priceXAF}
+              owned={false}
+              isMember={isMember}
+              compact
+            />
+          )}
         </div>
 
         <div className="mono mb-2 text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
@@ -108,13 +123,18 @@ export default async function BookReaderPage({
             >
               <Lock size={24} />
             </span>
-            <h2 className="font-display text-[20px]">This chapter is part of the paid book</h2>
+            <h2 className="font-display text-[20px]">This chapter is part of the full book</h2>
             <p className="mt-2 max-w-sm text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-              Chapter 1 is free to preview. Get the full book to keep reading - the author
-              earns directly from every sale.
+              Chapter 1 is free to preview. Become an InTelleX Student to unlock the library, or
+              get this book when you join.
             </p>
             <div className="mt-6">
-              <GetBookButton bookId={book.id} priceXAF={book.priceXAF} owned={false} />
+              <GetBookButton
+                bookId={book.id}
+                priceXAF={book.priceXAF}
+                owned={false}
+                isMember={isMember}
+              />
             </div>
           </div>
         ) : (
