@@ -10,9 +10,9 @@ import { absoluteUrl, cameroonGeoMeta, getSiteUrl } from '@/lib/seo/share';
 import { SITE_KEYWORDS } from '@/lib/seo/keywords';
 
 const SITE = getSiteUrl();
-const TITLE = 'InTelleX - Learn at your pace | Tech education Cameroon';
+const TITLE = 'InTelleX Cameroon - Online learning & professional training';
 const DESCRIPTION =
-  'InTelleX is Cameroon\'s learning OS: self-paced courses, live mentors, and an AI tutor. Built in Douala by Looping Binary - serving Yaounde, Bamenda, Buea, Bafoussam and every region.';
+  'InTelleX Cameroon: professional training, online learning, coding courses, live mentorship and AI tutoring. Built in Douala by Looping Binary - serving Yaounde, Bamenda, Buea, Bafoussam and every region.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),

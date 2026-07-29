@@ -99,7 +99,7 @@ export function buildShareMetadata(input: ShareCardInput): Metadata {
   const url = absoluteUrl(input.path);
   const image = absoluteUrl(input.image);
   const alt = input.imageAlt || title;
-  const keywords = [...SITE_KEYWORDS.slice(0, 40), ...(input.keywords || [])];
+  const keywords = [...SITE_KEYWORDS.slice(0, 80), ...(input.keywords || [])];
 
   return {
     title,
