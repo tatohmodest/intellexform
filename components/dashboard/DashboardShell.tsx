@@ -511,8 +511,8 @@ export default function DashboardShell({
   }
 
   const sidebarInner = (
-    <>
-      <div className="mb-4 px-1">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="mb-4 shrink-0 px-1">
         {inCampus && campusBrand ? (
           <div className="flex items-center gap-2.5">
             <span
@@ -541,20 +541,27 @@ export default function DashboardShell({
       </div>
 
       {user.onboardingComplete !== false && (
-        <ContextSwitcher user={user} accent={accent} onSwitched={() => setMobileOpen(false)} />
+        <div className="shrink-0">
+          <ContextSwitcher user={user} accent={accent} onSwitched={() => setMobileOpen(false)} />
+        </div>
       )}
 
-      <NavLinks
-        pathname={pathname}
-        isMentor={Boolean(user.roles?.includes('mentor'))}
-        context={user.activeContext}
-        accent={accent}
-        campusBrand={campusBrand}
-        campusRole={campusRole}
-        onNavigate={() => setMobileOpen(false)}
-      />
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] py-1 pr-0.5">
+        <NavLinks
+          pathname={pathname}
+          isMentor={Boolean(user.roles?.includes('mentor'))}
+          context={user.activeContext}
+          accent={accent}
+          campusBrand={campusBrand}
+          campusRole={campusRole}
+          onNavigate={() => setMobileOpen(false)}
+        />
+      </div>
 
-      <div className="mt-auto space-y-1 pt-6">
+      <div
+        className="shrink-0 space-y-1 border-t pt-3"
+        style={{ borderColor: 'var(--line)' }}
+      >
         {inCampus && (
           <p className="mono px-3.5 pb-2 text-[9.5px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
             Powered by InTelleX
@@ -577,7 +584,7 @@ export default function DashboardShell({
           Sign out
         </button>
       </div>
-    </>
+    </div>
   );
 
   const themeStyle = inCampus
@@ -591,7 +598,7 @@ export default function DashboardShell({
   return (
     <div className="min-h-screen bg-paper" style={themeStyle}>
       <aside
-        className="fixed inset-y-0 left-0 z-30 hidden w-[240px] flex-col border-r px-4 py-6 lg:flex"
+        className="fixed inset-y-0 left-0 z-30 hidden h-dvh max-h-dvh w-[240px] flex-col overflow-hidden border-r px-4 py-6 lg:flex"
         style={{
           borderColor: 'var(--line)',
           background: inCampus ? `${accent}08` : 'var(--paper)',
@@ -607,7 +614,7 @@ export default function DashboardShell({
             onClick={() => setMobileOpen(false)}
           />
           <aside
-            className="absolute inset-y-0 left-0 flex w-[280px] flex-col px-4 py-6"
+            className="absolute inset-y-0 left-0 flex h-dvh max-h-dvh w-[min(280px,88vw)] flex-col overflow-hidden px-4 py-6 shadow-xl"
             style={{ background: 'var(--paper)' }}
           >
             {sidebarInner}
