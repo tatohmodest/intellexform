@@ -52,14 +52,14 @@ export default function BookRequestForm() {
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="block text-[12px] font-semibold sm:col-span-2">
-          Book title
+          Book title / Amazon link
           <input
             required
             className="mt-1 w-full rounded-xl border px-3 py-2.5 text-[14px]"
             style={{ borderColor: 'var(--line)' }}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Clean Code, Intro to Networking…"
+            placeholder="e.g. Clean Code, Intro to Networking or https://..."
           />
         </label>
         <label className="block text-[12px] font-semibold">
