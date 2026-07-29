@@ -41,6 +41,14 @@ export interface CourseLiveSchedule {
   meetingUrl?: string | null;
 }
 
+export interface CourseModule {
+  id: string;
+  title: string;
+  description?: string;
+  /** Optional planned live sessions inside this module */
+  plannedSessions?: number | null;
+}
+
 /** Everything stored on a teacher course except the Mongo `_id`. */
 export interface TeacherCourseBase {
   authorId: string;
@@ -73,6 +81,15 @@ export interface TeacherCourseBase {
   seats?: number | null;
   certificate?: boolean;
   liveSchedule?: CourseLiveSchedule | null;
+
+  /**
+   * Live / hybrid mentorship structure (optional).
+   * Instructors may set planned lesson count, module count, and/or fill modules manually
+   * when they do not yet know exact video lessons.
+   */
+  plannedLessonCount?: number | null;
+  plannedModuleCount?: number | null;
+  modules?: CourseModule[];
 
   /** Value proposition */
   outcomes?: string[];

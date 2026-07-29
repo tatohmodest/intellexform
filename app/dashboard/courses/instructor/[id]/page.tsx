@@ -8,6 +8,7 @@ import {
   Check,
   Clock,
   Globe2,
+  Layers,
   Radio,
   Users,
   Video,
@@ -160,9 +161,37 @@ export default async function InstructorCoursePage({
                 <Clock size={12} /> {hours}h
               </span>
             )}
-            <span className="inline-flex items-center gap-1.5">
-              <BookOpen size={12} /> {course.lessons?.length || 0} lessons
-            </span>
+            {isLive ? (
+              <>
+                {typeof course.plannedLessonCount === 'number' && course.plannedLessonCount > 0 && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <BookOpen size={12} /> {course.plannedLessonCount} live lessons
+                  </span>
+                )}
+                {(typeof course.plannedModuleCount === 'number' && course.plannedModuleCount > 0) ||
+                (course.modules && course.modules.length > 0) ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Layers size={12} />{' '}
+                    {course.modules && course.modules.length > 0
+                      ? course.modules.length
+                      : course.plannedModuleCount}{' '}
+                    modules
+                  </span>
+                ) : null}
+                {!course.plannedLessonCount &&
+                  !course.plannedModuleCount &&
+                  !(course.modules && course.modules.length) &&
+                  (course.lessons?.length || 0) > 0 && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <BookOpen size={12} /> {course.lessons?.length || 0} lessons
+                    </span>
+                  )}
+              </>
+            ) : (
+              <span className="inline-flex items-center gap-1.5">
+                <BookOpen size={12} /> {course.lessons?.length || 0} lessons
+              </span>
+            )}
             {course.level && course.level !== 'all' && (
               <span className="capitalize">{course.level}</span>
             )}
@@ -281,6 +310,33 @@ export default async function InstructorCoursePage({
         </section>
       )}
 
+      {isLive && course.modules && course.modules.length > 0 && (
+        <section className="mb-8 border p-4" style={{ borderColor: 'var(--line)' }}>
+          <h2 className="mb-3 inline-flex items-center gap-2 font-display text-[19px]">
+            <Layers size={16} /> Modules
+          </h2>
+          <ol className="space-y-3">
+            {course.modules.map((mod, i) => (
+              <li key={mod.id} className="border-t pt-3 first:border-0 first:pt-0" style={{ borderColor: 'var(--line)' }}>
+                <div className="text-[14.5px] font-semibold">
+                  {i + 1}. {mod.title}
+                </div>
+                {mod.description ? (
+                  <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+                    {mod.description}
+                  </p>
+                ) : null}
+                {typeof mod.plannedSessions === 'number' && mod.plannedSessions > 0 ? (
+                  <p className="mt-1 font-mono text-[10.5px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
+                    ~{mod.plannedSessions} sessions
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
       <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr]">
         <div className="min-w-0 space-y-8">
           {course.description && (
@@ -293,10 +349,14 @@ export default async function InstructorCoursePage({
           )}
 
           <section>
-            <h2 className="mb-3 font-display text-[21px]">Lessons</h2>
+            <h2 className="mb-3 font-display text-[21px]">
+              {isLive && !(course.lessons?.length) ? 'Live sessions' : 'Lessons'}
+            </h2>
             {visibleLessons.length === 0 ? (
               <p className="text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-                Lessons are published as the course runs.
+                {isLive
+                  ? 'Live lessons are scheduled as the mentorship runs. Check your modules and classroom for session links.'
+                  : 'Lessons are published as the course runs.'}
               </p>
             ) : (
               <div className="space-y-6">

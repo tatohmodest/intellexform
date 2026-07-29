@@ -1,9 +1,15 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { BookMarked, Feather, Layers } from 'lucide-react';
+import { BookMarked, Feather, FileText, Layers } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getPurchasedBookIds, getRoles, listPublishedBooks } from '@/lib/learn/ecosystem';
+import {
+  getPurchasedNoteIds,
+  listLibraryNotes,
+  studentOwnsNote,
+} from '@/lib/learn/notes';
 import GetBookButton from '@/components/dashboard/GetBookButton';
+import GetNoteButton from '@/components/dashboard/GetNoteButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,14 +17,24 @@ export default async function LibraryPage() {
   const session = getSessionUser();
   if (!session) redirect('/login?next=/dashboard/library');
 
-  const [books, purchased, roles] = await Promise.all([
+  const [books, purchased, roles, libraryNotes, purchasedNotes] = await Promise.all([
     listPublishedBooks(),
     getPurchasedBookIds(session.uid),
     getRoles(session.uid),
+    listLibraryNotes(),
+    getPurchasedNoteIds(session.uid),
   ]);
 
   const myShelf = books.filter((b) => purchased.has(b.id) || b.authorId === session.uid);
   const categories = Array.from(new Set(books.map((b) => b.category)));
+
+  const noteOwnership = await Promise.all(
+    libraryNotes.map(async (n) => ({
+      id: n.id,
+      owned: purchasedNotes.has(n.id) || (await studentOwnsNote(n, session.uid)),
+    })),
+  );
+  const ownedNoteIds = new Set(noteOwnership.filter((x) => x.owned).map((x) => x.id));
 
   return (
     <div className="mx-auto max-w-[1100px]">
@@ -30,8 +46,8 @@ export default async function LibraryPage() {
           </div>
           <h1 className="font-display text-[30px] leading-tight">Library</h1>
           <p className="mt-1 max-w-xl text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-            Books, handbooks and cheatsheets - written by Intellex and by mentors across
-            the ecosystem. Free to read or priced by the author.
+            Books, handbooks, cheatsheets, and class notes - written by Intellex and by mentors
+            across the ecosystem. Free to read or priced by the author.
           </p>
         </div>
         <Link
@@ -66,6 +82,64 @@ export default async function LibraryPage() {
                 </div>
               </Link>
             ))}
+          </div>
+        </section>
+      )}
+
+      {libraryNotes.length > 0 && (
+        <section className="mb-10">
+          <div className="mb-4 flex items-center gap-2.5">
+            <FileText size={16} style={{ color: 'var(--green-deep)' }} />
+            <h2 className="font-display text-[21px]">Class notes</h2>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {libraryNotes.map((n) => {
+              const owned = ownedNoteIds.has(n.id);
+              return (
+                <div
+                  key={n.id}
+                  className="flex gap-4 rounded-2xl border p-4 transition-shadow hover:shadow-card"
+                  style={{ borderColor: 'var(--line)' }}
+                >
+                  <Link href={`/dashboard/notes/${n.id}`} className="shrink-0">
+                    <div
+                      className="flex h-[92px] w-[72px] flex-col items-center justify-center rounded-lg text-white"
+                      style={{ background: 'linear-gradient(160deg, #0f766e, #14b8a6)' }}
+                    >
+                      <FileText size={22} />
+                    </div>
+                  </Link>
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <Link href={`/dashboard/notes/${n.id}`}>
+                      <div className="line-clamp-2 text-[14.5px] font-semibold leading-snug">{n.title}</div>
+                    </Link>
+                    <div className="mt-0.5 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                      by {n.authorName}
+                    </div>
+                    <p
+                      className="mt-1.5 line-clamp-2 text-[12.5px] leading-relaxed"
+                      style={{ color: 'var(--ink-soft)' }}
+                    >
+                      {n.body || 'Class notes from your instructor.'}
+                    </p>
+                    <div className="mt-auto flex items-center justify-between pt-2">
+                      <span
+                        className="text-[13px] font-bold"
+                        style={{ color: n.priceXAF > 0 ? 'var(--ink)' : 'var(--green-deep)' }}
+                      >
+                        {n.priceXAF > 0 ? `${n.priceXAF.toLocaleString()} XAF` : 'Free'}
+                      </span>
+                      <GetNoteButton
+                        noteId={n.id}
+                        priceXAF={n.priceXAF}
+                        owned={owned}
+                        compact
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
       )}

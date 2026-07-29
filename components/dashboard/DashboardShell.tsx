@@ -25,6 +25,7 @@ import {
   Bell,
   Sparkles,
   ClipboardList,
+  FileText,
   Video,
   School,
 } from 'lucide-react';
@@ -55,6 +56,7 @@ const NAV = [
   { href: '/dashboard/classroom', label: 'My Classroom', icon: School },
   { href: '/dashboard/mentorship', label: 'Mentorship', icon: Users },
   { href: '/dashboard/library', label: 'Library', icon: BookMarked },
+  { href: '/dashboard/notes', label: 'Notes', icon: FileText },
   { href: '/dashboard/videos', label: 'Video Hall', icon: Youtube },
   { href: '/dashboard/tutor', label: 'InTelleX AI', icon: Bot },
   { href: '/dashboard/institutions', label: 'Institutions', icon: Building2 },
@@ -269,6 +271,22 @@ function NavLinks({
                 strokeWidth={pathname.startsWith('/dashboard/teach/assessments') ? 2.4 : 2}
               />
               Assessment Studio
+            </Link>
+            <Link
+              href="/dashboard/teach/notes"
+              onClick={onNavigate}
+              className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
+              style={
+                pathname.startsWith('/dashboard/teach/notes')
+                  ? { background: activeBg, color: activeColor }
+                  : { color: 'var(--ink-soft)' }
+              }
+            >
+              <FileText
+                size={17}
+                strokeWidth={pathname.startsWith('/dashboard/teach/notes') ? 2.4 : 2}
+              />
+              Notes Studio
             </Link>
           </>
         )}

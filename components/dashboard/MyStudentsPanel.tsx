@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ClipboardList,
+  FileText,
   GraduationCap,
   Loader2,
   Radio,
@@ -317,6 +318,13 @@ export default function MyStudentsPanel({
                       style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
                     >
                       <GraduationCap size={14} /> Assign exam
+                    </Link>
+                    <Link
+                      href={`/dashboard/teach/notes?courseId=${encodeURIComponent(active.courseId)}`}
+                      className="inline-flex items-center gap-1.5 border px-3.5 py-2.5 text-[13px] font-semibold"
+                      style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+                    >
+                      <FileText size={14} /> Send notes
                     </Link>
                   </div>
                 </div>
