@@ -80,7 +80,7 @@ export function organizationJsonLd(): JsonLd {
         email: SITE_GEO.email,
         telephone: SITE_GEO.phone,
         areaServed: 'CM',
-        availableLanguage: ['English', 'French'],
+        availableLanguage: ['English'],
       },
     ],
   };
@@ -95,7 +95,7 @@ export function websiteJsonLd(): JsonLd {
     name: BRAND_NAME,
     url: site,
     publisher: { '@id': `${site}/#organization` },
-    inLanguage: ['en', 'fr'],
+    inLanguage: 'en',
     potentialAction: {
       '@type': 'SearchAction',
       target: {
@@ -186,7 +186,7 @@ export function courseJsonLd(opts: {
       },
     },
     provider: { '@id': `${site}/#organization` },
-    inLanguage: ['en', 'fr'],
+    inLanguage: 'en',
     isAccessibleForFree: opts.priceXAF === 0,
     ...(opts.instructorName
       ? {

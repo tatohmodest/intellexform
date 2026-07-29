@@ -13,13 +13,10 @@ export default function MarkdownLite({ text }: { text: string }) {
         i % 2 === 1 ? (
           <pre
             key={i}
-            className="mono notranslate my-4 overflow-x-auto rounded-xl p-4 text-[13px] leading-relaxed"
+            className="mono my-4 overflow-x-auto rounded-xl p-4 text-[13px] leading-relaxed"
             style={{ background: '#0C1116', color: '#d7e2ec' }}
-            translate="no"
           >
-            <code className="notranslate" translate="no">
-              {part.replace(/^[a-z]*\n/, '')}
-            </code>
+            <code>{part.replace(/^[a-z]*\n/, '')}</code>
           </pre>
         ) : (
           <Block key={i} text={part} />
@@ -41,9 +38,8 @@ function Inline({ text }: { text: string }) {
           return (
             <code
               key={ti}
-              className="mono notranslate rounded px-1.5 py-0.5 text-[13px]"
+              className="mono rounded px-1.5 py-0.5 text-[13px]"
               style={{ background: 'var(--paper-dim)' }}
-              translate="no"
             >
               {tok.slice(1, -1)}
             </code>

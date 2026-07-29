@@ -26,11 +26,7 @@ export default function CodeBlock({
   }
 
   return (
-    <div
-      className="tutorial-code notranslate my-5 overflow-hidden rounded-xl border"
-      style={{ borderColor: 'var(--line)' }}
-      translate="no"
-    >
+    <div className="tutorial-code my-5 overflow-hidden rounded-xl border" style={{ borderColor: 'var(--line)' }}>
       <div
         className="flex items-center justify-between gap-3 border-b px-4 py-2.5"
         style={{ background: 'var(--paper-dim)', borderColor: 'var(--line)' }}
@@ -60,9 +56,8 @@ export default function CodeBlock({
         </button>
       </div>
       <pre
-        className="notranslate max-w-full overflow-x-auto p-3 text-[12.5px] leading-[1.65] sm:p-4 sm:text-[13.5px]"
+        className="max-w-full overflow-x-auto p-3 text-[12.5px] leading-[1.65] sm:p-4 sm:text-[13.5px]"
         style={{ background: '#0C1116', color: '#E8EEF5' }}
-        translate="no"
       >
         <HighlightedCode code={code} language={language} />
       </pre>

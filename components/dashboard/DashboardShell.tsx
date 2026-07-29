@@ -30,7 +30,6 @@ import {
   School,
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
-import LanguageToggle from '@/components/i18n/LanguageToggle';
 import MobileBottomNav from '@/components/dashboard/MobileBottomNav';
 import NotificationBell from '@/components/dashboard/NotificationBell';
 import OngoingClassBanner from '@/components/dashboard/OngoingClassBanner';
@@ -630,7 +629,7 @@ export default function DashboardShell({
         }}
       >
         <button
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border lg:hidden"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border lg:hidden"
           style={{ borderColor: 'var(--line)' }}
           onClick={() => setMobileOpen((v) => !v)}
           aria-label="Toggle navigation"
@@ -638,13 +637,15 @@ export default function DashboardShell({
           {mobileOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
 
-        {inCampus && campusBrand ? (
-          <div className="min-w-0 truncate lg:hidden">
+        <div className="lg:hidden">
+          {inCampus && campusBrand ? (
             <span className="text-[14px] font-semibold" style={{ color: accent }}>
               {campusBrand.name}
             </span>
-          </div>
-        ) : null}
+          ) : (
+            <BrandLogo href="/" height={30} variant="mark" />
+          )}
+        </div>
 
         {inCampus && campusBrand && (
           <div className="hidden min-w-0 lg:block">
@@ -655,8 +656,7 @@ export default function DashboardShell({
           </div>
         )}
 
-        <div className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-4">
-          <LanguageToggle size="sm" />
+        <div className="ml-auto flex items-center gap-2.5 sm:gap-4">
           <NotificationBell accent={accent} />
           <div
             className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold"

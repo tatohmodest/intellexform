@@ -4,8 +4,6 @@ import CookieConsent from '@/components/CookieConsent';
 import PwaInstallPrompt from '@/components/PwaInstallPrompt';
 import PwaRegister from '@/components/PwaRegister';
 import JsonLd from '@/components/seo/JsonLd';
-import { LanguageProvider } from '@/components/i18n/LanguageProvider';
-import SiteTranslator from '@/components/i18n/SiteTranslator';
 import { BRAND_LOGO_MARK } from '@/lib/brand';
 import { organizationJsonLd, websiteJsonLd } from '@/lib/seo/schema';
 import { absoluteUrl, cameroonGeoMeta, getSiteUrl } from '@/lib/seo/share';
@@ -47,11 +45,6 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: SITE,
-    languages: {
-      'en-CM': SITE,
-      'fr-CM': SITE,
-      'x-default': SITE,
-    },
   },
   icons: {
     icon: [
@@ -107,16 +100,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
+    <html lang="en" className="scroll-smooth">
       <body className="bg-paper text-ink font-body antialiased">
-        <LanguageProvider>
-          <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
-          {children}
-          <SiteTranslator />
-          <CookieConsent />
-          <PwaRegister />
-          <PwaInstallPrompt />
-        </LanguageProvider>
+        <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
+        {children}
+        <CookieConsent />
+        <PwaRegister />
+        <PwaInstallPrompt />
       </body>
     </html>
   );

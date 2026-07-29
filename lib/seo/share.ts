@@ -76,7 +76,6 @@ export function cameroonGeoMeta(): Metadata['other'] {
     'DC.title': 'InTelleX',
     'DC.creator': 'Tatoh Modest Wilton · Looping Binary',
     'DC.coverage': 'Cameroon - Douala, Yaoundé, Bamenda, Buea, Bafoussam and all regions',
-    'og:locale:alternate': 'fr_CM',
   };
 }
 
