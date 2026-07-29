@@ -13,6 +13,7 @@ import {
 } from '@/lib/learn/ecosystem';
 import { computeCommission } from '@/lib/learn/commission';
 import type { OrderKind } from '@/lib/types';
+import { absoluteUrl } from '@/lib/seo/share';
 
 function newTransactionId() {
   return `${Math.floor(Math.random() * 1_000_000_000)}`;
@@ -299,7 +300,9 @@ export async function POST(req: NextRequest) {
         transactionId,
         amount,
         productName,
-        about: 'Unlock Intermediate to Pro on free courses and earn certificates.',
+        productImage: absoluteUrl('/intellex-student-membership.png'),
+        about:
+          'InTelleX Student membership - 1,000+ courses with certifications, Intermediate to Pro unlock, and free library books.',
         meta: { kind: 'cert_subscription', plan, userId: session.uid },
       });
 

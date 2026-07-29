@@ -10,6 +10,7 @@ import {
   sessionCookieOptions,
 } from '@/lib/auth/session';
 import { upsertLearnerFromOAuth } from '@/lib/learn/repo';
+import { upsertPrismaUserFromOAuth } from '@/lib/db/identity';
 import { isOnboardingComplete } from '@/lib/learn/identity';
 
 export const dynamic = 'force-dynamic';
@@ -43,6 +44,10 @@ export async function GET(req: NextRequest) {
     const token = await exchangeCodeForToken(code, url.origin);
     const profile = await fetchUserInfo(token.access_token);
     const learner = await upsertLearnerFromOAuth(profile);
+    // Mirror into Supabase Prisma so Platform Admin Personnel stays populated.
+    await upsertPrismaUserFromOAuth(profile).catch((err) =>
+      console.error('Prisma user sync on OAuth failed:', err),
+    );
 
     const session = createSession({
       uid: profile.sub,

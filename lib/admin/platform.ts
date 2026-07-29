@@ -20,6 +20,7 @@ import {
 import { getDb } from '@/lib/repo';
 import { slugify } from '@/lib/learn/ecosystem';
 import { platformCnameTarget } from '@/lib/learn/institutionDomains';
+import { syncMongoLearnersToPrisma } from '@/lib/db/identity';
 
 function isPack(v: string): v is CapabilityPack {
   return v === 'foundation' || v === 'professional' || v === 'enterprise' || v === 'custom';
@@ -119,6 +120,11 @@ async function mirrorInstitutionToMongo(inst: {
 }
 
 export async function getPlatformOverview() {
+  // Keep user counts aligned with live OAuth registrations in Mongo.
+  await syncMongoLearnersToPrisma(800).catch((err) =>
+    console.error('overview learner sync failed:', err),
+  );
+
   const [
     institutions,
     users,
@@ -646,6 +652,11 @@ export async function listPersonnel(opts?: {
   role?: string;
   take?: number;
 }) {
+  // Ensure Mongo OAuth registrations exist in Supabase before listing.
+  await syncMongoLearnersToPrisma(800).catch((err) =>
+    console.error('personnel learner sync failed:', err),
+  );
+
   const where: Prisma.UserWhereInput = {};
   if (opts?.banned === true) where.bannedAt = { not: null };
   if (opts?.banned === false) where.bannedAt = null;
@@ -657,13 +668,14 @@ export async function listPersonnel(opts?: {
       { name: { contains: q, mode: 'insensitive' } },
       { firstName: { contains: q, mode: 'insensitive' } },
       { lastName: { contains: q, mode: 'insensitive' } },
+      { loopingBinaryId: { contains: q, mode: 'insensitive' } },
     ];
   }
 
   return prisma.user.findMany({
     where,
-    take: opts?.take ?? 80,
-    orderBy: { createdAt: 'desc' },
+    take: opts?.take ?? 200,
+    orderBy: [{ lastLoginAt: 'desc' }, { createdAt: 'desc' }],
     select: {
       id: true,
       email: true,
@@ -671,6 +683,7 @@ export async function listPersonnel(opts?: {
       firstName: true,
       lastName: true,
       globalRole: true,
+      loopingBinaryId: true,
       bannedAt: true,
       banReason: true,
       createdAt: true,

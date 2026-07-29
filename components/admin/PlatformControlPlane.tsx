@@ -448,6 +448,14 @@ export default function PlatformControlPlane({
                 </tr>
               </thead>
               <tbody>
+                {personnel.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-3 py-10 text-center text-sm" style={{ color: 'var(--ink-soft)' }}>
+                      No registered users found in Supabase yet. Open Personnel again after the sync
+                      runs, or have a student sign in once via LoopingBinary.
+                    </td>
+                  </tr>
+                ) : null}
                 {personnel.map((u) => {
                   const banned = Boolean(u.bannedAt);
                   const memberships = (u.memberships as Array<Record<string, unknown>>) || [];
