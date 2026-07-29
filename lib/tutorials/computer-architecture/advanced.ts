@@ -176,7 +176,7 @@ export const advancedLessons: TutorialLesson[] = [
     order: 59,
     minutes: 18,
     content: [
-      {"type":"p","text":"Week 10 project: The Coherence Arbiter. Model 2–4 cores, a shared bus or directory stub, and MESI transitions for one cache line."},
+      {"type":"p","text":"Week 10 project: The Coherence Arbiter. Model 2-4 cores, a shared bus or directory stub, and MESI transitions for one cache line."},
       {"type":"h2","text":"Minimum events"},
       {"type":"ul","items":["PrRd","PrWr","BusRd","BusRdX / BusUpgr","Flush"]},
       {"type":"code","code":"on(event, core):\n  state[core] = transition(state[core], event)\n  for other in cores:\n    state[other] = snoop(state[other], event)\n  log(cycle, states)","title":"Arbiter loop","language":"text"},
@@ -186,7 +186,7 @@ export const advancedLessons: TutorialLesson[] = [
   },
   {
     slug: "hardware-software-co-design",
-    title: "Hardware–Software Co-Design",
+    title: "Hardware-Software Co-Design",
     description: "Think jointly about ISA, compiler scheduling, and microarchitecture when chasing performance per watt.",
     level: "advanced",
     section: "Capstone & Exam Prep",
@@ -201,7 +201,7 @@ export const advancedLessons: TutorialLesson[] = [
   },
   {
     slug: "time-space-power-tradeoffs",
-    title: "Time–Space–Power Trade-offs",
+    title: "Time-Space-Power Trade-offs",
     description: "Practice SIU engineering discipline: every design choice balances latency, area, and energy.",
     level: "advanced",
     section: "Capstone & Exam Prep",

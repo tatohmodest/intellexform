@@ -3,7 +3,7 @@
 ## Cursor Cloud specific instructions
 
 ### What this is
-Single Next.js 14 (App Router, TypeScript) app — "Intellex" / InTelleX (LoopingBinary education platform). Surfaces include a landing page (`/`), a course catalogue/checkout, a learner dashboard (`/dashboard/*`, behind LoopingBinary OAuth), self-paced tutorials, campus / institution portals, and a password/OTP-protected admin dashboard (`/admin`) backed by `/api/admin/*`. Standard scripts live in `package.json` (`dev`, `build`, `start`, `lint`, `db:*`).
+Single Next.js 14 (App Router, TypeScript) app - "Intellex" / InTelleX (LoopingBinary education platform). Surfaces include a landing page (`/`), a course catalogue/checkout, a learner dashboard (`/dashboard/*`, behind LoopingBinary OAuth), self-paced tutorials, campus / institution portals, and a password/OTP-protected admin dashboard (`/admin`) backed by `/api/admin/*`. Standard scripts live in `package.json` (`dev`, `build`, `start`, `lint`, `db:*`).
 
 The public `/register` wizard (`components/landing/JoinWizard.tsx`) submits to `POST /api/requests` and persists to the MongoDB `requests` collection (NOT `/api/register`). A separate `POST /api/register` route also exists and writes to the `registrations` collection; both show up in the admin dashboard.
 
@@ -30,7 +30,7 @@ DB name is `intellex`; OTP codes live in `admin_otps`.
 - Postgres/Supabase (`DATABASE_URL`, `DIRECT_URL`) backs EduOS / Platform Admin institution records. Skip it unless testing those flows; most learner catalogue data still lives in MongoDB.
 
 ### Notes
-- App serves on port 3000 (`npm run dev`). `mongod` is a separate service and is not started by the update script — start it as shown above before running the app.
+- App serves on port 3000 (`npm run dev`). `mongod` is a separate service and is not started by the update script - start it as shown above before running the app.
 - The README is outdated relative to the full product surface.
 - PayUnit, Agora, Cloudinary, and OpenAI are optional; without them checkout may use a mock page, live video needs an Agora app id, media uploads need Cloudinary, and the AI tutor falls back to static answers.
 - There is no automated test suite; verify changes via `npm run lint`, `npm run build`, and the `/register` → `/admin` flow (learner flows also need LoopingBinary OAuth + `SESSION_SECRET`).

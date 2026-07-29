@@ -6,7 +6,7 @@ export const revalidate = 3600;
 export const dynamic = 'force-dynamic';
 
 /**
- * Explicit Route Handler for /sitemap.xml — stable Content-Type and no
+ * Explicit Route Handler for /sitemap.xml - stable Content-Type and no
  * metadata-file quirks that sometimes make GSC report "Couldn't fetch".
  */
 export async function GET() {

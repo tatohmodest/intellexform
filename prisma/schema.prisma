@@ -488,7 +488,7 @@ model Institution {
   secondaryColor     String?
   customDomain       String?                    @unique
   subdomain          String?                    @unique
-  /// none | pending | active | rejected — InTelleX controls go-live for campus domains.
+  /// none | pending | active | rejected - InTelleX controls go-live for campus domains.
   domainStatus       String                     @default("none")
   /// Owner-requested hostname waiting for Platform approval / DNS.
   pendingCustomDomain String?

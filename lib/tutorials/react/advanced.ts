@@ -4,7 +4,7 @@ export const advancedLessons: TutorialLesson[] = [
   {
     "slug": "performance-memo",
     "title": "Performance: memo and friends",
-    "description": "Know when memo, useMemo, and useCallback help — and when they hurt.",
+    "description": "Know when memo, useMemo, and useCallback help - and when they hurt.",
     "level": "advanced",
     "section": "Performance",
     "order": 16,
@@ -57,7 +57,7 @@ export const advancedLessons: TutorialLesson[] = [
     "content": [
       {
         "type": "p",
-        "text": "Error boundaries are class components (or libraries) that catch errors in their child tree during render and show a fallback. They do not catch event handler or async errors — use try/catch there."
+        "text": "Error boundaries are class components (or libraries) that catch errors in their child tree during render and show a fallback. They do not catch event handler or async errors - use try/catch there."
       },
       {
         "type": "code",
@@ -119,7 +119,7 @@ export const advancedLessons: TutorialLesson[] = [
   {
     "slug": "testing-components",
     "title": "Testing Components",
-    "description": "Test behavior with React Testing Library — user-centric queries.",
+    "description": "Test behavior with React Testing Library - user-centric queries.",
     "level": "advanced",
     "section": "Quality",
     "order": 19,
@@ -165,10 +165,10 @@ export const advancedLessons: TutorialLesson[] = [
       {
         "type": "ul",
         "items": [
-          "features/react-path — pages + hooks for this track",
-          "components/ui — buttons, inputs, code blocks",
-          "lib/ — pure helpers with no React",
-          "app/ or pages/ — routing entrypoints"
+          "features/react-path - pages + hooks for this track",
+          "components/ui - buttons, inputs, code blocks",
+          "lib/ - pure helpers with no React",
+          "app/ or pages/ - routing entrypoints"
         ]
       },
       {
@@ -200,7 +200,7 @@ export const advancedLessons: TutorialLesson[] = [
     "content": [
       {
         "type": "p",
-        "text": "Bring the track together: state, lists, conditionals, effects, and composition. Build a lesson player that mirrors InTelleX — sidebar curriculum, main content, and a progress bar."
+        "text": "Bring the track together: state, lists, conditionals, effects, and composition. Build a lesson player that mirrors InTelleX - sidebar curriculum, main content, and a progress bar."
       },
       {
         "type": "h2",

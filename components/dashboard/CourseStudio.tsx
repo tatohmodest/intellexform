@@ -45,7 +45,7 @@ const AUDIENCES: Array<{ id: CourseAudience; label: string; hint: string }> = [
   {
     id: 'open',
     label: 'Anyone on InTelleX',
-    hint: 'Open enrolment — charge a price or leave it free',
+    hint: 'Open enrolment - charge a price or leave it free',
   },
   {
     id: 'institution',
@@ -809,7 +809,7 @@ export default function CourseStudio({
                       {instructors.map((i) => (
                         <option key={i.userId} value={i.userId}>
                           {i.userName}
-                          {i.title ? ` — ${i.title}` : ''}
+                          {i.title ? ` - ${i.title}` : ''}
                         </option>
                       ))}
                     </select>
@@ -862,7 +862,7 @@ export default function CourseStudio({
                           </button>
                         </div>
                         <label className="mb-1 block font-mono text-[10px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
-                          Google Drive / YouTube / Cloudinary URL (plays in-app — do not upload the video file here)
+                          Google Drive / YouTube / Cloudinary URL (plays in-app - do not upload the video file here)
                         </label>
                         <input
                           className="form-input !rounded-none mb-3 text-[13px]"

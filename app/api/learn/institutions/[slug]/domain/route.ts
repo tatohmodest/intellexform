@@ -32,7 +32,7 @@ export async function POST(
   const body = await req.json().catch(() => ({}));
   const action = String(body.action || 'request');
 
-  // Platform-style manage actions require platform admin cookie/role — also
+  // Platform-style manage actions require platform admin cookie/role - also
   // allow campus owner only for "request". Admin UI uses /api/admin/platform.
   if (action === 'request') {
     const membership = await getMembership(params.slug, session.uid);

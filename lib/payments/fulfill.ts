@@ -48,7 +48,7 @@ export async function fulfillPaidOrder(transactionId: string): Promise<Order | n
             title: `New paid enrolment · “${course.title}”`,
             body: `${learner?.name || order.fullName || 'A student'} paid ${order.amountXAF.toLocaleString()} XAF.${
               order.isTrial
-                ? ' Trial with a new student — InTelleX keeps 100%.'
+                ? ' Trial with a new student - InTelleX keeps 100%.'
                 : order.instructorXAF
                   ? ` You earn ${order.instructorXAF.toLocaleString()} XAF.`
                   : ''
@@ -91,7 +91,7 @@ export async function fulfillPaidOrder(transactionId: string): Promise<Order | n
             title: 'New paid session booked',
             body: `${order.fullName} booked ${scheduledAt.toLocaleString('en-GB')}.${
               order.isTrial
-                ? ' First lesson with this student — InTelleX keeps the trial fee.'
+                ? ' First lesson with this student - InTelleX keeps the trial fee.'
                 : order.instructorXAF
                   ? ` You earn ${order.instructorXAF.toLocaleString()} XAF.`
                   : ''

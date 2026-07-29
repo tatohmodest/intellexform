@@ -237,7 +237,7 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 .tok-tag { color: #82aaff; }
 .tok-attr { color: #ffcb6b; }
 
-/* Tutor links — soft brand tones (readable on light paper, not neon) */
+/* Tutor links - soft brand tones (readable on light paper, not neon) */
 .tutor-link {
   color: #2f6fad;
   font-weight: 600;

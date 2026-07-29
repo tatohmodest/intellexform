@@ -110,7 +110,7 @@ export default function MentorApply() {
       if (!idFront || !idBack) return 'Upload the front and back of your ID.';
     }
     if (i === 4) {
-      if (!videoBlob) return `Record an intro video (${INTRO_VIDEO_MIN_SECONDS}–${INTRO_VIDEO_MAX_SECONDS} seconds).`;
+      if (!videoBlob) return `Record an intro video (${INTRO_VIDEO_MIN_SECONDS}-${INTRO_VIDEO_MAX_SECONDS} seconds).`;
       if (videoSeconds < INTRO_VIDEO_MIN_SECONDS) {
         return `Intro video must be at least ${INTRO_VIDEO_MIN_SECONDS} seconds.`;
       }
@@ -279,7 +279,7 @@ export default function MentorApply() {
           Apply to mentor
         </h1>
         <p className="mt-3 max-w-md text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-          Complete profile, documents, and a 30–60 second intro. Access unlocks after InTelleX admin approval.
+          Complete profile, documents, and a 30-60 second intro. Access unlocks after InTelleX admin approval.
         </p>
       </header>
 
@@ -502,7 +502,7 @@ export default function MentorApply() {
                   <h2 className="font-display text-[22px]">Upload your CV</h2>
                 </div>
                 <p className="text-[14px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                  PDF preferred for in-platform preview. DOC / DOCX also accepted. Up to 10 MB —
+                  PDF preferred for in-platform preview. DOC / DOCX also accepted. Up to 10 MB - 
                   files go to Cloudinary securely.
                 </p>
                 <FileDrop
@@ -556,7 +556,7 @@ export default function MentorApply() {
                   <p className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
                     Step 05
                   </p>
-                  <h2 className="font-display text-[22px]">Intro video (30–60s)</h2>
+                  <h2 className="font-display text-[22px]">Intro video (30-60s)</h2>
                 </div>
                 <IntroVideoRecorder
                   value={videoBlob}

@@ -437,7 +437,7 @@ const ARDUINO = expandOutline('arduino', [
     { title: 'Tone & Buzzers', desc: 'Generate simple tones.' },
   ]},
   { section: 'Analog Sensing', items: [
-    { title: 'analogRead', desc: 'Read potentiometers and sensors (0–1023).' },
+    { title: 'analogRead', desc: 'Read potentiometers and sensors (0-1023).' },
     { title: 'Mapping Values', desc: 'map() and constrain() for usable ranges.' },
     { title: 'Smoothing Readings', desc: 'Average noisy analog signals.' },
     { title: 'Threshold Triggers', desc: 'Turn devices on when a sensor crosses a value.' },
@@ -515,10 +515,10 @@ const KUBERNETES = expandOutline('k8s', [
     { title: 'Local Cluster Options', desc: 'kind, minikube, and k3d overview.' },
   ]},
   { section: 'Workloads', items: [
-    { title: 'Pods', desc: 'The smallest deployable unit.', code: 'apiVersion: v1\nkind: Pod\nmetadata:\n  name: hello\nspec:\n  containers:\n    - name: web\n      image: nginx', lang: 'yaml' },
+    { title: 'Pods', desc: 'The smallest deployable unit.', code: 'apiVersion: v1\nkind: Pod\nmetadata:\n  name: hello\nspec:\n  containers:\n - name: web\n      image: nginx', lang: 'yaml' },
     { title: 'Deployments', desc: 'Declare replicas and rolling updates.' },
     { title: 'ReplicaSets', desc: 'How Deployments keep pods alive.' },
-    { title: 'Services', desc: 'Stable networking to pods.', code: 'apiVersion: v1\nkind: Service\nmetadata:\n  name: web\nspec:\n  selector:\n    app: web\n  ports:\n    - port: 80', lang: 'yaml' },
+    { title: 'Services', desc: 'Stable networking to pods.', code: 'apiVersion: v1\nkind: Service\nmetadata:\n  name: web\nspec:\n  selector:\n    app: web\n  ports:\n - port: 80', lang: 'yaml' },
     { title: 'Labels & Selectors', desc: 'Organize and target objects.' },
   ]},
   { section: 'kubectl Daily Driver', items: [

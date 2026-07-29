@@ -29,7 +29,7 @@ export default async function CampusGatewayPage({
 
   const campus = await resolveInstitutionByHost(host);
   if (!campus) {
-    // Not a configured campus domain — send people to the real platform home.
+    // Not a configured campus domain - send people to the real platform home.
     redirect(CANONICAL_SITE_URL);
   }
 

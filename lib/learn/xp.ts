@@ -27,7 +27,7 @@ export const XP = {
   END_CLASS: 20,
   /** Bonus when a class lasts at least 20 minutes */
   END_CLASS_LONG_BONUS: 5,
-  /** Instructor enrolls a student (or student joins their course) — capped daily */
+  /** Instructor enrolls a student (or student joins their course) - capped daily */
   ENROLL_STUDENT: 5,
   /** Max enroll-student XP awards per instructor per UTC day */
   ENROLL_STUDENT_DAILY_CAP: 10,

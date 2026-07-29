@@ -85,7 +85,7 @@ export default function EnrollTeacherCourseButton({
   if (enrolled) {
     return (
       <p className="mt-4 border px-4 py-2.5 text-center text-[13.5px] font-semibold" style={{ borderColor: accent, color: accent }}>
-        You&apos;re enrolled — scroll to lessons
+        You&apos;re enrolled - scroll to lessons
       </p>
     );
   }

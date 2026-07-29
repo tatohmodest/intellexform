@@ -40,7 +40,7 @@ export default function CampusInstructorSalesToggle({
     <section className="border-t pt-5" style={{ borderColor: 'var(--line)' }}>
       <h3 className="mb-2 font-display text-[18px]">Instructor sales</h3>
       <p className="mb-4 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-        Campus teaching and student bookings stay free on InTelleX — your institution pays
+        Campus teaching and student bookings stay free on InTelleX - your institution pays
         instructors off-platform. Optionally let instructors sell their own extra courses or books
         to learners outside core campus teaching.
       </p>

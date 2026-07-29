@@ -23,7 +23,7 @@ export const MENTOR_DOC_REQUEST_ITEMS: {
   { id: 'resume', label: 'CV / resume', hint: 'PDF, DOC, or DOCX via Cloudinary' },
   { id: 'id_front', label: 'ID front', hint: 'Photo of ID front' },
   { id: 'id_back', label: 'ID back', hint: 'Photo of ID back' },
-  { id: 'intro_video', label: 'Intro video', hint: '30–60 second recording' },
+  { id: 'intro_video', label: 'Intro video', hint: '30-60 second recording' },
 ];
 
 export interface MentorDocumentRequest {

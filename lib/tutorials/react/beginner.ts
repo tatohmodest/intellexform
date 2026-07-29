@@ -69,7 +69,7 @@ export const beginnerLessons: TutorialLesson[] = [
     "content": [
       {
         "type": "p",
-        "text": "JSX looks like HTML inside JavaScript. It is syntactic sugar that compiles to React.createElement calls. Browsers do not run JSX directly — your bundler (Vite, Next.js, etc.) transforms it."
+        "text": "JSX looks like HTML inside JavaScript. It is syntactic sugar that compiles to React.createElement calls. Browsers do not run JSX directly - your bundler (Vite, Next.js, etc.) transforms it."
       },
       {
         "type": "h2",
@@ -123,7 +123,7 @@ export const beginnerLessons: TutorialLesson[] = [
     "content": [
       {
         "type": "p",
-        "text": "A component is a function that returns JSX. Props are the inputs — read-only data from the parent. Treat props like function arguments: never mutate them inside the child."
+        "text": "A component is a function that returns JSX. Props are the inputs - read-only data from the parent. Treat props like function arguments: never mutate them inside the child."
       },
       {
         "type": "code",
@@ -137,7 +137,7 @@ export const beginnerLessons: TutorialLesson[] = [
       },
       {
         "type": "p",
-        "text": "Anything nested between opening and closing tags becomes props.children — perfect for layout wrappers."
+        "text": "Anything nested between opening and closing tags becomes props.children - perfect for layout wrappers."
       },
       {
         "type": "code",
@@ -191,7 +191,7 @@ export const beginnerLessons: TutorialLesson[] = [
         "items": [
           "Prefer stable IDs from your data, not array index (index breaks when you insert/reorder).",
           "Keys must be unique among siblings.",
-          "Do not use keys as props — they are for React internals."
+          "Do not use keys as props - they are for React internals."
         ]
       },
       {
@@ -229,7 +229,7 @@ export const beginnerLessons: TutorialLesson[] = [
       },
       {
         "type": "warning",
-        "text": "Avoid {count && <Badge />} when count can be 0 — React will render 0. Prefer count > 0 && <Badge />."
+        "text": "Avoid {count && <Badge />} when count can be 0 - React will render 0. Prefer count > 0 && <Badge />."
       },
       {
         "type": "try",
@@ -256,7 +256,7 @@ export const beginnerLessons: TutorialLesson[] = [
     "content": [
       {
         "type": "p",
-        "text": "Props come from outside. State lives inside a component and can change over time — toggles, form fields, counters. useState is the hook that gives you that local state."
+        "text": "Props come from outside. State lives inside a component and can change over time - toggles, form fields, counters. useState is the hook that gives you that local state."
       },
       {
         "type": "code",
@@ -357,10 +357,10 @@ export const beginnerLessons: TutorialLesson[] = [
       {
         "type": "ul",
         "items": [
-          "CourseHub — page layout",
-          "LevelTabs — beginner / intermediate / advanced",
-          "LessonCard — title, minutes, lock icon",
-          "ProgressBar — completion percent"
+          "CourseHub - page layout",
+          "LevelTabs - beginner / intermediate / advanced",
+          "LessonCard - title, minutes, lock icon",
+          "ProgressBar - completion percent"
         ]
       },
       {

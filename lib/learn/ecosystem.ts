@@ -459,7 +459,7 @@ function normalizeDocItems(raw: unknown): MentorDocRequestItem[] {
   );
 }
 
-/** Admin asks a pending applicant to re-send specific documents (1–N). */
+/** Admin asks a pending applicant to re-send specific documents (1-N). */
 export async function requestMentorDocuments(
   applicationId: string,
   items: MentorDocRequestItem[],
@@ -1626,7 +1626,7 @@ export interface InstitutionDoc {
   };
   /**
    * When true, campus instructors may price and sell their own extra courses
-   * (and books) on InTelleX. Core campus teaching stays free either way —
+   * (and books) on InTelleX. Core campus teaching stays free either way - 
    * institutions pay instructors off-platform.
    */
   allowInstructorSales?: boolean;

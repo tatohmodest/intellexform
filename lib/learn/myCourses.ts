@@ -11,7 +11,7 @@ import { courseDurationHours, type CourseDeliveryMode } from '@/lib/learn/course
 import type { Course } from '@/lib/types';
 
 /**
- * Legacy Prisma sync helper — kept for admin / one-off use.
+ * Legacy Prisma sync helper - kept for admin / one-off use.
  * Do NOT call from the My Courses page hot path (it upserts every course
  * sequentially and makes the route feel stuck).
  */
@@ -78,7 +78,7 @@ function catalogueKind(c: Course): MyCourseCard['kind'] {
 }
 
 /**
- * Fast My Courses payload — Mongo + in-memory tutorial catalog only.
+ * Fast My Courses payload - Mongo + in-memory tutorial catalog only.
  * No per-request Prisma upsert storm.
  */
 export async function getMyCourseSections(userId: string): Promise<{
@@ -102,7 +102,7 @@ export async function getMyCourseSections(userId: string): Promise<{
     completedByCourse.get(p.courseSlug)!.add(p.lessonSlug);
   }
 
-  // Free tutorial tracks (in-memory — instant).
+  // Free tutorial tracks (in-memory - instant).
   const freeTrackCards: MyCourseCard[] = getCatalog().map((track) => {
     const enrolled = enrolledSlugs.has(track.slug);
     const done = completedByCourse.get(track.slug) ?? new Set<string>();
@@ -170,7 +170,7 @@ export async function getMyCourseSections(userId: string): Promise<{
 
   const cards: MyCourseCard[] = [...freeTrackCards, ...mongoNotInTutorials];
 
-  // Enrolled instructor courses — one batched Mongo query instead of N finds.
+  // Enrolled instructor courses - one batched Mongo query instead of N finds.
   let enrolledTeacherCards: MyCourseCard[] = [];
   let instructorCards: MyCourseCard[] = [];
 

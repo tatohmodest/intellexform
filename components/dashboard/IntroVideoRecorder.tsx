@@ -181,7 +181,7 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
 
   function stopRecording() {
     if (secondsRef.current < INTRO_VIDEO_MIN_SECONDS) {
-      setError(`Keep recording — at least ${INTRO_VIDEO_MIN_SECONDS} seconds required (max ${INTRO_VIDEO_MAX_SECONDS}s).`);
+      setError(`Keep recording - at least ${INTRO_VIDEO_MIN_SECONDS} seconds required (max ${INTRO_VIDEO_MAX_SECONDS}s).`);
       return;
     }
     setError('');
@@ -231,7 +231,7 @@ export default function IntroVideoRecorder({ onReady, value }: Props) {
       </div>
 
       <p className="text-[13px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-        Record <strong>{INTRO_VIDEO_MIN_SECONDS}–{INTRO_VIDEO_MAX_SECONDS} seconds</strong> introducing
+        Record <strong>{INTRO_VIDEO_MIN_SECONDS}-{INTRO_VIDEO_MAX_SECONDS} seconds</strong> introducing
         who you are and what you teach.
         {sizeLabel ? ` Current clip: ${sizeLabel}.` : ''}
       </p>

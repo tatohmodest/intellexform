@@ -47,7 +47,7 @@ async function ensureCategory(institutionId: string, name: string) {
 
 /**
  * Upsert Mongo catalogue + free tutorial tracks into Supabase (Prisma).
- * Heavy — only call from admin / maintenance, never from page renders.
+ * Heavy - only call from admin / maintenance, never from page renders.
  */
 export async function syncCoursesToSupabaseImpl(): Promise<{ synced: number }> {
   const institution = await ensureIntellexInstitution();

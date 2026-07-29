@@ -47,7 +47,7 @@ export default async function CourseDetailPage({
         <ArrowLeft size={14} /> My courses
       </Link>
 
-      {/* Campus-style hero — stacks on mobile so nothing gets squished */}
+      {/* Campus-style hero - stacks on mobile so nothing gets squished */}
       <header className="relative mb-8 overflow-hidden text-white">
         <div
           className="absolute inset-0"

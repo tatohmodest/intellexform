@@ -200,7 +200,7 @@ export const beginnerLessons: TutorialLesson[] = [
   {
     slug: "arduino-analogread",
     title: "analogRead",
-    description: "Read potentiometers and sensors (0–1023).",
+    description: "Read potentiometers and sensors (0-1023).",
     level: "beginner",
     section: "Analog Sensing",
     order: 11,

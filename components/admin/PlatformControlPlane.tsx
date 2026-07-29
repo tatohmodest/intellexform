@@ -859,7 +859,7 @@ function InstitutionDetail({
       <div className="space-y-3 overflow-hidden rounded-xl border p-4" style={{ borderColor: 'var(--line)' }}>
         <h4 className="font-semibold">Branding (logo & cover)</h4>
         <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>
-          Upload images to Cloudinary — we store the generated links. Color can be picked visually or auto-sampled from an upload.
+          Upload images to Cloudinary - we store the generated links. Color can be picked visually or auto-sampled from an upload.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <ImageUploadField

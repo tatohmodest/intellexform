@@ -147,7 +147,7 @@ export default function AdminApplications() {
         <div>
           <h2 className="font-display text-[22px]">Mentor applications</h2>
           <p className="text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
-            Review CV, ID, and intro video. Request only the documents that need fixing — applicants
+            Review CV, ID, and intro video. Request only the documents that need fixing - applicants
             resend those items from Mentor Studio.
           </p>
         </div>

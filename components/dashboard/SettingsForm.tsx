@@ -149,7 +149,7 @@ export default function SettingsForm({
               {uploading ? `Uploading ${uploadPct}%` : 'Upload photo'}
             </button>
             <p className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-              Photos upload to Cloudinary (max 10MB) — we compress large files and store the
+              Photos upload to Cloudinary (max 10MB) - we compress large files and store the
               generated link.
             </p>
           </div>

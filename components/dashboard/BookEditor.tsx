@@ -118,7 +118,7 @@ export default function BookEditor({ book }: { book: BookView }) {
               label="Custom cover color"
               value={coverColor}
               onChange={(c) => setCoverColor(normalizeHexColor(c))}
-              hint="Pick any color — no hex knowledge needed."
+              hint="Pick any color - no hex knowledge needed."
             />
           </div>
         </div>

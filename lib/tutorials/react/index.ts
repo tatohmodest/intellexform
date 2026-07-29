@@ -28,7 +28,7 @@ export const reactTutorial: TutorialCourse = {
   title: 'React Tutorial',
   shortTitle: 'React',
   description:
-    'A complete React path from JSX and components to hooks, data flow, performance, and a lesson-player capstone — the foundation before Next.js.',
+    'A complete React path from JSX and components to hooks, data flow, performance, and a lesson-player capstone - the foundation before Next.js.',
   tagline: 'Components, hooks, and modern React UI',
   audience: 'JavaScript developers ready to build interactive UIs with React',
   totalLessons: allLessons.length,

@@ -44,7 +44,7 @@ export default function ColorPickerField({
         </span>
       </div>
       <p className="mt-1 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-        {hint || 'Pick a color visually — no need to memorize hex codes. Uploading a logo/cover can auto-fill this.'}
+        {hint || 'Pick a color visually - no need to memorize hex codes. Uploading a logo/cover can auto-fill this.'}
       </p>
     </div>
   );

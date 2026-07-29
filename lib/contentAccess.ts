@@ -250,7 +250,7 @@ export async function canAccessContent(opts: {
 
   if (!opts.userId) return { allowed: false, reason: 'login_required' };
 
-  // Free tracks — beginner open; Intermediate/Pro need cert subscription.
+  // Free tracks - beginner open; Intermediate/Pro need cert subscription.
   if (config.mode === 'free') {
     if (opts.level === 'beginner') return { allowed: true };
     if (await hasActiveCertSubscription(opts.userId)) return { allowed: true };

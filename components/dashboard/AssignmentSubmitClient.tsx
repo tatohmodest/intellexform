@@ -111,7 +111,7 @@ export default function AssignmentSubmitClient({
         >
           {countdown.expired ? <Lock size={14} /> : <Clock size={14} />}
           {countdown.expired
-            ? 'Deadline passed — submissions closed'
+            ? 'Deadline passed - submissions closed'
             : `Time left ${countdown.label}`}
           <span className="font-normal" style={{ color: 'var(--ink-soft)' }}>
             · due {new Date(assessment.dueAt).toLocaleString()}
@@ -127,7 +127,7 @@ export default function AssignmentSubmitClient({
         <p className="font-semibold text-[14px]">How to submit</p>
         <p className="mt-2 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
           {assessment.studentTips ||
-            'Upload a PDF (best for in-app preview), DOC, or DOCX — up to 10 MB. Your instructor opens it inside InTelleX.'}
+            'Upload a PDF (best for in-app preview), DOC, or DOCX - up to 10 MB. Your instructor opens it inside InTelleX.'}
         </p>
       </div>
 

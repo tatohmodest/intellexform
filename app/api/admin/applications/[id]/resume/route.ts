@@ -61,7 +61,7 @@ export async function GET(
       return NextResponse.json({ error: 'resume_missing' }, { status: 404 });
     }
 
-    // Legacy Drive links — open externally.
+    // Legacy Drive links - open externally.
     if (/drive\.google\.com|docs\.google\.com/i.test(resumeUrl)) {
       return NextResponse.redirect(resumeUrl, 302);
     }

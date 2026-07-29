@@ -78,7 +78,7 @@ function Editor({ course, onClose, onSaved }: { course: Partial<AdminCourse>; on
             value={form.courseImage ?? ''}
             onChange={(courseImage) => set('courseImage', courseImage)}
             previewHeight={128}
-            hint="Upload cover art to Cloudinary — we save the generated URL."
+            hint="Upload cover art to Cloudinary - we save the generated URL."
           />
 
           <div className="grid gap-4 sm:grid-cols-2">

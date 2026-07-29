@@ -1,4 +1,4 @@
-/* InTelleX PWA service worker — keeps the app installable and caches the shell lightly. */
+/* InTelleX PWA service worker - keeps the app installable and caches the shell lightly. */
 const CACHE = 'intellex-shell-v1';
 const PRECACHE = ['/', '/manifest.webmanifest', '/pwa/icon-192.png', '/pwa/icon-512.png'];
 

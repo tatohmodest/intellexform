@@ -37,7 +37,7 @@ export default function MentorApplicationStatus({
       </h1>
       <p className="mt-3 max-w-md text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
         {openRequest
-          ? 'Admins need specific documents again. Send only the items listed below — the rest of your application stays as it is.'
+          ? 'Admins need specific documents again. Send only the items listed below - the rest of your application stays as it is.'
           : 'Your CV, ID, and intro video are with InTelleX admins. Mentor Studio unlocks only after approval.'}
       </p>
 

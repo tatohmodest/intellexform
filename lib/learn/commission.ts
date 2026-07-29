@@ -63,7 +63,7 @@ export function computeCommission(
       platformXAF: gross,
       instructorXAF: 0,
       isTrial: true,
-      label: 'First lesson with a new student — 100% platform commission',
+      label: 'First lesson with a new student - 100% platform commission',
     };
   }
 
@@ -84,7 +84,7 @@ export function computeCommission(
 
 /** Human-readable summary for dashboards. */
 export function commissionSummary(b: CommissionBreakdown): string {
-  if (b.priceXAF === 0) return 'Free — no commission';
-  if (b.isTrial) return 'Trial lesson — InTelleX keeps 100%';
+  if (b.priceXAF === 0) return 'Free - no commission';
+  if (b.isTrial) return 'Trial lesson - InTelleX keeps 100%';
   return `${Math.round(b.rate * 100)}% to InTelleX · ${b.instructorXAF.toLocaleString()} XAF to you`;
 }

@@ -1,11 +1,11 @@
 /**
  * Shared Cloudinary helpers for PDF / DOC / DOCX (and images).
- * Server-only — imports the Cloudinary Node SDK.
+ * Server-only - imports the Cloudinary Node SDK.
  *
  * Why files "didn't display" before:
  * 1. Rewriting delivery URLs with `fl_attachment` → Cloudinary 401
  * 2. Raw PDF/DOC need the extension in `public_id` (or format on download API)
- * 3. DOC/DOCX cannot be iframe-previewed in browsers — only PDF (and images) can
+ * 3. DOC/DOCX cannot be iframe-previewed in browsers - only PDF (and images) can
  * 4. Proxying a failed Cloudinary response saved JSON as a "file"
  *
  * Fix: store publicId + resourceType + format, use signed private_download_url

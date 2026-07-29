@@ -36,7 +36,7 @@ export async function uploadMediaAsset(
       uploadBlob = prepared;
       uploadName = prepared.name || filename;
     } catch {
-      // Fall through with original file — Cloudinary transform still compresses.
+      // Fall through with original file - Cloudinary transform still compresses.
     }
   }
 

@@ -12,7 +12,7 @@ export const intermediateLessons: TutorialLesson[] = [
     "content": [
       {
         "type": "p",
-        "text": "useEffect runs after paint to sync React with the outside world — APIs, document title, WebSocket listeners. It is not for deriving state from other state (compute that during render instead)."
+        "text": "useEffect runs after paint to sync React with the outside world - APIs, document title, WebSocket listeners. It is not for deriving state from other state (compute that during render instead)."
       },
       {
         "type": "code",
@@ -27,8 +27,8 @@ export const intermediateLessons: TutorialLesson[] = [
       {
         "type": "ul",
         "items": [
-          "[] — run once after mount (and cleanup on unmount).",
-          "[userId] — re-run when userId changes.",
+          "[] - run once after mount (and cleanup on unmount).",
+          "[userId] - re-run when userId changes.",
           "Omit the array only when you truly need every render (rare)."
         ]
       },
@@ -61,7 +61,7 @@ export const intermediateLessons: TutorialLesson[] = [
     "content": [
       {
         "type": "p",
-        "text": "When two components share the same state + effect pattern, pull it into a custom hook. Hooks are just functions that call other hooks — they must start with use so lint rules can enforce the Rules of Hooks."
+        "text": "When two components share the same state + effect pattern, pull it into a custom hook. Hooks are just functions that call other hooks - they must start with use so lint rules can enforce the Rules of Hooks."
       },
       {
         "type": "code",
@@ -108,7 +108,7 @@ export const intermediateLessons: TutorialLesson[] = [
       },
       {
         "type": "note",
-        "text": "Do not put fast-changing values in context without splitting providers — every consumer re-renders when the value changes."
+        "text": "Do not put fast-changing values in context without splitting providers - every consumer re-renders when the value changes."
       },
       {
         "type": "try",
@@ -145,7 +145,7 @@ export const intermediateLessons: TutorialLesson[] = [
       },
       {
         "type": "warning",
-        "text": "Do not read or write ref.current during render for rendering logic — that belongs in state."
+        "text": "Do not read or write ref.current during render for rendering logic - that belongs in state."
       },
       {
         "type": "try",
@@ -172,7 +172,7 @@ export const intermediateLessons: TutorialLesson[] = [
     "content": [
       {
         "type": "p",
-        "text": "As screens grow, push state down until two siblings need the same data — then lift it. For distant trees, prefer composition or context over endless props."
+        "text": "As screens grow, push state down until two siblings need the same data - then lift it. For distant trees, prefer composition or context over endless props."
       },
       {
         "type": "table",
@@ -234,7 +234,7 @@ export const intermediateLessons: TutorialLesson[] = [
       },
       {
         "type": "note",
-        "text": "On InTelleX, tutorial URLs already follow /tutorials/[track]/[slug] — the same idea as nested routes."
+        "text": "On InTelleX, tutorial URLs already follow /tutorials/[track]/[slug] - the same idea as nested routes."
       },
       {
         "type": "try",
@@ -271,7 +271,7 @@ export const intermediateLessons: TutorialLesson[] = [
       },
       {
         "type": "tip",
-        "text": "Libraries like TanStack Query add caching and retries — learn the manual pattern first so you understand what they automate."
+        "text": "Libraries like TanStack Query add caching and retries - learn the manual pattern first so you understand what they automate."
       },
       {
         "type": "try",

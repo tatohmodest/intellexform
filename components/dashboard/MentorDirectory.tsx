@@ -375,7 +375,7 @@ export default function MentorDirectory({
               <p className="mt-3 text-center text-[11.5px]" style={{ color: 'var(--ink-soft)' }}>
                 {booking.priceXAF > 0
                   ? 'Payment opens first (PayUnit). Your session is booked only after payment succeeds.'
-                  : "You'll join the session from your dashboard — live HD video powered by Agora."}
+                  : "You'll join the session from your dashboard - live HD video powered by Agora."}
               </p>
             </motion.div>
           </motion.div>

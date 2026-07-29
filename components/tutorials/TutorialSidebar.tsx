@@ -154,7 +154,7 @@ export default function TutorialSidebar({
 
   return (
     <>
-      {/* Desktop sidebar — fills the locked viewport row and scrolls its own list */}
+      {/* Desktop sidebar - fills the locked viewport row and scrolls its own list */}
       <aside
         className="hidden h-full w-[280px] shrink-0 border-r xl:w-[300px] lg:block"
         style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}

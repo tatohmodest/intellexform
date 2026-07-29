@@ -51,7 +51,7 @@ const TABS: Tab[] = [
   },
 ];
 
-/** Fixed bottom tab bar — mobile / tablet only. */
+/** Fixed bottom tab bar - mobile / tablet only. */
 export default function MobileBottomNav({ accent = '#00b369' }: { accent?: string }) {
   const pathname = usePathname();
 

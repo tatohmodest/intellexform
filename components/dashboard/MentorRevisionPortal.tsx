@@ -72,11 +72,11 @@ export default function MentorRevisionPortal({
     }
     if (need.has('intro_video')) {
       if (!videoBlob) {
-        setError(`Record a new intro video (${INTRO_VIDEO_MIN_SECONDS}–${INTRO_VIDEO_MAX_SECONDS}s).`);
+        setError(`Record a new intro video (${INTRO_VIDEO_MIN_SECONDS}-${INTRO_VIDEO_MAX_SECONDS}s).`);
         return;
       }
       if (videoSeconds < INTRO_VIDEO_MIN_SECONDS || videoSeconds > INTRO_VIDEO_MAX_SECONDS) {
-        setError(`Intro video must be ${INTRO_VIDEO_MIN_SECONDS}–${INTRO_VIDEO_MAX_SECONDS} seconds.`);
+        setError(`Intro video must be ${INTRO_VIDEO_MIN_SECONDS}-${INTRO_VIDEO_MAX_SECONDS} seconds.`);
         return;
       }
     }
@@ -159,7 +159,7 @@ export default function MentorRevisionPortal({
       </p>
       <h2 className="mt-1 font-display text-[24px] leading-tight">Re-send requested documents</h2>
       <p className="mt-2 text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-        Admins asked for {items.length === 1 ? 'this item' : 'these items'} only — you do not need to
+        Admins asked for {items.length === 1 ? 'this item' : 'these items'} only - you do not need to
         resubmit the whole application.
       </p>
       {req.note && (

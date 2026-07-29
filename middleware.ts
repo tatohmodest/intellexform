@@ -31,7 +31,7 @@ export function middleware(req: NextRequest) {
   }
 
   // Custom domain landing → campus gateway (resolves Host → institution).
-  // Never run this for intellex.loopingbinary.com — that is the main app.
+  // Never run this for intellex.loopingbinary.com - that is the main app.
   if (
     customHost &&
     (pathname === '/' ||

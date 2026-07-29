@@ -34,7 +34,7 @@ export default function TutorialLessonView({
       <TopNav />
       {/*
         Desktop: viewport-locked row so the lesson pane scrolls independently.
-        Avoid overflow-x-hidden here — it forces overflow-y:auto and breaks page scroll.
+        Avoid overflow-x-hidden here - it forces overflow-y:auto and breaks page scroll.
       */}
       <div className="flex flex-col lg:h-[calc(100vh-57px)] lg:flex-row lg:overflow-hidden">
         <TutorialSidebar

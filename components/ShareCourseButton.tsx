@@ -7,7 +7,7 @@ type Variant = 'light' | 'dark' | 'outline';
 
 const CANONICAL_ORIGIN = 'https://intellex.loopingbinary.com';
 
-/** Always share the loopingbinary domain — never a Vercel preview host. */
+/** Always share the loopingbinary domain - never a Vercel preview host. */
 function toPublicShareUrl(url: string): string {
   try {
     const u = new URL(url, CANONICAL_ORIGIN);

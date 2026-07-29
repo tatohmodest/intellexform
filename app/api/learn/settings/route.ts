@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     } else if (avatar.startsWith('https://') || avatar.startsWith('http://')) {
       patch.avatar = avatar.slice(0, 2000);
     } else if (avatar.startsWith('data:image/') && avatar.length <= MAX_AVATAR_CHARS) {
-      // Legacy inline avatars — new uploads should be Cloudinary https URLs.
+      // Legacy inline avatars - new uploads should be Cloudinary https URLs.
       patch.avatar = avatar;
     } else {
       return NextResponse.json({ error: 'invalid_avatar' }, { status: 400 });

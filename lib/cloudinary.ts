@@ -51,7 +51,7 @@ function documentResourceType(
   if (mime.startsWith('image/') || /\.(png|jpe?g|webp|gif|heic)$/i.test(name)) {
     return 'image';
   }
-  // PDF / DOC / DOCX — must be `raw` so Cloudinary keeps the original bytes.
+  // PDF / DOC / DOCX - must be `raw` so Cloudinary keeps the original bytes.
   return 'raw';
 }
 
@@ -181,7 +181,7 @@ export function signBrandMediaUpload(opts: {
         ? // Keep logos crisp; cap edge so 10MB uploads land light
           'c_limit,w_1000,h_1000,q_auto:good,f_auto'
         : opts.kind === 'cover'
-          ? // Wide banner — dimension limit does most of the size cut
+          ? // Wide banner - dimension limit does most of the size cut
             'c_fill,g_auto,w_1920,h_768,q_auto:good,f_auto'
           : // Course / book art
             'c_limit,w_1800,q_auto:good,f_auto';

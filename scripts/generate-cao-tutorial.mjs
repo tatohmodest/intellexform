@@ -59,9 +59,9 @@ const beginnerLessons = [
       table(
         ['Level', 'Focus', 'Curriculum weeks'],
         [
-          ['Beginner', 'Abstraction, ISA, ALU, single-cycle datapath', 'Weeks 1–4'],
-          ['Intermediate', 'Pipelines, hazards, caches', 'Weeks 5–8'],
-          ['Advanced', 'VM, I/O, DMA, multicore, synthesis', 'Weeks 9–10'],
+          ['Beginner', 'Abstraction, ISA, ALU, single-cycle datapath', 'Weeks 1-4'],
+          ['Intermediate', 'Pipelines, hazards, caches', 'Weeks 5-8'],
+          ['Advanced', 'VM, I/O, DMA, multicore, synthesis', 'Weeks 9-10'],
         ],
       ),
       note('Required textbook mindset: Computer Organization and Design (Patterson & Hennessy), RISC-V or MIPS edition. Tools: Venus (RISC-V) or MARS (MIPS), plus Logisim-Evolution for digital logic.'),
@@ -95,10 +95,10 @@ const beginnerLessons = [
       ]),
       h2('Recommended toolchain'),
       code(
-        `Venus (RISC-V)   - browser/desktop assembler & simulator
-MARS (MIPS)     - classic MIPS assembler & runtime
-Logisim-Evol.   - combinational & sequential circuit design
-Pencil + paper  - still the best tool for pipeline timing charts`,
+        `Venus (RISC-V) - browser/desktop assembler & simulator
+MARS (MIPS) - classic MIPS assembler & runtime
+Logisim-Evol. - combinational & sequential circuit design
+Pencil + paper - still the best tool for pipeline timing charts`,
         'Tool stack',
         'text',
       ),
@@ -194,7 +194,7 @@ add  x5, x10, x11         // assembly (RISC-V style)
       tryIt('Pick a one-line C statement. Name which layers change if you switch from x86 to RISC-V.'),
       keypoints([
         'Programs exist at many abstraction layers.',
-        'The ISA is the software–hardware contract.',
+        'The ISA is the software-hardware contract.',
         'Performance bugs often hide in layers below your source code.',
       ]),
     ),
@@ -416,12 +416,12 @@ CPI_eff = 0.5*1 + 0.2*5 + 0.1*4 + 0.2*2 = 2.3`,
       p('Registers are the fastest storage the ISA exposes. Most ALU ops work on register operands; memory is accessed via loads and stores.'),
       h2('RISC-V register sketch (user-level)'),
       code(
-        `x0  (zero)  - hardwired 0
-x1  (ra)    - return address
-x2  (sp)    - stack pointer
-x5–x7 / x28–x31 - temporaries (t0–t6)
-x8–x9 / x18–x27 - saved (s0–s11)
-x10–x17 - arguments / return (a0–a7)`,
+        `x0  (zero) - hardwired 0
+x1  (ra) - return address
+x2  (sp) - stack pointer
+x5-x7 / x28-x31 - temporaries (t0-t6)
+x8-x9 / x18-x27 - saved (s0-s11)
+x10-x17 - arguments / return (a0-a7)`,
         'Common RISC-V ABI names',
         'text',
       ),
@@ -743,7 +743,7 @@ so high carries do not wait on long ripples.`,
       keypoints([
         'CLA uses generate/propagate to speed carries.',
         'You trade silicon area/wiring for lower latency.',
-        'Hierarchical CLA scales beyond 4–8 bits cleanly.',
+        'Hierarchical CLA scales beyond 4-8 bits cleanly.',
       ]),
     ),
   }),
@@ -906,10 +906,10 @@ subnormals, ±inf, NaN are special cases`,
       ),
       h2('Different instructions, different paths'),
       ul([
-        'R-Type: IF–ID–EX–WB (skip MEM)',
+        'R-Type: IF-ID-EX-WB (skip MEM)',
         'Load: all five stages',
-        'Store: IF–ID–EX–MEM (no reg write)',
-        'Branch: IF–ID–EX (next PC select)',
+        'Store: IF-ID-EX-MEM (no reg write)',
+        'Branch: IF-ID-EX (next PC select)',
       ]),
       tryIt('List which stages are active for `beq` vs `add` vs `sw`.'),
       keypoints([
@@ -1970,7 +1970,7 @@ N = number of processors`,
     order: 59,
     minutes: 18,
     content: blocks(
-      p('Week 10 project: The Coherence Arbiter. Model 2–4 cores, a shared bus or directory stub, and MESI transitions for one cache line.'),
+      p('Week 10 project: The Coherence Arbiter. Model 2-4 cores, a shared bus or directory stub, and MESI transitions for one cache line.'),
       h2('Minimum events'),
       ul(['PrRd', 'PrWr', 'BusRd', 'BusRdX / BusUpgr', 'Flush']),
       code(
@@ -1992,7 +1992,7 @@ N = number of processors`,
   }),
   lesson({
     slug: 'hardware-software-co-design',
-    title: 'Hardware–Software Co-Design',
+    title: 'Hardware-Software Co-Design',
     description:
       'Think jointly about ISA, compiler scheduling, and microarchitecture when chasing performance per watt.',
     level: 'advanced',
@@ -2016,7 +2016,7 @@ N = number of processors`,
   }),
   lesson({
     slug: 'time-space-power-tradeoffs',
-    title: 'Time–Space–Power Trade-offs',
+    title: 'Time-Space-Power Trade-offs',
     description:
       'Practice SIU engineering discipline: every design choice balances latency, area, and energy.',
     level: 'advanced',

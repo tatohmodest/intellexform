@@ -7,13 +7,13 @@ export const MAX_MENTOR_DOC_BYTES = 10 * 1024 * 1024;
 type PrepareOpts = {
   /** Longest edge in px after resize. */
   maxEdge?: number;
-  /** Starting JPEG/WebP quality 0–1. */
+  /** Starting JPEG/WebP quality 0-1. */
   quality?: number;
 };
 
 /**
  * Re-encode every raster image so bytes drop while the picture stays sharp.
- * 10 MB is only the maximum accepted size — files of any size still shrink.
+ * 10 MB is only the maximum accepted size - files of any size still shrink.
  */
 export async function prepareImageForUpload(
   file: File,
@@ -55,7 +55,7 @@ export async function prepareImageForUpload(
       const blob = await canvasToBlob(canvas, mime, q);
       if (!blob || blob.size === 0) continue;
       if (!best || blob.size < best.size) best = blob;
-      // Good enough shrink — stop early.
+      // Good enough shrink - stop early.
       if (blob.size < file.size * 0.92) break;
     }
 

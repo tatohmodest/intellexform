@@ -104,7 +104,7 @@ export default function SubscribePanel({
             Subscribe to get certified
           </div>
           <p className="mt-0.5 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-            Beginner lessons stay free. Intermediate through Pro unlock with a certification plan —
+            Beginner lessons stay free. Intermediate through Pro unlock with a certification plan - 
             finish the path and earn your certificate.
           </p>
         </div>
