@@ -630,7 +630,7 @@ export default function DashboardShell({
         }}
       >
         <button
-          className="flex h-9 w-9 items-center justify-center rounded-lg border lg:hidden"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border lg:hidden"
           style={{ borderColor: 'var(--line)' }}
           onClick={() => setMobileOpen((v) => !v)}
           aria-label="Toggle navigation"
@@ -638,15 +638,13 @@ export default function DashboardShell({
           {mobileOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
 
-        <div className="lg:hidden">
-          {inCampus && campusBrand ? (
+        {inCampus && campusBrand ? (
+          <div className="min-w-0 truncate lg:hidden">
             <span className="text-[14px] font-semibold" style={{ color: accent }}>
               {campusBrand.name}
             </span>
-          ) : (
-            <BrandLogo href="/" height={30} variant="mark" />
-          )}
-        </div>
+          </div>
+        ) : null}
 
         {inCampus && campusBrand && (
           <div className="hidden min-w-0 lg:block">
@@ -657,7 +655,7 @@ export default function DashboardShell({
           </div>
         )}
 
-        <div className="ml-auto flex items-center gap-2.5 sm:gap-4">
+        <div className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-4">
           <LanguageToggle size="sm" />
           <NotificationBell accent={accent} />
           <div
