@@ -1,6 +1,6 @@
 /** Client-safe certification plan pricing (no Mongo imports). */
 
-export const CERT_MONTHLY_XAF = 4999;
+export const CERT_MONTHLY_XAF = 1999;
 /** Yearly = 12 × monthly with 10% off. */
 export const CERT_YEARLY_XAF = Math.round(CERT_MONTHLY_XAF * 12 * 0.9);
 
