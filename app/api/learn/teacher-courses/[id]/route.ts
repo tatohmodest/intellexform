@@ -113,6 +113,32 @@ export async function PATCH(
   }
   if (typeof body.certificate === 'boolean') patch.certificate = body.certificate;
 
+  if (body.plannedLessonCount === null || typeof body.plannedLessonCount === 'number') {
+    patch.plannedLessonCount =
+      typeof body.plannedLessonCount === 'number' && body.plannedLessonCount > 0
+        ? Math.min(Math.round(body.plannedLessonCount), 500)
+        : null;
+  }
+  if (body.plannedModuleCount === null || typeof body.plannedModuleCount === 'number') {
+    patch.plannedModuleCount =
+      typeof body.plannedModuleCount === 'number' && body.plannedModuleCount > 0
+        ? Math.min(Math.round(body.plannedModuleCount), 100)
+        : null;
+  }
+  if (Array.isArray(body.modules)) {
+    patch.modules = body.modules
+      .map((m: Record<string, unknown>, i: number) => ({
+        id: String(m.id || `mod_${i}_${Date.now()}`),
+        title: String(m.title || `Module ${i + 1}`).slice(0, 120),
+        description: String(m.description || '').slice(0, 1000),
+        plannedSessions:
+          typeof m.plannedSessions === 'number' && m.plannedSessions > 0
+            ? Math.min(Math.round(m.plannedSessions), 100)
+            : null,
+      }))
+      .slice(0, 40);
+  }
+
   if (body.liveSchedule === null) {
     patch.liveSchedule = null;
   } else if (body.liveSchedule && typeof body.liveSchedule === 'object') {

@@ -26,6 +26,7 @@ const FOLDERS: Record<MediaUploadKind, string> = {
   id_back: 'intellex/mentor-applications/ids',
   intro_video: 'intellex/mentor-applications/videos',
   assignment: 'intellex/assignments',
+  note: 'intellex/notes',
   course_cover: 'intellex/course-covers',
   avatar: 'intellex/avatars',
 };
@@ -88,7 +89,7 @@ export function signMediaUpload(opts: {
   let resourceType: 'image' | 'raw' | 'video' | 'auto';
   if (opts.kind === 'intro_video') {
     resourceType = 'video';
-  } else if (opts.kind === 'resume' || opts.kind === 'assignment') {
+  } else if (opts.kind === 'resume' || opts.kind === 'assignment' || opts.kind === 'note') {
     resourceType = documentResourceType(opts.mimeType, opts.filename);
   } else {
     // course_cover, avatar, id_* are always images
@@ -118,7 +119,7 @@ export function signMediaUpload(opts: {
     transformation = 'c_limit,w_800,q_auto:good';
     paramsToSign.transformation = transformation;
   } else if (
-    (opts.kind === 'resume' || opts.kind === 'assignment') &&
+    (opts.kind === 'resume' || opts.kind === 'assignment' || opts.kind === 'note') &&
     resourceType === 'image'
   ) {
     transformation = 'c_limit,w_1800,q_auto:good';

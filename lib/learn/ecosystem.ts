@@ -1038,6 +1038,9 @@ export async function createTeacherCourse(opts: {
     seats: null,
     certificate: false,
     liveSchedule: null,
+    plannedLessonCount: null,
+    plannedModuleCount: null,
+    modules: [],
     outcomes: [],
     requirements: [],
     instructorId: opts.instructorId || null,
@@ -1075,6 +1078,9 @@ export type TeacherCoursePatch = Partial<
     | 'seats'
     | 'certificate'
     | 'liveSchedule'
+    | 'plannedLessonCount'
+    | 'plannedModuleCount'
+    | 'modules'
     | 'outcomes'
     | 'requirements'
     | 'instructorId'

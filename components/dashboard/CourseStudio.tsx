@@ -23,6 +23,7 @@ import type {
   CourseAudience,
   CourseDeliveryMode,
   CourseLevel,
+  CourseModule,
   TeacherCourseView,
   TeacherLesson,
 } from '@/lib/learn/courseTypes';
@@ -259,6 +260,9 @@ export default function CourseStudio({
           seats: draft.seats ?? null,
           certificate: draft.certificate ?? false,
           liveSchedule: draft.liveSchedule ?? null,
+          plannedLessonCount: draft.plannedLessonCount ?? null,
+          plannedModuleCount: draft.plannedModuleCount ?? null,
+          modules: draft.modules ?? [],
           outcomes: draft.outcomes,
           requirements: draft.requirements,
           instructorId: draft.instructorId ?? null,
@@ -650,6 +654,134 @@ export default function CourseStudio({
 
                 {isLive && (
                   <section className="border p-4" style={{ borderColor: 'var(--line)' }}>
+                    <p className="mb-2 inline-flex items-center gap-1.5 text-[13px] font-semibold">
+                      <Users size={14} /> Live mentorship structure
+                    </p>
+                    <p className="mb-4 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+                      You do not need video lessons yet. Set planned live lessons and/or modules,
+                      then optionally name the modules manually.
+                    </p>
+                    <div className="mb-4 grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1.5 block text-[12.5px] font-semibold">
+                          Planned live lessons (optional)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          className="form-input !rounded-none text-[13px]"
+                          placeholder="e.g. 12"
+                          value={draft.plannedLessonCount ?? ''}
+                          onChange={(e) =>
+                            patch({
+                              plannedLessonCount: e.target.value ? Number(e.target.value) : null,
+                            })
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-[12.5px] font-semibold">
+                          Planned modules (optional)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          className="form-input !rounded-none text-[13px]"
+                          placeholder="e.g. 4"
+                          value={draft.plannedModuleCount ?? ''}
+                          onChange={(e) =>
+                            patch({
+                              plannedModuleCount: e.target.value ? Number(e.target.value) : null,
+                            })
+                          }
+                        />
+                        <p className="mt-1 text-[11.5px]" style={{ color: 'var(--ink-soft)' }}>
+                          Use modules when lesson count per module is still unknown.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-[12.5px] font-semibold">Modules (manual)</p>
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 text-[12.5px] font-semibold"
+                        style={{ color: accent }}
+                        onClick={() => {
+                          const next: CourseModule = {
+                            id: `mod_${Date.now()}`,
+                            title: `Module ${(draft.modules?.length || 0) + 1}`,
+                            description: '',
+                            plannedSessions: null,
+                          };
+                          patch({ modules: [...(draft.modules || []), next] });
+                        }}
+                      >
+                        <Plus size={13} /> Add module
+                      </button>
+                    </div>
+                    <div className="mb-5 space-y-3">
+                      {(draft.modules || []).map((mod, mi) => (
+                        <div key={mod.id} className="border p-3" style={{ borderColor: 'var(--line)' }}>
+                          <div className="mb-2 flex items-center gap-2">
+                            <input
+                              className="form-input !rounded-none flex-1 text-[13px] font-semibold"
+                              value={mod.title}
+                              onChange={(e) => {
+                                const modules = [...(draft.modules || [])];
+                                modules[mi] = { ...mod, title: e.target.value };
+                                patch({ modules });
+                              }}
+                            />
+                            <button
+                              type="button"
+                              aria-label="Remove module"
+                              onClick={() =>
+                                patch({
+                                  modules: (draft.modules || []).filter((_, i) => i !== mi),
+                                })
+                              }
+                            >
+                              <Trash2 size={14} style={{ color: 'var(--ink-soft)' }} />
+                            </button>
+                          </div>
+                          <textarea
+                            className="form-input !rounded-none mb-2 text-[12.5px]"
+                            placeholder="What this module covers"
+                            rows={2}
+                            value={mod.description || ''}
+                            onChange={(e) => {
+                              const modules = [...(draft.modules || [])];
+                              modules[mi] = { ...mod, description: e.target.value };
+                              patch({ modules });
+                            }}
+                          />
+                          <label className="flex items-center gap-2 text-[12px]">
+                            Planned sessions in module
+                            <input
+                              type="number"
+                              min={0}
+                              className="form-input !w-24 !rounded-none !py-1 text-[12.5px]"
+                              value={mod.plannedSessions ?? ''}
+                              onChange={(e) => {
+                                const modules = [...(draft.modules || [])];
+                                modules[mi] = {
+                                  ...mod,
+                                  plannedSessions: e.target.value ? Number(e.target.value) : null,
+                                };
+                                patch({ modules });
+                              }}
+                            />
+                          </label>
+                        </div>
+                      ))}
+                      {(draft.modules || []).length === 0 && (
+                        <p className="text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+                          No modules yet. Add themes like Foundations, Projects, Exam prep.
+                        </p>
+                      )}
+                    </div>
+
                     <p className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-semibold">
                       <Clock size={14} /> Live schedule
                     </p>

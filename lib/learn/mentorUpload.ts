@@ -51,7 +51,7 @@ export async function uploadMentorAsset(
   if (
     typeof File !== 'undefined' &&
     file instanceof File &&
-    (kind === 'id_front' || kind === 'id_back' || kind === 'resume' || kind === 'assignment')
+    (kind === 'id_front' || kind === 'id_back' || kind === 'resume' || kind === 'assignment' || kind === 'note')
   ) {
     const isImage =
       file.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|heic)$/i.test(file.name);
