@@ -64,5 +64,10 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/dashboard/:path*', '/campus-gateway'],
+  // Keep SEO files completely outside middleware (GSC "Couldn't fetch" safeguard).
+  matcher: [
+    '/',
+    '/dashboard/:path*',
+    '/campus-gateway',
+  ],
 };

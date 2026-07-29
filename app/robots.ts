@@ -1,8 +1,12 @@
 import type { MetadataRoute } from 'next';
-import { getSiteUrl } from '@/lib/seo/share';
+import { sitemapBaseUrl } from '@/lib/seo/buildSitemap';
 
+/**
+ * Robots for https://intellex.loopingbinary.com
+ * Point Google at both sitemap URLs; omit Host (deprecated / can confuse parsers).
+ */
 export default function robots(): MetadataRoute.Robots {
-  const site = getSiteUrl();
+  const site = sitemapBaseUrl();
   return {
     rules: [
       {
@@ -17,13 +21,7 @@ export default function robots(): MetadataRoute.Robots {
           '/campus-gateway/',
         ],
       },
-      {
-        userAgent: 'GPTBot',
-        allow: ['/', '/about', '/courses', '/tutorials', '/ecosystem', '/contact'],
-        disallow: ['/dashboard/', '/admin/', '/api/'],
-      },
     ],
-    sitemap: `${site}/sitemap.xml`,
-    host: site,
+    sitemap: [`${site}/sitemap.xml`, `${site}/sitemap/sitemap.xml`],
   };
 }

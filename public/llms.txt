@@ -16,5 +16,5 @@
 Serves learners and institutions across Cameroon: Douala, Yaoundé, Bamenda (Northwest),
 Buea (Southwest), Bafoussam (West), and all ten regions.
 
-## Sitemap
-https://intellex.loopingbinary.com/sitemap.xml
+Sitemap: https://intellex.loopingbinary.com/sitemap.xml
+Sitemap: https://intellex.loopingbinary.com/sitemap/sitemap.xml
