@@ -113,6 +113,11 @@ import {
   getAllBashScriptingLessons,
   getBashScriptingLessonNav,
 } from './bash-scripting';
+import {
+  microsoftSuiteTutorial,
+  getAllMicrosoftSuiteLessons,
+  getMicrosoftSuiteLessonNav,
+} from './microsoft-suite';
 import type { TutorialCourse, TutorialLesson } from './types';
 
 export const TUTORIALS: TutorialCourse[] = [
@@ -130,6 +135,7 @@ export const TUTORIALS: TutorialCourse[] = [
   flutterTutorial,
   dataAnalysisTutorial,
   digitalMarketingTutorial,
+  microsoftSuiteTutorial,
   golangTutorial,
   dockerTutorial,
   nodejsExpressTutorial,
@@ -161,6 +167,7 @@ export function getTutorialLessons(courseSlug: string): TutorialLesson[] {
   if (courseSlug === 'flutter') return getAllFlutterLessons();
   if (courseSlug === 'data-analysis') return getAllDataAnalysisLessons();
   if (courseSlug === 'digital-marketing') return getAllDigitalMarketingLessons();
+  if (courseSlug === 'microsoft-suite') return getAllMicrosoftSuiteLessons();
   if (courseSlug === 'golang') return getAllGolangLessons();
   if (courseSlug === 'docker') return getAllDockerLessons();
   if (courseSlug === 'nodejs-express') return getAllNodejsExpressLessons();
@@ -192,6 +199,7 @@ export function getTutorialLessonNav(courseSlug: string, lessonSlug: string) {
   if (courseSlug === 'flutter') return getFlutterLessonNav(lessonSlug);
   if (courseSlug === 'data-analysis') return getDataAnalysisLessonNav(lessonSlug);
   if (courseSlug === 'digital-marketing') return getDigitalMarketingLessonNav(lessonSlug);
+  if (courseSlug === 'microsoft-suite') return getMicrosoftSuiteLessonNav(lessonSlug);
   if (courseSlug === 'golang') return getGolangLessonNav(lessonSlug);
   if (courseSlug === 'docker') return getDockerLessonNav(lessonSlug);
   if (courseSlug === 'nodejs-express') return getNodejsExpressLessonNav(lessonSlug);
@@ -243,4 +251,5 @@ export {
   rubyOnRailsTutorial,
   linuxAdministrationTutorial,
   bashScriptingTutorial,
+  microsoftSuiteTutorial,
 };

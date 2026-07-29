@@ -7,15 +7,18 @@ import { advancedLessons } from './advanced';
 const LEVEL_SUMMARIES = {
   beginner: {
     ...LEVEL_META.beginner,
-    summary: 'JSX, components, props, lists, state, forms, and thinking in React.',
+    summary:
+      'React fundamentals: mental model, Vite setup, JSX, components, props, state, forms, styling, debugging, and two mini projects.',
   },
   intermediate: {
     ...LEVEL_META.intermediate,
-    summary: 'Effects, custom hooks, context, refs, routing, and data-fetching patterns.',
+    summary:
+      'Effects, data fetching, custom hooks, refs, reducer, context, routing, Suspense, validation, portals, and a notes app project.',
   },
   advanced: {
     ...LEVEL_META.advanced,
-    summary: 'Performance, error boundaries, concurrent UI, testing, architecture, and a capstone player.',
+    summary:
+      'Performance, concurrent UI, error boundaries, a11y, testing, TypeScript, architecture, profiling, capstone player, deploy, and Next.js.',
   },
 };
 
@@ -28,17 +31,17 @@ export const reactTutorial: TutorialCourse = {
   title: 'React Tutorial',
   shortTitle: 'React',
   description:
-    'A complete React path from JSX and components to hooks, data flow, performance, and a lesson-player capstone - the foundation before Next.js.',
+    'A complete 49-lesson React path from JSX and components through hooks, routing, performance, testing, architecture, and an InTelleX-style lesson player capstone - the foundation before Next.js.',
   tagline: 'Components, hooks, and modern React UI',
   audience: 'JavaScript developers ready to build interactive UIs with React',
   totalLessons: allLessons.length,
   sections: groupIntoSections(allLessons, LEVEL_SUMMARIES),
   tag: 'Frontend',
   highlights: [
-    'JSX, components, props, and state from first principles',
-    'Hooks deep-dive: useState, useEffect, custom hooks, context',
-    'Performance and concurrent patterns for real apps',
-    'Capstone lesson player that mirrors InTelleX',
+    '49 lessons from UI = f(state) through production-ready patterns',
+    'Deep hooks coverage: useState, useEffect, useReducer, context, and custom hooks',
+    'React Router, Suspense, performance, Vitest testing, and TypeScript',
+    'Capstone lesson player with deploy checklist and a bridge to Next.js',
   ],
 };
 

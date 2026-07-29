@@ -44,6 +44,7 @@ export default function Footer() {
             <Link href="/tutorials/flutter" className="mb-2 block text-sm text-paper/80">Flutter tutorial</Link>
             <Link href="/tutorials/data-analysis" className="mb-2 block text-sm text-paper/80">Data Analysis tutorial</Link>
             <Link href="/tutorials/digital-marketing" className="mb-2 block text-sm text-paper/80">Digital Marketing tutorial</Link>
+            <Link href="/tutorials/microsoft-suite" className="mb-2 block text-sm text-paper/80">Microsoft 365 tutorial</Link>
             <Link href="/tutorials/golang" className="mb-2 block text-sm text-paper/80">Go (Golang) tutorial</Link>
             <Link href="/tutorials/docker" className="mb-2 block text-sm text-paper/80">Docker tutorial</Link>
             <Link href="/tutorials/kubernetes" className="mb-2 block text-sm text-paper/80">Kubernetes tutorial</Link>
