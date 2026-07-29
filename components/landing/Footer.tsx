@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { buildWhatsappLink } from '@/lib/whatsapp';
 import BrandLogo from '@/components/BrandLogo';
+import LanguageToggle from '@/components/i18n/LanguageToggle';
 
 export default function Footer() {
   return (
@@ -96,11 +97,14 @@ export default function Footer() {
           </div>
         </div>
         <div
-          className="flex flex-wrap justify-between gap-2.5 border-t pt-5 text-[12.5px]"
+          className="flex flex-wrap items-center justify-between gap-2.5 border-t pt-5 text-[12.5px]"
           style={{ borderColor: 'rgba(251,248,240,0.14)' }}
         >
           <span>© 2026 Intellex, a Looping Binary platform. Founder & CEO: Tatoh Modest Wilton.</span>
-          <span>Douala, Cameroon · +237 650 318 856</span>
+          <div className="flex flex-wrap items-center gap-3">
+            <LanguageToggle size="sm" variant="dark" />
+            <span>Douala, Cameroon · +237 650 318 856</span>
+          </div>
         </div>
       </div>
     </footer>

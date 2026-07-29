@@ -29,6 +29,7 @@ import {
   School,
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
+import LanguageToggle from '@/components/i18n/LanguageToggle';
 import MobileBottomNav from '@/components/dashboard/MobileBottomNav';
 import NotificationBell from '@/components/dashboard/NotificationBell';
 import OngoingClassBanner from '@/components/dashboard/OngoingClassBanner';
@@ -632,6 +633,7 @@ export default function DashboardShell({
         )}
 
         <div className="ml-auto flex items-center gap-2.5 sm:gap-4">
+          <LanguageToggle size="sm" />
           <NotificationBell accent={accent} />
           <div
             className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold"

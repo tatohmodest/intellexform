@@ -14,7 +14,7 @@ export default function HighlightedCode({
   const tokens = highlightCode(code.replace(/^\n/, ''), lang);
 
   return (
-    <code className="font-mono whitespace-pre">
+    <code className="notranslate font-mono whitespace-pre" translate="no">
       {tokens.map((t, i) =>
         t.className ? (
           <span key={i} className={t.className}>

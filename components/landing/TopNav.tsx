@@ -8,6 +8,7 @@ import { buildWhatsappLink } from '@/lib/whatsapp';
 import { EXPLORE_NAV, LEARN_NAV, TUTORIAL_NAV } from '@/lib/tutorials/nav';
 import HeaderSearch from '@/components/landing/HeaderSearch';
 import BrandLogo from '@/components/BrandLogo';
+import LanguageToggle from '@/components/i18n/LanguageToggle';
 
 type NavItem = {
   href: string;
@@ -108,8 +109,9 @@ export default function TopNav() {
             <HeaderSearch />
           </div>
 
-          {/* Always extreme-right: Register + Menu (and desktop nav) */}
+          {/* Always extreme-right: language + Register + Menu (and desktop nav) */}
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <LanguageToggle size="sm" />
             <div className="hidden items-center gap-1 lg:flex">
               {NAV_GROUPS.map((group) => {
                 const isOpen = desktopMenu === group.id;
@@ -338,6 +340,12 @@ export default function TopNav() {
             </div>
 
             <div className="flex flex-col gap-3 border-t p-5" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[13px] font-medium" style={{ color: 'var(--ink-soft)' }}>
+                  Language / Langue
+                </span>
+                <LanguageToggle size="md" />
+              </div>
               {authed ? (
                 <Link href="/dashboard" onClick={() => setOpen(false)} className="btn btn-primary w-full">
                   Go to Dashboard <ArrowRight size={18} />

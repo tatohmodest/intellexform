@@ -41,8 +41,9 @@ export default function BrandLogo({
     <img
       src={src}
       alt={BRAND_NAME}
-      className={`w-auto ${className}`}
+      className={`notranslate w-auto ${className}`}
       style={{ height, width: variant === 'mark' ? height : 'auto' }}
+      translate="no"
       {...(priority ? { fetchPriority: 'high' as const } : {})}
     />
   );
@@ -51,8 +52,9 @@ export default function BrandLogo({
   return (
     <Link
       href={href}
-      className="inline-flex shrink-0 items-center"
+      className="notranslate inline-flex shrink-0 items-center"
       aria-label={`${BRAND_NAME} home`}
+      translate="no"
       onClick={onClick}
     >
       {img}

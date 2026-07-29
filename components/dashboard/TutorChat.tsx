@@ -64,8 +64,9 @@ function RichText({ text }: { text: string }) {
           return (
             <pre
               key={i}
-              className="mono my-3 overflow-x-auto p-4 text-[12.5px] leading-relaxed"
+              className="mono notranslate my-3 overflow-x-auto p-4 text-[12.5px] leading-relaxed"
               style={{ background: '#0C1116', color: '#d7e2ec' }}
+              translate="no"
             >
               <HighlightedCode code={code} language={language} />
             </pre>
@@ -110,8 +111,9 @@ function renderInlineTokens(line: string) {
       return (
         <code
           key={ti}
-          className="mono px-1.5 py-0.5 text-[12.5px]"
+          className="mono notranslate px-1.5 py-0.5 text-[12.5px]"
           style={{ background: 'rgba(47, 111, 173, 0.10)', color: '#1f5fa8' }}
+          translate="no"
         >
           {tok.slice(1, -1)}
         </code>
