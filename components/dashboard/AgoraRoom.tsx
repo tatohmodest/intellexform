@@ -1247,7 +1247,7 @@ export default function AgoraRoom({
                 <X size={16} />
               </button>
             </div>
-            <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
+            <div className="flex-1 space-y-3 overflow-y-scroll px-4 py-3">
               {chat.length === 0 ? (
                 <p className="py-8 text-center text-[13px]" style={{ color: 'var(--ink-soft)' }}>
                   No comments yet. Say hi or drop a question.
