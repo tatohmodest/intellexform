@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/getUser';
 import {
+  canStudentAccessAssessment,
   getAssessment,
   publicAssessment,
   updateAssessment,
@@ -20,6 +21,12 @@ export async function GET(
   const isAuthor = assessment.authorId === session.uid;
   if (!isAuthor && !assessment.published) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  }
+  if (!isAuthor) {
+    const canAccess = await canStudentAccessAssessment(assessment, session.uid);
+    if (!canAccess) {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    }
   }
 
   const forStudent = new URL(req.url).searchParams.get('view') === 'student';
@@ -46,6 +53,28 @@ export async function PATCH(
   if (typeof body.title === 'string') patch.title = body.title.slice(0, 160);
   if (typeof body.instructions === 'string') patch.instructions = body.instructions.slice(0, 8000);
   if (typeof body.studentTips === 'string') patch.studentTips = body.studentTips.slice(0, 4000);
+  if (body.attachmentFileUrl === null) {
+    patch.attachmentFileUrl = null;
+    patch.attachmentFilePublicId = null;
+    patch.attachmentFileResourceType = null;
+    patch.attachmentFileFormat = null;
+    patch.attachmentFileName = null;
+    patch.attachmentFileBytes = null;
+  } else if (typeof body.attachmentFileUrl === 'string') {
+    patch.attachmentFileUrl = body.attachmentFileUrl;
+    patch.attachmentFilePublicId =
+      typeof body.attachmentFilePublicId === 'string' ? body.attachmentFilePublicId : null;
+    patch.attachmentFileResourceType =
+      typeof body.attachmentFileResourceType === 'string'
+        ? body.attachmentFileResourceType
+        : null;
+    patch.attachmentFileFormat =
+      typeof body.attachmentFileFormat === 'string' ? body.attachmentFileFormat : null;
+    patch.attachmentFileName =
+      typeof body.attachmentFileName === 'string' ? body.attachmentFileName.slice(0, 200) : null;
+    patch.attachmentFileBytes =
+      typeof body.attachmentFileBytes === 'number' ? body.attachmentFileBytes : null;
+  }
   if (typeof body.published === 'boolean') patch.published = body.published;
   if (typeof body.terminateOnLeave === 'boolean') patch.terminateOnLeave = body.terminateOnLeave;
   if (typeof body.lockNavigation === 'boolean') patch.lockNavigation = body.lockNavigation;
@@ -60,6 +89,21 @@ export async function PATCH(
   }
   if (body.courseId === null || typeof body.courseId === 'string') {
     patch.courseId = body.courseId || null;
+  }
+  if (body.recipientMode === 'all' || body.recipientMode === 'course' || body.recipientMode === 'students') {
+    patch.recipientMode = body.recipientMode;
+  }
+  if (Array.isArray(body.recipientStudentIds)) {
+    patch.recipientStudentIds = body.recipientStudentIds
+      .map(String)
+      .map((id: string) => id.trim())
+      .filter(Boolean);
+  }
+  const recipientStudentIds = Array.isArray(patch.recipientStudentIds)
+    ? patch.recipientStudentIds
+    : [];
+  if (patch.recipientMode === 'students' && recipientStudentIds.length === 0) {
+    return NextResponse.json({ error: 'recipient_students_required' }, { status: 400 });
   }
   if (Array.isArray(body.questions)) {
     patch.questions = body.questions.map((q: Record<string, unknown>, i: number) => {
@@ -97,6 +141,8 @@ export async function PATCH(
         authorId: session.uid,
         institutionSlug: assessment.institutionSlug,
         courseId: assessment.courseId,
+        recipientMode: assessment.recipientMode,
+        recipientStudentIds: assessment.recipientStudentIds || [],
       });
       const dueLabel = assessment.dueAt
         ? ` Deadline: ${new Date(assessment.dueAt).toLocaleString()}.`

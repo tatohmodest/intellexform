@@ -146,7 +146,7 @@ export default function AdminLibrary() {
         <h2 className="font-display text-[24px]">Publish books</h2>
         <p className="mt-1 max-w-2xl text-[14px]" style={{ color: 'var(--ink-soft)' }}>
           Publish to the student library. Set price to 0 for free, or any XAF amount.
-          Active InTelleX Students (4,999 XAF/mo) read paid books free.
+          Active InTelleX Students (1,999 XAF/mo) read paid books free.
         </p>
       </div>
 

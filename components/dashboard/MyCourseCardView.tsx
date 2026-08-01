@@ -18,6 +18,10 @@ export default function MyCourseCardView({ course: c }: { course: MyCourseCard }
   const hours = Math.max(1, Math.round((c.totalMinutes || 60) / 60));
   const logoSrc = c.source === 'tutorial' ? getTrackLogo(c.slug) : c.thumbnailUrl;
   const live = c.liveSession;
+  const compactTagline = (live ? `Class in progress with ${live.instructorName}` : c.tagline || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 170);
 
   return (
     <article
@@ -109,10 +113,10 @@ export default function MyCourseCardView({ course: c }: { course: MyCourseCard }
                 {c.title}
               </h3>
               <p
-                className="mt-1 line-clamp-2 hidden text-[13px] leading-relaxed sm:block"
+                className="mt-1 line-clamp-2 hidden break-words text-[13px] leading-relaxed sm:block"
                 style={{ color: 'var(--ink-soft)' }}
               >
-                {live ? `Class in progress with ${live.instructorName}` : c.tagline}
+                {compactTagline}
               </p>
             </div>
           </div>

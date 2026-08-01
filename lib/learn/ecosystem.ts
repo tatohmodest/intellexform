@@ -29,6 +29,7 @@ import {
   type MentorDocRequestItem,
   type MentorDocumentRequest,
 } from '@/lib/learn/mentorApplication';
+import { prisma } from '@/lib/db/prisma';
 
 export type {
   MentorApplicationDoc,
@@ -393,6 +394,14 @@ export async function approveMentorApplication(
     },
   );
 
+  // Sync approved mentors into institution memberships (shared DB model).
+  await syncMentorInstructorMemberships({
+    lbId: String(app.lbId),
+    badgeInstitutionSlug: badgeSlug,
+  }).catch((err) => {
+    console.error('mentor membership sync failed:', err);
+  });
+
   try {
     const { createNotification } = await import('@/lib/learn/notifications');
     await createNotification({
@@ -408,6 +417,133 @@ export async function approveMentorApplication(
   }
 
   return { ok: true };
+}
+
+async function findPrismaUserIdByLbId(lbId: string): Promise<string | null> {
+  const user = await prisma.user.findFirst({
+    where: { OR: [{ loopingBinaryId: lbId }, { id: lbId }] },
+    select: { id: true },
+  });
+  return user?.id || null;
+}
+
+async function ensureInstructorMembershipBySlug(opts: {
+  userId: string;
+  institutionSlug: string;
+}) {
+  const row = await prisma.institution.findUnique({
+    where: { slug: opts.institutionSlug },
+    select: { id: true },
+  });
+  if (!row) return false;
+
+  await prisma.institutionMembership.upsert({
+    where: {
+      institutionId_userId: {
+        institutionId: row.id,
+        userId: opts.userId,
+      },
+    },
+    update: {
+      role: 'INSTRUCTOR',
+      isActive: true,
+      suspendedAt: null,
+      suspendReason: null,
+      title: 'Instructor',
+    },
+    create: {
+      institutionId: row.id,
+      userId: opts.userId,
+      role: 'INSTRUCTOR',
+      isActive: true,
+      title: 'Instructor',
+    },
+  });
+  return true;
+}
+
+async function syncMentorInstructorMemberships(opts: {
+  lbId: string;
+  badgeInstitutionSlug?: string | null;
+}): Promise<{ synced: string[]; missing: string[] }> {
+  const userId = await findPrismaUserIdByLbId(opts.lbId);
+  if (!userId) {
+    return { synced: [], missing: ['user_not_found'] };
+  }
+
+  const targetSlugs = Array.from(
+    new Set(['intellex', String(opts.badgeInstitutionSlug || '').trim()].filter(Boolean)),
+  );
+
+  const synced: string[] = [];
+  const missing: string[] = [];
+  for (const slug of targetSlugs) {
+    const ok = await ensureInstructorMembershipBySlug({ userId, institutionSlug: slug });
+    if (ok) synced.push(slug);
+    else missing.push(slug);
+  }
+
+  return { synced, missing };
+}
+
+export async function backfillMentorInstitutionMemberships(dryRun = true): Promise<{
+  totalMentors: number;
+  checked: number;
+  updated: number;
+  skipped: number;
+  dryRun: boolean;
+  details: Array<{ lbId: string; synced: string[]; missing: string[]; reason?: string }>;
+}> {
+  await ensureLearnCollections();
+  const db = await getDb();
+
+  const mentors = await db
+    .collection('mentor_profiles')
+    .find({}, { projection: { lbId: 1, badgeInstitutionSlug: 1 } })
+    .toArray();
+
+  const details: Array<{ lbId: string; synced: string[]; missing: string[]; reason?: string }> = [];
+  let updated = 0;
+  let skipped = 0;
+
+  for (const row of mentors) {
+    const lbId = String(row.lbId || '').trim();
+    if (!lbId) {
+      skipped += 1;
+      continue;
+    }
+
+    if (dryRun) {
+      const userId = await findPrismaUserIdByLbId(lbId);
+      if (!userId) {
+        details.push({ lbId, synced: [], missing: ['user_not_found'], reason: 'no_prisma_user' });
+        skipped += 1;
+        continue;
+      }
+      const slugs = Array.from(
+        new Set(['intellex', String(row.badgeInstitutionSlug || '').trim()].filter(Boolean)),
+      );
+      details.push({ lbId, synced: slugs, missing: [] });
+      continue;
+    }
+
+    const res = await syncMentorInstructorMemberships({
+      lbId,
+      badgeInstitutionSlug: String(row.badgeInstitutionSlug || '').trim() || null,
+    });
+    if (res.synced.length > 0) updated += 1;
+    else skipped += 1;
+    details.push({ lbId, synced: res.synced, missing: res.missing });
+  }
+
+  return {
+    totalMentors: mentors.length,
+    checked: details.length,
+    updated,
+    skipped,
+    dryRun,
+    details,
+  };
 }
 
 export async function rejectMentorApplication(

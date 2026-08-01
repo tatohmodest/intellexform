@@ -235,7 +235,7 @@ export type AccessGate =
 /**
  * Free tracks: beginner is open to signed-in students.
  * Intermediate → Pro require an active “Subscribe to get certified” plan
- * (4,999 XAF/month, or yearly with 10% off).
+ * (1,999 XAF/month, or yearly with 10% off).
  * Admin-priced tracks still use one_time / per_level purchases.
  */
 export async function canAccessContent(opts: {

@@ -10,6 +10,7 @@ export default function NotificationBell({ accent = '#00b369' }: { accent?: stri
   const [items, setItems] = useState<NotificationView[]>([]);
   const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(false);
+  const latestSeenRef = useRef<string>('');
   const rootRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
@@ -18,8 +19,36 @@ export default function NotificationBell({ accent = '#00b369' }: { accent?: stri
       const res = await fetch('/api/learn/notifications');
       if (!res.ok) return;
       const data = await res.json();
-      setItems(data.notifications || []);
+      const next = (data.notifications || []) as NotificationView[];
+      setItems(next);
       setUnread(Number(data.unread) || 0);
+
+      if (!latestSeenRef.current && next[0]?.createdAt) {
+        latestSeenRef.current = next[0].createdAt;
+      }
+
+      if (
+        typeof window !== 'undefined' &&
+        'Notification' in window &&
+        Notification.permission === 'granted'
+      ) {
+        const newUnread = next
+          .filter((n) => !n.readAt)
+          .filter((n) => !latestSeenRef.current || n.createdAt > latestSeenRef.current)
+          .slice(0, 3);
+        for (const n of newUnread) {
+          new Notification(n.title, {
+            body: n.body,
+            tag: `intellex-${n.id}`,
+            data: { url: n.href || '/dashboard/notifications' },
+            icon: '/pwa/icon-192.png',
+          });
+        }
+      }
+
+      if (next[0]?.createdAt) {
+        latestSeenRef.current = next[0].createdAt;
+      }
     } finally {
       setLoading(false);
     }

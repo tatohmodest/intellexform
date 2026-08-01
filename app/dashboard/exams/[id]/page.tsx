@@ -2,7 +2,12 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
-import { getAssessment, getSubmission, publicAssessment } from '@/lib/learn/assessments';
+import {
+  canStudentAccessAssessment,
+  getAssessment,
+  getSubmission,
+  publicAssessment,
+} from '@/lib/learn/assessments';
 import ExamPlayer from '@/components/dashboard/ExamPlayer';
 
 export const dynamic = 'force-dynamic';
@@ -13,6 +18,9 @@ export default async function TakeExamPage({ params }: { params: { id: string } 
 
   const assessment = await getAssessment(params.id);
   if (!assessment || assessment.kind !== 'exam' || !assessment.published) notFound();
+
+  const canAccess = await canStudentAccessAssessment(assessment, session.uid);
+  if (!canAccess) notFound();
 
   const existing = await getSubmission(params.id, session.uid);
   if (

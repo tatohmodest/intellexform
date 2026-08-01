@@ -6,6 +6,7 @@ import { XP } from '@/lib/learn/xp';
 
 export type AssessmentKind = 'assignment' | 'exam';
 export type QuestionType = 'mcq' | 'structural';
+export type AudienceMode = 'all' | 'course' | 'students';
 export type SubmissionStatus =
   | 'draft'
   | 'submitted'
@@ -32,8 +33,17 @@ export interface AssessmentDoc {
   authorName: string;
   institutionSlug?: string | null;
   courseId?: string | null;
+  recipientMode: AudienceMode;
+  recipientStudentIds?: string[];
   title: string;
   instructions: string;
+  /** Assignment brief attachment uploaded by instructor (PDF/DOC/DOCX). */
+  attachmentFileUrl?: string | null;
+  attachmentFilePublicId?: string | null;
+  attachmentFileResourceType?: string | null;
+  attachmentFileFormat?: string | null;
+  attachmentFileName?: string | null;
+  attachmentFileBytes?: number | null;
   /** Tips shown to students (e.g. how to share a Drive link) */
   studentTips: string;
   questions: ExamQuestion[];
@@ -157,6 +167,8 @@ export async function ensureAssessmentCollections() {
     db.collection('assessments').createIndex({ authorId: 1, updatedAt: -1 }),
     db.collection('assessments').createIndex({ institutionSlug: 1, published: 1 }),
     db.collection('assessments').createIndex({ kind: 1, published: 1 }),
+    db.collection('assessments').createIndex({ recipientMode: 1, published: 1 }),
+    db.collection('assessments').createIndex({ recipientStudentIds: 1, published: 1 }),
     db
       .collection('assessment_submissions')
       .createIndex({ assessmentId: 1, studentId: 1 }, { unique: true }),
@@ -171,18 +183,33 @@ export async function createAssessment(opts: {
   title: string;
   institutionSlug?: string | null;
   courseId?: string | null;
+  recipientMode?: AudienceMode;
+  recipientStudentIds?: string[];
 }): Promise<string> {
   await ensureAssessmentCollections();
   const db = await getDb();
   const now = new Date();
+  const recipientMode: AudienceMode =
+    opts.recipientMode || (opts.courseId ? 'course' : 'all');
+  const recipientStudentIds = Array.from(
+    new Set((opts.recipientStudentIds || []).map((id) => String(id || '').trim()).filter(Boolean)),
+  );
   const doc: AssessmentDoc = {
     kind: opts.kind,
     authorId: opts.authorId,
     authorName: opts.authorName,
     institutionSlug: opts.institutionSlug || null,
     courseId: opts.courseId || null,
+    recipientMode,
+    recipientStudentIds,
     title: opts.title.slice(0, 160) || (opts.kind === 'exam' ? 'Untitled exam' : 'Untitled assignment'),
     instructions: '',
+    attachmentFileUrl: null,
+    attachmentFilePublicId: null,
+    attachmentFileResourceType: null,
+    attachmentFileFormat: null,
+    attachmentFileName: null,
+    attachmentFileBytes: null,
     studentTips:
       opts.kind === 'assignment'
         ? 'Upload a PDF (preferred for in-app preview), or DOC / DOCX, up to 10 MB. Your instructor opens and downloads it inside InTelleX.'
@@ -231,9 +258,14 @@ export async function listAssessmentsForCampus(
 export async function listPublishedForStudent(opts: {
   studentId: string;
   institutionSlug?: string | null;
+  page?: number;
+  pageSize?: number;
 }): Promise<AssessmentView[]> {
   await ensureAssessmentCollections();
   const db = await getDb();
+  const page = Math.max(1, Number(opts.page) || 1);
+  const pageSize = Math.min(100, Math.max(1, Number(opts.pageSize) || 20));
+  const skip = (page - 1) * pageSize;
 
   const enrolledCourseIds = await db
     .collection('course_enrollments')
@@ -243,9 +275,19 @@ export async function listPublishedForStudent(opts: {
   const query: Record<string, unknown> = {
     published: true,
     $or: [
-      { courseId: null },
-      { courseId: { $exists: false } },
-      { courseId: { $in: enrolledCourseIds as string[] } },
+      { recipientMode: 'all' },
+      {
+        recipientMode: 'course',
+        courseId: { $in: enrolledCourseIds as string[] },
+      },
+      {
+        recipientMode: 'students',
+        recipientStudentIds: opts.studentId,
+      },
+      // Legacy behavior before explicit audience targeting.
+      { recipientMode: { $exists: false }, courseId: null },
+      { recipientMode: { $exists: false }, courseId: { $exists: false } },
+      { recipientMode: { $exists: false }, courseId: { $in: enrolledCourseIds as string[] } },
     ],
   };
   if (opts.institutionSlug) {
@@ -263,6 +305,8 @@ export async function listPublishedForStudent(opts: {
     .collection('assessments')
     .find(query)
     .sort({ dueAt: 1, updatedAt: -1 })
+    .skip(skip)
+    .limit(pageSize)
     .toArray();
   return docs.map((d) => toAssessment(d as Record<string, unknown>));
 }
@@ -297,6 +341,12 @@ export async function updateAssessment(
       AssessmentDoc,
       | 'title'
       | 'instructions'
+      | 'attachmentFileUrl'
+      | 'attachmentFilePublicId'
+      | 'attachmentFileResourceType'
+      | 'attachmentFileFormat'
+      | 'attachmentFileName'
+      | 'attachmentFileBytes'
       | 'studentTips'
       | 'questions'
       | 'durationMinutes'
@@ -306,6 +356,8 @@ export async function updateAssessment(
       | 'published'
       | 'courseId'
       | 'institutionSlug'
+      | 'recipientMode'
+      | 'recipientStudentIds'
     >
   >,
 ) {
@@ -314,7 +366,21 @@ export async function updateAssessment(
   const existing = await db.collection('assessments').findOne({ _id: oid, authorId });
   await db.collection('assessments').updateOne(
     { _id: oid, authorId },
-    { $set: { ...patch, updatedAt: new Date() } },
+    {
+      $set: {
+        ...patch,
+        recipientStudentIds: Array.isArray(patch.recipientStudentIds)
+          ? Array.from(
+              new Set(
+                patch.recipientStudentIds
+                  .map((id) => String(id || '').trim())
+                  .filter(Boolean),
+              ),
+            )
+          : patch.recipientStudentIds,
+        updatedAt: new Date(),
+      },
+    },
   );
   if (patch.published === true && existing && !existing.published) {
     await awardXp(authorId, XP.PUBLISH_ASSESSMENT).catch(() => {});
@@ -406,4 +472,45 @@ export function autoGradeExam(
     }
   }
   return { score, maxScore };
+}
+
+export async function canStudentAccessAssessment(
+  assessment: AssessmentView,
+  studentId: string,
+): Promise<boolean> {
+  if (assessment.authorId === studentId) return true;
+  if (!assessment.published) return false;
+
+  if (assessment.recipientMode === 'students') {
+    const ids = Array.isArray(assessment.recipientStudentIds)
+      ? assessment.recipientStudentIds
+      : [];
+    return ids.includes(studentId);
+  }
+
+  if (assessment.recipientMode === 'course') {
+    if (!assessment.courseId) return false;
+    const db = await getDb();
+    const enrolled = await db.collection('course_enrollments').findOne({
+      courseId: assessment.courseId,
+      studentId,
+    });
+    return Boolean(enrolled);
+  }
+
+  if (assessment.recipientMode === 'all') {
+    return true;
+  }
+
+  // Legacy behavior for records created before recipientMode.
+  if (assessment.courseId) {
+    const db = await getDb();
+    const enrolled = await db.collection('course_enrollments').findOne({
+      courseId: assessment.courseId,
+      studentId,
+    });
+    return Boolean(enrolled);
+  }
+
+  return true;
 }

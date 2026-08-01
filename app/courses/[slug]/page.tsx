@@ -136,7 +136,12 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
             {course.courseDetails && (
               <div className="mt-10">
                 <h2 className="mb-3 font-display text-[22px]">About this course</h2>
-                <p className="text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>{course.courseDetails}</p>
+                <div
+                  className="max-h-[360px] overflow-y-auto border p-3"
+                  style={{ borderColor: 'var(--line)' }}
+                >
+                  <p className="text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>{course.courseDetails}</p>
+                </div>
               </div>
             )}
 

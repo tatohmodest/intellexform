@@ -19,6 +19,16 @@ import { uploadMentorAsset } from '@/lib/learn/mentorUpload';
 import DriveDocViewer from '@/components/dashboard/DriveDocViewer';
 import CloudinaryDocViewer from '@/components/dashboard/CloudinaryDocViewer';
 
+type StudentOption = { id: string; name: string; email: string | null; courseTitle: string };
+
+function normalizeAudience(note: InstructorNoteView): InstructorNoteView {
+  return {
+    ...note,
+    recipientMode: note.recipientMode || (note.courseId ? 'course' : 'all'),
+    recipientStudentIds: Array.isArray(note.recipientStudentIds) ? note.recipientStudentIds : [],
+  };
+}
+
 export default function NotesStudio({
   accent = '#00b369',
   institutionSlug = null,
@@ -30,6 +40,7 @@ export default function NotesStudio({
 }) {
   const [notes, setNotes] = useState<InstructorNoteView[]>([]);
   const [courses, setCourses] = useState<TeacherCourseView[]>([]);
+  const [students, setStudents] = useState<StudentOption[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draft, setDraft] = useState<InstructorNoteView | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,15 +52,28 @@ export default function NotesStudio({
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [nRes, cRes] = await Promise.all([
+      const [nRes, cRes, sRes] = await Promise.all([
         fetch('/api/learn/notes'),
         fetch('/api/learn/teacher-courses'),
+        fetch('/api/learn/instructor/students'),
       ]);
       const nData = await nRes.json().catch(() => ({}));
       const cData = await cRes.json().catch(() => ({}));
-      const list = (nData.notes || []) as InstructorNoteView[];
+      const sData = await sRes.json().catch(() => ({}));
+      const list = ((nData.notes || []) as InstructorNoteView[]).map(normalizeAudience);
       setNotes(list);
       setCourses((cData.courses || []) as TeacherCourseView[]);
+      const groups = Array.isArray(sData?.groups) ? sData.groups : [];
+      const options = groups.flatMap((g: { courseTitle?: string; students?: Array<{ studentId?: string; studentName?: string; studentEmail?: string | null }> }) =>
+        (g.students || []).map((s) => ({
+          id: String(s.studentId || ''),
+          name: String(s.studentName || 'Student'),
+          email: s.studentEmail ?? null,
+          courseTitle: String(g.courseTitle || 'Course'),
+        })),
+      );
+      const dedup = Array.from(new Map(options.filter((s) => s.id).map((s) => [s.id, s])).values());
+      setStudents(dedup);
       if (!activeId && list[0]) {
         setActiveId(list[0].id);
         setDraft(list[0]);
@@ -80,11 +104,16 @@ export default function NotesStudio({
         title: 'Class notes',
         institutionSlug,
         courseId: initialCourseId,
+        recipientMode: initialCourseId ? 'course' : 'all',
       }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      setMsg(data.error || 'Could not create note');
+      setMsg(
+        data.error === 'recipient_students_required'
+          ? 'Select at least one student when targeting selected students.'
+          : data.error || 'Could not create note',
+      );
       return;
     }
     await load();
@@ -92,7 +121,7 @@ export default function NotesStudio({
     const nRes = await fetch(`/api/learn/notes/${data.id}`);
     const nData = await nRes.json().catch(() => ({}));
     if (nData.note) {
-      setDraft(nData.note);
+      setDraft(normalizeAudience(nData.note));
       setDriveInput(nData.note.driveUrl || '');
     }
   }
@@ -109,6 +138,8 @@ export default function NotesStudio({
         listInLibrary: draft.listInLibrary,
         priceXAF: draft.priceXAF,
         driveUrl: driveInput.trim() || null,
+        recipientMode: draft.recipientMode || (draft.courseId ? 'course' : 'all'),
+        recipientStudentIds: draft.recipientStudentIds || [],
       };
       if (publish) body.published = true;
       const res = await fetch(`/api/learn/notes/${draft.id}`, {
@@ -118,10 +149,16 @@ export default function NotesStudio({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setMsg(data.error === 'invalid_drive_url' ? 'Use a public Google Drive share link.' : data.error || 'Save failed');
+        setMsg(
+          data.error === 'invalid_drive_url'
+            ? 'Use a public Google Drive share link.'
+            : data.error === 'recipient_students_required'
+              ? 'Select at least one student when targeting selected students.'
+              : data.error || 'Save failed',
+        );
         return;
       }
-      setDraft(data.note);
+      setDraft(normalizeAudience(data.note));
       setDriveInput(data.note?.driveUrl || '');
       setMsg(publish ? 'Published and students notified.' : 'Saved.');
       await load();
@@ -154,7 +191,7 @@ export default function NotesStudio({
         setMsg(data.error || 'Upload save failed');
         return;
       }
-      setDraft(data.note);
+      setDraft(normalizeAudience(data.note));
       setDriveInput('');
       setMsg('File uploaded to Cloudinary.');
       await load();
@@ -163,6 +200,14 @@ export default function NotesStudio({
     } finally {
       setUploading(false);
     }
+  }
+
+  function toggleRecipient(studentId: string) {
+    if (!draft) return;
+    const prev = Array.isArray(draft.recipientStudentIds) ? draft.recipientStudentIds : [];
+    const has = prev.includes(studentId);
+    const next = has ? prev.filter((id) => id !== studentId) : [...prev, studentId];
+    setDraft({ ...draft, recipientStudentIds: next });
   }
 
   async function removeNote() {
@@ -295,7 +340,13 @@ export default function NotesStudio({
               <select
                 className="form-input !rounded-xl text-[13px]"
                 value={draft.courseId || ''}
-                onChange={(e) => setDraft({ ...draft, courseId: e.target.value || null })}
+                onChange={(e) =>
+                  setDraft({
+                    ...draft,
+                    courseId: e.target.value || null,
+                    recipientMode: e.target.value ? 'course' : draft.recipientMode,
+                  })
+                }
               >
                 <option value="">All my students</option>
                 {courses.map((c) => (
@@ -318,6 +369,61 @@ export default function NotesStudio({
                 0 = free. Enrolled course students still get notes free.
               </p>
             </div>
+          </div>
+
+          <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--line)' }}>
+            <label className="mb-1.5 block text-[13px] font-semibold">Who should receive this note?</label>
+            <select
+              className="form-input !rounded-xl text-[13px]"
+              value={draft.recipientMode || (draft.courseId ? 'course' : 'all')}
+              onChange={(e) => {
+                const mode = e.target.value as 'all' | 'course' | 'students';
+                setDraft({
+                  ...draft,
+                  recipientMode: mode,
+                  recipientStudentIds: mode === 'students' ? draft.recipientStudentIds || [] : [],
+                });
+              }}
+            >
+              <option value="all">All my students</option>
+              <option value="course" disabled={!draft.courseId}>
+                Students enrolled in selected course
+              </option>
+              <option value="students">Selected students only</option>
+            </select>
+            {(draft.recipientMode || (draft.courseId ? 'course' : 'all')) === 'students' && (
+              <div className="mt-3 max-h-52 overflow-y-auto rounded-xl border" style={{ borderColor: 'var(--line)' }}>
+                {students.length === 0 ? (
+                  <p className="px-3 py-3 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                    No enrolled students found yet. Add students in My Students first.
+                  </p>
+                ) : (
+                  students.map((s) => {
+                    const selected = (draft.recipientStudentIds || []).includes(s.id);
+                    return (
+                      <label
+                        key={s.id}
+                        className="flex cursor-pointer items-start gap-2 border-b px-3 py-2 text-[12.5px]"
+                        style={{ borderColor: 'var(--line)' }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() => toggleRecipient(s.id)}
+                          className="mt-0.5"
+                        />
+                        <span className="min-w-0">
+                          <span className="block font-semibold">{s.name}</span>
+                          <span style={{ color: 'var(--ink-soft)' }}>
+                            {s.email || 'No email'} · {s.courseTitle}
+                          </span>
+                        </span>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+            )}
           </div>
 
           <label className="flex items-center gap-2 text-[13.5px]">

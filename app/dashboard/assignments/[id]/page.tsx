@@ -1,6 +1,11 @@
 import { redirect, notFound } from 'next/navigation';
 import { getSessionUser } from '@/lib/auth/getUser';
-import { getAssessment, getSubmission, publicAssessment } from '@/lib/learn/assessments';
+import {
+  canStudentAccessAssessment,
+  getAssessment,
+  getSubmission,
+  publicAssessment,
+} from '@/lib/learn/assessments';
 import AssignmentSubmitClient from '@/components/dashboard/AssignmentSubmitClient';
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +16,9 @@ export default async function AssignmentPage({ params }: { params: { id: string 
 
   const assessment = await getAssessment(params.id);
   if (!assessment || assessment.kind !== 'assignment' || !assessment.published) notFound();
+
+  const canAccess = await canStudentAccessAssessment(assessment, session.uid);
+  if (!canAccess) notFound();
 
   const submission = await getSubmission(params.id, session.uid);
 

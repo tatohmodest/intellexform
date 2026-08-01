@@ -4,6 +4,7 @@ import { ensureLearnCollections } from '@/lib/learn/ecosystem';
 import { isGoogleDriveShareUrl, toDriveEmbedUrl } from '@/lib/learn/assessments';
 
 export type NoteSource = 'cloudinary' | 'drive' | 'link';
+export type AudienceMode = 'all' | 'course' | 'students';
 
 export interface InstructorNoteDoc {
   _id?: ObjectId;
@@ -24,6 +25,8 @@ export interface InstructorNoteDoc {
   driveUrl?: string | null;
   driveEmbedUrl?: string | null;
   source: NoteSource;
+  recipientMode: AudienceMode;
+  recipientStudentIds?: string[];
   published: boolean;
   /** Also list in student Library for discovery / purchase */
   listInLibrary: boolean;
@@ -43,6 +46,18 @@ export interface NotePurchaseDoc {
   createdAt: Date;
 }
 
+type ListOptions = {
+  page?: number;
+  pageSize?: number;
+};
+
+function normalizePagination(opts?: ListOptions): { skip: number; limit: number } {
+  const page = Math.max(1, Number(opts?.page) || 1);
+  const defaultSize = opts ? 20 : 200;
+  const pageSize = Math.min(100, Math.max(1, Number(opts?.pageSize) || defaultSize));
+  return { skip: (page - 1) * pageSize, limit: pageSize };
+}
+
 function toNote(d: Record<string, unknown>): InstructorNoteView {
   const { _id, ...rest } = d as unknown as InstructorNoteDoc & { _id: ObjectId };
   return { ...(rest as Omit<InstructorNoteDoc, '_id'>), id: _id.toString() };
@@ -55,6 +70,8 @@ async function ensureNoteCollections() {
     db.collection('instructor_notes').createIndex({ authorId: 1, updatedAt: -1 }),
     db.collection('instructor_notes').createIndex({ published: 1, listInLibrary: 1, updatedAt: -1 }),
     db.collection('instructor_notes').createIndex({ courseId: 1, published: 1 }),
+    db.collection('instructor_notes').createIndex({ recipientMode: 1, published: 1 }),
+    db.collection('instructor_notes').createIndex({ recipientStudentIds: 1, published: 1 }),
     db.collection('note_purchases').createIndex({ noteId: 1, studentId: 1 }, { unique: true }),
     db.collection('note_purchases').createIndex({ studentId: 1, createdAt: -1 }),
   ]).catch(() => {});
@@ -66,10 +83,17 @@ export async function createInstructorNote(opts: {
   title: string;
   institutionSlug?: string | null;
   courseId?: string | null;
+  recipientMode?: AudienceMode;
+  recipientStudentIds?: string[];
 }): Promise<string> {
   await ensureNoteCollections();
   const db = await getDb();
   const now = new Date();
+  const recipientMode: AudienceMode =
+    opts.recipientMode || (opts.courseId ? 'course' : 'all');
+  const recipientStudentIds = Array.from(
+    new Set((opts.recipientStudentIds || []).map((id) => String(id || '').trim()).filter(Boolean)),
+  );
   const doc: InstructorNoteDoc = {
     authorId: opts.authorId,
     authorName: opts.authorName,
@@ -86,6 +110,8 @@ export async function createInstructorNote(opts: {
     driveUrl: null,
     driveEmbedUrl: null,
     source: 'cloudinary',
+    recipientMode,
+    recipientStudentIds,
     published: false,
     listInLibrary: false,
     priceXAF: 0,
@@ -97,13 +123,19 @@ export async function createInstructorNote(opts: {
   return res.insertedId.toString();
 }
 
-export async function listNotesByAuthor(authorId: string): Promise<InstructorNoteView[]> {
+export async function listNotesByAuthor(
+  authorId: string,
+  opts?: ListOptions,
+): Promise<InstructorNoteView[]> {
   await ensureNoteCollections();
   const db = await getDb();
+  const { skip, limit } = normalizePagination(opts);
   const docs = await db
     .collection('instructor_notes')
     .find({ authorId })
-    .sort({ updatedAt: -1 })
+    .sort({ createdAt: -1, updatedAt: -1 })
+    .skip(skip)
+    .limit(limit)
     .toArray();
   return docs.map((d) => toNote(d as Record<string, unknown>));
 }
@@ -111,9 +143,12 @@ export async function listNotesByAuthor(authorId: string): Promise<InstructorNot
 export async function listPublishedNotesForStudent(opts: {
   studentId: string;
   institutionSlug?: string | null;
+  page?: number;
+  pageSize?: number;
 }): Promise<InstructorNoteView[]> {
   await ensureNoteCollections();
   const db = await getDb();
+  const { skip, limit } = normalizePagination(opts);
   const enrolledCourseIds = await db
     .collection('course_enrollments')
     .distinct('courseId', { studentId: opts.studentId })
@@ -122,9 +157,19 @@ export async function listPublishedNotesForStudent(opts: {
   const query: Record<string, unknown> = {
     published: true,
     $or: [
-      { courseId: null },
-      { courseId: { $exists: false } },
-      { courseId: { $in: enrolledCourseIds as string[] } },
+      { recipientMode: 'all' },
+      {
+        recipientMode: 'course',
+        courseId: { $in: enrolledCourseIds as string[] },
+      },
+      {
+        recipientMode: 'students',
+        recipientStudentIds: opts.studentId,
+      },
+      // Legacy notes created before explicit audience targeting.
+      { recipientMode: { $exists: false }, courseId: null },
+      { recipientMode: { $exists: false }, courseId: { $exists: false } },
+      { recipientMode: { $exists: false }, courseId: { $in: enrolledCourseIds as string[] } },
       { listInLibrary: true },
     ],
   };
@@ -143,18 +188,23 @@ export async function listPublishedNotesForStudent(opts: {
   const docs = await db
     .collection('instructor_notes')
     .find(query)
-    .sort({ updatedAt: -1 })
+    .sort({ createdAt: -1, updatedAt: -1 })
+    .skip(skip)
+    .limit(limit)
     .toArray();
   return docs.map((d) => toNote(d as Record<string, unknown>));
 }
 
-export async function listLibraryNotes(): Promise<InstructorNoteView[]> {
+export async function listLibraryNotes(opts?: ListOptions): Promise<InstructorNoteView[]> {
   await ensureNoteCollections();
   const db = await getDb();
+  const { skip, limit } = normalizePagination(opts);
   const docs = await db
     .collection('instructor_notes')
     .find({ published: true, listInLibrary: true })
-    .sort({ updatedAt: -1 })
+    .sort({ createdAt: -1, updatedAt: -1 })
+    .skip(skip)
+    .limit(limit)
     .toArray();
   return docs.map((d) => toNote(d as Record<string, unknown>));
 }
@@ -186,6 +236,8 @@ export type InstructorNotePatch = Partial<
     | 'driveUrl'
     | 'driveEmbedUrl'
     | 'source'
+    | 'recipientMode'
+    | 'recipientStudentIds'
     | 'published'
     | 'listInLibrary'
     | 'priceXAF'
@@ -218,6 +270,19 @@ export async function updateInstructorNote(
     next.source = 'cloudinary';
   }
 
+  if (patch.recipientMode) {
+    next.recipientMode = patch.recipientMode;
+    if (patch.recipientMode !== 'students') {
+      next.recipientStudentIds = [];
+    }
+  }
+
+  if (Array.isArray(patch.recipientStudentIds)) {
+    next.recipientStudentIds = Array.from(
+      new Set(patch.recipientStudentIds.map((id) => String(id || '').trim()).filter(Boolean)),
+    );
+  }
+
   if (typeof patch.priceXAF === 'number') {
     next.priceXAF = Math.max(0, Math.min(Math.round(patch.priceXAF), 5_000_000));
   }
@@ -242,6 +307,39 @@ export async function studentOwnsNote(
   if (!note.published) return false;
 
   const db = await getDb();
+
+  const inTargetAudience = await (async () => {
+    if (note.recipientMode === 'students') {
+      const ids = Array.isArray(note.recipientStudentIds) ? note.recipientStudentIds : [];
+      return ids.includes(studentId);
+    }
+    if (note.recipientMode === 'course') {
+      if (!note.courseId) return false;
+      const enrolled = await db.collection('course_enrollments').findOne({
+        courseId: note.courseId,
+        studentId,
+      });
+      return Boolean(enrolled);
+    }
+    if (note.recipientMode === 'all') {
+      return true;
+    }
+
+    // Legacy notes: course-linked or globally published.
+    if (note.courseId) {
+      const enrolled = await db.collection('course_enrollments').findOne({
+        courseId: note.courseId,
+        studentId,
+      });
+      return Boolean(enrolled);
+    }
+    return true;
+  })();
+
+  if (!inTargetAudience && !note.listInLibrary) {
+    return false;
+  }
+
   const buy = await db.collection('note_purchases').findOne({ noteId: note.id, studentId });
   if (buy) return true;
 

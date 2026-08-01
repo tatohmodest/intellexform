@@ -1,5 +1,5 @@
 /**
- * InTelleX Student membership - 4,999 XAF / month.
+ * InTelleX Student membership - 1,999 XAF / month.
  * Backed by the existing cert_subscription PayUnit checkout.
  */
 import {

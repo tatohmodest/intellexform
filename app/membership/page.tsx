@@ -25,16 +25,16 @@ import { buildShareMetadata } from '@/lib/seo/share';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = buildShareMetadata({
-  title: 'Become an InTelleX Student · 4,999 XAF/month',
+  title: 'Become an InTelleX Student · 1,999 XAF/month',
   description:
-    'Register as an InTelleX Student for 4,999 XAF/month. Unlock 1,000+ courses with certifications, free Intermediate→Pro tracks, and the digital library.',
+    'Register as an InTelleX Student for 1,999 XAF/month. Unlock 1,000+ courses with certifications, free Intermediate→Pro tracks, and the digital library.',
   path: '/membership',
   image: '/way_selfpaced.webp',
   imageAlt: 'InTelleX Student membership Cameroon',
   keywords: [
     'InTelleX Student',
     'InTelleX membership',
-    '4999 XAF',
+    '1999 XAF',
     'online courses Cameroon subscription',
     'professional training Cameroon',
   ],

@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Clock, Loader2, Lock, Upload } from 'lucide-react';
+import { ArrowLeft, Clock, Download, ExternalLink, Loader2, Lock, Upload } from 'lucide-react';
 import CloudinaryDocViewer from '@/components/dashboard/CloudinaryDocViewer';
 import DriveDocViewer from '@/components/dashboard/DriveDocViewer';
+import MarkdownLite from '@/components/dashboard/MarkdownLite';
 import type { AssessmentView, SubmissionView } from '@/lib/learn/assessments';
 import { formatCountdown } from '@/lib/learn/countdown';
 import { uploadMediaAsset } from '@/lib/learn/mentorUpload';
@@ -92,8 +93,8 @@ export default function AssignmentSubmitClient({
 
   return (
     <div className="mx-auto max-w-[900px]">
-      <Link href="/dashboard/notifications" className="mb-6 inline-flex items-center gap-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-        <ArrowLeft size={14} /> Notifications
+      <Link href="/dashboard/assignments" className="mb-6 inline-flex items-center gap-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+        <ArrowLeft size={14} /> Assignments
       </Link>
       <p className="font-mono text-[11px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
         Assignment
@@ -119,9 +120,40 @@ export default function AssignmentSubmitClient({
         </div>
       )}
 
-      <p className="mt-3 whitespace-pre-wrap text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-        {assessment.instructions}
-      </p>
+      <div className="mt-3 rounded-xl border p-4" style={{ borderColor: 'var(--line)' }}>
+        <MarkdownLite text={assessment.instructions || 'No assignment instructions added yet.'} />
+      </div>
+
+      {assessment.attachmentFileUrl && (
+        <div className="mt-4 rounded-xl border p-4" style={{ borderColor: 'var(--line)' }}>
+          <p className="mb-2 text-[13px] font-semibold">Assignment brief file</p>
+          <div className="mb-3 flex flex-wrap gap-2">
+            <a
+              href={`${fileApiBase}?target=brief&disposition=inline`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] font-semibold"
+              style={{ borderColor: 'var(--line)' }}
+            >
+              <ExternalLink size={13} /> Open brief
+            </a>
+            <a
+              href={`${fileApiBase}?target=brief&disposition=attachment`}
+              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] font-semibold"
+              style={{ borderColor: 'var(--line)' }}
+            >
+              <Download size={13} /> Download brief
+            </a>
+          </div>
+          <CloudinaryDocViewer
+            title={assessment.title}
+            format={assessment.attachmentFileFormat}
+            fileName={assessment.attachmentFileName}
+            viewUrl={`${fileApiBase}?target=brief&disposition=inline`}
+            downloadUrl={`${fileApiBase}?target=brief&disposition=attachment`}
+          />
+        </div>
+      )}
 
       <div className="mt-6 border p-4" style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}>
         <p className="font-semibold text-[14px]">How to submit</p>

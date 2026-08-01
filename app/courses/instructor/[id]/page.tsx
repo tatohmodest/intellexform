@@ -145,9 +145,14 @@ export default async function PublicInstructorCoursePage({
             {course.description && (
               <div className="mt-6">
                 <h2 className="font-display text-[20px]">About this course</h2>
-                <p className="mt-2 whitespace-pre-wrap text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                  {course.description}
-                </p>
+                <div
+                  className="mt-2 max-h-[320px] overflow-y-auto border p-3"
+                  style={{ borderColor: 'var(--line)' }}
+                >
+                  <p className="whitespace-pre-wrap text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                    {course.description}
+                  </p>
+                </div>
               </div>
             )}
           </div>

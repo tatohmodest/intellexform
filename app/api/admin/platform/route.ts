@@ -23,7 +23,15 @@ import {
   listOnboardingInvites,
 } from '@/lib/admin/onboardingInvites';
 import { COMMERCIAL_PLANS, type CommercialPlanId } from '@/lib/eduos/plans';
+import {
+  sendCampusActivationNoticeEmail,
+  sendInstitutionOnboardingInviteEmail,
+} from '@/lib/email';
 import { manageInstitutionDomain } from '@/lib/learn/institutionDomains';
+import {
+  startCampusActivation,
+  storeCampusActivation,
+} from '@/lib/admin/campusActivation';
 
 export const dynamic = 'force-dynamic';
 
@@ -187,10 +195,57 @@ export async function POST(req: NextRequest) {
           expiresInDays: body.expiresInDays,
         });
         const origin = req.nextUrl.origin;
+        const inviteUrl = `${origin}/onboard/${invite.token}`;
+        const planName = COMMERCIAL_PLANS[invite.plan]?.name || String(invite.plan);
+        let emailSent = true;
+        try {
+          await sendInstitutionOnboardingInviteEmail({
+            to: invite.email,
+            inviteUrl,
+            planName,
+            note: invite.note || null,
+          });
+        } catch (err) {
+          console.error('onboarding invite email failed:', err);
+          emailSent = false;
+        }
+
+        const activation = await startCampusActivation(
+          {
+            ownerEmail: invite.email,
+            campusName: body.campusName || body.name || invite.email,
+            planCode: invite.plan,
+            baseUrl: inviteUrl,
+          },
+          {
+            storeActivation: storeCampusActivation,
+            sendNotice: async ({ to, activationUrl, campusName, planCode }) => {
+              await sendCampusActivationNoticeEmail({
+                to,
+                activationUrl: activationUrl || inviteUrl,
+                campusName: campusName || body.campusName || body.name || invite.email,
+                planName: COMMERCIAL_PLANS[planCode as CommercialPlanId]?.name || String(planCode || invite.plan),
+              }).catch((err) => {
+                console.error('campus activation notice email failed:', err);
+                throw err;
+              });
+            },
+          },
+        );
+
         return NextResponse.json({
           ...invite,
-          url: `${origin}/onboard/${invite.token}`,
+          url: inviteUrl,
+          emailSent,
+          activation,
         });
+      }
+      case 'sync_mentor_instructor_memberships': {
+        const { backfillMentorInstitutionMemberships } = await import(
+          '@/lib/learn/ecosystem'
+        );
+        const result = await backfillMentorInstitutionMemberships(Boolean(body.dryRun));
+        return NextResponse.json(result);
       }
       case 'manage_institution_domain': {
         const slug = String(body.slug || '').trim();

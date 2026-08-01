@@ -25,11 +25,11 @@ export default async function StudentNotePage({ params }: { params: { id: string
   return (
     <div className="mx-auto max-w-[920px]">
       <Link
-        href="/dashboard/library"
+        href="/dashboard/notes"
         className="mb-5 inline-flex items-center gap-2 text-sm"
         style={{ color: 'var(--ink-soft)' }}
       >
-        <ArrowLeft size={15} /> Library / notes
+        <ArrowLeft size={15} /> Notes
       </Link>
 
       <div className="mb-6">
@@ -37,6 +37,8 @@ export default async function StudentNotePage({ params }: { params: { id: string
         <h1 className="font-display text-[28px] leading-tight">{note.title}</h1>
         <p className="mt-1 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
           By {note.authorName}
+          {' · sent '}
+          {new Date(note.createdAt).toLocaleString()}
           {note.listInLibrary && note.priceXAF > 0 ? ` · ${note.priceXAF.toLocaleString()} XAF` : ''}
         </p>
         {note.body ? (

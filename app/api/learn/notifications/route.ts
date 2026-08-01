@@ -8,15 +8,19 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = getSessionUser();
   if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
+  const url = new URL(req.url);
+  const page = Math.max(1, Number(url.searchParams.get('page') || '1'));
+  const pageSize = Math.min(50, Math.max(1, Number(url.searchParams.get('pageSize') || '20')));
+
   const [notifications, unread] = await Promise.all([
-    listNotifications(session.uid),
+    listNotifications(session.uid, pageSize, { page }),
     unreadNotificationCount(session.uid),
   ]);
-  return NextResponse.json({ notifications, unread });
+  return NextResponse.json({ notifications, unread, page, pageSize });
 }
 
 export async function PATCH(req: NextRequest) {

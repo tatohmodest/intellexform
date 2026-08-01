@@ -8,6 +8,8 @@ import type { MyCourseSection } from '@/lib/learn/myCourses';
 
 export default function CoursesSectionGrid({ section }: { section: MyCourseSection }) {
   const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const pageSize = 12;
 
   const courses = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -18,6 +20,10 @@ export default function CoursesSectionGrid({ section }: { section: MyCourseSecti
         .includes(q),
     );
   }, [section.courses, query]);
+
+  const totalPages = Math.max(1, Math.ceil(courses.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageCourses = courses.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div>
@@ -68,7 +74,10 @@ export default function CoursesSectionGrid({ section }: { section: MyCourseSecti
         <span className="sr-only">Search this section</span>
         <input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPage(1);
+          }}
           placeholder="Search in this list…"
           className="form-input w-full !rounded-none border-0 border-b !px-0 !py-3 text-[16px] !shadow-none"
           style={{ borderColor: 'var(--line)', background: 'transparent' }}
@@ -84,10 +93,36 @@ export default function CoursesSectionGrid({ section }: { section: MyCourseSecti
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-3">
-          {courses.map((c) => (
+          {pageCourses.map((c) => (
             <MyCourseCardView key={c.id} course={c} />
           ))}
         </div>
+      )}
+
+      {courses.length > pageSize && (
+        <nav className="mt-7 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage <= 1}
+            className="border px-3 py-2 text-[13px] font-semibold disabled:opacity-50"
+            style={{ borderColor: 'var(--line)' }}
+          >
+            Previous
+          </button>
+          <span className="font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage >= totalPages}
+            className="border px-3 py-2 text-[13px] font-semibold disabled:opacity-50"
+            style={{ borderColor: 'var(--line)' }}
+          >
+            Next
+          </button>
+        </nav>
       )}
     </div>
   );

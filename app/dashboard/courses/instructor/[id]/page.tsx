@@ -342,9 +342,14 @@ export default async function InstructorCoursePage({
           {course.description && (
             <section>
               <h2 className="font-display text-[21px]">About this course</h2>
-              <p className="mt-3 whitespace-pre-wrap text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                {course.description}
-              </p>
+              <div
+                className="mt-3 max-h-[340px] overflow-y-auto border p-3"
+                style={{ borderColor: 'var(--line)' }}
+              >
+                <p className="whitespace-pre-wrap text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                  {course.description}
+                </p>
+              </div>
             </section>
           )}
 

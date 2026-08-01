@@ -107,13 +107,17 @@ export async function createNotificationsForUsers(
 export async function listNotifications(
   userId: string,
   limit = 40,
+  opts?: { page?: number },
 ): Promise<NotificationView[]> {
   await ensureNotificationCollections();
   const db = await getDb();
+  const page = Math.max(1, Number(opts?.page) || 1);
+  const skip = (page - 1) * Math.max(1, limit);
   const docs = await db
     .collection('notifications')
     .find({ userId })
     .sort({ createdAt: -1 })
+    .skip(skip)
     .limit(limit)
     .toArray();
   return docs.map((d) => toView(d as Record<string, unknown>));
@@ -153,11 +157,19 @@ export async function resolveAssignmentAudience(opts: {
   authorId: string;
   institutionSlug?: string | null;
   courseId?: string | null;
+  recipientMode?: 'all' | 'course' | 'students';
+  recipientStudentIds?: string[];
 }): Promise<string[]> {
   const db = await getDb();
 
+  if (opts.recipientMode === 'students') {
+    return Array.from(
+      new Set((opts.recipientStudentIds || []).map((id) => String(id || '').trim())),
+    ).filter((id) => id && id !== opts.authorId);
+  }
+
   // Prefer course roster when the assessment is tied to a teacher course.
-  if (opts.courseId) {
+  if (opts.recipientMode === 'course' || opts.courseId) {
     const ids = await db
       .collection('course_enrollments')
       .distinct('studentId', { courseId: opts.courseId })

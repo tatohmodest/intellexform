@@ -5,18 +5,32 @@ import Link from 'next/link';
 import {
   ClipboardList,
   Clock,
+  Download,
+  ExternalLink,
   Loader2,
   Plus,
   Save,
   Sparkles,
   Trash2,
+  Upload,
 } from 'lucide-react';
 import type { AssessmentView, ExamQuestion, SubmissionView } from '@/lib/learn/assessments';
 import DriveDocViewer from '@/components/dashboard/DriveDocViewer';
 import CloudinaryDocViewer from '@/components/dashboard/CloudinaryDocViewer';
 import { formatCountdown, toDatetimeLocalValue } from '@/lib/learn/countdown';
+import { uploadMentorAsset } from '@/lib/learn/mentorUpload';
+import MarkdownLite from '@/components/dashboard/MarkdownLite';
 
 type CourseOption = { id: string; title: string };
+type StudentOption = { id: string; name: string; email: string | null; courseTitle: string };
+
+function normalizeAudience(a: AssessmentView): AssessmentView {
+  return {
+    ...a,
+    recipientMode: a.recipientMode || (a.courseId ? 'course' : 'all'),
+    recipientStudentIds: Array.isArray(a.recipientStudentIds) ? a.recipientStudentIds : [],
+  };
+}
 
 export default function AssessmentStudio({
   institutionSlug = null,
@@ -33,33 +47,56 @@ export default function AssessmentStudio({
 }) {
   const [items, setItems] = useState<AssessmentView[]>([]);
   const [courses, setCourses] = useState<CourseOption[]>([]);
+  const [students, setStudents] = useState<StudentOption[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draft, setDraft] = useState<AssessmentView | null>(null);
   const [subs, setSubs] = useState<SubmissionView[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
+  const [aiNotice, setAiNotice] = useState('');
   const [aiTopic, setAiTopic] = useState('');
   const [error, setError] = useState('');
   const [tab, setTab] = useState<'build' | 'results'>('build');
   const [newKind, setNewKind] = useState<'assignment' | 'exam'>(initialKind || 'exam');
   const [newTitle, setNewTitle] = useState('');
   const [newCourseId, setNewCourseId] = useState<string>(initialCourseId || '');
+  const [instructionsView, setInstructionsView] = useState<'write' | 'preview'>('write');
+  const [uploadingBrief, setUploadingBrief] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const q = institutionSlug ? `?campus=${encodeURIComponent(institutionSlug)}` : '';
-      const [ares, cres] = await Promise.all([
+      const [ares, cres, sres] = await Promise.all([
         fetch(`/api/learn/assessments${q}`),
         fetch('/api/learn/teacher-courses'),
+        fetch('/api/learn/instructor/students'),
       ]);
       const adata = await ares.json();
-      setItems(adata.assessments || []);
+      setItems(((adata.assessments || []) as AssessmentView[]).map(normalizeAudience));
       if (cres.ok) {
         const cdata = await cres.json();
         const list = (cdata.courses || []) as Array<{ id: string; title: string }>;
         setCourses(list.map((c) => ({ id: c.id, title: c.title })));
+      }
+      if (sres.ok) {
+        const sdata = await sres.json().catch(() => ({}));
+        const groups = Array.isArray(sdata.groups) ? sdata.groups : [];
+        const options = groups.flatMap(
+          (g: {
+            courseTitle?: string;
+            students?: Array<{ studentId?: string; studentName?: string; studentEmail?: string | null }>;
+          }) =>
+            (g.students || []).map((s) => ({
+              id: String(s.studentId || ''),
+              name: String(s.studentName || 'Student'),
+              email: s.studentEmail ?? null,
+              courseTitle: String(g.courseTitle || 'Course'),
+            })),
+        );
+        const dedup = Array.from(new Map(options.filter((s) => s.id).map((s) => [s.id, s])).values());
+        setStudents(dedup);
       }
     } finally {
       setLoading(false);
@@ -86,11 +123,17 @@ export default function AssessmentStudio({
         title,
         institutionSlug: institutionSlug || null,
         courseId: newCourseId || null,
+        recipientMode: newCourseId ? 'course' : 'all',
+        recipientStudentIds: [],
       }),
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data.error || 'Create failed');
+      setError(
+        data.error === 'recipient_students_required'
+          ? 'Select at least one student when targeting selected students.'
+          : data.error || 'Create failed',
+      );
       return;
     }
     setNewTitle('');
@@ -108,7 +151,7 @@ export default function AssessmentStudio({
       return;
     }
     setActiveId(id);
-    setDraft(data.assessment);
+    setDraft(normalizeAudience(data.assessment));
     const sres = await fetch(`/api/learn/assessments/${id}/submissions`);
     const sdata = await sres.json();
     setSubs(sdata.submissions || []);
@@ -135,6 +178,14 @@ export default function AssessmentStudio({
     setDraft({ ...draft, questions: [...(draft.questions || []), q] });
   }
 
+  function toggleRecipient(studentId: string) {
+    if (!draft) return;
+    const prev = Array.isArray(draft.recipientStudentIds) ? draft.recipientStudentIds : [];
+    const has = prev.includes(studentId);
+    const next = has ? prev.filter((id) => id !== studentId) : [...prev, studentId];
+    setDraft({ ...draft, recipientStudentIds: next });
+  }
+
   async function save(publish?: boolean) {
     if (!draft || !activeId) return;
     setSaving(true);
@@ -148,14 +199,21 @@ export default function AssessmentStudio({
           published: typeof publish === 'boolean' ? publish : draft.published,
           institutionSlug: draft.institutionSlug ?? institutionSlug ?? null,
           courseId: draft.courseId ?? null,
+          recipientMode: draft.recipientMode || (draft.courseId ? 'course' : 'all'),
+          recipientStudentIds: draft.recipientStudentIds || [],
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Save failed');
-      setDraft(data.assessment);
+      setDraft(normalizeAudience(data.assessment));
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Save failed');
+      const message = e instanceof Error ? e.message : 'Save failed';
+      setError(
+        message === 'recipient_students_required'
+          ? 'Select at least one student when targeting selected students.'
+          : message,
+      );
     } finally {
       setSaving(false);
     }
@@ -165,6 +223,7 @@ export default function AssessmentStudio({
     if (!draft) return;
     setAiBusy(true);
     setError('');
+    setAiNotice('');
     try {
       const res = await fetch('/api/learn/assessments/ai-assist', {
         method: 'POST',
@@ -182,7 +241,7 @@ export default function AssessmentStudio({
         id: `ai_${Date.now()}_${i}`,
       }));
       setDraft({ ...draft, questions: [...(draft.questions || []), ...incoming] });
-      if (data.note) setError(data.note);
+      if (data.note) setAiNotice(String(data.note));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'AI failed');
     } finally {
@@ -201,6 +260,35 @@ export default function AssessmentStudio({
     const data = await res.json();
     if (res.ok) {
       setSubs((prev) => prev.map((s) => (s.studentId === studentId ? data.submission : s)));
+    }
+  }
+
+  async function uploadAssignmentBrief(file: File) {
+    if (!draft || !activeId || draft.kind !== 'assignment') return;
+    setUploadingBrief(true);
+    setError('');
+    try {
+      const uploaded = await uploadMentorAsset('assignment', file, file.name);
+      const res = await fetch(`/api/learn/assessments/${activeId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          attachmentFileUrl: uploaded.url,
+          attachmentFilePublicId: uploaded.publicId,
+          attachmentFileResourceType: uploaded.resourceType,
+          attachmentFileFormat: uploaded.format,
+          attachmentFileName: uploaded.originalFilename,
+          attachmentFileBytes: uploaded.bytes,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      setDraft(normalizeAudience(data.assessment));
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Upload failed');
+    } finally {
+      setUploadingBrief(false);
     }
   }
 
@@ -352,7 +440,11 @@ export default function AssessmentStudio({
                       className="form-input !rounded-none text-[13px]"
                       value={draft.courseId || ''}
                       onChange={(e) =>
-                        setDraft({ ...draft, courseId: e.target.value || null })
+                        setDraft({
+                          ...draft,
+                          courseId: e.target.value || null,
+                          recipientMode: e.target.value ? 'course' : draft.recipientMode,
+                        })
                       }
                     >
                       <option value="">Not linked (broader notify)</option>
@@ -367,14 +459,105 @@ export default function AssessmentStudio({
                     </p>
                   </label>
                 )}
-                <textarea
-                  className="w-full border-0 bg-transparent text-[14.5px] outline-none"
-                  style={{ color: 'var(--ink-soft)' }}
-                  rows={3}
-                  placeholder="Instructions for students"
-                  value={draft.instructions}
-                  onChange={(e) => setDraft({ ...draft, instructions: e.target.value })}
-                />
+                <div className="max-w-2xl rounded-xl border p-3" style={{ borderColor: 'var(--line)' }}>
+                  <label className="mb-1.5 block text-[13px] font-semibold">Who should receive this assessment?</label>
+                  <select
+                    className="form-input !rounded-none text-[13px]"
+                    value={draft.recipientMode || (draft.courseId ? 'course' : 'all')}
+                    onChange={(e) => {
+                      const mode = e.target.value as 'all' | 'course' | 'students';
+                      setDraft({
+                        ...draft,
+                        recipientMode: mode,
+                        recipientStudentIds: mode === 'students' ? draft.recipientStudentIds || [] : [],
+                      });
+                    }}
+                  >
+                    <option value="all">All my students</option>
+                    <option value="course" disabled={!draft.courseId}>
+                      Students enrolled in selected course
+                    </option>
+                    <option value="students">Selected students only</option>
+                  </select>
+                  {(draft.recipientMode || (draft.courseId ? 'course' : 'all')) === 'students' && (
+                    <div className="mt-3 max-h-52 overflow-y-auto border" style={{ borderColor: 'var(--line)' }}>
+                      {students.length === 0 ? (
+                        <p className="px-3 py-3 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                          No enrolled students found yet. Add students in My Students first.
+                        </p>
+                      ) : (
+                        students.map((s) => {
+                          const selected = (draft.recipientStudentIds || []).includes(s.id);
+                          return (
+                            <label
+                              key={s.id}
+                              className="flex cursor-pointer items-start gap-2 border-b px-3 py-2 text-[12.5px]"
+                              style={{ borderColor: 'var(--line)' }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selected}
+                                onChange={() => toggleRecipient(s.id)}
+                                className="mt-0.5"
+                              />
+                              <span className="min-w-0">
+                                <span className="block font-semibold">{s.name}</span>
+                                <span style={{ color: 'var(--ink-soft)' }}>
+                                  {s.email || 'No email'} · {s.courseTitle}
+                                </span>
+                              </span>
+                            </label>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="rounded-xl border p-3" style={{ borderColor: 'var(--line)' }}>
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-[13px] font-semibold">Instructions (Markdown supported)</p>
+                    <div className="inline-flex rounded-full border p-0.5" style={{ borderColor: 'var(--line)' }}>
+                      <button
+                        type="button"
+                        onClick={() => setInstructionsView('write')}
+                        className="rounded-full px-3 py-1 text-[12px] font-semibold"
+                        style={{
+                          background: instructionsView === 'write' ? `${accent}1a` : 'transparent',
+                          color: instructionsView === 'write' ? accent : 'var(--ink-soft)',
+                        }}
+                      >
+                        Write
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInstructionsView('preview')}
+                        className="rounded-full px-3 py-1 text-[12px] font-semibold"
+                        style={{
+                          background:
+                            instructionsView === 'preview' ? `${accent}1a` : 'transparent',
+                          color:
+                            instructionsView === 'preview' ? accent : 'var(--ink-soft)',
+                        }}
+                      >
+                        Preview
+                      </button>
+                    </div>
+                  </div>
+                  {instructionsView === 'write' ? (
+                    <textarea
+                      className="w-full border-0 bg-transparent text-[14.5px] outline-none"
+                      style={{ color: 'var(--ink-soft)' }}
+                      rows={6}
+                      placeholder="# Assignment\nExplain requirements using markdown..."
+                      value={draft.instructions}
+                      onChange={(e) => setDraft({ ...draft, instructions: e.target.value })}
+                    />
+                  ) : (
+                    <div className="min-h-[120px] text-[14px]">
+                      <MarkdownLite text={draft.instructions || 'No instructions yet.'} />
+                    </div>
+                  )}
+                </div>
                 <textarea
                   className="form-input !rounded-none text-[13px]"
                   rows={2}
@@ -384,36 +567,86 @@ export default function AssessmentStudio({
                 />
 
                 {draft.kind === 'assignment' && (
-                  <div className="flex flex-wrap items-end gap-4 text-[13px]">
-                    <label className="block">
-                      <span className="mb-1.5 flex items-center gap-1.5 font-semibold">
-                        <Clock size={13} /> Submission deadline
-                      </span>
-                      <input
-                        type="datetime-local"
-                        className="form-input !rounded-none !py-1.5"
-                        value={toDatetimeLocalValue(draft.dueAt)}
-                        onChange={(e) =>
-                          setDraft({
-                            ...draft,
-                            dueAt: e.target.value ? new Date(e.target.value) : null,
-                          })
-                        }
-                      />
-                      <p className="mt-1 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-                        Students see a live countdown. After this time they cannot submit a Drive link.
-                      </p>
-                    </label>
-                    {draft.dueAt && (
-                      <button
-                        type="button"
-                        className="text-[12px] font-semibold"
-                        style={{ color: 'var(--ink-soft)' }}
-                        onClick={() => setDraft({ ...draft, dueAt: null })}
-                      >
-                        Clear deadline
-                      </button>
-                    )}
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap items-end gap-4 text-[13px]">
+                      <label className="block">
+                        <span className="mb-1.5 flex items-center gap-1.5 font-semibold">
+                          <Clock size={13} /> Submission deadline
+                        </span>
+                        <input
+                          type="datetime-local"
+                          className="form-input !rounded-none !py-1.5"
+                          value={toDatetimeLocalValue(draft.dueAt)}
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              dueAt: e.target.value ? new Date(e.target.value) : null,
+                            })
+                          }
+                        />
+                        <p className="mt-1 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                          Students see a live countdown. After this time they cannot submit files.
+                        </p>
+                      </label>
+                      {draft.dueAt && (
+                        <button
+                          type="button"
+                          className="text-[12px] font-semibold"
+                          style={{ color: 'var(--ink-soft)' }}
+                          onClick={() => setDraft({ ...draft, dueAt: null })}
+                        >
+                          Clear deadline
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="rounded-xl border p-3" style={{ borderColor: 'var(--line)' }}>
+                      <p className="mb-2 text-[13px] font-semibold">Assignment brief file (optional)</p>
+                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-[12.5px] font-semibold" style={{ borderColor: 'var(--line)' }}>
+                        {uploadingBrief ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                        {uploadingBrief ? 'Uploading...' : 'Upload PDF / DOC / DOCX'}
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                          disabled={uploadingBrief}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) void uploadAssignmentBrief(f);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                      {draft.attachmentFileUrl && (
+                        <div className="mt-3">
+                          <div className="mb-2 flex flex-wrap gap-2">
+                            <a
+                              href={`/api/learn/assessments/${draft.id}/file?target=brief&disposition=inline`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold"
+                              style={{ borderColor: 'var(--line)' }}
+                            >
+                              <ExternalLink size={12} /> Open brief
+                            </a>
+                            <a
+                              href={`/api/learn/assessments/${draft.id}/file?target=brief&disposition=attachment`}
+                              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold"
+                              style={{ borderColor: 'var(--line)' }}
+                            >
+                              <Download size={12} /> Download
+                            </a>
+                          </div>
+                          <CloudinaryDocViewer
+                            title={`${draft.title} brief`}
+                            format={draft.attachmentFileFormat}
+                            fileName={draft.attachmentFileName}
+                            viewUrl={`/api/learn/assessments/${draft.id}/file?target=brief&disposition=inline`}
+                            downloadUrl={`/api/learn/assessments/${draft.id}/file?target=brief&disposition=attachment`}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -476,6 +709,11 @@ export default function AssessmentStudio({
                       {aiBusy ? <Loader2 size={14} className="animate-spin" /> : 'Generate'}
                     </button>
                   </div>
+                  {aiNotice && (
+                    <p className="mt-2 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+                      {aiNotice}
+                    </p>
+                  )}
                 </div>
 
                 {draft.kind === 'exam' || (draft.questions || []).length > 0 ? (
@@ -553,8 +791,8 @@ export default function AssessmentStudio({
                   </div>
                 ) : (
                   <p className="text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-                    Assignments can be instruction-only (students submit a Drive link). Add structural
-                    prompts if you want a checklist of deliverables.
+                    Assignments can be instruction-only, markdown-rich, or include a PDF brief.
+                    Add structural prompts if you want a checklist of deliverables.
                   </p>
                 )}
 

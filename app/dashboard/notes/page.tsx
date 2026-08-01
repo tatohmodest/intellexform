@@ -7,9 +7,17 @@ import { listPublishedNotesForStudent, studentOwnsNote } from '@/lib/learn/notes
 
 export const dynamic = 'force-dynamic';
 
-export default async function StudentNotesPage() {
+const PAGE_SIZE = 12;
+
+export default async function StudentNotesPage({
+  searchParams,
+}: {
+  searchParams?: { page?: string };
+}) {
   const session = getSessionUser();
   if (!session) redirect('/login?next=/dashboard/notes');
+
+  const page = Math.max(1, Number(searchParams?.page || '1'));
 
   const learner = await getLearner(session.uid);
   const institutionSlug =
@@ -20,10 +28,15 @@ export default async function StudentNotesPage() {
   const notes = await listPublishedNotesForStudent({
     studentId: session.uid,
     institutionSlug,
+    page,
+    pageSize: PAGE_SIZE + 1,
   });
 
+  const pageNotes = notes.slice(0, PAGE_SIZE);
+  const hasNext = notes.length > PAGE_SIZE;
+
   const withAccess = await Promise.all(
-    notes.map(async (n) => ({
+    pageNotes.map(async (n) => ({
       note: n,
       owns: await studentOwnsNote(n, session.uid),
     })),
@@ -62,44 +75,79 @@ export default async function StudentNotesPage() {
           </Link>
         </div>
       ) : (
-        <div className="space-y-3">
-          {withAccess.map(({ note, owns }) => (
-            <Link
-              key={note.id}
-              href={`/dashboard/notes/${note.id}`}
-              className="flex items-start justify-between gap-4 rounded-2xl border p-4 transition-shadow hover:shadow-card"
-              style={{ borderColor: 'var(--line)' }}
-            >
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <FileText size={16} style={{ color: 'var(--green-deep)' }} />
-                  <h2 className="truncate text-[15px] font-semibold">{note.title}</h2>
-                </div>
-                <p className="mt-1 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
-                  by {note.authorName}
-                  {note.listInLibrary ? ' · Library' : ''}
-                  {!owns && note.priceXAF > 0
-                    ? ` · ${note.priceXAF.toLocaleString()} XAF`
-                    : owns
-                      ? ' · Ready to open'
-                      : ' · Free'}
-                </p>
-                {note.body ? (
-                  <p className="mt-2 line-clamp-2 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                    {note.body}
-                  </p>
-                ) : null}
-              </div>
-              <span
-                className="inline-flex shrink-0 items-center gap-1 text-[12.5px] font-semibold"
-                style={{ color: 'var(--green-deep)' }}
+        <>
+          <div className="space-y-3">
+            {withAccess.map(({ note, owns }) => (
+              <Link
+                key={note.id}
+                href={`/dashboard/notes/${note.id}`}
+                className="flex items-start justify-between gap-4 rounded-2xl border p-4 transition-shadow hover:shadow-card"
+                style={{ borderColor: 'var(--line)' }}
               >
-                <Download size={13} />
-                {owns ? 'Open' : 'View'}
-              </span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <FileText size={16} style={{ color: 'var(--green-deep)' }} />
+                    <h2 className="truncate text-[15px] font-semibold">{note.title}</h2>
+                  </div>
+                  <p className="mt-1 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+                    by {note.authorName}
+                    {' · sent '}
+                    {new Date(note.createdAt).toLocaleString()}
+                    {note.listInLibrary ? ' · Library' : ''}
+                    {!owns && note.priceXAF > 0
+                      ? ` · ${note.priceXAF.toLocaleString()} XAF`
+                      : owns
+                        ? ' · Ready to open'
+                        : ' · Free'}
+                  </p>
+                  {note.body ? (
+                    <p className="mt-2 line-clamp-2 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+                      {note.body}
+                    </p>
+                  ) : null}
+                </div>
+                <span
+                  className="inline-flex shrink-0 items-center gap-1 text-[12.5px] font-semibold"
+                  style={{ color: 'var(--green-deep)' }}
+                >
+                  <Download size={13} />
+                  {owns ? 'Open' : 'View'}
+                </span>
+              </Link>
+            ))}
+          </div>
+          <nav className="mt-6 flex items-center justify-between">
+            <Link
+              href={page > 1 ? `/dashboard/notes?page=${page - 1}` : '#'}
+              aria-disabled={page <= 1}
+              className="border px-3 py-2 text-[13px] font-semibold"
+              style={{
+                borderColor: 'var(--line)',
+                color: page > 1 ? 'var(--ink)' : 'var(--ink-soft)',
+                pointerEvents: page > 1 ? 'auto' : 'none',
+                opacity: page > 1 ? 1 : 0.5,
+              }}
+            >
+              Previous
             </Link>
-          ))}
-        </div>
+            <span className="font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
+              Page {page}
+            </span>
+            <Link
+              href={hasNext ? `/dashboard/notes?page=${page + 1}` : '#'}
+              aria-disabled={!hasNext}
+              className="border px-3 py-2 text-[13px] font-semibold"
+              style={{
+                borderColor: 'var(--line)',
+                color: hasNext ? 'var(--ink)' : 'var(--ink-soft)',
+                pointerEvents: hasNext ? 'auto' : 'none',
+                opacity: hasNext ? 1 : 0.5,
+              }}
+            >
+              Next
+            </Link>
+          </nav>
+        </>
       )}
     </div>
   );

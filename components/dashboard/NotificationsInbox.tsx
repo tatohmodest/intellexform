@@ -8,20 +8,27 @@ import type { NotificationView } from '@/lib/learn/notifications';
 export default function NotificationsInbox() {
   const [items, setItems] = useState<NotificationView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
 
-  const load = useCallback(async () => {
+  const pageSize = 15;
+
+  const load = useCallback(async (targetPage = page) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/learn/notifications');
+      const res = await fetch(`/api/learn/notifications?page=${targetPage}&pageSize=${pageSize + 1}`);
       const data = await res.json();
-      setItems(data.notifications || []);
+      const nextItems = (data.notifications || []) as NotificationView[];
+      setItems(nextItems.slice(0, pageSize));
+      setHasNext(nextItems.length > pageSize);
+      setPage(targetPage);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page]);
 
   useEffect(() => {
-    load();
+    load(page);
   }, [load]);
 
   async function markAll() {
@@ -30,7 +37,7 @@ export default function NotificationsInbox() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ markAll: true }),
     });
-    await load();
+    await load(page);
   }
 
   async function openOne(n: NotificationView) {
@@ -41,6 +48,11 @@ export default function NotificationsInbox() {
         body: JSON.stringify({ ids: [n.id] }),
       });
     }
+  }
+
+  async function enablePush() {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    await Notification.requestPermission();
   }
 
   return (
@@ -64,6 +76,16 @@ export default function NotificationsInbox() {
         >
           Mark all read
         </button>
+        {typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted' ? (
+          <button
+            type="button"
+            onClick={enablePush}
+            className="border px-3 py-2 text-[13px] font-semibold"
+            style={{ borderColor: 'var(--line)' }}
+          >
+            Enable push alerts
+          </button>
+        ) : null}
       </div>
 
       {loading ? (
@@ -105,6 +127,32 @@ export default function NotificationsInbox() {
             </li>
           ))}
         </ul>
+      )}
+
+      {!loading && items.length > 0 && (
+        <nav className="mt-6 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => void load(page - 1)}
+            disabled={page <= 1}
+            className="border px-3 py-2 text-[13px] font-semibold disabled:opacity-50"
+            style={{ borderColor: 'var(--line)' }}
+          >
+            Previous
+          </button>
+          <span className="font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
+            Page {page}
+          </span>
+          <button
+            type="button"
+            onClick={() => void load(page + 1)}
+            disabled={!hasNext}
+            className="border px-3 py-2 text-[13px] font-semibold disabled:opacity-50"
+            style={{ borderColor: 'var(--line)' }}
+          >
+            Next
+          </button>
+        </nav>
       )}
     </div>
   );

@@ -3,6 +3,7 @@ import { getSessionUser } from '@/lib/auth/getUser';
 import { getLearner } from '@/lib/learn/repo';
 import {
   autoGradeExam,
+  canStudentAccessAssessment,
   getAssessment,
   getSubmission,
   listSubmissions,
@@ -30,6 +31,11 @@ export async function GET(
     return NextResponse.json({ submissions });
   }
 
+  const canAccess = await canStudentAccessAssessment(assessment, session.uid);
+  if (!canAccess) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  }
+
   const submission = await getSubmission(params.id, session.uid);
   return NextResponse.json({ submission });
 }
@@ -44,6 +50,11 @@ export async function POST(
   const assessment = await getAssessment(params.id);
   if (!assessment || !assessment.published) {
     return NextResponse.json({ error: 'not_available' }, { status: 404 });
+  }
+
+  const canAccess = await canStudentAccessAssessment(assessment, session.uid);
+  if (!canAccess) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
 
   const body = await req.json().catch(() => ({}));

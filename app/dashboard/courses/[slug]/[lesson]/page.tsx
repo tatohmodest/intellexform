@@ -59,7 +59,7 @@ export default async function LessonPlayerPage({
         <h1 className="font-display text-[28px] leading-tight sm:text-[32px]">{lesson.title}</h1>
         <p className="mt-2 text-[15px]" style={{ color: 'var(--ink-soft)' }}>
           {gate.reason === 'cert_required'
-            ? 'Beginner is free. Intermediate through Pro unlock with a certification subscription (4,999 XAF/month, or yearly with 10% off).'
+            ? 'Beginner is free. Intermediate through Pro unlock with a certification subscription (1,999 XAF/month, or yearly with 10% off).'
             : `Admin set this track as payable. Unlock full access or the ${lesson.level} level to keep learning.`}
         </p>
         <div className="mt-8">
