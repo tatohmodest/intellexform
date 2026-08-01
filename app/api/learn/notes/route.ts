@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
         ? 'course'
         : 'all';
   const recipientStudentIds = Array.isArray(body.recipientStudentIds)
-    ? body.recipientStudentIds.map(String).map((id) => id.trim()).filter(Boolean)
+    ? body.recipientStudentIds.map(String).map((id: string) => id.trim()).filter(Boolean)
     : [];
   if (recipientMode === 'students' && recipientStudentIds.length === 0) {
     return NextResponse.json({ error: 'recipient_students_required' }, { status: 400 });
