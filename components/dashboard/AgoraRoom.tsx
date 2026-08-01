@@ -710,7 +710,7 @@ export default function AgoraRoom({
       key={opts.key}
       type="button"
       onClick={opts.onClick}
-      className="group relative overflow-hidden rounded-xl text-left transition-shadow transition-transform hover:scale-[1.02] focus:outline-none"
+      className="group relative overflow-hidden rounded-xl text-left transition-[transform,box-shadow] hover:scale-[1.02] focus:outline-none"
       style={{
         background: '#151c23',
         aspectRatio: '16 / 9',
@@ -1050,10 +1050,10 @@ export default function AgoraRoom({
         </div>
       </div>
 
-      <div className={`grid gap-3 ${chatOpen ? 'lg:grid-cols-[1fr_300px]' : ''}`}>
+      <div className={`grid items-start gap-3 ${chatOpen ? 'lg:grid-cols-[1fr_300px]' : ''}`}>
         <div
           ref={stageRef}
-          className="relative flex flex-col rounded-3xl p-3"
+          className="relative flex min-w-0 flex-col rounded-3xl p-3"
           style={{
             background: '#0C1116',
             minHeight: isFullscreen ? '100vh' : undefined,
@@ -1225,7 +1225,7 @@ export default function AgoraRoom({
 
         {chatOpen ? (
           <aside
-            className="flex max-h-[70vh] flex-col overflow-hidden rounded-3xl border lg:max-h-none"
+            className="flex h-[70vh] min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl border lg:h-[min(78vh,760px)]"
             style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}
           >
             <div
@@ -1247,7 +1247,7 @@ export default function AgoraRoom({
                 <X size={16} />
               </button>
             </div>
-            <div className="flex-1 space-y-3 overflow-y-scroll px-4 py-3">
+            <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
               {chat.length === 0 ? (
                 <p className="py-8 text-center text-[13px]" style={{ color: 'var(--ink-soft)' }}>
                   No comments yet. Say hi or drop a question.
@@ -1261,7 +1261,7 @@ export default function AgoraRoom({
                         {new Date(m.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
-                    <p className="mt-0.5 leading-relaxed" style={{ color: 'var(--ink)' }}>
+                    <p className="mt-0.5 leading-relaxed [overflow-wrap:anywhere]" style={{ color: 'var(--ink)' }}>
                       {m.text}
                     </p>
                   </div>
