@@ -309,8 +309,11 @@ function ContextSwitcher({
   const [busy, setBusy] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const active = user.activeContext ?? { kind: 'personal' as const };
-  const affiliations = user.affiliations ?? [];
+  const active = useMemo(
+    () => user.activeContext ?? ({ kind: 'personal' } as const),
+    [user.activeContext],
+  );
+  const affiliations = useMemo(() => user.affiliations ?? [], [user.affiliations]);
 
   const label = useMemo(() => {
     if (active.kind === 'institution') {

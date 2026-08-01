@@ -95,7 +95,9 @@ export default function AssessmentStudio({
               courseTitle: String(g.courseTitle || 'Course'),
             })),
         );
-        const dedup = Array.from(new Map(options.filter((s) => s.id).map((s) => [s.id, s])).values());
+        const dedup = Array.from(
+          new Map(options.filter((s: StudentOption) => s.id).map((s: StudentOption) => [s.id, s])).values(),
+        );
         setStudents(dedup);
       }
     } finally {

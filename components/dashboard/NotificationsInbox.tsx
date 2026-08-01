@@ -25,11 +25,11 @@ export default function NotificationsInbox() {
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, pageSize]);
 
   useEffect(() => {
     load(page);
-  }, [load]);
+  }, [load, page]);
 
   async function markAll() {
     await fetch('/api/learn/notifications', {
