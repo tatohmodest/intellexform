@@ -685,7 +685,7 @@ export default function AgoraRoom({
       visible: ordered.slice(0, slots),
       hidden: Math.max(0, ordered.length - slots),
     };
-  }, [remotes, spotlight, sharing]);
+  }, [remotes, spotlight, sharing, stripBudget]);
 
   const gridRemotes = useMemo(() => {
     const ordered = [...remotes].sort((a, b) => Number(b.sharing) - Number(a.sharing));

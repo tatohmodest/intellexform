@@ -83,7 +83,7 @@ export default function AssessmentStudio({
       if (sres.ok) {
         const sdata = await sres.json().catch(() => ({}));
         const groups = Array.isArray(sdata.groups) ? sdata.groups : [];
-        const options = groups.flatMap(
+        const options: StudentOption[] = groups.flatMap(
           (g: {
             courseTitle?: string;
             students?: Array<{ studentId?: string; studentName?: string; studentEmail?: string | null }>;
@@ -96,7 +96,9 @@ export default function AssessmentStudio({
             })),
         );
         const dedup = Array.from(
-          new Map(options.filter((s: StudentOption) => s.id).map((s: StudentOption) => [s.id, s])).values(),
+          new Map<string, StudentOption>(
+            options.filter((s) => s.id).map((s): [string, StudentOption] => [s.id, s]),
+          ).values(),
         );
         setStudents(dedup);
       }
