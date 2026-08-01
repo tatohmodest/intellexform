@@ -69,7 +69,7 @@ export async function PATCH(
   if (Array.isArray(body.recipientStudentIds)) {
     patch.recipientStudentIds = body.recipientStudentIds
       .map(String)
-      .map((id) => id.trim())
+      .map((id: string) => id.trim())
       .filter(Boolean);
   }
   if (patch.recipientMode === 'students' && (!patch.recipientStudentIds || patch.recipientStudentIds.length === 0)) {
