@@ -2,12 +2,15 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { BookMarked, Loader2, Plus, RefreshCw } from 'lucide-react';
+import ImageUploadField from '@/components/media/ImageUploadField';
 
 type AdminBook = {
   id: string;
   title: string;
   authorName: string;
   category: string;
+  coverImageUrl?: string | null;
+  downloadUrl?: string | null;
   priceXAF: number;
   published: boolean;
   sales: number;
@@ -37,6 +40,8 @@ export default function AdminLibrary() {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Programming');
   const [priceXAF, setPriceXAF] = useState(0);
+  const [coverImageUrl, setCoverImageUrl] = useState('');
+  const [downloadUrl, setDownloadUrl] = useState('');
   const [publishNow, setPublishNow] = useState(true);
 
   const load = useCallback(async () => {
@@ -78,6 +83,8 @@ export default function AdminLibrary() {
           title: title.trim(),
           category,
           priceXAF,
+          coverImageUrl: coverImageUrl || null,
+          downloadUrl: downloadUrl || null,
           published: publishNow,
           authorName: 'InTelleX',
         }),
@@ -86,6 +93,8 @@ export default function AdminLibrary() {
       if (!res.ok) throw new Error(data.error || 'Create failed');
       setTitle('');
       setPriceXAF(0);
+      setCoverImageUrl('');
+      setDownloadUrl('');
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Create failed');
@@ -193,6 +202,27 @@ export default function AdminLibrary() {
               onChange={(e) => setPriceXAF(Math.max(0, Number(e.target.value) || 0))}
             />
           </label>
+          <label className="block text-[12px] font-semibold sm:col-span-2 lg:col-span-4">
+            Download link
+            <input
+              type="url"
+              className="mt-1 w-full rounded-xl border px-3 py-2.5 text-[14px]"
+              style={{ borderColor: 'var(--line)' }}
+              value={downloadUrl}
+              onChange={(e) => setDownloadUrl(e.target.value)}
+              placeholder="https://..."
+            />
+          </label>
+          <div className="sm:col-span-2 lg:col-span-4">
+            <ImageUploadField
+              label="Book cover image"
+              value={coverImageUrl}
+              onChange={setCoverImageUrl}
+              kind="book_cover"
+              hint="Upload the image shown as the library book cover."
+              previewHeight={180}
+            />
+          </div>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-4">
           <label className="flex items-center gap-2 text-[13px]">
@@ -249,6 +279,7 @@ export default function AdminLibrary() {
                     <span style={{ color: b.published ? 'var(--green-deep)' : 'var(--ink-soft)' }}>
                       {b.published ? 'Published' : 'Draft'}
                     </span>
+                    {b.downloadUrl ? <div className="text-[11px]" style={{ color: 'var(--ink-soft)' }}>Download link set</div> : null}
                   </td>
                   <td className="px-4 py-3">{b.sales}</td>
                   <td className="px-4 py-3">

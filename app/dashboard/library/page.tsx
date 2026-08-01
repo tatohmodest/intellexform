@@ -138,15 +138,24 @@ export default async function LibraryPage() {
                 className="w-[132px] shrink-0"
                 title={b.title}
               >
-                <div
-                  className="flex aspect-[3/4] flex-col items-center justify-center rounded-xl p-3 text-center text-white shadow-book transition-transform hover:-translate-y-1"
-                  style={{ background: `linear-gradient(160deg, ${b.coverColor}, ${b.coverColor}cc)` }}
-                >
-                  <span className="font-display text-[28px] font-semibold">
-                    {(b.title || 'B').charAt(0).toUpperCase()}
-                  </span>
-                  <span className="mt-2 line-clamp-3 font-display text-[12px] leading-snug">{b.title}</span>
-                </div>
+                {b.coverImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={b.coverImageUrl}
+                    alt={b.title}
+                    className="aspect-[3/4] w-full rounded-xl object-cover shadow-book transition-transform hover:-translate-y-1"
+                  />
+                ) : (
+                  <div
+                    className="flex aspect-[3/4] flex-col items-center justify-center rounded-xl p-3 text-center text-white shadow-book transition-transform hover:-translate-y-1"
+                    style={{ background: `linear-gradient(160deg, ${b.coverColor}, ${b.coverColor}cc)` }}
+                  >
+                    <span className="font-display text-[28px] font-semibold">
+                      {(b.title || 'B').charAt(0).toUpperCase()}
+                    </span>
+                    <span className="mt-2 line-clamp-3 font-display text-[12px] leading-snug">{b.title}</span>
+                  </div>
+                )}
               </Link>
             ))}
           </div>
@@ -233,14 +242,23 @@ export default async function LibraryPage() {
                     style={{ borderColor: 'var(--line)' }}
                   >
                     <Link href={`/dashboard/library/${b.id}`} className="shrink-0">
-                      <div
-                        className="flex aspect-[3/4] w-[92px] flex-col items-center justify-center rounded-lg p-2 text-center text-white"
-                        style={{ background: `linear-gradient(160deg, ${b.coverColor}, ${b.coverColor}cc)` }}
-                      >
-                        <span className="font-display text-[22px] font-semibold">
-                          {(b.title || 'B').charAt(0).toUpperCase()}
-                        </span>
-                      </div>
+                      {b.coverImageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={b.coverImageUrl}
+                          alt={b.title}
+                          className="aspect-[3/4] w-[92px] rounded-lg object-cover"
+                        />
+                      ) : (
+                        <div
+                          className="flex aspect-[3/4] w-[92px] flex-col items-center justify-center rounded-lg p-2 text-center text-white"
+                          style={{ background: `linear-gradient(160deg, ${b.coverColor}, ${b.coverColor}cc)` }}
+                        >
+                          <span className="font-display text-[22px] font-semibold">
+                            {(b.title || 'B').charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
                     </Link>
                     <div className="flex min-w-0 flex-1 flex-col">
                       <Link href={`/dashboard/library/${b.id}`}>

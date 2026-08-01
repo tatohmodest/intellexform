@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Lock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Download, Lock } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getBook, getPurchasedBookIds } from '@/lib/learn/ecosystem';
 import { hasActiveCertSubscription } from '@/lib/learn/certSubscription';
@@ -49,18 +49,37 @@ export default async function BookReaderPage({
         style={{ borderColor: 'var(--line)' }}
       >
         <div className="border-b p-4" style={{ borderColor: 'var(--line)' }}>
-          <div
-            className="mx-auto flex aspect-[3/4] w-[110px] flex-col items-center justify-center rounded-xl p-3 text-center text-white shadow-book"
-            style={{ background: `linear-gradient(160deg, ${book.coverColor}, ${book.coverColor}cc)` }}
-          >
-            <span className="font-display text-[26px] font-semibold">
-              {(book.title || 'B').charAt(0).toUpperCase()}
-            </span>
-            <span className="mt-2 line-clamp-3 font-display text-[11.5px] leading-snug">{book.title}</span>
-          </div>
+          {book.coverImageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={book.coverImageUrl}
+              alt={book.title}
+              className="mx-auto aspect-[3/4] w-[110px] rounded-xl object-cover shadow-book"
+            />
+          ) : (
+            <div
+              className="mx-auto flex aspect-[3/4] w-[110px] flex-col items-center justify-center rounded-xl p-3 text-center text-white shadow-book"
+              style={{ background: `linear-gradient(160deg, ${book.coverColor}, ${book.coverColor}cc)` }}
+            >
+              <span className="font-display text-[26px] font-semibold">
+                {(book.title || 'B').charAt(0).toUpperCase()}
+              </span>
+              <span className="mt-2 line-clamp-3 font-display text-[11.5px] leading-snug">{book.title}</span>
+            </div>
+          )}
           <div className="mt-3 text-center text-[12px]" style={{ color: 'var(--ink-soft)' }}>
             by {book.authorName}
           </div>
+          {owned && book.downloadUrl ? (
+            <a
+              href={book.downloadUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn-ghost mt-3 !w-full !px-3 !py-2 text-[12px]"
+            >
+              <Download size={13} /> Download book
+            </a>
+          ) : null}
         </div>
         <div className="p-2">
           {book.chapters.map((c, i) => {

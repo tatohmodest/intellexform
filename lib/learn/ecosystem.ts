@@ -836,6 +836,8 @@ export interface BookDoc {
   category: string;
   coverColor: string;
   coverEmoji: string;
+  coverImageUrl: string | null;
+  downloadUrl: string | null;
   priceXAF: number;
   chapters: BookChapter[];
   published: boolean;
@@ -906,6 +908,8 @@ export async function createBook(opts: {
     category: 'Programming',
     coverColor: '#00b369',
     coverEmoji: 'B',
+    coverImageUrl: null,
+    downloadUrl: null,
     priceXAF: 0,
     chapters: [{ title: 'Chapter 1', content: '' }],
     published: false,
@@ -931,6 +935,8 @@ export async function updateBook(
       | 'category'
       | 'coverColor'
       | 'coverEmoji'
+      | 'coverImageUrl'
+      | 'downloadUrl'
       | 'priceXAF'
       | 'chapters'
       | 'published'
@@ -958,6 +964,8 @@ export async function updateBookAsAdmin(
       | 'category'
       | 'coverColor'
       | 'coverEmoji'
+      | 'coverImageUrl'
+      | 'downloadUrl'
       | 'priceXAF'
       | 'chapters'
       | 'published'
@@ -2377,6 +2385,8 @@ async function seedBooks(db: Awaited<ReturnType<typeof getDb>>) {
       ...b,
       authorId: 'system',
       authorName: 'Intellex Library',
+      coverImageUrl: null,
+      downloadUrl: null,
       priceXAF: 0,
       published: true,
       sales: 0,

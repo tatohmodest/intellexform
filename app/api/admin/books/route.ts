@@ -9,6 +9,14 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+function normalizeHttpUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (!/^https?:\/\//i.test(trimmed)) return null;
+  return trimmed.slice(0, 2000);
+}
+
 export async function GET(req: NextRequest) {
   if (!assertAdmin(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -48,6 +56,12 @@ export async function POST(req: NextRequest) {
   if (typeof body.coverColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(body.coverColor)) {
     patch.coverColor = body.coverColor;
   }
+  if (body.coverImageUrl !== undefined) {
+    patch.coverImageUrl = normalizeHttpUrl(body.coverImageUrl);
+  }
+  if (body.downloadUrl !== undefined) {
+    patch.downloadUrl = normalizeHttpUrl(body.downloadUrl);
+  }
   if (Object.keys(patch).length) {
     await updateBookAsAdmin(id, patch as Parameters<typeof updateBookAsAdmin>[1]);
   }
@@ -75,6 +89,12 @@ export async function PATCH(req: NextRequest) {
   if (typeof body.authorName === 'string') patch.authorName = body.authorName.trim().slice(0, 80);
   if (typeof body.coverColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(body.coverColor)) {
     patch.coverColor = body.coverColor;
+  }
+  if (body.coverImageUrl !== undefined) {
+    patch.coverImageUrl = normalizeHttpUrl(body.coverImageUrl);
+  }
+  if (body.downloadUrl !== undefined) {
+    patch.downloadUrl = normalizeHttpUrl(body.downloadUrl);
   }
   if (typeof body.priceXAF === 'number' && body.priceXAF >= 0) {
     patch.priceXAF = Math.min(Math.round(body.priceXAF), 1_000_000);
