@@ -64,7 +64,7 @@ export default function NotesStudio({
       setNotes(list);
       setCourses((cData.courses || []) as TeacherCourseView[]);
       const groups = Array.isArray(sData?.groups) ? sData.groups : [];
-      const options = groups.flatMap((g: { courseTitle?: string; students?: Array<{ studentId?: string; studentName?: string; studentEmail?: string | null }> }) =>
+      const options: StudentOption[] = groups.flatMap((g: { courseTitle?: string; students?: Array<{ studentId?: string; studentName?: string; studentEmail?: string | null }> }) =>
         (g.students || []).map((s) => ({
           id: String(s.studentId || ''),
           name: String(s.studentName || 'Student'),
@@ -72,7 +72,11 @@ export default function NotesStudio({
           courseTitle: String(g.courseTitle || 'Course'),
         })),
       );
-      const dedup = Array.from(new Map(options.filter((s) => s.id).map((s) => [s.id, s])).values());
+      const dedup = Array.from(
+        new Map<string, StudentOption>(
+          options.filter((s) => s.id).map((s): [string, StudentOption] => [s.id, s]),
+        ).values(),
+      );
       setStudents(dedup);
       if (!activeId && list[0]) {
         setActiveId(list[0].id);
