@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getAllCourses } from '@/lib/repo';
-import { getMyCourseSections } from '@/lib/learn/myCourses';
+import { getMyCourseSections, type MyCourseCard, type MyCourseSection } from '@/lib/learn/myCourses';
 import TopNav from '@/components/landing/TopNav';
 import Rail from '@/components/landing/Rail';
 import Footer from '@/components/landing/Footer';
@@ -78,6 +78,85 @@ const VALUE_PILLARS = [
   },
 ];
 
+function parseCourseDurationMinutes(raw: string | undefined): number {
+  const m = String(raw || '').match(/(\d+)/);
+  if (!m) return 60;
+  const n = Number(m[1]) || 1;
+  return String(raw).toLowerCase().includes('h') ? n * 60 : n;
+}
+
+function buildFallbackSections(courses: Awaited<ReturnType<typeof getAllCourses>>): MyCourseSection[] {
+  const toCard = (c: (typeof courses)[number]): MyCourseCard => {
+    const priceXaf = Math.max(0, Number(c.currentPrice) || 0);
+    const isSelfPaced = Boolean(c.selfPaced);
+    const kind: MyCourseCard['kind'] = c.featured && !isSelfPaced
+      ? 'tutoring'
+      : isSelfPaced
+        ? 'self-paced'
+        : priceXaf > 0
+          ? 'catalogue'
+          : 'free';
+
+    return {
+      id: String(c.id || c.slug),
+      slug: c.slug,
+      title: c.name,
+      subtitle: c.instructor || '',
+      tagline: c.shortDescription || '',
+      tag: c.type || 'Course',
+      color: '#00b369',
+      thumbnailUrl: c.courseImage || null,
+      totalLessons: 0,
+      totalMinutes: parseCourseDurationMinutes(c.courseDuration),
+      priceXaf,
+      pricingType: priceXaf > 0 ? 'ONE_TIME' : 'FREE',
+      enrolled: false,
+      doneCount: 0,
+      pct: 0,
+      href: `/courses/${c.slug}`,
+      continueHref: `/courses/${c.slug}`,
+      source: 'catalogue',
+      kind,
+    };
+  };
+
+  const safeCourses = courses.filter((c) => String(c.slug || '').trim().length > 0);
+  const trendingCards = safeCourses
+    .filter((c) => c.bestSeller || c.featured)
+    .sort((a, b) => (b.courseNumberOfVotes || 0) - (a.courseNumberOfVotes || 0))
+    .slice(0, 12)
+    .map(toCard);
+  const selfPacedCards = safeCourses
+    .filter((c) => Boolean(c.selfPaced))
+    .slice(0, 12)
+    .map(toCard);
+  const moreCards = safeCourses
+    .filter((c) => !trendingCards.some((t) => t.slug === c.slug) && !selfPacedCards.some((s) => s.slug === c.slug))
+    .slice(0, 12)
+    .map(toCard);
+
+  return [
+    {
+      id: 'home-recommended-trending',
+      title: 'Recommended right now',
+      subtitle: 'Popular courses learners are actively joining',
+      courses: trendingCards,
+    },
+    {
+      id: 'home-recommended-self-paced',
+      title: 'Self-paced picks',
+      subtitle: 'Study at your own speed with guided programmes',
+      courses: selfPacedCards,
+    },
+    {
+      id: 'home-recommended-more',
+      title: 'More to explore',
+      subtitle: 'Keep discovering the catalogue like a full learning marketplace',
+      courses: moreCards,
+    },
+  ].filter((section) => section.courses.length > 0);
+}
+
 export default async function HomePage() {
   const session = getSessionUser();
 
@@ -102,6 +181,13 @@ export default async function HomePage() {
     .sort((a, b) => (b.courseNumberOfVotes || 0) - (a.courseNumberOfVotes || 0))
     .slice(0, 6);
   const mentorLed = all.filter((c) => c.featured && !c.selfPaced).slice(0, 4);
+  const fallbackSections = buildFallbackSections(all);
+  const homeSections = personalizedSections.length > 0 ? personalizedSections : fallbackSections;
+  const homeTotal =
+    personalizedSections.length > 0
+      ? personalizedTotal
+      : homeSections.reduce((sum, section) => sum + section.courses.length, 0);
+  const homeInProgress = personalizedSections.length > 0 ? personalizedInProgress : 0;
 
   const pillars = [
     ...ECOSYSTEM.slice(0, 4),
@@ -123,22 +209,29 @@ export default async function HomePage() {
       <TopNav />
       <HomeHero />
 
-      {session && personalizedSections.length > 0 && (
+      {session && (
         <section className="border-b py-12 sm:py-14" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
           <div className="wrap">
             <div className="mb-7 max-w-[760px]">
               <div className="tab mb-3">Recommended for you</div>
               <h2 className="mb-2 text-[26px] leading-[1.1] sm:text-[34px]">Keep learning on your timeline</h2>
               <p className="text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                Your enrolled courses appear first, then more tracks and instructor programs to explore -
-                like a full learning catalogue, right from home.
+                Your enrolled courses appear first, then more tracks and instructor programs to explore,
+                right on the home screen.
               </p>
             </div>
-            <CoursesBrowser
-              sections={personalizedSections}
-              total={personalizedTotal}
-              inProgress={personalizedInProgress}
-            />
+            {homeSections.length > 0 ? (
+              <CoursesBrowser sections={homeSections} total={homeTotal} inProgress={homeInProgress} />
+            ) : (
+              <div className="border-t py-10" style={{ borderColor: 'var(--line)' }}>
+                <p className="text-[15px]" style={{ color: 'var(--ink-soft)' }}>
+                  Recommendations are loading. Browse the full catalogue while we prepare your picks.
+                </p>
+                <Link href="/courses" className="btn btn-ghost mt-4">
+                  Browse all courses
+                </Link>
+              </div>
+            )}
           </div>
         </section>
       )}
