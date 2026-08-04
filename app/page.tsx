@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import {
   ArrowRight,
   BadgeCheck,
@@ -12,11 +11,13 @@ import {
 } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getAllCourses } from '@/lib/repo';
+import { getMyCourseSections } from '@/lib/learn/myCourses';
 import TopNav from '@/components/landing/TopNav';
 import Rail from '@/components/landing/Rail';
 import Footer from '@/components/landing/Footer';
 import Testimonials from '@/components/landing/Testimonials';
 import CourseRow from '@/components/CourseRow';
+import CoursesBrowser from '@/components/dashboard/CoursesBrowser';
 import Reveal from '@/components/Reveal';
 import HomeHero from '@/components/landing/HomeHero';
 import HeroCard from '@/components/landing/HeroCard';
@@ -78,9 +79,21 @@ const VALUE_PILLARS = [
 ];
 
 export default async function HomePage() {
-  // Belt-and-suspenders with middleware: signed-in users never see the marketing home.
-  if (getSessionUser()) {
-    redirect('/dashboard');
+  const session = getSessionUser();
+
+  let personalizedSections: Awaited<ReturnType<typeof getMyCourseSections>>['sections'] = [];
+  let personalizedTotal = 0;
+  let personalizedInProgress = 0;
+
+  if (session) {
+    try {
+      const data = await getMyCourseSections(session.uid);
+      personalizedSections = data.sections;
+      personalizedTotal = data.total;
+      personalizedInProgress = data.inProgress;
+    } catch (err) {
+      console.error('home personalized courses failed:', err);
+    }
   }
 
   const all = await getAllCourses();
@@ -109,6 +122,26 @@ export default async function HomePage() {
       <Rail />
       <TopNav />
       <HomeHero />
+
+      {session && personalizedSections.length > 0 && (
+        <section className="border-b py-12 sm:py-14" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
+          <div className="wrap">
+            <div className="mb-7 max-w-[760px]">
+              <div className="tab mb-3">Recommended for you</div>
+              <h2 className="mb-2 text-[26px] leading-[1.1] sm:text-[34px]">Keep learning on your timeline</h2>
+              <p className="text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                Your enrolled courses appear first, then more tracks and instructor programs to explore -
+                like a full learning catalogue, right from home.
+              </p>
+            </div>
+            <CoursesBrowser
+              sections={personalizedSections}
+              total={personalizedTotal}
+              inProgress={personalizedInProgress}
+            />
+          </div>
+        </section>
+      )}
 
       {/* Trust strip */}
       <div className="border-b py-7" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
