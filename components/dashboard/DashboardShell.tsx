@@ -62,6 +62,7 @@ const NAV = [
   { href: '/dashboard/institutions', label: 'Institutions', icon: Building2 },
   { href: '/dashboard/achievements', label: 'Achievements', icon: Trophy },
   { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
+  { href: '/dashboard/subscription', label: 'Subscription', icon: Award },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 

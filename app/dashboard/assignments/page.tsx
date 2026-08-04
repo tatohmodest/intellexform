@@ -24,14 +24,14 @@ export default async function AssignmentsIndexPage({
       ? learner.activeContext.institutionSlug
       : null;
 
-  const assessments = await listPublishedForStudent({
+  const assignments = await listPublishedForStudent({
     studentId: session.uid,
     institutionSlug,
+    kind: 'assignment',
     page,
     pageSize: PAGE_SIZE + 1,
   });
 
-  const assignments = assessments.filter((a) => a.kind === 'assignment');
   const items = assignments.slice(0, PAGE_SIZE);
   const hasNext = assignments.length > PAGE_SIZE;
 

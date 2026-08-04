@@ -170,11 +170,19 @@ export async function resolveAssignmentAudience(opts: {
 
   // Prefer course roster when the assessment is tied to a teacher course.
   if (opts.recipientMode === 'course' || opts.courseId) {
-    const ids = await db
-      .collection('course_enrollments')
-      .distinct('studentId', { courseId: opts.courseId })
-      .catch(() => [] as string[]);
-    return (ids as string[]).filter((id) => id && id !== opts.authorId);
+    const [teacherStudentIds, tutorialStudentIds] = await Promise.all([
+      db
+        .collection('course_enrollments')
+        .distinct('studentId', { courseId: opts.courseId })
+        .catch(() => [] as string[]),
+      db
+        .collection('enrollments')
+        .distinct('userId', { courseSlug: opts.courseId })
+        .catch(() => [] as string[]),
+    ]);
+    return Array.from(
+      new Set([...(teacherStudentIds as string[]), ...(tutorialStudentIds as string[])]),
+    ).filter((id) => id && id !== opts.authorId);
   }
 
   if (opts.institutionSlug) {

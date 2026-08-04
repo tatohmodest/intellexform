@@ -258,6 +258,7 @@ export async function listAssessmentsForCampus(
 export async function listPublishedForStudent(opts: {
   studentId: string;
   institutionSlug?: string | null;
+  kind?: AssessmentKind;
   page?: number;
   pageSize?: number;
 }): Promise<AssessmentView[]> {
@@ -267,40 +268,81 @@ export async function listPublishedForStudent(opts: {
   const pageSize = Math.min(100, Math.max(1, Number(opts.pageSize) || 20));
   const skip = (page - 1) * pageSize;
 
-  const enrolledCourseIds = await db
-    .collection('course_enrollments')
-    .distinct('courseId', { studentId: opts.studentId })
-    .catch(() => [] as string[]);
+  const [teacherCourseIds, tutorialCourseSlugs] = await Promise.all([
+    db
+      .collection('course_enrollments')
+      .distinct('courseId', { studentId: opts.studentId })
+      .catch(() => [] as string[]),
+    db
+      .collection('enrollments')
+      .distinct('courseSlug', { userId: opts.studentId })
+      .catch(() => [] as string[]),
+  ]);
+
+  const enrolledCourseIds = Array.from(
+    new Set([
+      ...(teacherCourseIds as string[]),
+      ...(tutorialCourseSlugs as string[]),
+    ]),
+  );
+
+  const allAudience: Record<string, unknown>[] = opts.institutionSlug
+    ? [
+        {
+          recipientMode: 'all',
+          $or: [
+            { institutionSlug: opts.institutionSlug },
+            { institutionSlug: null },
+            { institutionSlug: { $exists: false } },
+          ],
+        },
+      ]
+    : [{ recipientMode: 'all' }];
 
   const query: Record<string, unknown> = {
     published: true,
+    ...(opts.kind ? { kind: opts.kind } : {}),
     $or: [
-      { recipientMode: 'all' },
+      ...allAudience,
       {
         recipientMode: 'course',
-        courseId: { $in: enrolledCourseIds as string[] },
+        courseId: { $in: enrolledCourseIds },
       },
       {
         recipientMode: 'students',
         recipientStudentIds: opts.studentId,
       },
       // Legacy behavior before explicit audience targeting.
-      { recipientMode: { $exists: false }, courseId: null },
-      { recipientMode: { $exists: false }, courseId: { $exists: false } },
-      { recipientMode: { $exists: false }, courseId: { $in: enrolledCourseIds as string[] } },
+      {
+        recipientMode: { $exists: false },
+        courseId: null,
+        ...(opts.institutionSlug
+          ? {
+              $or: [
+                { institutionSlug: opts.institutionSlug },
+                { institutionSlug: null },
+                { institutionSlug: { $exists: false } },
+              ],
+            }
+          : {}),
+      },
+      {
+        recipientMode: { $exists: false },
+        courseId: { $exists: false },
+        ...(opts.institutionSlug
+          ? {
+              $or: [
+                { institutionSlug: opts.institutionSlug },
+                { institutionSlug: null },
+                { institutionSlug: { $exists: false } },
+              ],
+            }
+          : {}),
+      },
+      { recipientMode: { $exists: false }, courseId: { $in: enrolledCourseIds } },
     ],
   };
-  if (opts.institutionSlug) {
-    query.$and = [
-      {
-        $or: [
-          { institutionSlug: opts.institutionSlug },
-          { institutionSlug: null },
-          { institutionSlug: { $exists: false } },
-        ],
-      },
-    ];
-  }
+
   const docs = await db
     .collection('assessments')
     .find(query)
@@ -491,11 +533,17 @@ export async function canStudentAccessAssessment(
   if (assessment.recipientMode === 'course') {
     if (!assessment.courseId) return false;
     const db = await getDb();
-    const enrolled = await db.collection('course_enrollments').findOne({
-      courseId: assessment.courseId,
-      studentId,
-    });
-    return Boolean(enrolled);
+    const [teacherEnrollment, tutorialEnrollment] = await Promise.all([
+      db.collection('course_enrollments').findOne({
+        courseId: assessment.courseId,
+        studentId,
+      }),
+      db.collection('enrollments').findOne({
+        courseSlug: assessment.courseId,
+        userId: studentId,
+      }),
+    ]);
+    return Boolean(teacherEnrollment || tutorialEnrollment);
   }
 
   if (assessment.recipientMode === 'all') {
@@ -505,11 +553,17 @@ export async function canStudentAccessAssessment(
   // Legacy behavior for records created before recipientMode.
   if (assessment.courseId) {
     const db = await getDb();
-    const enrolled = await db.collection('course_enrollments').findOne({
-      courseId: assessment.courseId,
-      studentId,
-    });
-    return Boolean(enrolled);
+    const [teacherEnrollment, tutorialEnrollment] = await Promise.all([
+      db.collection('course_enrollments').findOne({
+        courseId: assessment.courseId,
+        studentId,
+      }),
+      db.collection('enrollments').findOne({
+        courseSlug: assessment.courseId,
+        userId: studentId,
+      }),
+    ]);
+    return Boolean(teacherEnrollment || tutorialEnrollment);
   }
 
   return true;

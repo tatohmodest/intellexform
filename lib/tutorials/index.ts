@@ -118,6 +118,11 @@ import {
   getAllMicrosoftSuiteLessons,
   getMicrosoftSuiteLessonNav,
 } from './microsoft-suite';
+import {
+  networkingTutorial,
+  getAllNetworkingLessons,
+  getNetworkingLessonNav,
+} from './networking';
 import type { TutorialCourse, TutorialLesson } from './types';
 
 export const TUTORIALS: TutorialCourse[] = [
@@ -136,6 +141,7 @@ export const TUTORIALS: TutorialCourse[] = [
   dataAnalysisTutorial,
   digitalMarketingTutorial,
   microsoftSuiteTutorial,
+  networkingTutorial,
   golangTutorial,
   dockerTutorial,
   nodejsExpressTutorial,
@@ -168,6 +174,7 @@ export function getTutorialLessons(courseSlug: string): TutorialLesson[] {
   if (courseSlug === 'data-analysis') return getAllDataAnalysisLessons();
   if (courseSlug === 'digital-marketing') return getAllDigitalMarketingLessons();
   if (courseSlug === 'microsoft-suite') return getAllMicrosoftSuiteLessons();
+  if (courseSlug === 'networking') return getAllNetworkingLessons();
   if (courseSlug === 'golang') return getAllGolangLessons();
   if (courseSlug === 'docker') return getAllDockerLessons();
   if (courseSlug === 'nodejs-express') return getAllNodejsExpressLessons();
@@ -200,6 +207,7 @@ export function getTutorialLessonNav(courseSlug: string, lessonSlug: string) {
   if (courseSlug === 'data-analysis') return getDataAnalysisLessonNav(lessonSlug);
   if (courseSlug === 'digital-marketing') return getDigitalMarketingLessonNav(lessonSlug);
   if (courseSlug === 'microsoft-suite') return getMicrosoftSuiteLessonNav(lessonSlug);
+  if (courseSlug === 'networking') return getNetworkingLessonNav(lessonSlug);
   if (courseSlug === 'golang') return getGolangLessonNav(lessonSlug);
   if (courseSlug === 'docker') return getDockerLessonNav(lessonSlug);
   if (courseSlug === 'nodejs-express') return getNodejsExpressLessonNav(lessonSlug);
@@ -238,6 +246,7 @@ export {
   flutterTutorial,
   dataAnalysisTutorial,
   digitalMarketingTutorial,
+  networkingTutorial,
   golangTutorial,
   dockerTutorial,
   nodejsExpressTutorial,
