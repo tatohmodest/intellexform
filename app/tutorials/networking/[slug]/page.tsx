@@ -19,6 +19,6 @@ export function generateMetadata({ params }: { params: { slug: string } }) {
   };
 }
 
-export default function TutorialLessonRoute({ params }: { params: { slug: string } }) {
+export default function NetworkingLessonRoute({ params }: { params: { slug: string } }) {
   return <GatedTutorialLesson courseSlug={COURSE_SLUG} lessonSlug={params.slug} />;
 }

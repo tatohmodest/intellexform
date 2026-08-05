@@ -428,6 +428,32 @@ export default function AssessmentStudio({
               </div>
             </div>
 
+            {!draft.published && (
+              <div
+                className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4 text-[13.5px]"
+                style={{
+                  borderColor: 'rgba(217,119,6,0.38)',
+                  background: 'rgba(217,119,6,0.08)',
+                }}
+              >
+                <div className="flex items-center gap-2 font-medium" style={{ color: '#b45309' }}>
+                  <Clock size={16} className="shrink-0" />
+                  <span>
+                    <strong>Draft mode:</strong> Students will not receive or see this {draft.kind} until you publish it.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => save(true)}
+                  disabled={saving}
+                  className="shrink-0 rounded-lg px-4 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
+                  style={{ background: accent }}
+                >
+                  {saving ? 'Publishing…' : `Publish & send ${draft.kind} now`}
+                </button>
+              </div>
+            )}
+
             {tab === 'build' && (
               <div className="space-y-6">
                 <input
