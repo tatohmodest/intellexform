@@ -34,6 +34,7 @@ const NAV = [
   { href: '/admin/legacy/requests', label: 'Requests', icon: MessageSquare },
   { href: '/admin/legacy/orders', label: 'Orders', icon: ShoppingBag },
   { href: '/admin/legacy/courses', label: 'Mongo courses', icon: BookOpen },
+  { href: '/admin/subscriptions', label: 'Subscriptions', icon: Wallet },
 ];
 
 export default function AdminShell({
@@ -50,56 +51,71 @@ export default function AdminShell({
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--paper)' }}>
-      <header
-        className="sticky top-0 z-40 border-b backdrop-blur"
-        style={{ borderColor: 'var(--line)', background: 'rgba(251,248,240,0.92)' }}
-      >
-        <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3">
-            <BrandLogo href="/" height={26} variant="full" />
-            <div>
-              <p className="font-display text-[15px] font-bold">Platform Admin</p>
-              <p className="text-[11px]" style={{ color: 'var(--ink-soft)' }}>
-                {email || 'admin'} · Supabase control plane
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onLogout}
-            className="btn"
-            style={{ padding: '8px 14px', background: 'rgba(220,38,38,0.1)', color: '#b91c1c' }}
-          >
-            <LogOut size={14} /> Logout
-          </button>
+    <div className="min-h-screen flex" style={{ background: 'var(--paper)' }}>
+      {/* Sidebar */}
+      <aside className="hidden md:flex md:w-64 flex-col border-r" style={{ borderColor: 'var(--line)', background: 'rgba(251,248,240,0.92)' }}>
+        <div className="px-4 py-4">
+          <BrandLogo href="/" height={28} variant="full" />
+          <div className="mt-3 text-sm" style={{ color: 'var(--ink-soft)' }}>{email || 'admin'}</div>
         </div>
-        <nav className="mx-auto flex max-w-[1280px] gap-1 overflow-x-auto px-4 sm:px-6">
+        <nav className="flex-1 overflow-y-auto px-2 py-4">
           {NAV.map((n) => {
             const active = pathname === n.href || pathname.startsWith(`${n.href}/`);
+            const Icon = n.icon;
             return (
               <Link
                 key={n.href}
                 href={n.href}
-                className="flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2.5 text-[13px] font-medium"
-                style={{
-                  borderColor: active ? 'var(--green-deep)' : 'transparent',
-                  color: active ? 'var(--green-deep)' : 'var(--ink-soft)',
-                }}
+                className={`flex items-center gap-3 rounded-md px-3 py-2 mb-1 text-sm font-medium ${active ? 'bg-[rgba(0,179,105,0.06)] text-[var(--green-deep)]' : 'text-[var(--ink-soft)] hover:bg-black/5'}`}
               >
-                <n.icon size={14} /> {n.label}
+                <Icon size={16} />
+                <span>{n.label}</span>
               </Link>
             );
           })}
         </nav>
-      </header>
+        <div className="px-4 py-4 border-t" style={{ borderColor: 'var(--line)' }}>
+          <button type="button" onClick={onLogout} className="btn w-full" style={{ padding: '8px 12px', background: 'rgba(220,38,38,0.04)', color: '#b91c1c' }}>
+            <LogOut size={14} />
+            <span className="ml-2">Logout</span>
+          </button>
+        </div>
+      </aside>
 
-      <main className="mx-auto max-w-[1280px] px-4 py-8 sm:px-6">
-        {title ? (
-          <h1 className="mb-6 font-display text-[28px] leading-tight">{title}</h1>
-        ) : null}
-        {children}
-      </main>
+      {/* Main content area */}
+      <div className="flex-1">
+        <header className="md:hidden border-b" style={{ borderColor: 'var(--line)', background: 'rgba(251,248,240,0.92)' }}>
+          <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-3 px-4 py-3 sm:px-6">
+            <BrandLogo href="/" height={26} variant="full" />
+            <button type="button" onClick={onLogout} className="btn" style={{ padding: '8px 14px', background: 'rgba(220,38,38,0.1)', color: '#b91c1c' }}>
+              <LogOut size={14} /> Logout
+            </button>
+          </div>
+          <nav className="mx-auto flex max-w-[1280px] gap-1 overflow-x-auto px-4 sm:px-6">
+            {NAV.map((n) => {
+              const active = pathname === n.href || pathname.startsWith(`${n.href}/`);
+              const Icon = n.icon;
+              return (
+                <Link
+                  key={n.href}
+                  href={n.href}
+                  className="flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2.5 text-[13px] font-medium"
+                  style={{ borderColor: active ? 'var(--green-deep)' : 'transparent', color: active ? 'var(--green-deep)' : 'var(--ink-soft)' }}
+                >
+                  <Icon size={14} /> {n.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </header>
+
+        <main className="mx-auto max-w-[1280px] px-4 py-8 sm:px-6">
+          {title ? (
+            <h1 className="mb-6 font-display text-[28px] leading-tight">{title}</h1>
+          ) : null}
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
