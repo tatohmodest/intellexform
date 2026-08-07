@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Star, Check, Clock, Globe, BadgeCheck, ArrowLeft } from 'lucide-react';
 import { getCourseBySlug } from '@/lib/repo';
+import { getSessionUser } from '@/lib/auth/getUser';
+import { hasActiveCertSubscription } from '@/lib/learn/certSubscription';
 import { formatXAF } from '@/lib/format';
 import { absoluteUrl, buildShareMetadata } from '@/lib/seo/share';
 import { breadcrumbJsonLd, courseJsonLd } from '@/lib/seo/schema';
@@ -40,6 +42,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 export default async function CourseDetailPage({ params }: { params: { slug: string } }) {
   const course = await getCourseBySlug(params.slug);
   if (!course) notFound();
+
+  const session = getSessionUser();
+  const isSubscribed = session ? await hasActiveCertSubscription(session.uid) : false;
 
   const shareUrl = absoluteUrl(`/courses/${course.slug}`);
   const shareText =
@@ -172,7 +177,7 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
 
           {/* Sticky purchase */}
           <div className="lg:sticky lg:top-24 lg:self-start">
-            <PurchasePanel course={course} shareUrl={shareUrl} />
+            <PurchasePanel course={course} shareUrl={shareUrl} isSubscribed={isSubscribed} />
           </div>
         </div>
       </section>

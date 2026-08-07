@@ -63,6 +63,10 @@ export default function EmbeddedUdemyBrowser({
   );
 
   function openPopoutWindow(url?: string) {
+    if (!isMember) {
+      window.location.href = '/membership';
+      return;
+    }
     const targetUrl = url || activeCourseUrl;
     window.open(targetUrl, 'InTelleXUdemyPlayer', 'width=1280,height=800,scrollbars=yes,resizable=yes');
   }
@@ -91,9 +95,13 @@ export default function EmbeddedUdemyBrowser({
           </button>
           <button
             onClick={() => openPopoutWindow()}
-            className="btn btn-primary inline-flex items-center gap-2 text-[13.5px]"
+            disabled={!isMember}
+            className={`btn inline-flex items-center gap-2 text-[13.5px] ${
+              isMember ? 'btn-primary' : 'btn-secondary cursor-not-allowed opacity-60'
+            }`}
           >
-            <ExternalLink size={15} /> Launch App Window
+            {isMember ? <ExternalLink size={15} /> : <Lock size={15} />}
+            {isMember ? 'Launch App Window' : 'Launch Locked'}
           </button>
         </div>
       </div>
@@ -294,75 +302,56 @@ export default function EmbeddedUdemyBrowser({
               </div>
             </div>
 
-            {/* Course Selector & Notes Sidebar */}
+            {/* Udemy Library Info & Study Notes Sidebar */}
             <div className="space-y-6">
-              {/* Course Catalog Search */}
-              <div className="rounded-[20px] border p-5 shadow-card" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
+              {/* 1,000+ Udemy Library Info Card */}
+              <div
+                className="rounded-[20px] border p-5 shadow-card"
+                style={{
+                  borderColor: 'rgba(0,179,105,0.3)',
+                  background: 'linear-gradient(145deg, rgba(0,179,105,0.06) 0%, rgba(74,144,226,0.06) 100%)',
+                }}
+              >
                 <div className="mb-3 flex items-center justify-between">
-                  <h3 className="font-display text-[18px]">1,000+ Catalog</h3>
-                  <span className="font-mono text-xs" style={{ color: 'var(--ink-soft)' }}>
-                    {courses.length} courses
+                  <span className="tab font-mono text-[10.5px] uppercase" style={{ background: 'var(--green-soft)', color: 'var(--green-deep)' }}>
+                    1,000+ Courses Unlocked
                   </span>
+                  <Sparkles size={16} className="text-amber-500" />
                 </div>
 
-                <div className="relative mb-3">
-                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search courses..."
-                    className="form-input w-full pl-9 text-xs"
-                  />
-                </div>
+                <h3 className="font-display text-[20px] leading-tight">1,000+ Udemy Library</h3>
+                <p className="mt-2 text-[13px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                  Yes! You have full access to <strong>1,000+ premium Udemy courses</strong>. Simply use the credentials above to log in to Udemy, click <strong>My Learning</strong>, and enjoy instant access to all 1,000+ courses!
+                </p>
 
-                <div className="max-h-[380px] space-y-2 overflow-y-auto pr-1">
-                  {filteredCourses.slice(0, 30).map((course) => (
-                    <div
-                      key={course.slug || course.name}
-                      onClick={() => {
-                        const target = course.courseLink || `https://www.udemy.com/course/${course.slug}/`;
-                        setActiveCourseUrl(target);
-                        openPopoutWindow(target);
-                      }}
-                      className="group flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors hover:border-green-500 hover:bg-green-50/50 dark:hover:bg-green-950/20"
-                      style={{ borderColor: 'var(--line)' }}
-                    >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
-                        <BookOpen size={18} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="line-clamp-1 text-xs font-semibold group-hover:text-green-700 dark:group-hover:text-green-400">
-                          {course.name}
-                        </div>
-                        <div className="text-[11px] text-gray-500">{course.instructor || 'Udemy'}</div>
-                      </div>
-                      <ExternalLink size={14} className="shrink-0 text-gray-400 group-hover:text-green-600" />
-                    </div>
-                  ))}
-
-                  {filteredCourses.length === 0 && (
-                    <div className="py-6 text-center text-xs text-gray-500">No courses match your search.</div>
-                  )}
-                </div>
+                <button
+                  onClick={() => openPopoutWindow('https://www.udemy.com/home/my-courses/learning/')}
+                  disabled={!isMember}
+                  className={`btn mt-4 w-full inline-flex items-center justify-center gap-2 text-xs font-semibold ${
+                    isMember ? 'btn-primary' : 'btn-secondary opacity-60 cursor-not-allowed'
+                  }`}
+                >
+                  <ExternalLink size={14} /> Open Udemy My Learning
+                </button>
               </div>
 
-              {/* Companion Notes Drawer */}
-              {showNotes && (
-                <div className="rounded-[20px] border p-5 shadow-card" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
-                  <div className="mb-3 flex items-center justify-between">
-                    <h3 className="font-display text-[18px]">Study Notes</h3>
-                    <span className="text-xs text-green-600 font-semibold">Auto-saved local</span>
-                  </div>
-                  <textarea
-                    rows={8}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Type your timestamps, code snippets, or key learnings here while watching on Udemy..."
-                    className="form-input w-full text-xs leading-relaxed"
-                  />
+              {/* Companion Study Notes Drawer */}
+              <div className="rounded-[20px] border p-5 shadow-card" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="font-display text-[18px]">Study Notes</h3>
+                  <span className="text-[11px] font-semibold text-green-600">Auto-saved local</span>
                 </div>
-              )}
+                <p className="mb-3 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                  Keep track of key concepts, code snippets, or timestamps while watching your Udemy courses side-by-side.
+                </p>
+                <textarea
+                  rows={9}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Type your study notes, code snippets, or video timestamps here..."
+                  className="form-input w-full text-xs leading-relaxed"
+                />
+              </div>
             </div>
           </div>
         </div>

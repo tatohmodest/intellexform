@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { ExternalLink, Loader2, Lock, ShieldCheck } from 'lucide-react';
+import Link from 'next/link';
+import { Award, ExternalLink, Loader2, Lock, ShieldCheck } from 'lucide-react';
 import { Course } from '@/lib/types';
 import { formatXAF } from '@/lib/format';
 import ShareCourseButton from '@/components/ShareCourseButton';
@@ -9,9 +10,11 @@ import ShareCourseButton from '@/components/ShareCourseButton';
 export default function PurchasePanel({
   course,
   shareUrl,
+  isSubscribed = false,
 }: {
   course: Course;
   shareUrl: string;
+  isSubscribed?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [fullName, setFullName] = useState('');
@@ -67,14 +70,32 @@ export default function PurchasePanel({
       )}
 
       {isExternal ? (
-        <a
-          href={course.courseLink || '#'}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn btn-primary w-full inline-flex items-center justify-center gap-2"
-        >
-          <ExternalLink size={18} /> Launch on {course.courseOrigin || 'Udemy'}
-        </a>
+        isSubscribed ? (
+          <a
+            href={course.courseLink || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-primary w-full inline-flex items-center justify-center gap-2"
+          >
+            <ExternalLink size={18} /> Launch on {course.courseOrigin || 'Udemy'}
+          </a>
+        ) : (
+          <div className="flex flex-col gap-2.5">
+            <button
+              disabled
+              className="btn btn-secondary w-full cursor-not-allowed opacity-60 inline-flex items-center justify-center gap-2"
+              title="Subscribe to unlock 1,000+ Udemy courses"
+            >
+              <Lock size={17} /> Launch on {course.courseOrigin || 'Udemy'} (Locked)
+            </button>
+            <Link
+              href="/membership"
+              className="btn btn-g w-full inline-flex items-center justify-center gap-2 text-[13.5px]"
+            >
+              <Award size={15} /> Subscribe to Unlock
+            </Link>
+          </div>
+        )
       ) : !open ? (
         <button onClick={() => setOpen(true)} className="btn btn-primary w-full">
           <Lock size={17} /> Buy &amp; pay on the platform
