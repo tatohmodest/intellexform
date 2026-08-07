@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, Lock, ShieldCheck } from 'lucide-react';
+import { ExternalLink, Loader2, Lock, ShieldCheck } from 'lucide-react';
 import { Course } from '@/lib/types';
 import { formatXAF } from '@/lib/format';
 import ShareCourseButton from '@/components/ShareCourseButton';
@@ -46,10 +46,14 @@ export default function PurchasePanel({
       ? Math.round((1 - course.currentPrice / course.originalPrice) * 100)
       : 0;
 
+  const isExternal = Boolean(course.courseLink) || course.courseOrigin === 'Udemy';
+
   return (
     <div className="rounded-[20px] border bg-paper p-6 shadow-card" style={{ borderColor: 'var(--line)' }}>
       <div className="mb-1 flex items-baseline gap-2">
-        <span className="font-display text-[32px] font-semibold">{formatXAF(course.currentPrice)}</span>
+        <span className="font-display text-[32px] font-semibold">
+          {course.currentPrice > 0 ? formatXAF(course.currentPrice) : 'Included / External'}
+        </span>
         {discount > 0 && (
           <span className="font-mono text-sm line-through" style={{ color: 'var(--ink-soft)' }}>
             {course.originalPrice.toLocaleString('en-US')}
@@ -62,7 +66,16 @@ export default function PurchasePanel({
         </div>
       )}
 
-      {!open ? (
+      {isExternal ? (
+        <a
+          href={course.courseLink || '#'}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn-primary w-full inline-flex items-center justify-center gap-2"
+        >
+          <ExternalLink size={18} /> Launch on {course.courseOrigin || 'Udemy'}
+        </a>
+      ) : !open ? (
         <button onClick={() => setOpen(true)} className="btn btn-primary w-full">
           <Lock size={17} /> Buy &amp; pay on the platform
         </button>

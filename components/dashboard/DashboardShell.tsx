@@ -53,6 +53,7 @@ export interface ShellUser {
 const NAV = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, exact: true },
   { href: '/dashboard/courses', label: 'My Courses', icon: BookOpen },
+  { href: '/dashboard/my-learning', label: 'My Learning (Udemy)', icon: Sparkles },
   { href: '/dashboard/assignments', label: 'Assignments', icon: ClipboardList },
   { href: '/dashboard/classroom', label: 'My Classroom', icon: School },
   { href: '/dashboard/mentorship', label: 'Mentorship', icon: Users },
