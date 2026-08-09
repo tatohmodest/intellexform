@@ -36,7 +36,7 @@ export default async function GoogleDrivePlayerPage({
     const track = getCatalogTrack(params.slug);
     if (track) {
       title = track.title;
-      driveFolderUrl = driveFolderUrl || track.courseLink || null;
+      driveFolderUrl = driveFolderUrl || (track as any).courseLink || null;
     }
   }
 

@@ -324,7 +324,7 @@ function ContextSwitcher({
     if (active.kind === 'mentorship') return 'Mentorship';
     if (active.kind === 'intellex') return 'InTelleX Academy';
     return 'Personal';
-  }, [active, affiliations]);
+  }, [active.kind, active.institutionSlug, affiliations]);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
