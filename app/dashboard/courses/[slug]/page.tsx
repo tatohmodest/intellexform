@@ -22,7 +22,9 @@ export default async function CourseDetailPage({
 
   const track = getCatalogTrack(params.slug);
   const course = getTutorial(params.slug);
-  if (!track || !course) notFound();
+  if (!track || !course) {
+    redirect(`/dashboard/drive-player/${params.slug}`);
+  }
 
   const [enrollments, progress, hasCert] = await Promise.all([
     getEnrollments(session.uid),

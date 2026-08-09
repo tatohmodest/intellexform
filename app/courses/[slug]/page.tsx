@@ -39,12 +39,24 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   });
 }
 
+import { canAccessContent } from '@/lib/contentAccess';
+
 export default async function CourseDetailPage({ params }: { params: { slug: string } }) {
   const course = await getCourseBySlug(params.slug);
   if (!course) notFound();
 
   const session = getSessionUser();
   const isSubscribed = session ? await hasActiveCertSubscription(session.uid) : false;
+  const gate = session
+    ? await canAccessContent({
+        userId: session.uid,
+        kind: 'course',
+        slug: course.slug,
+        level: 'beginner',
+        courseOrigin: course.courseOrigin,
+      })
+    : { allowed: false };
+  const hasAccess = gate.allowed;
 
   const shareUrl = absoluteUrl(`/courses/${course.slug}`);
   const shareText =
@@ -180,6 +192,7 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
               course={course}
               shareUrl={shareUrl}
               isSubscribed={isSubscribed}
+              hasAccess={hasAccess}
               user={session ? { uid: session.uid, email: session.email, name: session.name } : null}
             />
           </div>

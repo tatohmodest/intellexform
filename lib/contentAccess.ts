@@ -179,18 +179,37 @@ export async function getUserPurchases(
   const db = await dbOrNull();
   if (!db) return [];
   try {
-    const docs = await db
-      .collection('content_purchases')
-      .find({ userId, kind, slug })
-      .toArray();
-    return docs.map((d) => ({
-      userId: String(d.userId),
-      kind: d.kind as ContentKind,
-      slug: String(d.slug),
-      scope: d.scope as ContentPurchase['scope'],
-      priceXAF: Number(d.priceXAF) || 0,
-      purchasedAt: String(d.purchasedAt),
-    }));
+    const [purchasesDocs, enrollmentDoc, paidOrderDoc] = await Promise.all([
+      db.collection('content_purchases').find({ userId, slug }).toArray(),
+      db.collection('enrollments').findOne({ userId, courseSlug: slug }),
+      db.collection('orders').findOne({ userId, courseSlug: slug, status: 'paid' }),
+    ]);
+
+    if (purchasesDocs.length > 0) {
+      return purchasesDocs.map((d) => ({
+        userId: String(d.userId),
+        kind: d.kind as ContentKind,
+        slug: String(d.slug),
+        scope: d.scope as ContentPurchase['scope'],
+        priceXAF: Number(d.priceXAF) || 0,
+        purchasedAt: String(d.purchasedAt),
+      }));
+    }
+
+    if (enrollmentDoc || paidOrderDoc) {
+      return [
+        {
+          userId,
+          kind,
+          slug,
+          scope: 'full',
+          priceXAF: Number(paidOrderDoc?.amountXAF) || 0,
+          purchasedAt: new Date().toISOString(),
+        },
+      ];
+    }
+
+    return [];
   } catch {
     return [];
   }

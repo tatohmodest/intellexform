@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Award, ExternalLink, Loader2, Lock, ShieldCheck } from 'lucide-react';
+import { Award, ExternalLink, Loader2, Lock, Play, ShieldCheck } from 'lucide-react';
 import { Course } from '@/lib/types';
 import { formatXAF } from '@/lib/format';
 import ShareCourseButton from '@/components/ShareCourseButton';
@@ -12,11 +12,13 @@ export default function PurchasePanel({
   course,
   shareUrl,
   isSubscribed = false,
+  hasAccess = false,
   user = null,
 }: {
   course: Course;
   shareUrl: string;
   isSubscribed?: boolean;
+  hasAccess?: boolean;
   user?: { uid: string; email?: string | null; name?: string | null } | null;
 }) {
   const [loading, setLoading] = useState(false);
@@ -52,6 +54,7 @@ export default function PurchasePanel({
       : 0;
 
   const isIntellex = isIntellexCourse(course.courseOrigin);
+  const userUnlocked = hasAccess || (isIntellex && isSubscribed);
 
   return (
     <div className="rounded-[20px] border bg-paper p-6 shadow-card" style={{ borderColor: 'var(--line)' }}>
@@ -69,32 +72,32 @@ export default function PurchasePanel({
 
       <div className="mb-1 flex items-baseline gap-2">
         <span className="font-display text-[32px] font-semibold">
-          {course.currentPrice > 0 ? formatXAF(course.currentPrice) : isIntellex ? 'Included in Subscription' : 'Paid Course'}
+          {userUnlocked ? 'Purchased / Unlocked' : course.currentPrice > 0 ? formatXAF(course.currentPrice) : isIntellex ? 'Included in Subscription' : 'Paid Course'}
         </span>
-        {discount > 0 && (
+        {discount > 0 && !userUnlocked && (
           <span className="font-mono text-sm line-through" style={{ color: 'var(--ink-soft)' }}>
             {course.originalPrice.toLocaleString('en-US')}
           </span>
         )}
       </div>
-      {discount > 0 && (
+      {discount > 0 && !userUnlocked && (
         <div className="mb-4 inline-block rounded-full px-2.5 py-1 font-mono text-[11px]" style={{ background: 'var(--amber-soft)', color: 'var(--blue-ink)' }}>
           {discount}% off
         </div>
       )}
 
-      {!isIntellex && (
+      {!isIntellex && !userUnlocked && (
         <p className="mb-4 text-xs leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
           This course is not part of the subscription plan and must be bought individually.
         </p>
       )}
 
-      {isIntellex && isSubscribed ? (
+      {userUnlocked ? (
         <Link
-          href={`/dashboard/courses/${course.slug}`}
+          href={`/dashboard/drive-player/${course.slug}`}
           className="btn btn-primary w-full inline-flex items-center justify-center gap-2"
         >
-          <Award size={18} /> Access Course (Subscription Active)
+          <Play size={18} /> Enter Course (Launch Player)
         </Link>
       ) : !user ? (
         <div className="flex flex-col gap-2.5">
