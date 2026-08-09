@@ -58,9 +58,20 @@ export async function deleteCourseById(id: string) {
 export async function getCourseBySlug(slug: string): Promise<Course | null> {
   try {
     const db = await getDb();
-    const doc = await db
-      .collection('courses')
-      .findOne({ slug }, { projection: { _id: 0 } });
+    const cleanSlug = decodeURIComponent(slug);
+    const numId = Number(cleanSlug);
+    const doc = await db.collection('courses').findOne(
+      {
+        $or: [
+          { slug: cleanSlug },
+          { slug: slug },
+          { id: cleanSlug },
+          { id: !isNaN(numId) ? numId : cleanSlug },
+          { name: { $regex: cleanSlug.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'), $options: 'i' } },
+        ],
+      },
+      { projection: { _id: 0 } },
+    );
     return (doc as unknown as Course) ?? null;
   } catch (err) {
     console.error('getCourseBySlug failed:', err);

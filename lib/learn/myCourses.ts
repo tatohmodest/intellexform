@@ -156,8 +156,8 @@ export async function getMyCourseSections(userId: string): Promise<{
         enrolled,
         doneCount: done.size,
         pct: enrolled ? 5 : 0,
-        href: `/courses/${slug}`,
-        continueHref: `/courses/${slug}`,
+        href: enrolled ? `/dashboard/drive-player/${slug}` : `/courses/${slug}`,
+        continueHref: enrolled ? `/dashboard/drive-player/${slug}` : `/courses/${slug}`,
         source: 'catalogue',
         kind,
       };

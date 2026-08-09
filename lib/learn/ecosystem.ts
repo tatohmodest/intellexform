@@ -1185,7 +1185,16 @@ export async function listPublicTeacherCourses(limit = 40): Promise<TeacherCours
 export async function getTeacherCourse(id: string): Promise<TeacherCourseView | null> {
   try {
     const db = await getDb();
-    const doc = await db.collection('teacher_courses').findOne({ _id: new ObjectId(id) });
+    const cleanId = decodeURIComponent(id);
+    const validObjId = ObjectId.isValid(cleanId) ? new ObjectId(cleanId) : null;
+    const doc = await db.collection('teacher_courses').findOne({
+      $or: [
+        ...(validObjId ? [{ _id: validObjId }] : []),
+        { _id: cleanId as any },
+        { id: cleanId },
+        { slug: cleanId },
+      ],
+    });
     return doc ? toTeacherCourseView(doc as Record<string, unknown>) : null;
   } catch {
     return null;

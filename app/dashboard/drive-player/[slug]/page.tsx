@@ -8,10 +8,14 @@ import GoogleDriveCoursePlayer, { type DriveLessonItem } from '@/components/dash
 
 export const dynamic = 'force-dynamic';
 
+import { getCatalogTrack } from '@/lib/learn/catalog';
+
 export default async function GoogleDrivePlayerPage({
   params,
+  searchParams,
 }: {
   params: { slug: string };
+  searchParams?: { link?: string; folder?: string };
 }) {
   const session = getSessionUser();
   if (!session) redirect(`/login?next=/dashboard/drive-player/${params.slug}`);
@@ -19,8 +23,22 @@ export default async function GoogleDrivePlayerPage({
   // 1. Try fetching from Mongo catalogue courses first
   let course = await getCourseBySlug(params.slug);
   let lessons: DriveLessonItem[] = [];
-  let driveFolderUrl: string | null = course?.googleDriveFolderUrl || course?.courseLink || null;
+  let driveFolderUrl: string | null =
+    course?.googleDriveFolderUrl ||
+    course?.courseLink ||
+    searchParams?.link ||
+    searchParams?.folder ||
+    null;
+
   let title = course?.name || params.slug;
+
+  if (!course) {
+    const track = getCatalogTrack(params.slug);
+    if (track) {
+      title = track.title;
+      driveFolderUrl = driveFolderUrl || track.courseLink || null;
+    }
+  }
 
   if (course) {
     const access = await getContentAccess('course', params.slug, course.name);
@@ -43,17 +61,17 @@ export default async function GoogleDrivePlayerPage({
     try {
       const db = await getDb();
       const doc = await db.collection('teacher_courses').findOne({
-        $or: [{ slug: params.slug }, { _id: params.slug as any }],
+        $or: [{ slug: params.slug }, { id: params.slug }, { _id: params.slug as any }],
       });
       if (doc) {
-        title = String(doc.title || 'Course');
-        driveFolderUrl = doc.googleDriveFolderUrl || doc.googleDriveUrl || null;
+        title = String(doc.title || doc.name || title);
+        driveFolderUrl = driveFolderUrl || doc.googleDriveFolderUrl || doc.googleDriveUrl || doc.courseLink || null;
         if (Array.isArray(doc.lessons)) {
           lessons = doc.lessons.map((l: any, idx: number) => ({
             id: l.id || idx,
             title: String(l.title || `Lesson ${idx + 1}`),
             videoUrl: l.videoUrl || null,
-            googleDriveUrl: l.googleDriveUrl || l.videoUrl || null,
+            googleDriveUrl: l.googleDriveUrl || l.videoUrl || driveFolderUrl || null,
             durationMinutes: Number(l.durationMinutes) || 10,
             description: l.notes || null,
           }));
@@ -64,21 +82,24 @@ export default async function GoogleDrivePlayerPage({
     }
   }
 
-  // Fallback default lesson if lessons array is empty but folder exists
-  if (lessons.length === 0 && driveFolderUrl) {
+  // Ensure title is human readable
+  if (title === params.slug) {
+    title = params.slug
+      .replace(/[-_]/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
+  // Fallback default lesson if lessons array is empty
+  if (lessons.length === 0) {
     lessons = [
       {
         id: 'drive-main',
         title: `${title} - Google Drive Folder`,
-        googleDriveUrl: driveFolderUrl,
+        googleDriveUrl: driveFolderUrl || 'https://drive.google.com',
         durationMinutes: 45,
         description: 'Explore and play all video lessons in this Google Drive folder.',
       },
     ];
-  }
-
-  if (!course && lessons.length === 0) {
-    notFound();
   }
 
   return (
