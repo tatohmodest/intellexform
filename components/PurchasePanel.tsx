@@ -109,17 +109,6 @@ export default function PurchasePanel({
               <Award size={15} /> Subscribe to Unlock All Intellex Courses
             </Link>
           )}
-          {isExternalLink && course.courseLink && (
-            <a
-              href={course.courseLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-1 text-center text-[12px] underline"
-              style={{ color: 'var(--ink-soft)' }}
-            >
-              View original link on {course.courseOrigin || 'External Site'}
-            </a>
-          )}
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="mt-2 flex flex-col gap-3">

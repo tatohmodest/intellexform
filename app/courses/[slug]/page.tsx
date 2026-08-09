@@ -112,7 +112,6 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
               )}
               {course.courseDuration && <span className="inline-flex items-center gap-1.5"><Clock size={15} /> {course.courseDuration}</span>}
               {course.language && <span className="inline-flex items-center gap-1.5"><Globe size={15} /> {course.language}</span>}
-              {course.courseOrigin && <span style={{ color: 'rgba(251,248,240,0.6)' }}>{course.courseOrigin}</span>}
             </div>
           </div>
         </div>

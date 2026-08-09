@@ -80,10 +80,10 @@ export default function EmbeddedUdemyBrowser({
             <Sparkles size={13} /> In-App Learning Browser
           </div>
           <h1 className="font-display text-[32px] leading-tight tracking-tight sm:text-[40px]">
-            My Learning &amp; 1,000+ Udemy Library
+            My Learning &amp; Premium Library
           </h1>
           <p className="mt-1 max-w-2xl text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-            Access 1,000+ premium tech courses on Udemy directly through InTelleX. Use your shared credential card below to log in, receive your OTP code, and start learning.
+            Access premium tech courses directly through InTelleX. Use your credential card below to log in, receive your OTP code, and start learning.
           </p>
         </div>
         <div className="flex items-center gap-2">
