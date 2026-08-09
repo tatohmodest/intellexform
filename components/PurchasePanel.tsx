@@ -19,13 +19,10 @@ export default function PurchasePanel({
   isSubscribed?: boolean;
   user?: { uid: string; email?: string | null; name?: string | null } | null;
 }) {
-  const [open, setOpen] = useState(false);
-  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleCheckout() {
     setError('');
     setLoading(true);
     try {
@@ -37,13 +34,11 @@ export default function PurchasePanel({
           userId: user?.uid,
           fullName: user?.name || 'Student',
           email: user?.email || '',
-          whatsapp: phone || '000000000',
-          phone,
         }),
       });
       const data = await res.json();
       if (!res.ok || !data.transactionUrl) throw new Error(data.error || 'Could not start payment');
-      // Redirect to the PayUnit checkout (or local sandbox when keys are absent).
+      // Redirect directly to PayUnit checkout (or mock gateway in sandbox).
       window.location.href = data.transactionUrl;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not start payment');
@@ -118,10 +113,19 @@ export default function PurchasePanel({
             </Link>
           )}
         </div>
-      ) : !open ? (
+      ) : (
         <div className="flex flex-col gap-2.5">
-          <button onClick={() => setOpen(true)} className="btn btn-primary w-full inline-flex items-center justify-center gap-2">
-            <Lock size={17} /> Buy Course ({formatXAF(course.currentPrice)})
+          {error && (
+            <p className="rounded-lg px-3 py-2 text-sm" style={{ background: 'rgba(220,38,38,0.08)', color: '#b91c1c' }}>{error}</p>
+          )}
+          <button
+            type="button"
+            onClick={handleCheckout}
+            disabled={loading}
+            className="btn btn-primary w-full inline-flex items-center justify-center gap-2"
+          >
+            {loading ? <Loader2 size={18} className="animate-spin" /> : <Lock size={17} />}
+            {loading ? 'Redirecting to PayUnit…' : `Buy Course (${formatXAF(course.currentPrice)})`}
           </button>
           {isIntellex && (
             <Link
@@ -132,46 +136,6 @@ export default function PurchasePanel({
             </Link>
           )}
         </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="mt-2 flex flex-col gap-3">
-          <div className="rounded-xl border p-3 text-xs" style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}>
-            <span className="block font-semibold" style={{ color: 'var(--ink)' }}>Account Linked:</span>
-            <span className="truncate block" style={{ color: 'var(--ink-soft)' }}>
-              {user.name || 'Student'} ({user.email || 'Signed in'})
-            </span>
-          </div>
-
-          <label className="text-xs font-semibold" style={{ color: 'var(--ink-soft)' }}>
-            MoMo / Orange Money Payment Phone (Optional)
-          </label>
-          <input
-            className="form-input"
-            placeholder="e.g. 670000000"
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
-
-          {error && (
-            <p className="rounded-lg px-3 py-2 text-sm" style={{ background: 'rgba(220,38,38,0.08)', color: '#b91c1c' }}>{error}</p>
-          )}
-
-          <button type="submit" disabled={loading} className="btn btn-primary w-full">
-            {loading ? <Loader2 size={18} className="animate-spin" /> : <Lock size={18} />}
-            {loading ? 'Redirecting to payment…' : `Confirm & Pay ${formatXAF(course.currentPrice)}`}
-          </button>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="text-center text-xs py-1 hover:underline"
-            style={{ color: 'var(--ink-soft)' }}
-          >
-            Cancel
-          </button>
-          <p className="text-center text-[11px]" style={{ color: 'var(--ink-soft)' }}>
-            Powered by PayUnit · MTN MoMo · Orange Money · Card
-          </p>
-        </form>
       )}
 
       <ShareCourseButton
