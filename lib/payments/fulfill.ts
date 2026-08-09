@@ -23,6 +23,39 @@ export async function fulfillPaidOrder(transactionId: string): Promise<Order | n
   const kind = order.kind || 'catalogue';
 
   try {
+    if ((kind === 'catalogue' || !order.kind) && order.userId && order.courseSlug) {
+      const { recordContentPurchase } = await import('@/lib/contentAccess');
+      await recordContentPurchase({
+        userId: order.userId,
+        kind: 'course',
+        slug: String(order.courseSlug),
+        scope: 'full',
+        priceXAF: order.amountXAF,
+      });
+      await recordContentPurchase({
+        userId: order.userId,
+        kind: 'tutorial',
+        slug: String(order.courseSlug),
+        scope: 'full',
+        priceXAF: order.amountXAF,
+      });
+      const { getDb } = await import('@/lib/repo');
+      const db = await getDb();
+      await db.collection('enrollments').updateOne(
+        { userId: order.userId, courseSlug: String(order.courseSlug) },
+        {
+          $set: {
+            userId: order.userId,
+            courseSlug: String(order.courseSlug),
+            courseName: order.courseName,
+            enrolledAt: new Date(),
+            source: 'purchase',
+          },
+        },
+        { upsert: true },
+      );
+    }
+
     if (kind === 'teacher_course' && order.userId && order.productId) {
       const course = await getTeacherCourse(order.productId);
       if (course && !(await isEnrolledInCourse(course.id, order.userId))) {

@@ -29,11 +29,14 @@ export async function POST(req: NextRequest) {
     const gateway = useLive ? 'payunit' : 'mock';
     const transactionId = newTransactionId();
 
-    // ── Catalogue course (legacy public checkout) ───────────────────────────
+    // ── Catalogue course (individual course checkout) ───────────────────────
     if (kind === 'catalogue' || (!body.kind && body.courseSlug)) {
-      const { courseSlug, fullName, whatsapp, email, phone } = body;
-      if (!courseSlug || !fullName || !whatsapp) {
-        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      const session = getSessionUser();
+      const { courseSlug, phone, whatsapp: inputWhatsapp, fullName: inputName, email: inputEmail } = body;
+      const userId = session?.uid || body.userId || null;
+
+      if (!courseSlug) {
+        return NextResponse.json({ error: 'Missing course slug' }, { status: 400 });
       }
 
       const course = await getCourseBySlug(courseSlug);
@@ -41,10 +44,14 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Course not found' }, { status: 404 });
       }
 
+      const fullName = session?.name || inputName || 'Learner';
+      const email = session?.email || inputEmail || '';
+      const whatsapp = inputWhatsapp || phone || '000000000';
+
       await createOrder({
         fullName,
         whatsapp,
-        email: email || '',
+        email,
         phone: phone || '',
         courseId: course.id,
         courseSlug: course.slug,
@@ -57,6 +64,8 @@ export async function POST(req: NextRequest) {
         createdAt: new Date(),
         paidAt: null,
         kind: 'catalogue',
+        userId: userId || undefined,
+        fulfilled: false,
       });
 
       const transactionUrl = await buildCheckoutUrl({
@@ -68,7 +77,7 @@ export async function POST(req: NextRequest) {
         productName: course.name,
         productImage: course.courseImage || undefined,
         about: course.shortDescription || `Intellex - ${course.name}`,
-        meta: { courseSlug: course.slug, fullName, whatsapp, kind: 'catalogue' },
+        meta: { courseSlug: course.slug, fullName, whatsapp, kind: 'catalogue', userId },
       });
 
       return NextResponse.json({ success: true, transactionId, transactionUrl }, { status: 201 });

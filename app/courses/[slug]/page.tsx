@@ -176,7 +176,12 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
 
           {/* Sticky purchase */}
           <div className="lg:sticky lg:top-24 lg:self-start">
-            <PurchasePanel course={course} shareUrl={shareUrl} isSubscribed={isSubscribed} />
+            <PurchasePanel
+              course={course}
+              shareUrl={shareUrl}
+              isSubscribed={isSubscribed}
+              user={session ? { uid: session.uid, email: session.email, name: session.name } : null}
+            />
           </div>
         </div>
       </section>
