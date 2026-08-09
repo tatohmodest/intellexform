@@ -543,6 +543,21 @@ export default function CourseStudio({
                   </div>
                 </section>
 
+                <section>
+                  <label className="mb-1.5 block text-[13px] font-semibold">
+                    Google Drive Folder Link (Optional)
+                  </label>
+                  <input
+                    className="form-input !rounded-none text-[13px]"
+                    placeholder="https://drive.google.com/drive/folders/…"
+                    value={draft.googleDriveFolderUrl || ''}
+                    onChange={(e) => patch({ googleDriveFolderUrl: e.target.value })}
+                  />
+                  <p className="mt-1 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                    Paste a Google Drive folder URL containing course videos. Learners can play videos and browse lessons inside the platform player with a playlist sidebar.
+                  </p>
+                </section>
+
                 <ListEditor
                   label="What students will learn"
                   placeholder="Build and deploy a REST API"

@@ -14,6 +14,7 @@ export interface TeacherLesson {
   videoUrl: string;
   videoProvider: VideoProvider;
   notes?: string;
+  googleDriveUrl?: string | null;
   /** Minutes - powers the course duration estimate. */
   durationMinutes?: number | null;
   /** Free sample lesson visible before enrolling / paying. */
@@ -102,6 +103,10 @@ export interface TeacherCourseBase {
   instructorId?: string | null;
   instructorName?: string | null;
   createdByInstitution?: boolean;
+
+  /** Google Drive folder or course playlist link */
+  googleDriveFolderUrl?: string | null;
+  googleDriveUrl?: string | null;
 
   createdAt: Date | string;
   updatedAt: Date | string;

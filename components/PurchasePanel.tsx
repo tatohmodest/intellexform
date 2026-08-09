@@ -6,6 +6,7 @@ import { Award, ExternalLink, Loader2, Lock, ShieldCheck } from 'lucide-react';
 import { Course } from '@/lib/types';
 import { formatXAF } from '@/lib/format';
 import ShareCourseButton from '@/components/ShareCourseButton';
+import { isIntellexCourse } from '@/lib/googleDrive';
 
 export default function PurchasePanel({
   course,
@@ -49,13 +50,26 @@ export default function PurchasePanel({
       ? Math.round((1 - course.currentPrice / course.originalPrice) * 100)
       : 0;
 
-  const isExternal = Boolean(course.courseLink) || course.courseOrigin === 'Udemy';
+  const isIntellex = isIntellexCourse(course.courseOrigin);
+  const isExternalLink = Boolean(course.courseLink);
 
   return (
     <div className="rounded-[20px] border bg-paper p-6 shadow-card" style={{ borderColor: 'var(--line)' }}>
+      <div className="mb-2">
+        <span
+          className="inline-block rounded-full px-2.5 py-0.5 font-mono text-[10.5px] uppercase tracking-wide"
+          style={{
+            background: isIntellex ? 'rgba(0,179,105,0.12)' : 'rgba(234,179,8,0.15)',
+            color: isIntellex ? 'var(--green-deep)' : '#854d0e',
+          }}
+        >
+          {isIntellex ? 'Intellex Subscription Course' : 'Individual Purchase Only'}
+        </span>
+      </div>
+
       <div className="mb-1 flex items-baseline gap-2">
         <span className="font-display text-[32px] font-semibold">
-          {course.currentPrice > 0 ? formatXAF(course.currentPrice) : 'Included / External'}
+          {course.currentPrice > 0 ? formatXAF(course.currentPrice) : isIntellex ? 'Included in Subscription' : 'Paid Course'}
         </span>
         {discount > 0 && (
           <span className="font-mono text-sm line-through" style={{ color: 'var(--ink-soft)' }}>
@@ -69,37 +83,44 @@ export default function PurchasePanel({
         </div>
       )}
 
-      {isExternal ? (
-        isSubscribed ? (
-          <a
-            href={course.courseLink || '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-primary w-full inline-flex items-center justify-center gap-2"
-          >
-            <ExternalLink size={18} /> Launch on {course.courseOrigin || 'Udemy'}
-          </a>
-        ) : (
-          <div className="flex flex-col gap-2.5">
-            <button
-              disabled
-              className="btn btn-secondary w-full cursor-not-allowed opacity-60 inline-flex items-center justify-center gap-2"
-              title="Subscribe to unlock 1,000+ Udemy courses"
-            >
-              <Lock size={17} /> Launch on {course.courseOrigin || 'Udemy'} (Locked)
-            </button>
+      {!isIntellex && (
+        <p className="mb-4 text-xs leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+          This course is not part of the subscription plan and must be bought individually.
+        </p>
+      )}
+
+      {isIntellex && isSubscribed ? (
+        <Link
+          href={`/dashboard/courses/${course.slug}`}
+          className="btn btn-primary w-full inline-flex items-center justify-center gap-2"
+        >
+          <Award size={18} /> Access Course (Subscription Active)
+        </Link>
+      ) : !open ? (
+        <div className="flex flex-col gap-2.5">
+          <button onClick={() => setOpen(true)} className="btn btn-primary w-full inline-flex items-center justify-center gap-2">
+            <Lock size={17} /> Buy Course Individually ({formatXAF(course.currentPrice)})
+          </button>
+          {isIntellex && (
             <Link
               href="/membership"
               className="btn btn-g w-full inline-flex items-center justify-center gap-2 text-[13.5px]"
             >
-              <Award size={15} /> Subscribe to Unlock
+              <Award size={15} /> Subscribe to Unlock All Intellex Courses
             </Link>
-          </div>
-        )
-      ) : !open ? (
-        <button onClick={() => setOpen(true)} className="btn btn-primary w-full">
-          <Lock size={17} /> Buy &amp; pay on the platform
-        </button>
+          )}
+          {isExternalLink && course.courseLink && (
+            <a
+              href={course.courseLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 text-center text-[12px] underline"
+              style={{ color: 'var(--ink-soft)' }}
+            >
+              View original link on {course.courseOrigin || 'External Site'}
+            </a>
+          )}
+        </div>
       ) : (
         <form onSubmit={handleSubmit} className="mt-2 flex flex-col gap-3">
           <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>
@@ -115,6 +136,14 @@ export default function PurchasePanel({
           <button type="submit" disabled={loading} className="btn btn-primary w-full">
             {loading ? <Loader2 size={18} className="animate-spin" /> : <Lock size={18} />}
             {loading ? 'Redirecting to payment…' : `Pay ${formatXAF(course.currentPrice)}`}
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="text-center text-xs py-1 hover:underline"
+            style={{ color: 'var(--ink-soft)' }}
+          >
+            Cancel
           </button>
           <p className="text-center text-[11px]" style={{ color: 'var(--ink-soft)' }}>
             Powered by PayUnit · MTN MoMo · Orange Money · Card

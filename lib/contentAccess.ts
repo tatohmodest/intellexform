@@ -228,6 +228,8 @@ export async function recordContentPurchase(input: {
   );
 }
 
+import { isIntellexCourse } from '@/lib/googleDrive';
+
 export type AccessGate =
   | { allowed: true }
   | { allowed: false; reason: 'login_required' | 'subscribe_required' | 'cert_required' };
@@ -235,8 +237,8 @@ export type AccessGate =
 /**
  * Free tracks: beginner is open to signed-in students.
  * Intermediate → Pro require an active “Subscribe to get certified” plan
- * (1,999 XAF/month, or yearly with 10% off).
- * Admin-priced tracks still use one_time / per_level purchases.
+ * (1,999 XAF/month, or yearly with 10% off) for Intellex courses.
+ * Non-Intellex courses must be purchased individually and are NOT included in subscription plans.
  */
 export async function canAccessContent(opts: {
   userId: string | null | undefined;
@@ -244,11 +246,23 @@ export async function canAccessContent(opts: {
   slug: string;
   level: LessonLevel;
   config?: ContentAccessConfig;
+  courseOrigin?: string | null;
 }): Promise<AccessGate> {
   const config =
     opts.config ?? (await getContentAccess(opts.kind, opts.slug));
 
   if (!opts.userId) return { allowed: false, reason: 'login_required' };
+
+  const isIntellex = isIntellexCourse(opts.courseOrigin);
+
+  // Non-Intellex courses are NOT part of subscription. They require individual purchase!
+  if (!isIntellex) {
+    const purchases = await getUserPurchases(opts.userId, opts.kind, opts.slug);
+    if (purchases.some((p) => p.scope === 'full' || p.scope === opts.level)) {
+      return { allowed: true };
+    }
+    return { allowed: false, reason: 'subscribe_required' };
+  }
 
   // Free tracks - beginner open; Intermediate/Pro need cert subscription.
   if (config.mode === 'free') {
@@ -260,8 +274,7 @@ export async function canAccessContent(opts: {
   const purchases = await getUserPurchases(opts.userId, opts.kind, opts.slug);
   if (purchases.some((p) => p.scope === 'full')) return { allowed: true };
 
-  // Cert subscription also unlocks Intermediate→Pro on payable tracks that
-  // still want the platform cert plan as an alternate path.
+  // Cert subscription unlocks Intermediate→Pro for Intellex courses.
   if (
     (opts.level === 'intermediate' || opts.level === 'advanced') &&
     (await hasActiveCertSubscription(opts.userId))

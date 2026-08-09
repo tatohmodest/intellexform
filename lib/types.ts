@@ -73,6 +73,10 @@ export interface Course {
   featured?: boolean;
   /** Curated "special self-paced" track: hand-picked, progress-monitored, guided. */
   selfPaced?: boolean;
+  /** Google Drive folder link for course videos/files */
+  googleDriveFolderUrl?: string | null;
+  /** Direct Google Drive video preview URL */
+  googleDriveUrl?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
