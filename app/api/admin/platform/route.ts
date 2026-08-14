@@ -4,11 +4,14 @@ import {
   createInstitution,
   getFinanceSnapshot,
   getInstitutionDetail,
+  getPlatformCatalogPlans,
   getPlatformOverview,
+  checkInstitutionDatabase,
   listConnections,
   listGovernanceQueue,
   listInstitutions,
   listPersonnel,
+  patchCatalogPlan,
   provisionInstitution,
   purgeAllMongoCatalogue,
   purgeImportedCatalogue,
@@ -17,12 +20,14 @@ import {
   setMembershipSuspension,
   setUserBan,
   updateInstitution,
+  updateInstitutionInfrastructure,
 } from '@/lib/admin/platform';
 import {
   createOnboardingInvite,
   listOnboardingInvites,
 } from '@/lib/admin/onboardingInvites';
 import { COMMERCIAL_PLANS, type CommercialPlanId } from '@/lib/eduos/plans';
+import { isValidDatabaseMode } from '@/lib/eduos/databaseModes';
 import {
   sendCampusActivationNoticeEmail,
   sendInstitutionOnboardingInviteEmail,
@@ -92,6 +97,8 @@ export async function GET(req: NextRequest) {
           invites: await listOnboardingInvites(),
           plans: COMMERCIAL_PLANS,
         });
+      case 'catalog_plans':
+        return NextResponse.json(await getPlatformCatalogPlans());
       default:
         return NextResponse.json({ error: 'Unknown resource' }, { status: 400 });
     }
@@ -193,6 +200,11 @@ export async function POST(req: NextRequest) {
           note: body.note,
           actorEmail: email,
           expiresInDays: body.expiresInDays,
+          contactName: body.contactName,
+          organizationName: body.organizationName || body.campusName || body.name,
+          organizationType: body.organizationType,
+          databaseMode: isValidDatabaseMode(body.databaseMode) ? body.databaseMode : undefined,
+          suggestedSubdomain: body.suggestedSubdomain,
         });
         const origin = req.nextUrl.origin;
         const inviteUrl = `${origin}/onboard/${invite.token}`;
@@ -213,7 +225,12 @@ export async function POST(req: NextRequest) {
         const activation = await startCampusActivation(
           {
             ownerEmail: invite.email,
-            campusName: body.campusName || body.name || invite.email,
+            campusName:
+              body.campusName ||
+              body.organizationName ||
+              body.name ||
+              invite.organizationName ||
+              invite.email,
             planCode: invite.plan,
             baseUrl: inviteUrl,
           },
@@ -223,8 +240,15 @@ export async function POST(req: NextRequest) {
               await sendCampusActivationNoticeEmail({
                 to,
                 activationUrl: activationUrl || inviteUrl,
-                campusName: campusName || body.campusName || body.name || invite.email,
-                planName: COMMERCIAL_PLANS[planCode as CommercialPlanId]?.name || String(planCode || invite.plan),
+                campusName:
+                  campusName ||
+                  body.campusName ||
+                  body.organizationName ||
+                  body.name ||
+                  invite.email,
+                planName:
+                  COMMERCIAL_PLANS[planCode as CommercialPlanId]?.name ||
+                  String(planCode || invite.plan),
               }).catch((err) => {
                 console.error('campus activation notice email failed:', err);
                 throw err;
@@ -239,6 +263,45 @@ export async function POST(req: NextRequest) {
           emailSent,
           activation,
         });
+      }
+      case 'set_institution_database': {
+        if (!body.id || !isValidDatabaseMode(body.databaseMode)) {
+          return NextResponse.json(
+            { error: 'id and valid databaseMode required' },
+            { status: 400 },
+          );
+        }
+        const health = await updateInstitutionInfrastructure({
+          institutionId: body.id,
+          databaseMode: body.databaseMode,
+          databaseHost: body.databaseHost,
+          databasePort: body.databasePort,
+          databaseName: body.databaseName,
+          databaseUser: body.databaseUser,
+          credentialRef: body.credentialRef,
+          sslRequired: body.sslRequired,
+          actorEmail: email,
+        });
+        return NextResponse.json(health);
+      }
+      case 'test_institution_database': {
+        if (!body.id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+        return NextResponse.json(await checkInstitutionDatabase(body.id, email));
+      }
+      case 'update_catalog_plan': {
+        if (!body.code) return NextResponse.json({ error: 'code required' }, { status: 400 });
+        const plan = await patchCatalogPlan(
+          body.code,
+          {
+            priceMonthly: body.priceMonthly,
+            priceYearly: body.priceYearly,
+            name: body.name,
+            summary: body.summary,
+            features: body.features,
+          },
+          email,
+        );
+        return NextResponse.json(plan);
       }
       case 'sync_mentor_instructor_memberships': {
         const { backfillMentorInstitutionMemberships } = await import(

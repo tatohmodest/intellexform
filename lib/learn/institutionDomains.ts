@@ -406,3 +406,84 @@ export async function manageInstitutionDomain(opts: {
   const view = await getInstitutionDomain(opts.slug);
   return view ? { ok: true, domain: view } : { error: 'not_found' };
 }
+
+/**
+ * Self-service DNS verification for a pending custom domain.
+ * On success, activates the domain for the organization.
+ */
+export async function verifyInstitutionDomainDns(opts: {
+  slug: string;
+  ownerId: string;
+}): Promise<
+  | { ok: true; domain: InstitutionDomainView; dns: { message: string; found: string[]; expectedCname: string } }
+  | { error: string; dns?: { message: string; found: string[]; expectedCname: string } }
+> {
+  const { verifyDomainDns } = await import('@/lib/eduos/domainDns');
+  await ensureDomainIndexes();
+  const db = await getDb();
+  const inst = await db.collection('institutions').findOne({ slug: opts.slug });
+  if (!inst) return { error: 'not_found' };
+  if (String(inst.ownerId) !== opts.ownerId) return { error: 'forbidden' };
+
+  const host =
+    normalizeHostname(inst.pendingCustomDomain as string) ||
+    normalizeHostname(inst.customDomain as string);
+  if (!host) return { error: 'no_domain' };
+
+  const dns = await verifyDomainDns(host);
+  if (!dns.ok) {
+    await db.collection('institutions').updateOne(
+      { slug: opts.slug },
+      {
+        $set: {
+          domainNotes: dns.message,
+          updatedAt: new Date(),
+        },
+      },
+    );
+    await syncDomainToPrisma(opts.slug, {
+      customDomain: (inst.customDomain as string) || null,
+      subdomain: (inst.subdomain as string) || null,
+      domainStatus: (String(inst.domainStatus || 'pending') as DomainStatus) || 'pending',
+      pendingCustomDomain: (inst.pendingCustomDomain as string) || null,
+      domainVerifiedAt: inst.domainVerifiedAt ? new Date(inst.domainVerifiedAt as Date) : null,
+      domainNotes: dns.message,
+    });
+    return {
+      error: 'dns_not_ready',
+      dns: { message: dns.message, found: dns.found, expectedCname: dns.expectedCname },
+    };
+  }
+
+  await db.collection('institutions').updateOne(
+    { slug: opts.slug },
+    {
+      $set: {
+        customDomain: host,
+        pendingCustomDomain: null,
+        domainStatus: 'active',
+        domainVerifiedAt: new Date(),
+        domainNotes: 'Domain verified via DNS CNAME check.',
+        updatedAt: new Date(),
+      },
+    },
+  );
+
+  await syncDomainToPrisma(opts.slug, {
+    customDomain: host,
+    subdomain: (inst.subdomain as string) || null,
+    domainStatus: 'active',
+    pendingCustomDomain: null,
+    domainVerifiedAt: new Date(),
+    domainNotes: 'Domain verified via DNS CNAME check.',
+  });
+
+  const view = await getInstitutionDomain(opts.slug);
+  if (!view) return { error: 'not_found' };
+  return {
+    ok: true,
+    domain: view,
+    dns: { message: dns.message, found: dns.found, expectedCname: dns.expectedCname },
+  };
+}
+

@@ -1,42 +1,66 @@
-# InTelleX EduOS - Governance & Federated Architecture
+# EduOS / Multi-Tenant LMS Architecture
 
-> **Golden rule:** Nothing important in InTelleX is created by accident, accessed without permission, or managed without accountability. Every institution, role, resource, and action has a clear owner, a defined approval process, and auditable permissions.
+> **Product definition:** Intellex is a SaaS platform for creating and operating fully branded, independent Learning Management Systems. Think Shopify — but for learning platforms.
 
-InTelleX is **education infrastructure** - an Education Cloud / Education Operating System. Institutions **connect to the network**; they do not dump all academic data into one giant multi-tenant sack.
+> **Golden rule:** Nothing important in InTelleX is created by accident, accessed without permission, or managed without accountability.
+
+## Vision
+
+Intellex does **not** manually build an LMS for every customer.
+
+1. Intellex admin creates an onboarding invitation.
+2. The organization completes a multi-step LMS setup wizard.
+3. Intellex automatically provisions their tenant, branding, subdomain, feature flags, and admin access.
+4. The organization operates its own LMS on shared Intellex infrastructure.
+
+One application + PostgreSQL + tenant isolation + feature flags + domain routing = many independent LMS platforms.
 
 ## Two layers
 
-### Layer 1 - InTelleX Core
+### Layer 1 — Intellex Platform (Core)
 
-Owns only what belongs to the network:
+Owns network concerns:
 
-- Institution registry, status, verification badges
+- Organization registry & lifecycle
 - Global identity & authentication
-- Applications & approval queues
-- Platform permissions & subscriptions
-- API credentials & gateway
-- Global search index, AI routing, marketplace
-- Audit coordination
+- Onboarding invitations
+- Subscription / catalog plans
+- Feature packs & module flags
+- Tenant resolution (domain → organization)
+- Database strategy metadata (never raw passwords in the app DB)
+- Platform analytics & audit coordination
+- Intellex Institution (first-class tenant operated by Intellex)
 
-**Academic records do not live here.**
+### Layer 2 — Organization tenants
 
-### Layer 2 - Institution infrastructure
+Each organization owns its LMS surface:
 
-Each campus owns:
+- Public website, branding, courses, students, instructors
+- Assignments, quizzes, certificates, analytics
+- Domains / subdomains
 
-- Teachers, students, departments, courses
-- Grades, attendance, exams
-- Finance, research, internal announcements
+Academic records are scoped by `organization_id` / `institutionId`. Cross-tenant access is forbidden except through explicit gateway flows.
 
-Deployment options (provisioned by Platform Owner / Admin - never by end users):
+## PostgreSQL tenancy (flexible)
 
-| Model | Meaning |
-|-------|---------|
-| Shared SaaS | Row isolation on managed Postgres |
-| Managed Cloud | Dedicated DB/storage provisioned by InTelleX |
-| Customer-Hosted | Institution infra + secure API link |
-| Hybrid | Mix of both |
-| External SIS | Connect existing SIS via gateway |
+Intellex is PostgreSQL-only for tenant data. Modes:
+
+| Mode | Meaning |
+|------|---------|
+| `SHARED` | Default. Row isolation on Intellex-managed Postgres |
+| `DEDICATED` | Intellex-managed dedicated Postgres for an organization |
+| `CUSTOMER_MANAGED` | Enterprise BYO Postgres — configured only by Intellex Admin via secret references |
+
+Application code asks “which database belongs to this organization?” via `lib/eduos/tenantDb.ts`. The frontend never receives credentials.
+
+See also: `InstitutionFederationLink` (`databaseMode`, `schemaVersion`, `credentialRef`, health fields).
+
+## Custom domains
+
+- Every tenant gets an Intellex subdomain on provision (`{slug}.{platform}`).
+- Organization admins connect custom domains from Settings → Domains.
+- DNS CNAME instructions are shown; `Verify Domain` checks ownership then activates.
+- Middleware resolves Host → campus gateway → organization.
 
 ## Hierarchy of authority
 
@@ -51,35 +75,34 @@ Platform Owner (exactly one)
               → Guests
 ```
 
-Capabilities are defined in `lib/eduos/permissions.ts`. Roles are collections of permissions.
+Capabilities live in `lib/eduos/permissions.ts`.
 
-## Nothing important is self-serve
+## Nothing important is self-serve (platform-level)
 
 | Action | Required flow |
 |--------|----------------|
-| Create institution | Application → Platform review → Provisioning |
-| Become instructor | Application → Institution admin approval |
-| Become mentor | Application → Review → Verified badge + tier |
+| Create organization tenant | Invite → wizard → auto-provision |
+| Database strategy | Intellex Admin only |
+| Become instructor | Application → institution approval |
+| Become mentor | Application → review → verified |
 | Join private campus | Invite / domain / enrollment code |
 | Transfer ownership | Dual + platform approval |
-| Delete courses / remove staff / billing | Sensitive confirmation (password / 2FA / dual) |
 
-## Institution isolation
+## Pricing
 
-An admin of Institution A must never view or mutate Institution B’s students, courses, analytics, or private announcements. Cross-institution needs go through the **API gateway** as verification requests - never direct database access.
-
-## AI inherits permissions
-
-If a caller lacks `view_analytics` for a department, the AI must refuse. The model never escalates.
+Subscription prices live in `CatalogPlan` (seeded). Student resource membership defaults to **1,999 XAF / month** — editable from Platform Admin, not hard-coded in checkout long-term (`lib/eduos/subscriptionCatalog.ts`, client fallback in `lib/learn/certPricing.ts`).
 
 ## Code map
 
 | Concern | Location |
 |---------|----------|
-| Golden rule & hierarchy | `lib/eduos/governance.ts` |
-| Permission catalog | `lib/eduos/permissions.ts` |
-| Federation layers | `lib/eduos/federation.ts` |
-| Audit writer | `lib/eduos/audit.ts` |
+| Product & governance | `docs/EDUOS_ARCHITECTURE.md`, `lib/eduos/governance.ts` |
+| Permissions | `lib/eduos/permissions.ts` |
+| DB modes / connection manager | `lib/eduos/databaseModes.ts`, `lib/eduos/tenantDb.ts` |
+| Tenant context | `lib/eduos/tenantContext.ts` |
+| Domain DNS verify | `lib/eduos/domainDns.ts`, `lib/learn/institutionDomains.ts` |
+| Onboarding invites | `lib/admin/onboardingInvites.ts`, `/onboard/[token]` |
+| Catalog plans | `lib/eduos/subscriptionCatalog.ts` |
 | Schema | `prisma/schema.prisma` |
 
 ## Resource test

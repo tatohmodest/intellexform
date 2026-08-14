@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { CAPABILITY_PACKS, MODULE_CATALOG, type CapabilityPack } from '@/lib/eduos/capabilities';
 import { COMMERCIAL_PLANS, type CommercialPlanId } from '@/lib/eduos/plans';
+import { DATABASE_MODE_META, type TenantDatabaseMode } from '@/lib/eduos/databaseModes';
 import { formatXAF } from '@/lib/format';
 import ImageUploadField from '@/components/media/ImageUploadField';
 import ColorPickerField from '@/components/media/ColorPickerField';
@@ -422,6 +423,21 @@ export default function PlatformControlPlane({
                   })) as { institution?: Record<string, unknown> };
                   if (result?.institution) setSelectedInst(result.institution);
                 }}
+                onDatabase={async (payload) => {
+                  if (payload.action === 'test') {
+                    await run('test_institution_database', { id: selectedInst.id });
+                  } else {
+                    await run('set_institution_database', {
+                      id: selectedInst.id,
+                      databaseMode: payload.databaseMode,
+                      credentialRef: payload.credentialRef || null,
+                    });
+                  }
+                  const detail = await apiGet('institutions', { id: String(selectedInst.id) });
+                  if (detail && !(detail as { error?: string }).error) {
+                    setSelectedInst(detail as Record<string, unknown>);
+                  }
+                }}
               />
             )}
           </div>
@@ -671,6 +687,7 @@ function InstitutionDetail({
   onBrand,
   onSuspendMember,
   onDomain,
+  onDatabase,
 }: {
   inst: Record<string, unknown>;
   busy: boolean;
@@ -684,6 +701,11 @@ function InstitutionDetail({
     domain?: string;
     subdomain?: string | null;
     notes?: string;
+  }) => Promise<unknown>;
+  onDatabase: (payload: {
+    action: 'set' | 'test';
+    databaseMode?: TenantDatabaseMode;
+    credentialRef?: string;
   }) => Promise<unknown>;
 }) {
   const [pack, setPack] = useState<CapabilityPack>(
@@ -701,6 +723,17 @@ function InstitutionDetail({
   );
   const [subdomainInput, setSubdomainInput] = useState(String(inst.subdomain || ''));
   const [domainNotes, setDomainNotes] = useState('');
+  const db = (inst.database as Record<string, unknown> | null) || null;
+  const [dbMode, setDbMode] = useState<TenantDatabaseMode>(
+    (db?.databaseMode as TenantDatabaseMode) ||
+      (String(inst.deploymentModel).includes('DEDICATED') ||
+      String(inst.deploymentModel) === 'MANAGED_CLOUD'
+        ? 'DEDICATED'
+        : String(inst.deploymentModel) === 'CUSTOMER_HOSTED'
+          ? 'CUSTOMER_MANAGED'
+          : 'SHARED'),
+  );
+  const [credentialRef, setCredentialRef] = useState('');
 
   useEffect(() => {
     setPack((inst.capabilityPack as CapabilityPack) || 'foundation');
@@ -711,6 +744,8 @@ function InstitutionDetail({
     setDescription(String(inst.description || ''));
     setDomainInput(String(inst.pendingCustomDomain || inst.customDomain || ''));
     setSubdomainInput(String(inst.subdomain || ''));
+    const nextDb = (inst.database as Record<string, unknown> | null) || null;
+    if (nextDb?.databaseMode) setDbMode(nextDb.databaseMode as TenantDatabaseMode);
   }, [inst]);
 
   const memberships = (inst.memberships as Array<Record<string, unknown>>) || [];
@@ -861,6 +896,76 @@ function InstitutionDetail({
               Revoke domain
             </button>
           ) : null}
+        </div>
+      </div>
+
+      <div className="space-y-2 overflow-hidden rounded-xl border p-4" style={{ borderColor: 'var(--line)' }}>
+        <div className="flex items-center gap-2">
+          <Network size={14} />
+          <h4 className="font-semibold">Infrastructure · PostgreSQL</h4>
+        </div>
+        <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>
+          Database strategy is controlled by Intellex Admin. Organizations never see connection
+          secrets. Default is shared PostgreSQL; enterprise can use dedicated or customer-managed.
+        </p>
+        <div className="rounded-lg border px-3 py-2 text-xs" style={{ borderColor: 'var(--line)' }}>
+          <div>
+            Mode:{' '}
+            <strong>
+              {db
+                ? DATABASE_MODE_META[(db.databaseMode as TenantDatabaseMode) || 'SHARED']?.label
+                : DATABASE_MODE_META[dbMode].label}
+            </strong>
+          </div>
+          <div>Status: {String(db?.databaseStatus || '—')} · Health: {String(db?.healthStatus || '—')}</div>
+          <div>
+            Schema: v{String(db?.schemaVersion || '1')} · Migration: {String(db?.migrationStatus || 'up_to_date')}
+          </div>
+          {db?.hostMasked ? <div>Host: {String(db.hostMasked)}</div> : null}
+          {db?.lastHealthAt ? <div>Last check: {fmt(db.lastHealthAt as string)}</div> : null}
+        </div>
+        <select
+          className="form-input !rounded-none"
+          value={dbMode}
+          onChange={(e) => setDbMode(e.target.value as TenantDatabaseMode)}
+        >
+          {(Object.keys(DATABASE_MODE_META) as TenantDatabaseMode[]).map((mode) => (
+            <option key={mode} value={mode}>
+              {DATABASE_MODE_META[mode].label}
+            </option>
+          ))}
+        </select>
+        {dbMode === 'CUSTOMER_MANAGED' ? (
+          <input
+            className="form-input !rounded-none"
+            placeholder="Secret reference (vault://… — never a password)"
+            value={credentialRef}
+            onChange={(e) => setCredentialRef(e.target.value)}
+          />
+        ) : null}
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn btn-primary !rounded-none"
+            disabled={busy}
+            onClick={() =>
+              onDatabase({
+                action: 'set',
+                databaseMode: dbMode,
+                credentialRef: credentialRef || undefined,
+              })
+            }
+          >
+            Save database strategy
+          </button>
+          <button
+            type="button"
+            className="btn !rounded-none"
+            disabled={busy}
+            onClick={() => onDatabase({ action: 'test' })}
+          >
+            Test connection
+          </button>
         </div>
       </div>
 
@@ -1347,22 +1452,41 @@ function OnboardingInvitesPanel({
   onRefresh: () => Promise<void>;
 }) {
   const [email, setEmail] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
   const [plan, setPlan] = useState<CommercialPlanId>('builder');
+  const [databaseMode, setDatabaseMode] = useState<TenantDatabaseMode>('SHARED');
   const [lastUrl, setLastUrl] = useState('');
   const invites = ((data?.invites as Array<Record<string, unknown>>) || []);
+
+  useEffect(() => {
+    if (plan === 'enterprise' || plan === 'institution') setDatabaseMode('DEDICATED');
+    else setDatabaseMode('SHARED');
+  }, [plan]);
 
   return (
     <div className="space-y-6">
       <div className="max-w-xl space-y-3 border p-5" style={{ borderColor: 'var(--line)' }}>
-        <h3 className="font-display text-lg font-semibold">Generate onboarding link</h3>
+        <h3 className="font-display text-lg font-semibold">Create onboarding invitation</h3>
         <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
-          Assign a plan to a specific email. They sign in with that address, pick allowed
-          capabilities, and we provision their campus. Plans: Starter, Builder, Pro, Enterprise,
-          Institution.
+          Intellex closes a deal, then sends a secure link. The organization completes the LMS
+          wizard and their tenant is provisioned automatically — no manual dashboard build.
         </p>
         <input
           className="form-input !rounded-none"
-          placeholder="partner@school.edu"
+          placeholder="Organization name"
+          value={organizationName}
+          onChange={(e) => setOrganizationName(e.target.value)}
+        />
+        <input
+          className="form-input !rounded-none"
+          placeholder="Contact person name"
+          value={contactName}
+          onChange={(e) => setContactName(e.target.value)}
+        />
+        <input
+          className="form-input !rounded-none"
+          placeholder="Contact email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -1377,12 +1501,29 @@ function OnboardingInvitesPanel({
             </option>
           ))}
         </select>
+        <select
+          className="form-input !rounded-none"
+          value={databaseMode}
+          onChange={(e) => setDatabaseMode(e.target.value as TenantDatabaseMode)}
+        >
+          {(Object.keys(DATABASE_MODE_META) as TenantDatabaseMode[]).map((mode) => (
+            <option key={mode} value={mode}>
+              DB: {DATABASE_MODE_META[mode].label}
+            </option>
+          ))}
+        </select>
         <button
           type="button"
           className="btn btn-primary !rounded-none"
           disabled={busy || !email.includes('@')}
           onClick={async () => {
-            const r = await onCreate({ email, plan });
+            const r = await onCreate({
+              email,
+              plan,
+              contactName,
+              organizationName,
+              databaseMode,
+            });
             setLastUrl(String(r.url || ''));
             await onRefresh();
           }}
@@ -1402,7 +1543,7 @@ function OnboardingInvitesPanel({
           <table className="w-full text-sm">
             <thead>
               <tr style={{ background: 'var(--paper-dim)' }}>
-                {['Email', 'Plan', 'Status', 'Expires', 'Link'].map((h) => (
+                {['Organization', 'Email', 'Plan', 'DB', 'Status', 'Expires', 'Link'].map((h) => (
                   <th key={h} className="px-3 py-2 text-left text-xs" style={{ color: 'var(--ink-soft)' }}>
                     {h}
                   </th>
@@ -1412,8 +1553,10 @@ function OnboardingInvitesPanel({
             <tbody>
               {invites.map((inv) => (
                 <tr key={String(inv.token || inv.id)} className="border-t" style={{ borderColor: 'var(--line)' }}>
+                  <td className="px-3 py-2">{String(inv.organizationName || '—')}</td>
                   <td className="px-3 py-2">{String(inv.email)}</td>
                   <td className="px-3 py-2">{String(inv.plan)}</td>
+                  <td className="px-3 py-2">{String(inv.databaseMode || 'SHARED')}</td>
                   <td className="px-3 py-2">{String(inv.status)}</td>
                   <td className="px-3 py-2">{fmt(inv.expiresAt as string)}</td>
                   <td className="px-3 py-2 font-mono text-xs">
@@ -1432,7 +1575,7 @@ function OnboardingInvitesPanel({
       </div>
 
       <div className="border p-5" style={{ borderColor: 'var(--line)' }}>
-        <h3 className="mb-2 font-display text-lg font-semibold">Plan map (pinpoint later)</h3>
+        <h3 className="mb-2 font-display text-lg font-semibold">Plan map</h3>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {(Object.keys(COMMERCIAL_PLANS) as CommercialPlanId[]).map((id) => {
             const p = COMMERCIAL_PLANS[id];

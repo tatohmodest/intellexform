@@ -4,3 +4,8 @@ export * from './federation';
 export * from './audit';
 export * from './capabilities';
 export * from './plans';
+export * from './databaseModes';
+export * from './tenantDb';
+export * from './tenantContext';
+export * from './domainDns';
+export * from './subscriptionCatalog';

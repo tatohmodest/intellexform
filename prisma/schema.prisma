@@ -69,6 +69,28 @@ enum DeploymentModel {
   EXTERNAL_SIS
 }
 
+/// PostgreSQL tenancy strategy for an organization (maps from DeploymentModel).
+/// shared = Intellex-managed shared Postgres (default)
+/// dedicated = Intellex-managed dedicated Postgres
+/// customer_managed = enterprise BYO Postgres (admin-configured only)
+enum DatabaseMode {
+  SHARED
+  DEDICATED
+  CUSTOMER_MANAGED
+}
+
+/// Lifecycle of a catalog subscription / commercial plan row.
+enum CatalogPlanKind {
+  STUDENT_RESOURCE
+  ORGANIZATION
+}
+
+enum CatalogPlanStatus {
+  ACTIVE
+  ARCHIVED
+  DRAFT
+}
+
 /// Lifecycle of an institution in the network (never silently ACTIVE).
 enum InstitutionLifecycleStatus {
   PENDING
@@ -527,6 +549,10 @@ model Institution {
   capabilityPack     String                     @default("foundation")
   /// Explicit module ids beyond Core (wins when pack is custom or overridden).
   enabledModules     String[]                   @default([])
+  /// invited | started | in_progress | completed | published | suspended
+  onboardingState    String                     @default("invited")
+  /// 0–100 progress through organization LMS setup wizard.
+  onboardingProgress Int                        @default(0)
   provisionedAt      DateTime?
   provisionedById    String?
   createdAt          DateTime                   @default(now())
@@ -1765,22 +1791,99 @@ model SensitiveActionConfirmation {
 // ─────────────────────────────────────────────
 
 /// Layer-2 connection metadata for an activated institution.
+/// Also carries PostgreSQL tenancy strategy (shared / dedicated / customer-managed).
+/// Credentials are never stored in plaintext — only vault/secret references.
 model InstitutionFederationLink {
   id              String          @id @default(cuid())
   institutionId   String          @unique
   deploymentModel DeploymentModel
+  /// Explicit DB tenancy mode (derived from deploymentModel when unset at provision).
+  databaseMode    DatabaseMode    @default(SHARED)
+  databaseProvider String         @default("postgresql")
   databaseHost    String?
+  databasePort    Int?            @default(5432)
   databaseName    String?
-  /// Never store raw secrets - hash or vault reference only.
+  databaseUser    String?
+  /// Never store raw secrets - vault / secrets-manager reference only.
   credentialRef   String?
+  sslRequired     Boolean         @default(true)
+  /// Compatible schema version across shared + dedicated tenant DBs.
+  schemaVersion   String          @default("1")
+  /// connected | disconnected | migrating | error | provisioning
+  databaseStatus  String          @default("connected")
+  /// up_to_date | pending | in_progress | failed
+  migrationStatus String          @default("up_to_date")
+  lastMigrationAt DateTime?
   callbackUrl     String?
   healthStatus    String          @default("unknown")
   lastHealthAt    DateTime?
+  lastError       String?
   activatedAt     DateTime?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
   institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@index([databaseMode])
+  @@index([databaseStatus])
+  @@index([schemaVersion])
+}
+
+/// Configurable subscription / commercial plans (never hard-code prices in product UI).
+/// Seed includes student resource membership at 1,999 XAF / month.
+model CatalogPlan {
+  id              String            @id @default(cuid())
+  code            String            @unique
+  kind            CatalogPlanKind
+  name            String
+  summary         String?
+  status          CatalogPlanStatus @default(ACTIVE)
+  currency        String            @default("XAF")
+  priceMonthly    Int
+  priceYearly     Int?
+  /// Feature / module flags unlocked by this plan.
+  features        String[]          @default([])
+  /// Soft limits (users, courses, storageMb, customDomains, …).
+  limits          Json              @default("{}")
+  sortOrder       Int               @default(0)
+  metadata        Json              @default("{}")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([kind, status])
+}
+
+/// Platform-issued onboarding invitations (Prisma source of truth; Mongo may mirror).
+model OnboardingInvitation {
+  id                 String   @id @default(cuid())
+  token              String   @unique
+  email              String
+  contactName        String?
+  organizationName   String?
+  organizationType   String?
+  planCode           String
+  allowedModules     String[] @default([])
+  billingOptions     String[] @default(["monthly", "yearly"])
+  /// SHARED | DEDICATED | CUSTOMER_MANAGED — set by Intellex admin, not the org.
+  databaseMode       DatabaseMode @default(SHARED)
+  suggestedSubdomain String?
+  note               String?
+  status             String   @default("pending")
+  expiresAt          DateTime
+  completedAt        DateTime?
+  provisionedInstitutionId String?
+  provisionedSlug    String?
+  createdByEmail     String?
+  /// Wizard progress: invited | started | in_progress | completed | published | suspended
+  onboardingState    String   @default("invited")
+  wizardStep         Int      @default(0)
+  metadata           Json     @default("{}")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([email, status])
+  @@index([status, expiresAt])
+  @@index([planCode])
 }
 
 /// Directory entry only - never a copy of academic records.

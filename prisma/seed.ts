@@ -79,6 +79,10 @@ async function main() {
       institutionType: "ACADEMY",
       customizationLevel: "BRANDED",
       deploymentModel: "SHARED_SAAS",
+      subdomain: "intellex",
+      onboardingState: "published",
+      onboardingProgress: 100,
+      capabilityPack: "enterprise",
       description:
         "Africa's education operating system - courses, mentorship, certifications, and communities.",
       website: "https://www.intellex.study",
@@ -388,6 +392,115 @@ async function main() {
     },
   });
 
+  await prisma.institutionFederationLink.upsert({
+    where: { institutionId: intellex.id },
+    update: {
+      deploymentModel: "SHARED_SAAS",
+      databaseMode: "SHARED",
+      databaseStatus: "connected",
+      healthStatus: "healthy",
+      lastHealthAt: new Date(),
+      schemaVersion: "1",
+      migrationStatus: "up_to_date",
+    },
+    create: {
+      institutionId: intellex.id,
+      deploymentModel: "SHARED_SAAS",
+      databaseMode: "SHARED",
+      databaseProvider: "postgresql",
+      databaseStatus: "connected",
+      healthStatus: "healthy",
+      lastHealthAt: new Date(),
+      schemaVersion: "1",
+      migrationStatus: "up_to_date",
+      activatedAt: new Date(),
+    },
+  });
+
+  // Configurable subscription catalog (student resources = 1,999 XAF / month).
+  const catalogDefaults = [
+    {
+      code: "student_resource_monthly",
+      kind: "STUDENT_RESOURCE" as const,
+      name: "Intellex Learning Resources",
+      summary: "Monthly access to Intellex learning resources.",
+      priceMonthly: 1999,
+      priceYearly: Math.round(1999 * 12 * 0.9),
+      features: ["resources", "certificates_track"],
+      sortOrder: 10,
+    },
+    {
+      code: "org_starter",
+      kind: "ORGANIZATION" as const,
+      name: "Starter",
+      summary: "Core LMS capabilities for small academies.",
+      priceMonthly: 45000,
+      priceYearly: 45000 * 12,
+      features: ["courses", "students", "instructors"],
+      sortOrder: 20,
+    },
+    {
+      code: "org_professional",
+      kind: "ORGANIZATION" as const,
+      name: "Professional",
+      summary: "Advanced features, analytics, and one custom domain.",
+      priceMonthly: 95000,
+      priceYearly: 95000 * 12,
+      features: [
+        "courses",
+        "students",
+        "instructors",
+        "assignments",
+        "quizzes",
+        "analytics",
+        "custom_domain",
+      ],
+      sortOrder: 30,
+    },
+    {
+      code: "org_enterprise",
+      kind: "ORGANIZATION" as const,
+      name: "Enterprise",
+      summary: "Higher limits, dedicated PostgreSQL option, multiple custom domains.",
+      priceMonthly: 180000,
+      priceYearly: null as number | null,
+      features: [
+        "courses",
+        "students",
+        "instructors",
+        "assignments",
+        "quizzes",
+        "certificates",
+        "live_classes",
+        "analytics",
+        "custom_domain",
+        "ai_tools",
+        "dedicated_database",
+      ],
+      sortOrder: 40,
+    },
+  ];
+
+  for (const plan of catalogDefaults) {
+    await prisma.catalogPlan.upsert({
+      where: { code: plan.code },
+      update: {},
+      create: {
+        code: plan.code,
+        kind: plan.kind,
+        name: plan.name,
+        summary: plan.summary,
+        status: "ACTIVE",
+        currency: "XAF",
+        priceMonthly: plan.priceMonthly,
+        priceYearly: plan.priceYearly,
+        features: plan.features,
+        limits: {},
+        sortOrder: plan.sortOrder,
+      },
+    });
+  }
+
   const counts = {
     institutions: await prisma.institution.count(),
     categories: await prisma.category.count(),
@@ -395,6 +508,7 @@ async function main() {
     media: await prisma.mediaRecommendation.count(),
     books: await prisma.book.count(),
     users: await prisma.user.count(),
+    catalogPlans: await prisma.catalogPlan.count(),
   };
 
   console.log("✅ Seed complete:", counts);

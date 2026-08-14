@@ -1,6 +1,7 @@
 /**
  * Email-bound institution onboarding invites.
- * Admin generates a link; the assigned email fills a restricted plan form.
+ * Intellex admin generates a secure link; the assigned email completes a multi-step LMS setup wizard.
+ * Mongo remains for legacy list/read; Prisma OnboardingInvitation is the emerging source of truth.
  */
 
 import crypto from 'crypto';
@@ -13,16 +14,26 @@ import {
 import { modulesForPack, type ModuleId } from '@/lib/eduos/capabilities';
 import { createInstitution, provisionInstitution } from '@/lib/admin/platform';
 import { prisma } from '@/lib/db/prisma';
+import {
+  isValidDatabaseMode,
+  type TenantDatabaseMode,
+} from '@/lib/eduos/databaseModes';
 
 export type OnboardingInviteStatus = 'pending' | 'completed' | 'revoked' | 'expired';
 
 export interface OnboardingInviteDoc {
   token: string;
   email: string;
+  contactName?: string | null;
+  organizationName?: string | null;
+  organizationType?: string | null;
   plan: CommercialPlanId;
   allowedModules: string[];
   billingOptions: BillingCycle[];
+  databaseMode: TenantDatabaseMode;
+  suggestedSubdomain?: string | null;
   status: OnboardingInviteStatus;
+  onboardingState: string;
   note?: string | null;
   createdByEmail?: string | null;
   expiresAt: Date;
@@ -37,6 +48,44 @@ function newToken(): string {
   return crypto.randomBytes(24).toString('hex');
 }
 
+async function mirrorInviteToPrisma(doc: OnboardingInviteDoc) {
+  try {
+    await prisma.onboardingInvitation.upsert({
+      where: { token: doc.token },
+      create: {
+        token: doc.token,
+        email: doc.email,
+        contactName: doc.contactName || null,
+        organizationName: doc.organizationName || null,
+        organizationType: doc.organizationType || null,
+        planCode: doc.plan,
+        allowedModules: doc.allowedModules,
+        billingOptions: doc.billingOptions,
+        databaseMode: doc.databaseMode,
+        suggestedSubdomain: doc.suggestedSubdomain || null,
+        note: doc.note || null,
+        status: doc.status,
+        onboardingState: doc.onboardingState,
+        expiresAt: new Date(doc.expiresAt),
+        completedAt: doc.completedAt ? new Date(doc.completedAt) : null,
+        provisionedInstitutionId: doc.provisionedInstitutionId || null,
+        provisionedSlug: doc.provisionedSlug || null,
+        createdByEmail: doc.createdByEmail || null,
+      },
+      update: {
+        status: doc.status,
+        onboardingState: doc.onboardingState,
+        completedAt: doc.completedAt ? new Date(doc.completedAt) : null,
+        provisionedInstitutionId: doc.provisionedInstitutionId || null,
+        provisionedSlug: doc.provisionedSlug || null,
+        note: doc.note || null,
+      },
+    });
+  } catch (err) {
+    console.error('mirrorInviteToPrisma failed:', err);
+  }
+}
+
 export async function createOnboardingInvite(opts: {
   email: string;
   plan: CommercialPlanId;
@@ -44,6 +93,11 @@ export async function createOnboardingInvite(opts: {
   note?: string;
   actorEmail?: string;
   expiresInDays?: number;
+  contactName?: string;
+  organizationName?: string;
+  organizationType?: string;
+  databaseMode?: TenantDatabaseMode;
+  suggestedSubdomain?: string;
 }): Promise<OnboardingInviteDoc> {
   const plan = COMMERCIAL_PLANS[opts.plan];
   if (!plan) throw new Error('Invalid plan');
@@ -55,14 +109,42 @@ export async function createOnboardingInvite(opts: {
       ? opts.allowedModules.filter((m) => plan.selectableModules.includes(m as ModuleId))
       : [...plan.selectableModules];
 
+  const databaseMode: TenantDatabaseMode =
+    opts.databaseMode && isValidDatabaseMode(opts.databaseMode)
+      ? opts.databaseMode
+      : opts.plan === 'enterprise' || opts.plan === 'institution'
+        ? 'DEDICATED'
+        : 'SHARED';
+
   const days = Math.min(Math.max(opts.expiresInDays ?? 14, 1), 90);
+  const suggestedSubdomain = opts.suggestedSubdomain
+    ? opts.suggestedSubdomain
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, '')
+        .slice(0, 48)
+    : opts.organizationName
+      ? opts.organizationName
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '')
+          .slice(0, 48)
+      : null;
+
   const doc: OnboardingInviteDoc = {
     token: newToken(),
     email,
+    contactName: opts.contactName?.trim().slice(0, 120) || null,
+    organizationName: opts.organizationName?.trim().slice(0, 120) || null,
+    organizationType: opts.organizationType?.trim().slice(0, 60) || null,
     plan: opts.plan,
     allowedModules: allowed,
     billingOptions: [...plan.billing],
+    databaseMode,
+    suggestedSubdomain,
     status: 'pending',
+    onboardingState: 'invited',
     note: opts.note?.slice(0, 500) || null,
     createdByEmail: opts.actorEmail || null,
     expiresAt: new Date(Date.now() + days * 24 * 60 * 60 * 1000),
@@ -77,6 +159,7 @@ export async function createOnboardingInvite(opts: {
   await db.collection('onboarding_invites').createIndex({ token: 1 }, { unique: true }).catch(() => {});
   await db.collection('onboarding_invites').createIndex({ email: 1, status: 1 }).catch(() => {});
   await db.collection('onboarding_invites').insertOne(doc as unknown as Record<string, unknown>);
+  await mirrorInviteToPrisma(doc);
   return doc;
 }
 
@@ -99,12 +182,15 @@ export async function getOnboardingInvite(token: string): Promise<OnboardingInvi
   const doc = await db.collection('onboarding_invites').findOne({ token }, { projection: { _id: 0 } });
   if (!doc) return null;
   const invite = doc as unknown as OnboardingInviteDoc;
+  if (!invite.databaseMode) invite.databaseMode = 'SHARED';
+  if (!invite.onboardingState) invite.onboardingState = invite.status === 'completed' ? 'completed' : 'invited';
   if (invite.status === 'pending' && new Date(invite.expiresAt).getTime() < Date.now()) {
     await db.collection('onboarding_invites').updateOne(
       { token },
-      { $set: { status: 'expired', updatedAt: new Date() } },
+      { $set: { status: 'expired', onboardingState: 'suspended', updatedAt: new Date() } },
     );
-    return { ...invite, status: 'expired' };
+    await mirrorInviteToPrisma({ ...invite, status: 'expired', onboardingState: 'suspended' });
+    return { ...invite, status: 'expired', onboardingState: 'suspended' };
   }
   return invite;
 }
@@ -116,10 +202,22 @@ export async function completeOnboardingInvite(opts: {
   description?: string;
   website?: string;
   country?: string;
+  city?: string;
+  phone?: string;
+  address?: string;
   institutionType?: string;
+  platformName?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  tagline?: string;
+  logoUrl?: string;
+  subdomain?: string;
   billingCycle: BillingCycle;
   selectedModules: string[];
-}): Promise<{ slug: string; institutionId: string }> {
+  adminFirstName?: string;
+  adminLastName?: string;
+  adminTitle?: string;
+}): Promise<{ slug: string; institutionId: string; subdomain: string | null; platformUrl: string }> {
   const invite = await getOnboardingInvite(opts.token);
   if (!invite) throw new Error('Invite not found');
   if (invite.status !== 'pending') throw new Error(`Invite is ${invite.status}`);
@@ -140,47 +238,90 @@ export async function completeOnboardingInvite(opts: {
         : plan.modules
       : modulesForPack(capabilityPack);
 
+  const orgName = opts.name.trim() || invite.organizationName || 'New Organization';
+  const subdomainHint = opts.subdomain || invite.suggestedSubdomain || undefined;
+
   const inst = await createInstitution({
-    name: opts.name,
-    description: opts.description,
+    name: orgName,
+    description: opts.description || opts.tagline,
     website: opts.website,
     country: opts.country,
-    institutionType: opts.institutionType,
+    institutionType: opts.institutionType || invite.organizationType || undefined,
     email: invite.email,
     ownerEmail: invite.email,
     capabilityPack: selected.length ? 'custom' : capabilityPack,
     enabledModules: selected.length ? selected : enabledModules,
+    databaseMode: invite.databaseMode,
+    subdomain: subdomainHint,
     actorEmail: invite.createdByEmail || undefined,
   });
   if (!inst?.id) throw new Error('Could not create institution');
 
   await provisionInstitution(inst.id, { actorEmail: invite.createdByEmail || undefined });
 
-  // Store billing preference on institution settings
+  const settings: Record<string, unknown> = {
+    onboardingPlan: invite.plan,
+    billingCycle: opts.billingCycle,
+    onboardedViaInvite: true,
+    platformName: opts.platformName || orgName,
+    tagline: opts.tagline || null,
+    adminProfile: {
+      firstName: opts.adminFirstName || null,
+      lastName: opts.adminLastName || null,
+      title: opts.adminTitle || null,
+      phone: opts.phone || null,
+    },
+    address: opts.address || null,
+    city: opts.city || null,
+  };
+
   await prisma.institution.update({
     where: { id: inst.id },
     data: {
-      settings: {
-        onboardingPlan: invite.plan,
-        billingCycle: opts.billingCycle,
-        onboardedViaInvite: true,
-      },
+      primaryColor: opts.primaryColor || undefined,
+      secondaryColor: opts.secondaryColor || undefined,
+      logoUrl: opts.logoUrl || undefined,
+      city: opts.city || undefined,
+      address: opts.address || undefined,
+      settings: settings as never,
+      featuresEnabled: selected.length ? selected : enabledModules,
+      onboardingState: 'completed',
+      onboardingProgress: 100,
     },
   });
 
   const db = await getDb();
+  const completed: OnboardingInviteDoc = {
+    ...invite,
+    status: 'completed',
+    onboardingState: 'completed',
+    completedAt: new Date(),
+    provisionedInstitutionId: inst.id,
+    provisionedSlug: inst.slug,
+    updatedAt: new Date(),
+  };
   await db.collection('onboarding_invites').updateOne(
     { token: opts.token },
     {
       $set: {
         status: 'completed',
-        completedAt: new Date(),
+        onboardingState: 'completed',
+        completedAt: completed.completedAt,
         provisionedInstitutionId: inst.id,
         provisionedSlug: inst.slug,
         updatedAt: new Date(),
       },
     },
   );
+  await mirrorInviteToPrisma(completed);
 
-  return { slug: String(inst.slug), institutionId: String(inst.id) };
+  const cname = (await import('@/lib/learn/institutionDomains')).platformCnameTarget();
+  const subdomain = String(inst.subdomain || inst.slug);
+
+  return {
+    slug: String(inst.slug),
+    institutionId: String(inst.id),
+    subdomain,
+    platformUrl: `${subdomain}.${cname}`,
+  };
 }

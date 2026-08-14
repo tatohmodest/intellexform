@@ -5,7 +5,9 @@ import {
   getInstitutionDomain,
   manageInstitutionDomain,
   requestInstitutionDomain,
+  verifyInstitutionDomainDns,
 } from '@/lib/learn/institutionDomains';
+import { dnsInstructionsFor } from '@/lib/eduos/domainDns';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,11 +17,15 @@ export async function GET(
 ) {
   const domain = await getInstitutionDomain(params.slug);
   if (!domain) return NextResponse.json({ error: 'not_found' }, { status: 404 });
-  return NextResponse.json({ domain });
+  const pendingOrActive = domain.pendingCustomDomain || domain.customDomain;
+  return NextResponse.json({
+    domain,
+    dnsInstructions: pendingOrActive ? dnsInstructionsFor(pendingOrActive) : null,
+  });
 }
 
 /**
- * Campus owner requests a domain / change.
+ * Campus owner requests a domain / change, or verifies DNS (self-service).
  * Platform Admin can also POST with { action, ... } to approve/set/revoke.
  */
 export async function POST(
@@ -32,8 +38,6 @@ export async function POST(
   const body = await req.json().catch(() => ({}));
   const action = String(body.action || 'request');
 
-  // Platform-style manage actions require platform admin cookie/role - also
-  // allow campus owner only for "request". Admin UI uses /api/admin/platform.
   if (action === 'request') {
     const membership = await getMembership(params.slug, session.uid);
     if (membership !== 'owner') {
@@ -53,6 +57,27 @@ export async function POST(
             ? 404
             : 400;
       return NextResponse.json(result, { status });
+    }
+    const host = result.domain.pendingCustomDomain || result.domain.customDomain;
+    return NextResponse.json({
+      ...result,
+      dnsInstructions: host ? dnsInstructionsFor(host) : null,
+    });
+  }
+
+  if (action === 'verify') {
+    const membership = await getMembership(params.slug, session.uid);
+    if (membership !== 'owner') {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    }
+    const result = await verifyInstitutionDomainDns({
+      slug: params.slug,
+      ownerId: session.uid,
+    });
+    if ('error' in result) {
+      return NextResponse.json(result, {
+        status: result.error === 'forbidden' ? 403 : 400,
+      });
     }
     return NextResponse.json(result);
   }

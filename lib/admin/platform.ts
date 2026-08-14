@@ -17,10 +17,22 @@ import {
   type CapabilityPack,
   type ModuleId,
 } from '@/lib/eduos/capabilities';
+import { databaseModeFromDeployment, deploymentFromDatabaseMode, isValidDatabaseMode, type TenantDatabaseMode } from '@/lib/eduos/databaseModes';
 import { getDb } from '@/lib/repo';
 import { slugify } from '@/lib/learn/ecosystem';
 import { platformCnameTarget } from '@/lib/learn/institutionDomains';
 import { syncMongoLearnersToPrisma } from '@/lib/db/identity';
+import {
+  getTenantDatabaseConfig,
+  setTenantDatabaseStrategy,
+  testTenantDatabaseConnection,
+  type SetTenantDatabaseInput,
+} from '@/lib/eduos/tenantDb';
+import {
+  ensureDefaultCatalogPlans,
+  listCatalogPlans,
+  updateCatalogPlanPrice,
+} from '@/lib/eduos/subscriptionCatalog';
 
 function isPack(v: string): v is CapabilityPack {
   return v === 'foundation' || v === 'professional' || v === 'enterprise' || v === 'custom';
@@ -417,9 +429,12 @@ export async function getInstitutionDetail(id: string) {
   });
   if (!inst) return null;
 
+  const database = await getTenantDatabaseConfig(inst.id).catch(() => null);
+
   return {
     ...inst,
     cnameTarget: platformCnameTarget(),
+    database,
     resolvedModules: resolveCampusModules({
       capabilityPack: isPack(inst.capabilityPack) ? inst.capabilityPack : 'foundation',
       enabledModules: inst.enabledModules as ModuleId[],
@@ -438,6 +453,8 @@ export async function createInstitution(opts: {
   capabilityPack?: CapabilityPack;
   enabledModules?: ModuleId[];
   deploymentModel?: string;
+  databaseMode?: TenantDatabaseMode;
+  subdomain?: string | null;
   ownerEmail?: string;
   actorEmail?: string;
 }) {
@@ -472,10 +489,33 @@ export async function createInstitution(opts: {
       ? Array.from(new Set(opts.enabledModules ?? []))
       : modulesForPack(pack);
 
+  const databaseMode: TenantDatabaseMode =
+    opts.databaseMode && isValidDatabaseMode(opts.databaseMode)
+      ? opts.databaseMode
+      : databaseModeFromDeployment(opts.deploymentModel || 'SHARED_SAAS');
+
+  const deploymentModel =
+    (opts.deploymentModel as never) || deploymentFromDatabaseMode(databaseMode);
+
+  let subdomain =
+    (opts.subdomain || slug)
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '')
+      .slice(0, 48) || slug;
+  const subTaken = await prisma.institution.findFirst({
+    where: { subdomain },
+    select: { id: true },
+  });
+  if (subTaken) {
+    subdomain = `${subdomain}-${Date.now().toString(36).slice(-4)}`;
+  }
+
   const inst = await prisma.institution.create({
     data: {
       name,
       slug,
+      subdomain,
       description: opts.description?.slice(0, 4000) || null,
       email: opts.email?.trim().toLowerCase() || null,
       country: opts.country || null,
@@ -483,8 +523,10 @@ export async function createInstitution(opts: {
       institutionType: (opts.institutionType as never) || null,
       capabilityPack: pack,
       enabledModules,
-      deploymentModel: (opts.deploymentModel as never) || 'SHARED_SAAS',
+      deploymentModel,
       status: 'PENDING',
+      onboardingState: 'in_progress',
+      onboardingProgress: 40,
       ownerUserId,
       visibility: 'PRIVATE',
     },
@@ -621,6 +663,11 @@ export async function provisionInstitution(
     create: {
       institutionId: id,
       deploymentModel: inst.deploymentModel,
+      databaseMode: databaseModeFromDeployment(inst.deploymentModel),
+      databaseProvider: 'postgresql',
+      databaseStatus: 'connected',
+      schemaVersion: '1',
+      migrationStatus: 'up_to_date',
       healthStatus: 'healthy',
       lastHealthAt: new Date(),
       activatedAt: new Date(),
@@ -630,6 +677,17 @@ export async function provisionInstitution(
       healthStatus: 'healthy',
       lastHealthAt: new Date(),
       activatedAt: new Date(),
+      databaseStatus: 'connected',
+    },
+  });
+
+  await prisma.institution.update({
+    where: { id },
+    data: {
+      onboardingState: 'published',
+      onboardingProgress: 100,
+      // Auto-assign Intellex subdomain from slug when missing.
+      subdomain: inst.subdomain || inst.slug,
     },
   });
 
@@ -1142,3 +1200,73 @@ export async function purgeAllMongoCatalogue() {
   const result = await col.deleteMany({});
   return { before, deleted: result.deletedCount, after: 0 };
 }
+
+/** Intellex Admin: view / update organization PostgreSQL strategy. */
+export async function getInstitutionInfrastructure(institutionId: string) {
+  return getTenantDatabaseConfig(institutionId);
+}
+
+export async function updateInstitutionInfrastructure(
+  input: SetTenantDatabaseInput & { actorEmail?: string | null },
+) {
+  const health = await setTenantDatabaseStrategy(input);
+  await writeAudit({
+    actorEmail: input.actorEmail,
+    institutionId: input.institutionId,
+    action: 'UPDATE',
+    entityType: 'InstitutionInfrastructure',
+    entityId: input.institutionId,
+    summary: `Set database mode to ${input.databaseMode}`,
+    metadata: {
+      databaseMode: input.databaseMode,
+      credentialRefPresent: Boolean(input.credentialRef),
+    },
+  });
+  return health;
+}
+
+export async function checkInstitutionDatabase(institutionId: string, actorEmail?: string | null) {
+  const result = await testTenantDatabaseConnection(institutionId);
+  await writeAudit({
+    actorEmail,
+    institutionId,
+    action: 'ADMIN',
+    entityType: 'InstitutionInfrastructure',
+    entityId: institutionId,
+    summary: result.ok ? 'Database health check passed' : 'Database health check failed',
+    metadata: result as never,
+  });
+  return result;
+}
+
+export async function getPlatformCatalogPlans() {
+  await ensureDefaultCatalogPlans();
+  return {
+    student: await listCatalogPlans('STUDENT_RESOURCE'),
+    organization: await listCatalogPlans('ORGANIZATION'),
+  };
+}
+
+export async function patchCatalogPlan(
+  code: string,
+  patch: {
+    priceMonthly?: number;
+    priceYearly?: number | null;
+    name?: string;
+    summary?: string | null;
+    features?: string[];
+  },
+  actorEmail?: string | null,
+) {
+  const plan = await updateCatalogPlanPrice({ code, ...patch });
+  await writeAudit({
+    actorEmail,
+    action: 'UPDATE',
+    entityType: 'CatalogPlan',
+    entityId: plan.id,
+    summary: `Updated catalog plan ${code}`,
+    metadata: patch as never,
+  });
+  return plan;
+}
+

@@ -4,6 +4,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { Globe2, Loader2 } from 'lucide-react';
 import type { InstitutionDomainView } from '@/lib/learn/institutionDomains';
 
+type DnsInstructions = {
+  type: string;
+  name: string;
+  value: string;
+  ttl: string;
+  host: string;
+};
+
 export default function CampusDomainSettings({
   slug,
   accent = '#00b369',
@@ -12,6 +20,7 @@ export default function CampusDomainSettings({
   accent?: string;
 }) {
   const [domain, setDomain] = useState<InstitutionDomainView | null>(null);
+  const [dnsInstructions, setDnsInstructions] = useState<DnsInstructions | null>(null);
   const [customDomain, setCustomDomain] = useState('');
   const [subdomain, setSubdomain] = useState('');
   const [busy, setBusy] = useState(false);
@@ -23,6 +32,7 @@ export default function CampusDomainSettings({
     const data = await res.json();
     if (res.ok && data.domain) {
       setDomain(data.domain);
+      setDnsInstructions(data.dnsInstructions || null);
       setCustomDomain(data.domain.pendingCustomDomain || data.domain.customDomain || '');
       setSubdomain(data.domain.subdomain || '');
     }
@@ -59,9 +69,34 @@ export default function CampusDomainSettings({
         throw new Error(map[data.error] || data.error || 'Could not submit domain');
       }
       setDomain(data.domain);
-      setOk('Domain request sent to InTelleX Platform Admin for approval.');
+      setDnsInstructions(data.dnsInstructions || null);
+      setOk('Domain saved. Add the DNS CNAME below, then click Verify Domain.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not submit domain');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verifyDomain() {
+    setBusy(true);
+    setError('');
+    setOk('');
+    try {
+      const res = await fetch(`/api/learn/institutions/${encodeURIComponent(slug)}/domain`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verify' }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.dns?.message || data.error || 'DNS verification failed');
+      }
+      setDomain(data.domain);
+      setOk(data.dns?.message || 'Domain verified and activated.');
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not verify domain');
     } finally {
       setBusy(false);
     }
@@ -86,15 +121,16 @@ export default function CampusDomainSettings({
   }
 
   const status = domain?.domainStatus || 'none';
+  const instructions = dnsInstructions;
 
   return (
     <section className="border-t pt-5" style={{ borderColor: 'var(--line)' }}>
       <h3 className="mb-2 inline-flex items-center gap-2 font-display text-[18px]">
-        <Globe2 size={16} /> Campus domain
+        <Globe2 size={16} /> Domains
       </h3>
       <p className="mb-4 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-        Give this campus its own hostname. Students open your domain and land on your InTelleX
-        campus interface. InTelleX Platform Admin approves and can change the domain anytime.
+        Every organization gets an Intellex subdomain. Connect your own custom domain so learners
+        open your LMS on your brand. DNS ownership is verified automatically.
       </p>
 
       {domain && (
@@ -105,19 +141,19 @@ export default function CampusDomainSettings({
           <div className="font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
             Status · {status}
           </div>
+          {domain.subdomain && (
+            <p className="mt-1 font-semibold" style={{ color: 'var(--ink)' }}>
+              Intellex domain: {domain.subdomain}.{domain.cnameTarget}
+            </p>
+          )}
           {domain.customDomain && (
             <p className="mt-1 font-semibold" style={{ color: 'var(--ink)' }}>
-              Active: {domain.customDomain}
+              Custom domain: {domain.customDomain}
             </p>
           )}
           {domain.pendingCustomDomain && (
             <p className="mt-1" style={{ color: 'var(--ink-soft)' }}>
-              Pending approval: {domain.pendingCustomDomain}
-            </p>
-          )}
-          {domain.subdomain && (
-            <p className="mt-1" style={{ color: 'var(--ink-soft)' }}>
-              Subdomain: {domain.subdomain}.{domain.cnameTarget}
+              Pending verification: {domain.pendingCustomDomain}
             </p>
           )}
           {domain.domainNotes && (
@@ -141,7 +177,7 @@ export default function CampusDomainSettings({
         </div>
         <div>
           <label className="mb-1 block text-[12.5px] font-semibold">
-            Optional InTelleX subdomain
+            Intellex subdomain
           </label>
           <input
             className="form-input !rounded-none text-[13px]"
@@ -150,19 +186,39 @@ export default function CampusDomainSettings({
             onChange={(e) => setSubdomain(e.target.value)}
           />
           <p className="mt-1 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-            Becomes {subdomain || 'yourschool'}.{domain?.cnameTarget || 'cname.intellex.cm'} when
-            activated.
+            Becomes {subdomain || 'yourschool'}.{domain?.cnameTarget || 'cname.intellex.cm'}
           </p>
         </div>
 
-        <div
-          className="border px-3 py-2.5 text-[12.5px] leading-relaxed"
-          style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}
-        >
-          Point a <strong style={{ color: 'var(--ink)' }}>CNAME</strong> from your domain to{' '}
-          <code style={{ color: 'var(--ink)' }}>{domain?.cnameTarget || 'cname.intellex.cm'}</code>,
-          then submit. Platform Admin reviews DNS and activates the domain for this campus.
-        </div>
+        {instructions ? (
+          <div
+            className="border px-3 py-2.5 text-[12.5px] leading-relaxed"
+            style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}
+          >
+            <p className="font-semibold" style={{ color: 'var(--ink)' }}>
+              DNS instructions for {instructions.host}
+            </p>
+            <ul className="mt-2 space-y-1 font-mono text-[12px]" style={{ color: 'var(--ink)' }}>
+              <li>Type: {instructions.type}</li>
+              <li>Name: {instructions.name}</li>
+              <li>Value: {instructions.value}</li>
+              <li>TTL: {instructions.ttl}</li>
+            </ul>
+            <p className="mt-2">
+              Add this record at Cloudflare, GoDaddy, Namecheap, or your DNS provider. You do not
+              need to transfer the domain to Intellex.
+            </p>
+          </div>
+        ) : (
+          <div
+            className="border px-3 py-2.5 text-[12.5px] leading-relaxed"
+            style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}
+          >
+            Point a <strong style={{ color: 'var(--ink)' }}>CNAME</strong> from your domain to{' '}
+            <code style={{ color: 'var(--ink)' }}>{domain?.cnameTarget || 'cname.intellex.cm'}</code>,
+            then verify.
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2">
           <button
@@ -172,8 +228,19 @@ export default function CampusDomainSettings({
             style={{ background: accent }}
           >
             {busy ? <Loader2 size={14} className="animate-spin" /> : null}
-            {status === 'active' ? 'Request domain change' : 'Submit domain for approval'}
+            {status === 'active' ? 'Update domain' : 'Connect custom domain'}
           </button>
+          {Boolean(domain?.pendingCustomDomain || domain?.customDomain) && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={verifyDomain}
+              className="border px-3 py-2 text-[13px] font-semibold disabled:opacity-60"
+              style={{ borderColor: 'var(--line)' }}
+            >
+              Verify Domain
+            </button>
+          )}
           {Boolean(domain?.pendingCustomDomain) && (
             <button
               type="button"

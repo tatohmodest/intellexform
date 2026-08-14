@@ -1,11 +1,15 @@
 /**
- * Federated education architecture.
+ * Multi-tenant LMS + federated infrastructure architecture.
  *
- * InTelleX is not a centralized database for all schools.
- * It is a federated education network - AWS for Education.
+ * Product vision: Intellex is the LMS platform that creates and powers other LMS
+ * platforms (Shopify for learning). One application + PostgreSQL everywhere +
+ * flexible database tenancy (shared / dedicated / customer-managed).
  *
- * Layer 1 - Core: registry, identity, trust, discovery, verification, AI routing.
- * Layer 2 - Institution: academic records stay with the owning campus.
+ * Layer 1 - Core: registry, identity, trust, discovery, verification, billing,
+ *                 onboarding invitations, tenant resolution, domain routing.
+ * Layer 2 - Organization tenant: each campus owns its LMS data. Default storage
+ *           is shared PostgreSQL with organization_id isolation; enterprise
+ *           tenants may use dedicated or customer-managed PostgreSQL.
  */
 
 export const FEDERATION_LAYERS = {
