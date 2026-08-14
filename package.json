@@ -12,7 +12,8 @@
     "db:reset": "prisma db push --force-reset --accept-data-loss",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "db:nuke-and-seed": "prisma db push --force-reset --accept-data-loss && tsx prisma/seed.ts"
+    "db:nuke-and-seed": "prisma db push --force-reset --accept-data-loss && tsx prisma/seed.ts",
+    "db:fix-federation": "prisma db execute --file prisma/sql/20260814_federation_database_mode.sql --schema prisma/schema.prisma"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",

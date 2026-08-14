@@ -28,6 +28,7 @@ import {
   testTenantDatabaseConnection,
   type SetTenantDatabaseInput,
 } from '@/lib/eduos/tenantDb';
+import { isMissingPrismaColumn } from '@/lib/eduos/prismaErrors';
 import {
   ensureDefaultCatalogPlans,
   listCatalogPlans,
@@ -187,11 +188,21 @@ export async function getPlatformOverview() {
         )
         .catch(() => 0),
     ]),
-    prisma.institutionFederationLink.findMany({
-      take: 20,
-      orderBy: { updatedAt: 'desc' },
-      include: { institution: { select: { name: true, slug: true, status: true } } },
-    }),
+    prisma.institutionFederationLink
+      .findMany({
+        take: 20,
+        orderBy: { updatedAt: 'desc' },
+        include: { institution: { select: { name: true, slug: true, status: true } } },
+      })
+      .catch((err) => {
+        if (isMissingPrismaColumn(err)) {
+          console.warn(
+            '[platform] InstitutionFederationLink schema behind app — run npm run db:fix-federation',
+          );
+          return [];
+        }
+        throw err;
+      }),
     prisma.wallet.aggregate({ _sum: { balance: true }, _count: true }),
     prisma.auditLog.findMany({
       take: 25,
@@ -267,22 +278,46 @@ export async function listInstitutions(opts?: { q?: string; status?: string }) {
     ];
   }
 
-  const rows = await prisma.institution.findMany({
-    where,
-    orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
-    include: {
-      owner: { select: { id: true, email: true, name: true } },
-      federationLink: true,
-      _count: {
-        select: {
-          memberships: true,
-          courses: true,
-          departments: true,
-          withdrawalRequests: true,
+  let rows;
+  try {
+    rows = await prisma.institution.findMany({
+      where,
+      orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+      include: {
+        owner: { select: { id: true, email: true, name: true } },
+        federationLink: true,
+        _count: {
+          select: {
+            memberships: true,
+            courses: true,
+            departments: true,
+            withdrawalRequests: true,
+          },
         },
       },
-    },
-  });
+    });
+  } catch (err) {
+    if (!isMissingPrismaColumn(err)) throw err;
+    console.warn(
+      '[platform] Federation columns missing — listing institutions without federationLink. Run npm run db:fix-federation',
+    );
+    rows = await prisma.institution.findMany({
+      where,
+      orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+      include: {
+        owner: { select: { id: true, email: true, name: true } },
+        _count: {
+          select: {
+            memberships: true,
+            courses: true,
+            departments: true,
+            withdrawalRequests: true,
+          },
+        },
+      },
+    });
+    rows = rows.map((r) => ({ ...r, federationLink: null }));
+  }
 
   return rows.map((r) => ({
     ...r,
@@ -386,71 +421,82 @@ export async function syncMongoInstitutionsIntoPrisma() {
 
 export async function getInstitutionDetail(id: string) {
   await syncMongoInstitutionsIntoPrisma();
-  const inst = await prisma.institution.findUnique({
-    where: { id },
-    include: {
-      owner: { select: { id: true, email: true, name: true, bannedAt: true } },
-      federationLink: true,
-      departments: { orderBy: { name: 'asc' } },
-      memberships: {
-        take: 100,
-        orderBy: { joinedAt: 'desc' },
-        include: {
-          user: {
-            select: {
-              id: true,
-              email: true,
-              name: true,
-              bannedAt: true,
-              banReason: true,
-              globalRole: true,
-            },
+  const includeBase = {
+    owner: { select: { id: true, email: true, name: true, bannedAt: true } },
+    departments: { orderBy: { name: 'asc' as const } },
+    memberships: {
+      take: 100,
+      orderBy: { joinedAt: 'desc' as const },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            bannedAt: true,
+            banReason: true,
+            globalRole: true,
           },
         },
       },
-      courses: {
-        take: 50,
-        orderBy: { updatedAt: 'desc' },
-        select: {
-          id: true,
-          title: true,
-          slug: true,
-          status: true,
-          priceXaf: true,
-          instructorId: true,
-          createdAt: true,
-        },
-      },
-      withdrawalRequests: {
-        take: 30,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          user: { select: { id: true, email: true, name: true } },
-        },
-      },
-      instructorApplications: {
-        take: 20,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          applicant: { select: { id: true, email: true, name: true } },
-        },
-      },
-      auditLogs: {
-        take: 30,
-        orderBy: { createdAt: 'desc' },
-        include: { actor: { select: { email: true, name: true } } },
-      },
-      _count: {
-        select: {
-          memberships: true,
-          courses: true,
-          certificates: true,
-          liveClasses: true,
-          departments: true,
-        },
+    },
+    courses: {
+      take: 50,
+      orderBy: { updatedAt: 'desc' as const },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        status: true,
+        priceXaf: true,
+        instructorId: true,
+        createdAt: true,
       },
     },
-  });
+    withdrawalRequests: {
+      take: 30,
+      orderBy: { createdAt: 'desc' as const },
+      include: {
+        user: { select: { id: true, email: true, name: true } },
+      },
+    },
+    instructorApplications: {
+      take: 20,
+      orderBy: { createdAt: 'desc' as const },
+      include: {
+        applicant: { select: { id: true, email: true, name: true } },
+      },
+    },
+    auditLogs: {
+      take: 30,
+      orderBy: { createdAt: 'desc' as const },
+      include: { actor: { select: { email: true, name: true } } },
+    },
+    _count: {
+      select: {
+        memberships: true,
+        courses: true,
+        certificates: true,
+        liveClasses: true,
+        departments: true,
+      },
+    },
+  };
+
+  let inst;
+  try {
+    inst = await prisma.institution.findUnique({
+      where: { id },
+      include: { ...includeBase, federationLink: true },
+    });
+  } catch (err) {
+    if (!isMissingPrismaColumn(err)) throw err;
+    inst = await prisma.institution.findUnique({
+      where: { id },
+      include: includeBase,
+    });
+    if (inst) (inst as { federationLink?: null }).federationLink = null;
+  }
   if (!inst) return null;
 
   const database = await getTenantDatabaseConfig(inst.id).catch(() => null);
@@ -726,28 +772,35 @@ export async function provisionInstitution(
     },
   });
 
-  await prisma.institutionFederationLink.upsert({
-    where: { institutionId: id },
-    create: {
-      institutionId: id,
-      deploymentModel: inst.deploymentModel,
-      databaseMode: databaseModeFromDeployment(inst.deploymentModel),
-      databaseProvider: 'postgresql',
-      databaseStatus: 'connected',
-      schemaVersion: '1',
-      migrationStatus: 'up_to_date',
-      healthStatus: 'healthy',
-      lastHealthAt: new Date(),
-      activatedAt: new Date(),
-    },
-    update: {
-      deploymentModel: inst.deploymentModel,
-      healthStatus: 'healthy',
-      lastHealthAt: new Date(),
-      activatedAt: new Date(),
-      databaseStatus: 'connected',
-    },
-  });
+  await prisma.institutionFederationLink
+    .upsert({
+      where: { institutionId: id },
+      create: {
+        institutionId: id,
+        deploymentModel: inst.deploymentModel,
+        databaseMode: databaseModeFromDeployment(inst.deploymentModel),
+        databaseProvider: 'postgresql',
+        databaseStatus: 'connected',
+        schemaVersion: '1',
+        migrationStatus: 'up_to_date',
+        healthStatus: 'healthy',
+        lastHealthAt: new Date(),
+        activatedAt: new Date(),
+      },
+      update: {
+        deploymentModel: inst.deploymentModel,
+        healthStatus: 'healthy',
+        lastHealthAt: new Date(),
+        activatedAt: new Date(),
+        databaseStatus: 'connected',
+      },
+    })
+    .catch((err) => {
+      if (!isMissingPrismaColumn(err)) throw err;
+      console.warn(
+        '[platform] Skipping federation link upsert — run npm run db:fix-federation to add databaseMode columns',
+      );
+    });
 
   await prisma.institution.update({
     where: { id },
@@ -1053,21 +1106,31 @@ export async function reviewWithdrawal(
 
 export async function listConnections() {
   const [federation, verifications, audit] = await Promise.all([
-    prisma.institutionFederationLink.findMany({
-      orderBy: { updatedAt: 'desc' },
-      include: {
-        institution: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            status: true,
-            deploymentModel: true,
-            capabilityPack: true,
+    prisma.institutionFederationLink
+      .findMany({
+        orderBy: { updatedAt: 'desc' },
+        include: {
+          institution: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              status: true,
+              deploymentModel: true,
+              capabilityPack: true,
+            },
           },
         },
-      },
-    }),
+      })
+      .catch((err) => {
+        if (isMissingPrismaColumn(err)) {
+          console.warn(
+            '[platform] Federation schema behind app — run npm run db:fix-federation',
+          );
+          return [];
+        }
+        throw err;
+      }),
     prisma.crossInstitutionVerification.findMany({
       take: 40,
       orderBy: { createdAt: 'desc' },

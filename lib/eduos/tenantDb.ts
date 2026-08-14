@@ -49,36 +49,65 @@ function maskValue(value: string | null | undefined): string | null {
 export async function getTenantDatabaseConfig(
   institutionId: string,
 ): Promise<TenantDbHealth | null> {
-  const inst = await prisma.institution.findUnique({
-    where: { id: institutionId },
-    select: {
-      id: true,
-      deploymentModel: true,
-      federationLink: true,
-    },
-  });
-  if (!inst) return null;
+  try {
+    const inst = await prisma.institution.findUnique({
+      where: { id: institutionId },
+      select: {
+        id: true,
+        deploymentModel: true,
+        federationLink: true,
+      },
+    });
+    if (!inst) return null;
 
-  const link = inst.federationLink;
-  const mode = (link?.databaseMode ||
-    databaseModeFromDeployment(inst.deploymentModel)) as TenantDatabaseMode;
+    const link = inst.federationLink;
+    const mode = (link?.databaseMode ||
+      databaseModeFromDeployment(inst.deploymentModel)) as TenantDatabaseMode;
 
-  return {
-    institutionId: inst.id,
-    databaseMode: mode,
-    databaseProvider: link?.databaseProvider || 'postgresql',
-    databaseStatus: link?.databaseStatus || (mode === 'SHARED' ? 'connected' : 'provisioning'),
-    schemaVersion: link?.schemaVersion || '1',
-    migrationStatus: link?.migrationStatus || 'up_to_date',
-    healthStatus: link?.healthStatus || 'unknown',
-    lastHealthAt: link?.lastHealthAt ? link.lastHealthAt.toISOString() : null,
-    lastError: link?.lastError || null,
-    hostMasked: maskValue(link?.databaseHost),
-    databaseNameMasked: maskValue(link?.databaseName),
-    sslRequired: link?.sslRequired ?? true,
-    credentialRefPresent: Boolean(link?.credentialRef),
-    meta: DATABASE_MODE_META[mode],
-  };
+    return {
+      institutionId: inst.id,
+      databaseMode: mode,
+      databaseProvider: link?.databaseProvider || 'postgresql',
+      databaseStatus: link?.databaseStatus || (mode === 'SHARED' ? 'connected' : 'provisioning'),
+      schemaVersion: link?.schemaVersion || '1',
+      migrationStatus: link?.migrationStatus || 'up_to_date',
+      healthStatus: link?.healthStatus || 'unknown',
+      lastHealthAt: link?.lastHealthAt ? link.lastHealthAt.toISOString() : null,
+      lastError: link?.lastError || null,
+      hostMasked: maskValue(link?.databaseHost),
+      databaseNameMasked: maskValue(link?.databaseName),
+      sslRequired: link?.sslRequired ?? true,
+      credentialRefPresent: Boolean(link?.credentialRef),
+      meta: DATABASE_MODE_META[mode],
+    };
+  } catch (err) {
+    const { isMissingPrismaColumn } = await import('./prismaErrors');
+    if (!isMissingPrismaColumn(err)) throw err;
+    // Schema behind app: derive SHARED/DEDICATED from Institution.deploymentModel only.
+    const inst = await prisma.institution.findUnique({
+      where: { id: institutionId },
+      select: { id: true, deploymentModel: true },
+    });
+    if (!inst) return null;
+    const mode = databaseModeFromDeployment(inst.deploymentModel) as TenantDatabaseMode;
+    return {
+      institutionId: inst.id,
+      databaseMode: mode,
+      databaseProvider: 'postgresql',
+      databaseStatus: 'connected',
+      schemaVersion: '1',
+      migrationStatus: 'pending',
+      healthStatus: 'unknown',
+      lastHealthAt: null,
+      lastError:
+        'DB schema missing InstitutionFederationLink.databaseMode — run npm run db:fix-federation',
+      hostMasked: null,
+      databaseNameMasked: null,
+      sslRequired: true,
+      credentialRefPresent: false,
+      meta: DATABASE_MODE_META[mode],
+    };
+  }
 }
 
 /**

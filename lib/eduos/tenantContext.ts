@@ -51,47 +51,88 @@ async function loadOrganization(where: {
   id?: string;
   slug?: string;
 }): Promise<TenantOrganization | null> {
-  const inst = await prisma.institution.findFirst({
-    where: where.id ? { id: where.id } : { slug: where.slug },
-    select: {
-      id: true,
-      slug: true,
-      name: true,
-      primaryColor: true,
-      logoUrl: true,
-      customDomain: true,
-      subdomain: true,
-      domainStatus: true,
-      status: true,
-      capabilityPack: true,
-      enabledModules: true,
-      featuresEnabled: true,
-      isPlatformHome: true,
-      deploymentModel: true,
-      federationLink: { select: { databaseMode: true } },
-    },
-  });
-  if (!inst) return null;
+  try {
+    const inst = await prisma.institution.findFirst({
+      where: where.id ? { id: where.id } : { slug: where.slug },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        primaryColor: true,
+        logoUrl: true,
+        customDomain: true,
+        subdomain: true,
+        domainStatus: true,
+        status: true,
+        capabilityPack: true,
+        enabledModules: true,
+        featuresEnabled: true,
+        isPlatformHome: true,
+        deploymentModel: true,
+        federationLink: { select: { databaseMode: true } },
+      },
+    });
+    if (!inst) return null;
 
-  const databaseMode = (inst.federationLink?.databaseMode ||
-    databaseModeFromDeployment(inst.deploymentModel)) as TenantDatabaseMode;
+    const databaseMode = (inst.federationLink?.databaseMode ||
+      databaseModeFromDeployment(inst.deploymentModel)) as TenantDatabaseMode;
 
-  return {
-    id: inst.id,
-    slug: inst.slug,
-    name: inst.name,
-    primaryColor: inst.primaryColor,
-    logoUrl: inst.logoUrl,
-    customDomain: inst.customDomain,
-    subdomain: inst.subdomain,
-    domainStatus: inst.domainStatus,
-    status: inst.status,
-    capabilityPack: inst.capabilityPack,
-    enabledModules: inst.enabledModules,
-    featuresEnabled: inst.featuresEnabled,
-    isPlatformHome: inst.isPlatformHome,
-    databaseMode,
-  };
+    return {
+      id: inst.id,
+      slug: inst.slug,
+      name: inst.name,
+      primaryColor: inst.primaryColor,
+      logoUrl: inst.logoUrl,
+      customDomain: inst.customDomain,
+      subdomain: inst.subdomain,
+      domainStatus: inst.domainStatus,
+      status: inst.status,
+      capabilityPack: inst.capabilityPack,
+      enabledModules: inst.enabledModules,
+      featuresEnabled: inst.featuresEnabled,
+      isPlatformHome: inst.isPlatformHome,
+      databaseMode,
+    };
+  } catch (err) {
+    const { isMissingPrismaColumn } = await import('./prismaErrors');
+    if (!isMissingPrismaColumn(err)) throw err;
+    const inst = await prisma.institution.findFirst({
+      where: where.id ? { id: where.id } : { slug: where.slug },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        primaryColor: true,
+        logoUrl: true,
+        customDomain: true,
+        subdomain: true,
+        domainStatus: true,
+        status: true,
+        capabilityPack: true,
+        enabledModules: true,
+        featuresEnabled: true,
+        isPlatformHome: true,
+        deploymentModel: true,
+      },
+    });
+    if (!inst) return null;
+    return {
+      id: inst.id,
+      slug: inst.slug,
+      name: inst.name,
+      primaryColor: inst.primaryColor,
+      logoUrl: inst.logoUrl,
+      customDomain: inst.customDomain,
+      subdomain: inst.subdomain,
+      domainStatus: inst.domainStatus,
+      status: inst.status,
+      capabilityPack: inst.capabilityPack,
+      enabledModules: inst.enabledModules,
+      featuresEnabled: inst.featuresEnabled,
+      isPlatformHome: inst.isPlatformHome,
+      databaseMode: databaseModeFromDeployment(inst.deploymentModel) as TenantDatabaseMode,
+    };
+  }
 }
 
 /**
