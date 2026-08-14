@@ -35,16 +35,29 @@ export default async function CoursesPage() {
           courses
         </h1>
         <p className="mt-4 max-w-[420px] text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-          Courses you are enrolled in come first. Suggestions and instructor courses sit below -
+          Courses you are enrolled in come first. Filter by live, self-paced, free, or tutoring —
           swipe sideways on mobile, or tap Show more for the full list.
         </p>
-        <Link
-          href="/dashboard/classroom"
-          className="mt-5 inline-flex text-[13.5px] font-semibold"
-          style={{ color: 'var(--green-deep)' }}
-        >
-          Open My Classroom for live & past classes →
-        </Link>
+        <div className="mt-5 flex flex-wrap gap-2 text-[12.5px] font-semibold">
+          {[
+            { href: '/dashboard/courses', label: 'All' },
+            { href: '/dashboard/classroom', label: 'Live classes' },
+            { href: '/dashboard/courses/browse/suggested-self-paced', label: 'Self-paced' },
+            { href: '/dashboard/courses/browse/suggested-tutoring', label: 'Tutoring / live' },
+            { href: '/dashboard/courses/browse/suggested-free', label: 'Free' },
+            { href: '/dashboard/calendar', label: 'Calendar' },
+            { href: '/dashboard/todos', label: 'To-do' },
+          ].map((chip) => (
+            <Link
+              key={chip.href + chip.label}
+              href={chip.href}
+              className="border px-3 py-1.5"
+              style={{ borderColor: 'var(--line)' }}
+            >
+              {chip.label}
+            </Link>
+          ))}
+        </div>
       </header>
 
       <CoursesBrowser sections={sections} total={total} inProgress={inProgress} />

@@ -5,7 +5,9 @@ import {
   BookOpen,
   Bot,
   CalendarClock,
+  CalendarDays,
   CheckCircle2,
+  CheckSquare,
   Clock,
   Flame,
   GraduationCap,
@@ -22,6 +24,7 @@ import {
   getProgress,
 } from '@/lib/learn/repo';
 import { getCatalog, getCatalogTrack, getNextLesson } from '@/lib/learn/catalog';
+import { getStudentAgenda } from '@/lib/learn/studentAgenda';
 import TrackLogo from '@/components/TrackLogo';
 
 export const dynamic = 'force-dynamic';
@@ -41,11 +44,12 @@ export default async function DashboardOverview() {
   const session = getSessionUser();
   if (!session) redirect('/login?next=/dashboard');
 
-  const [learner, enrollments, progress, bookings] = await Promise.all([
+  const [learner, enrollments, progress, bookings, agenda] = await Promise.all([
     getLearner(session.uid),
     getEnrollments(session.uid),
     getProgress(session.uid),
     getBookings(session.uid),
+    getStudentAgenda(session.uid).catch(() => ({ events: [], todos: [] })),
   ]);
 
   const completedByCourse = new Map<string, Set<string>>();
@@ -134,6 +138,63 @@ export default async function DashboardOverview() {
           </div>
         ))}
       </div>
+
+      {(agenda.todos.length > 0 || agenda.events.length > 0) && (
+        <section className="mb-12 grid gap-6 lg:grid-cols-2">
+          <div className="border p-5" style={{ borderColor: 'var(--line)' }}>
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckSquare size={16} style={{ color: 'var(--green-deep)' }} />
+                <h2 className="font-display text-[20px]">To-do</h2>
+              </div>
+              <Link href="/dashboard/todos" className="text-[12.5px] font-semibold" style={{ color: 'var(--green-deep)' }}>
+                View all
+              </Link>
+            </div>
+            <ul className="space-y-2">
+              {agenda.todos.slice(0, 4).map((t) => (
+                <li key={t.id}>
+                  <Link href={t.href} className="block text-[14px] font-semibold hover:underline">
+                    {t.title}
+                  </Link>
+                  <p className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                    {t.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="border p-5" style={{ borderColor: 'var(--line)' }}>
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CalendarDays size={16} style={{ color: 'var(--green-deep)' }} />
+                <h2 className="font-display text-[20px]">Up next</h2>
+              </div>
+              <Link href="/dashboard/calendar" className="text-[12.5px] font-semibold" style={{ color: 'var(--green-deep)' }}>
+                Calendar
+              </Link>
+            </div>
+            <ul className="space-y-2">
+              {agenda.events.slice(0, 4).map((e) => (
+                <li key={e.id}>
+                  <Link href={e.href} className="block text-[14px] font-semibold hover:underline">
+                    {e.title}
+                  </Link>
+                  <p className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                    {new Date(e.startsAt).toLocaleString()}
+                    {e.meta ? ` · ${e.meta}` : ''}
+                  </p>
+                </li>
+              ))}
+              {agenda.events.length === 0 ? (
+                <li className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+                  No upcoming deadlines or live classes.
+                </li>
+              ) : null}
+            </ul>
+          </div>
+        </section>
+      )}
 
       <section className="mb-12">
         <div className="mb-6 flex items-end justify-between gap-4 border-b pb-4" style={{ borderColor: 'var(--line)' }}>

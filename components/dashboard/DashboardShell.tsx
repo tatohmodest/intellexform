@@ -29,6 +29,8 @@ import {
   Video,
   School,
   Award,
+  CalendarDays,
+  CheckSquare,
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 import MobileBottomNav from '@/components/dashboard/MobileBottomNav';
@@ -55,6 +57,8 @@ const NAV = [
   { href: '/dashboard/courses', label: 'My Courses', icon: BookOpen },
   { href: '/dashboard/my-learning', label: 'My Learning', icon: Sparkles },
   { href: '/dashboard/assignments', label: 'Assignments', icon: ClipboardList },
+  { href: '/dashboard/calendar', label: 'Calendar', icon: CalendarDays },
+  { href: '/dashboard/todos', label: 'To-do', icon: CheckSquare },
   { href: '/dashboard/classroom', label: 'My Classroom', icon: School },
   { href: '/dashboard/mentorship', label: 'Mentorship', icon: Users },
   { href: '/dashboard/library', label: 'Library', icon: BookMarked },

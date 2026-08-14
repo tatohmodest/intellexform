@@ -36,6 +36,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     patch.priceXAF = Math.min(Math.round(body.priceXAF), 1_000_000);
   }
   if (typeof body.published === 'boolean') patch.published = body.published;
+  if (typeof body.downloadUrl === 'string') {
+    const url = body.downloadUrl.trim();
+    if (!url) patch.downloadUrl = null;
+    else if (/^https?:\/\//i.test(url)) patch.downloadUrl = url.slice(0, 2000);
+  } else if (body.downloadUrl === null) {
+    patch.downloadUrl = null;
+  }
   if (Array.isArray(body.chapters)) {
     patch.chapters = body.chapters
       .filter((c: { title?: unknown; content?: unknown }) => typeof c?.title === 'string')

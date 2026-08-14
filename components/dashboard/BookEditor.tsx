@@ -28,6 +28,7 @@ export default function BookEditor({ book }: { book: BookView }) {
   const [category, setCategory] = useState(book.category);
   const [coverColor, setCoverColor] = useState(book.coverColor);
   const [priceXAF, setPriceXAF] = useState(book.priceXAF);
+  const [downloadUrl, setDownloadUrl] = useState(book.downloadUrl || '');
   const [chapters, setChapters] = useState(book.chapters);
   const [published, setPublished] = useState(book.published);
   const [activeChapter, setActiveChapter] = useState(0);
@@ -49,6 +50,7 @@ export default function BookEditor({ book }: { book: BookView }) {
           coverColor,
           coverEmoji: (title || 'B').charAt(0).toUpperCase(),
           priceXAF,
+          downloadUrl: downloadUrl.trim() || null,
           chapters,
           published: nextPublished ?? published,
         }),
@@ -156,6 +158,20 @@ export default function BookEditor({ book }: { book: BookView }) {
                 onChange={(e) => setPriceXAF(Number(e.target.value))}
               />
             </div>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-[13px] font-semibold">
+              Download / Google Drive URL (optional)
+            </label>
+            <input
+              className="form-input"
+              placeholder="https://drive.google.com/file/d/…"
+              value={downloadUrl}
+              onChange={(e) => setDownloadUrl(e.target.value)}
+            />
+            <p className="mt-1 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+              If set, students see Read now + Download instead of empty chapters.
+            </p>
           </div>
         </div>
       </div>

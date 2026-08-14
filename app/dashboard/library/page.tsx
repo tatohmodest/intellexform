@@ -265,7 +265,10 @@ export default async function LibraryPage() {
                         <div className="line-clamp-2 text-[14.5px] font-semibold leading-snug">{b.title}</div>
                       </Link>
                       <div className="mt-0.5 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-                        by {b.authorName} · {b.chapters.length} chapters
+                        by {b.authorName}
+                        {b.downloadUrl
+                          ? ' · File / Drive'
+                          : ` · ${b.chapters.length} chapter${b.chapters.length === 1 ? '' : 's'}`}
                       </div>
                       <p className="mt-1.5 line-clamp-2 text-[12.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
                         {b.subtitle || b.description}
@@ -283,6 +286,7 @@ export default async function LibraryPage() {
                           priceXAF={b.priceXAF}
                           owned={owned}
                           isMember={isMember}
+                          downloadUrl={b.downloadUrl}
                           compact
                         />
                       </div>

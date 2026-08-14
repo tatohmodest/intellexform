@@ -850,7 +850,13 @@ export type BookView = Omit<BookDoc, '_id'> & { id: string };
 
 function toBookView(d: Record<string, unknown>): BookView {
   const { _id, ...rest } = d as unknown as BookDoc & { _id: ObjectId };
-  return { ...(rest as Omit<BookDoc, '_id'>), id: _id.toString() };
+  const chapters = Array.isArray(rest.chapters) ? rest.chapters : [];
+  return {
+    ...(rest as Omit<BookDoc, '_id'>),
+    id: _id.toString(),
+    downloadUrl: (rest.downloadUrl as string | null | undefined) || null,
+    chapters,
+  };
 }
 
 export async function listPublishedBooks(): Promise<BookView[]> {

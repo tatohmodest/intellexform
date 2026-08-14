@@ -163,12 +163,38 @@ export default function CampusCapabilityView({
       )}
 
       {active === 'calendar' && (
-        <CapabilityPanel
-          icon={Calendar}
-          title="Calendar"
-          accent={accent}
-          body={`Core calendar for ${institutionName} - exams, deadlines, and campus dates. Live session blocks appear when Live Teaching is enabled.`}
-        />
+        <section className="space-y-4">
+          <div className="flex items-center gap-2.5">
+            <Calendar size={17} style={{ color: accent }} />
+            <h2 className="font-display text-[21px]">Campus calendar</h2>
+          </div>
+          <p className="text-[14px]" style={{ color: 'var(--ink-soft)' }}>
+            Deadlines, live classes, and class holdings for your learning work at {institutionName}.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/dashboard/calendar"
+              className="px-4 py-2.5 text-[13px] font-semibold text-white"
+              style={{ background: accent }}
+            >
+              Open my calendar
+            </Link>
+            <Link
+              href="/dashboard/todos"
+              className="border px-4 py-2.5 text-[13px] font-semibold"
+              style={{ borderColor: 'var(--line)' }}
+            >
+              To-do list
+            </Link>
+            <Link
+              href="/dashboard/assignments"
+              className="border px-4 py-2.5 text-[13px] font-semibold"
+              style={{ borderColor: 'var(--line)' }}
+            >
+              Assignments
+            </Link>
+          </div>
+        </section>
       )}
 
       {active === 'events' && (
@@ -181,12 +207,34 @@ export default function CampusCapabilityView({
       )}
 
       {active === 'live' && (
-        <CapabilityPanel
-          icon={Radio}
-          title="Live classes"
-          accent={accent}
-          body="Live Teaching capability: video classes, attendance, whiteboard, and session recordings - only visible because this campus unlocked it."
-        />
+        <section className="space-y-4">
+          <div className="flex items-center gap-2.5">
+            <Radio size={17} style={{ color: accent }} />
+            <h2 className="font-display text-[21px]">Live classes</h2>
+          </div>
+          <p className="text-[14px]" style={{ color: 'var(--ink-soft)' }}>
+            Join ongoing sessions, review past class holdings, and manage live teaching from My
+            Classroom.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/dashboard/classroom"
+              className="px-4 py-2.5 text-[13px] font-semibold text-white"
+              style={{ background: accent }}
+            >
+              Open My Classroom
+            </Link>
+            {isStaff ? (
+              <Link
+                href="/dashboard/teach/courses"
+                className="border px-4 py-2.5 text-[13px] font-semibold"
+                style={{ borderColor: 'var(--line)' }}
+              >
+                Teaching studio
+              </Link>
+            ) : null}
+          </div>
+        </section>
       )}
 
       {active === 'assignments' && (
@@ -198,11 +246,16 @@ export default function CampusCapabilityView({
           icon={Library}
           title="Digital library"
           accent={accent}
-          body="PDFs, slides, past questions, and notes. Creators set visibility: private to campus, partner network, or public on InTelleX."
+          body="Books, Drive files, slides, and class notes. Free titles open with Read now or Download."
           cta={
-            <Link href="/dashboard/library" className="text-[13px] font-semibold" style={{ color: accent }}>
-              Open personal library →
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/dashboard/library" className="text-[13px] font-semibold" style={{ color: accent }}>
+                Open library →
+              </Link>
+              <Link href="/dashboard/notes" className="text-[13px] font-semibold" style={{ color: accent }}>
+                Class notes →
+              </Link>
+            </div>
           }
         />
       )}
