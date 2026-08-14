@@ -10,3 +10,4 @@ export * from './tenantContext';
 export * from './domainDns';
 export * from './subscriptionCatalog';
 export * from './featureFlags';
+export * from './secretsDb';

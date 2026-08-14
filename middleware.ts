@@ -30,11 +30,12 @@ export function middleware(req: NextRequest) {
     requestHeaders.set('x-campus-host', host);
   }
 
-  // Custom domain landing → campus gateway (resolves Host → institution).
-  // Never run this for intellex.loopingbinary.com - that is the main app.
+  // Custom domain public paths → campus gateway (resolves Host → institution site).
   if (
     customHost &&
     (pathname === '/' ||
+      pathname === '/courses' ||
+      pathname === '/about' ||
       pathname === '/dashboard' ||
       pathname === '/dashboard/institutions')
   ) {
@@ -46,7 +47,7 @@ export function middleware(req: NextRequest) {
   }
 
   // Platform marketing home is for guests only.
-  if (pathname === '/' && hasSession) {
+  if (pathname === '/' && hasSession && !customHost) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
@@ -64,10 +65,12 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Keep SEO files completely outside middleware (GSC "Couldn't fetch" safeguard).
   matcher: [
     '/',
+    '/courses',
+    '/about',
     '/dashboard/:path*',
     '/campus-gateway',
+    '/site/:path*',
   ],
 };

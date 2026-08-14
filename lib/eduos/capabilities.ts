@@ -277,6 +277,11 @@ export function campusNavItems(opts: {
       href: `${base}?tab=students`,
     });
     items.push({
+      id: 'instructors',
+      label: 'Instructors',
+      href: `${base}?tab=instructors`,
+    });
+    items.push({
       id: 'analytics',
       label: 'Analytics',
       href: `${base}?tab=analytics`,

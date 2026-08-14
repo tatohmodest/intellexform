@@ -88,7 +88,22 @@ Capabilities live in `lib/eduos/permissions.ts`.
 | Join private campus | Invite / domain / enrollment code |
 | Transfer ownership | Dual + platform approval |
 
-## Pricing
+## Phase 4 — Organization LMS (current)
+
+Preferred tenant data plane for people/courses/enrollments is **Prisma** via `lib/orgLms` and `/api/org/[slug]/*`.
+
+| Surface | Path |
+|---------|------|
+| Members / instructors | `/api/org/[slug]/members` |
+| Courses / enrollments | `/api/org/[slug]/courses` |
+| Learning tree | `/api/org/[slug]/learning` |
+| Summary | `/api/org/[slug]/summary` |
+| Campus UI | Students / Instructors / Courses tabs |
+| Public website | `/site/[slug]` (custom domains → guests) |
+| Dedicated DB secrets | `lib/eduos/secretsDb.ts` (`env:` / `intellex-secret:` / `TENANT_DB_URLS`) |
+
+Mongo `teacher_courses` / campus docs remain for legacy teach studio during migration.
+
 
 Subscription prices live in `CatalogPlan` (seeded). Student resource membership defaults to **1,999 XAF / month** — editable from Platform Admin, not hard-coded in checkout long-term (`lib/eduos/subscriptionCatalog.ts`, client fallback in `lib/learn/certPricing.ts`).
 

@@ -84,8 +84,7 @@ export async function getTenantDatabaseConfig(
 /**
  * Resolve which Prisma client to use for tenant data.
  * Shared tenants always use the platform client.
- * Dedicated / customer-managed currently fall back to platform client until
- * secondary pools are wired through secrets management.
+ * Dedicated / customer-managed resolve via credentialRef → secrets/env map.
  */
 export async function getTenantPrisma(institutionId: string): Promise<{
   client: PrismaClient;
@@ -99,14 +98,25 @@ export async function getTenantPrisma(institutionId: string): Promise<{
     return { client: prisma, databaseMode: mode, usingPlatformPool: true };
   }
 
-  // Dedicated / customer-managed: connection via credentialRef will be resolved
-  // by infrastructure. Until secondary pools exist, use platform pool with
-  // organization_id isolation still enforced at the application layer.
-  if (config?.credentialRefPresent) {
-    // Placeholder for secrets-manager lookup + pooled PrismaClient cache.
-    // Never log or return the resolved connection string.
+  // Load credentialRef from federation link (not exposed on health DTO).
+  const link = await prisma.institutionFederationLink.findUnique({
+    where: { institutionId },
+    select: { credentialRef: true },
+  });
+
+  if (link?.credentialRef) {
+    try {
+      const { getOrCreateTenantPrismaClient } = await import('./secretsDb');
+      const dedicated = await getOrCreateTenantPrismaClient(institutionId, link.credentialRef);
+      if (dedicated) {
+        return { client: dedicated, databaseMode: mode, usingPlatformPool: false };
+      }
+    } catch (err) {
+      console.error('tenant dedicated pool resolve failed:', err);
+    }
   }
 
+  // Fallback: platform pool with organization_id isolation still enforced in queries.
   return { client: prisma, databaseMode: mode, usingPlatformPool: true };
 }
 
@@ -223,23 +233,41 @@ export async function testTenantDatabaseConnection(
         message:
           config.databaseMode === 'SHARED'
             ? 'Shared PostgreSQL connection healthy'
-            : 'Strategy recorded; secondary pool not yet provisioned — platform pool healthy',
+            : 'Strategy recorded; secondary pool secret not resolved — platform pool healthy',
         checkedAt: new Date().toISOString(),
       };
     }
 
-    // Customer/dedicated with secret ref: infrastructure will resolve the pool.
+    const link = await prisma.institutionFederationLink.findUnique({
+      where: { institutionId },
+      select: { credentialRef: true },
+    });
+    const { getOrCreateTenantPrismaClient } = await import('./secretsDb');
+    const dedicated = link?.credentialRef
+      ? await getOrCreateTenantPrismaClient(institutionId, link.credentialRef)
+      : null;
+
+    if (!dedicated) {
+      return {
+        ok: false,
+        message: 'credentialRef present but secret could not be resolved from env/vault map',
+        checkedAt: new Date().toISOString(),
+      };
+    }
+
+    await dedicated.$queryRaw`SELECT 1`;
     await prisma.institutionFederationLink.updateMany({
       where: { institutionId },
       data: {
         healthStatus: 'healthy',
         lastHealthAt: new Date(),
+        databaseStatus: 'connected',
         lastError: null,
       },
     });
     return {
       ok: true,
-      message: 'Secret reference present; dedicated pool health delegated to infrastructure',
+      message: 'Dedicated PostgreSQL pool healthy',
       checkedAt: new Date().toISOString(),
     };
   } catch (err) {

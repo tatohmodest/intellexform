@@ -24,6 +24,8 @@ import { AnnouncementComposer } from '@/components/dashboard/CampusActions';
 import MarkdownLite from '@/components/dashboard/MarkdownLite';
 import CampusCoursesPanel from '@/components/dashboard/CampusCoursesPanel';
 import CampusAssessmentsPanel from '@/components/dashboard/CampusAssessmentsPanel';
+import CampusPeoplePanel from '@/components/dashboard/CampusPeoplePanel';
+import CampusOrgCoursesPanel from '@/components/dashboard/CampusOrgCoursesPanel';
 
 type Post = {
   id: string;
@@ -141,12 +143,23 @@ export default function CampusCapabilityView({
       )}
 
       {active === 'courses' && (
-        <CampusCoursesPanel
-          slug={slug}
-          accent={accent}
-          isStaff={isStaff}
-          digitalLearning={digitalLearning}
-        />
+        <div className="space-y-10">
+          <CampusOrgCoursesPanel slug={slug} accent={accent} isStaff={isStaff} />
+          <CampusCoursesPanel
+            slug={slug}
+            accent={accent}
+            isStaff={isStaff}
+            digitalLearning={digitalLearning}
+          />
+        </div>
+      )}
+
+      {active === 'students' && (
+        <CampusPeoplePanel slug={slug} accent={accent} mode="students" />
+      )}
+
+      {active === 'instructors' && (
+        <CampusPeoplePanel slug={slug} accent={accent} mode="instructors" />
       )}
 
       {active === 'calendar' && (
@@ -255,15 +268,6 @@ export default function CampusCapabilityView({
           title="Marketplace"
           accent={accent}
           body="Publish courses, books, and workshops publicly on InTelleX while showing this institution as the origin."
-        />
-      )}
-
-      {active === 'students' && (
-        <CapabilityPanel
-          icon={Users}
-          title="Students"
-          accent={accent}
-          body="Core student management for instructors and admins on this campus."
         />
       )}
 

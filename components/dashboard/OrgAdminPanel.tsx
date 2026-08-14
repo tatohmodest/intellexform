@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { FEATURE_FLAG_CATALOG } from '@/lib/eduos/featureFlags';
 import { getModuleMeta, type ModuleId } from '@/lib/eduos/capabilities';
@@ -27,12 +28,47 @@ export default function OrgAdminPanel({
     : [];
   const studentRegistration = String(settings.studentRegistration || enrollmentPolicy);
   const instructorMode = String(settings.instructorMode || 'admin_create');
+  const [summary, setSummary] = useState<{
+    students: number;
+    instructors: number;
+    courses: number;
+    enrollments: number;
+    published: number;
+  } | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/org/${encodeURIComponent(slug)}/summary`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.summary) setSummary(d.summary);
+      })
+      .catch(() => {});
+  }, [slug]);
 
   return (
     <div className="space-y-8">
+      {summary ? (
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {[
+            ['Students', summary.students],
+            ['Instructors', summary.instructors],
+            ['Courses', summary.courses],
+            ['Published', summary.published],
+            ['Enrollments', summary.enrollments],
+          ].map(([label, value]) => (
+            <div key={String(label)} className="border p-3" style={{ borderColor: 'var(--line)' }}>
+              <p className="text-[11px] uppercase tracking-wide" style={{ color: 'var(--ink-soft)' }}>
+                {label}
+              </p>
+              <p className="font-display text-2xl font-bold">{value}</p>
+            </div>
+          ))}
+        </section>
+      ) : null}
+
       <section className="border p-5" style={{ borderColor: 'var(--line)' }}>
         <h2 className="font-display text-[20px]">Overview</h2>
-        <dl className="mt-4 grid gap-3 sm:grid-cols-2 text-[14px]">
+        <dl className="mt-4 grid gap-3 text-[14px] sm:grid-cols-2">
           <div>
             <dt style={{ color: 'var(--ink-soft)' }}>Platform</dt>
             <dd className="font-semibold">{platformName}</dd>
@@ -66,6 +102,20 @@ export default function OrgAdminPanel({
             Manage students
           </Link>
           <Link
+            href={`/dashboard/institutions/${slug}?tab=instructors`}
+            className="border px-3 py-2 text-[13px] font-semibold"
+            style={{ borderColor: 'var(--line)' }}
+          >
+            Manage instructors
+          </Link>
+          <Link
+            href={`/site/${slug}`}
+            className="border px-3 py-2 text-[13px] font-semibold"
+            style={{ borderColor: 'var(--line)' }}
+          >
+            Public website
+          </Link>
+          <Link
             href={`/dashboard/teach`}
             className="border px-3 py-2 text-[13px] font-semibold"
             style={{ borderColor: 'var(--line)' }}
@@ -87,13 +137,13 @@ export default function OrgAdminPanel({
               <div
                 key={f.id}
                 className="border px-3 py-2 text-[13px]"
-                style={{
-                  borderColor: 'var(--line)',
-                  opacity: on ? 1 : 0.45,
-                }}
+                style={{ borderColor: 'var(--line)', opacity: on ? 1 : 0.45 }}
               >
                 <span className="font-semibold">{f.label}</span>
-                <span className="ml-2 text-[11px] font-mono uppercase" style={{ color: 'var(--ink-soft)' }}>
+                <span
+                  className="ml-2 font-mono text-[11px] uppercase"
+                  style={{ color: 'var(--ink-soft)' }}
+                >
                   {on ? 'on' : 'off'}
                 </span>
                 <p className="mt-0.5 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
@@ -118,15 +168,6 @@ export default function OrgAdminPanel({
             ))
           )}
         </ul>
-      </section>
-
-      <section className="border p-5" style={{ borderColor: 'var(--line)' }}>
-        <h2 className="font-display text-[20px]">Empty states guide</h2>
-        <p className="mt-2 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-          No courses yet? Create your first course in Course Studio. No instructors? Invite staff or
-          search verified Intellex mentors from the students/instructors campus tabs after your plan
-          unlocks those tools.
-        </p>
       </section>
     </div>
   );
