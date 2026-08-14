@@ -19,6 +19,8 @@ export interface TeacherLesson {
   durationMinutes?: number | null;
   /** Free sample lesson visible before enrolling / paying. */
   preview?: boolean;
+  /** Optional VTT captions URL for HTML5 playback. */
+  captionsUrl?: string | null;
 }
 
 /** How the course is taught. */

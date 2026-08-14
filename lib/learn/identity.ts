@@ -34,6 +34,12 @@ export interface Affiliation {
   faculty?: string | null;
   program?: string | null;
   year?: string | null;
+  /** Soft cohort label when campus enables programs. */
+  cohort?: string | null;
+  /** Soft transcript fields (campus may sync later). */
+  gpa?: number | null;
+  creditsEarned?: number | null;
+  creditsRequired?: number | null;
   emergencyContact?: string | null;
   photoUrl?: string | null;
   /** Campus-required profile extras finished after first verify. */

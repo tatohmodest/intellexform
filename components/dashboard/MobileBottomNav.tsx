@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -7,7 +8,12 @@ import {
   Building2,
   ClipboardList,
   LayoutDashboard,
+  Menu,
+  MessageSquare,
+  Briefcase,
+  GraduationCap,
   Settings,
+  X,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -32,7 +38,8 @@ const TABS: Tab[] = [
     match: (p) =>
       p.startsWith('/dashboard/my-learning') ||
       p.startsWith('/dashboard/courses') ||
-      p.startsWith('/dashboard/classroom'),
+      p.startsWith('/dashboard/classroom') ||
+      p.startsWith('/dashboard/drive-player'),
   },
   {
     href: '/dashboard/assignments',
@@ -41,7 +48,8 @@ const TABS: Tab[] = [
     match: (p) =>
       p.startsWith('/dashboard/assignments') ||
       p.startsWith('/dashboard/calendar') ||
-      p.startsWith('/dashboard/todos'),
+      p.startsWith('/dashboard/todos') ||
+      p.startsWith('/dashboard/academic'),
   },
   {
     href: '/dashboard/institutions',
@@ -49,58 +57,136 @@ const TABS: Tab[] = [
     icon: Building2,
     match: (p) => p.startsWith('/dashboard/institutions'),
   },
-  {
-    href: '/dashboard/settings',
-    label: 'You',
-    icon: Settings,
-    match: (p) => p.startsWith('/dashboard/settings'),
-  },
+];
+
+const MORE_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: '/dashboard/messages', label: 'Messages', icon: MessageSquare },
+  { href: '/dashboard/academic', label: 'Academic', icon: GraduationCap },
+  { href: '/dashboard/portfolio', label: 'Portfolio', icon: Briefcase },
+  { href: '/dashboard/teach', label: 'Teaching', icon: BookOpen },
+  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
 /** Fixed bottom tab bar - mobile / tablet only. */
-export default function MobileBottomNav({ accent = '#00b369' }: { accent?: string }) {
+export default function MobileBottomNav({
+  accent = '#00b369',
+  isMentor = false,
+}: {
+  accent?: string;
+  isMentor?: boolean;
+}) {
   const pathname = usePathname();
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  const moreActive = MORE_LINKS.some((l) => pathname.startsWith(l.href));
+  const links = MORE_LINKS.filter((l) => (l.href === '/dashboard/teach' ? isMentor : true));
 
   return (
-    <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t lg:hidden"
-      style={{
-        borderColor: 'var(--line)',
-        background: 'rgba(255,255,255,0.97)',
-        backdropFilter: 'blur(10px)',
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-      }}
-      aria-label="Primary mobile"
-    >
-      <ul className="mx-auto flex max-w-lg items-stretch justify-between px-1 pt-1.5 pb-1.5">
-        {TABS.map((tab) => {
-          const active = tab.match ? tab.match(pathname) : pathname.startsWith(tab.href);
-          const Icon = tab.icon;
-          return (
-            <li key={tab.href} className="min-w-0 flex-1">
-              <Link
-                href={tab.href}
-                className="flex flex-col items-center gap-0.5 px-1 py-1.5 text-center"
-                style={{ color: active ? accent : 'var(--ink-soft)' }}
-                aria-current={active ? 'page' : undefined}
+    <>
+      {moreOpen ? (
+        <div
+          className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+          onClick={() => setMoreOpen(false)}
+          aria-hidden
+        />
+      ) : null}
+      {moreOpen ? (
+        <div
+          className="fixed inset-x-0 bottom-[4.25rem] z-50 mx-auto max-w-lg border p-3 lg:hidden"
+          style={{
+            borderColor: 'var(--line)',
+            background: 'var(--paper, #fff)',
+            marginBottom: 'env(safe-area-inset-bottom, 0px)',
+          }}
+        >
+          <div className="mb-2 flex items-center justify-between">
+            <p className="font-display text-[16px]">More</p>
+            <button type="button" onClick={() => setMoreOpen(false)} aria-label="Close">
+              <X size={18} />
+            </button>
+          </div>
+          <ul className="grid grid-cols-2 gap-2">
+            {links.map((l) => {
+              const Icon = l.icon;
+              const active = pathname.startsWith(l.href);
+              return (
+                <li key={l.href}>
+                  <Link
+                    href={l.href}
+                    onClick={() => setMoreOpen(false)}
+                    className="flex items-center gap-2 border px-3 py-3 text-[13px] font-semibold"
+                    style={{
+                      borderColor: active ? accent : 'var(--line)',
+                      color: active ? accent : 'var(--ink)',
+                    }}
+                  >
+                    <Icon size={16} />
+                    {l.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
+
+      <nav
+        className="fixed inset-x-0 bottom-0 z-40 border-t lg:hidden"
+        style={{
+          borderColor: 'var(--line)',
+          background: 'rgba(255,255,255,0.97)',
+          backdropFilter: 'blur(10px)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
+        aria-label="Primary mobile"
+      >
+        <ul className="mx-auto flex max-w-lg items-stretch justify-between px-1 pt-1.5 pb-1.5">
+          {TABS.map((tab) => {
+            const active = tab.match ? tab.match(pathname) : pathname.startsWith(tab.href);
+            const Icon = tab.icon;
+            return (
+              <li key={tab.href} className="min-w-0 flex-1">
+                <Link
+                  href={tab.href}
+                  className="flex flex-col items-center gap-0.5 px-1 py-1.5 text-center"
+                  style={{ color: active ? accent : 'var(--ink-soft)' }}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  <span
+                    className="flex h-8 w-8 items-center justify-center rounded-xl"
+                    style={active ? { background: `${accent}1a` } : undefined}
+                  >
+                    <Icon size={20} strokeWidth={active ? 2.25 : 1.75} />
+                  </span>
+                  <span
+                    className="max-w-full truncate text-[10px] font-semibold leading-tight"
+                    style={{ fontWeight: active ? 700 : 500 }}
+                  >
+                    {tab.label}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+          <li className="min-w-0 flex-1">
+            <button
+              type="button"
+              onClick={() => setMoreOpen((o) => !o)}
+              className="flex w-full flex-col items-center gap-0.5 px-1 py-1.5 text-center"
+              style={{ color: moreOpen || moreActive ? accent : 'var(--ink-soft)' }}
+              aria-expanded={moreOpen}
+            >
+              <span
+                className="flex h-8 w-8 items-center justify-center rounded-xl"
+                style={moreOpen || moreActive ? { background: `${accent}1a` } : undefined}
               >
-                <span
-                  className="flex h-8 w-8 items-center justify-center rounded-xl"
-                  style={active ? { background: `${accent}1a` } : undefined}
-                >
-                  <Icon size={20} strokeWidth={active ? 2.25 : 1.75} />
-                </span>
-                <span
-                  className="max-w-full truncate text-[10px] font-semibold leading-tight"
-                  style={{ fontWeight: active ? 700 : 500 }}
-                >
-                  {tab.label}
-                </span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+                <Menu size={20} strokeWidth={moreOpen || moreActive ? 2.25 : 1.75} />
+              </span>
+              <span className="max-w-full truncate text-[10px] font-semibold leading-tight">More</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </>
   );
 }

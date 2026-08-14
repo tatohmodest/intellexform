@@ -5,12 +5,16 @@ import GoogleDriveCoursePlayer, { type DriveLessonItem } from '@/components/dash
 import LessonStudyNotes from '@/components/dashboard/LessonStudyNotes';
 import LessonDiscussion from '@/components/dashboard/LessonDiscussion';
 import LessonAiAssist from '@/components/dashboard/LessonAiAssist';
+import LessonQuizPanel from '@/components/dashboard/LessonQuizPanel';
+import VideoWithCaptions from '@/components/dashboard/VideoWithCaptions';
 
 type ProgressRow = {
   lessonSlug: string;
   completedAt?: string | Date | null;
   lastPositionSec?: number;
 };
+
+type LessonItem = DriveLessonItem & { captionsUrl?: string | null };
 
 export default function DriveCoursePlayerClient({
   courseSlug,
@@ -21,15 +25,20 @@ export default function DriveCoursePlayerClient({
 }: {
   courseSlug: string;
   courseTitle: string;
-  lessons: DriveLessonItem[];
+  lessons: LessonItem[];
   googleDriveFolderUrl?: string | null;
   trackColor?: string;
 }) {
   const [items, setItems] = useState(lessons);
   const [activeLessonKey, setActiveLessonKey] = useState(String(lessons[0]?.id ?? lessons[0]?.slug ?? '0'));
-  const [tab, setTab] = useState<'notes' | 'resources' | 'discussion' | 'ai'>('notes');
+  const [tab, setTab] = useState<'quiz' | 'notes' | 'resources' | 'discussion' | 'ai'>('quiz');
   const [positions, setPositions] = useState<Record<string, number>>({});
+  const [quizPassed, setQuizPassed] = useState(false);
   const lastSaved = useRef(0);
+
+  useEffect(() => {
+    setQuizPassed(false);
+  }, [activeLessonKey]);
 
   useEffect(() => {
     fetch(`/api/learn/progress?courseSlug=${encodeURIComponent(courseSlug)}`)
@@ -64,6 +73,10 @@ export default function DriveCoursePlayerClient({
   }, [courseSlug, lessons]);
 
   async function markDone(lessonId: string | number) {
+    if (!quizPassed) {
+      setTab('quiz');
+      return;
+    }
     const lesson = items.find((l) => String(l.id) === String(lessonId));
     const lessonSlug = String(lesson?.slug || lessonId);
     await fetch('/api/learn/progress', {
@@ -103,6 +116,13 @@ export default function DriveCoursePlayerClient({
     items.findIndex((l) => String(l.slug || l.id) === activeLessonKey),
   );
   const activeLesson = items.find((l) => String(l.slug || l.id) === activeLessonKey) || items[0];
+  const nativeUrl =
+    activeLesson?.videoUrl &&
+    !String(activeLesson.videoUrl).includes('drive.google') &&
+    !String(activeLesson.videoUrl).includes('youtube') &&
+    !String(activeLesson.videoUrl).includes('youtu.be')
+      ? String(activeLesson.videoUrl)
+      : null;
 
   return (
     <div className="space-y-6">
@@ -116,28 +136,32 @@ export default function DriveCoursePlayerClient({
         onActiveChange={(lesson) => setActiveLessonKey(String(lesson.slug || lesson.id))}
       />
 
-      {activeLesson?.videoUrl && !String(activeLesson.videoUrl).includes('drive.google') ? (
-        <NativeVideoResume
-          key={activeLessonKey}
-          src={String(activeLesson.videoUrl)}
-          startAt={positions[activeLessonKey] || 0}
-          onProgress={(sec) => void savePosition(activeLessonKey, sec)}
-        />
+      {nativeUrl ? (
+        <div className="aspect-video overflow-hidden bg-black">
+          <VideoWithCaptions
+            key={activeLessonKey}
+            src={nativeUrl}
+            captionsUrl={activeLesson?.captionsUrl}
+            startAt={positions[activeLessonKey] || 0}
+            onProgress={(sec) => void savePosition(activeLessonKey, sec)}
+          />
+        </div>
       ) : positions[activeLessonKey] ? (
         <p className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
           Last study position saved at {Math.floor(positions[activeLessonKey] / 60)}m{' '}
-          {positions[activeLessonKey] % 60}s (Drive embeds resume at the lesson level).
+          {positions[activeLessonKey] % 60}s (Drive embeds resume at the lesson level; captions
+          require an HTML5 or VTT-capable source).
         </p>
       ) : null}
 
       <div className="border p-4" style={{ borderColor: 'var(--line)' }}>
-        <div className="mb-3 flex flex-wrap gap-2">
-          {(['notes', 'resources', 'discussion', 'ai'] as const).map((t) => (
+        <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+          {(['quiz', 'notes', 'resources', 'discussion', 'ai'] as const).map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => setTab(t)}
-              className="border px-3 py-1.5 text-[12.5px] font-semibold capitalize"
+              className="shrink-0 border px-3 py-1.5 text-[12.5px] font-semibold capitalize"
               style={{
                 borderColor: tab === t ? 'var(--ink)' : 'var(--line)',
                 background: tab === t ? 'var(--ink)' : 'transparent',
@@ -148,6 +172,15 @@ export default function DriveCoursePlayerClient({
             </button>
           ))}
         </div>
+        {tab === 'quiz' && activeLesson ? (
+          <LessonQuizPanel
+            courseKey={courseSlug}
+            lessonKey={activeLessonKey}
+            lessonTitle={activeLesson.title}
+            accent={trackColor}
+            onPassed={() => setQuizPassed(true)}
+          />
+        ) : null}
         {tab === 'notes' ? (
           <LessonStudyNotes
             courseKey={courseSlug}
@@ -182,38 +215,5 @@ export default function DriveCoursePlayerClient({
         ) : null}
       </div>
     </div>
-  );
-}
-
-function NativeVideoResume({
-  src,
-  startAt,
-  onProgress,
-}: {
-  src: string;
-  startAt: number;
-  onProgress: (sec: number) => void;
-}) {
-  const ref = useRef<HTMLVideoElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || !startAt) return;
-    const onMeta = () => {
-      if (startAt > 0 && startAt < (el.duration || Infinity)) {
-        el.currentTime = startAt;
-      }
-    };
-    el.addEventListener('loadedmetadata', onMeta);
-    return () => el.removeEventListener('loadedmetadata', onMeta);
-  }, [startAt]);
-
-  return (
-    <video
-      ref={ref}
-      src={src}
-      controls
-      className="aspect-video w-full bg-black"
-      onTimeUpdate={(e) => onProgress(Math.floor(e.currentTarget.currentTime))}
-    />
   );
 }

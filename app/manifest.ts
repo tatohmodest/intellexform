@@ -7,10 +7,10 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: 'InTelleX',
     description:
       'Learn at your pace - self-paced courses, live mentors, and an AI tutor. Built in Cameroon.',
-    start_url: '/',
+    start_url: '/dashboard',
     scope: '/',
     display: 'standalone',
-    orientation: 'portrait-primary',
+    orientation: 'any',
     background_color: '#FFFFFF',
     theme_color: '#FFFFFF',
     lang: 'en',

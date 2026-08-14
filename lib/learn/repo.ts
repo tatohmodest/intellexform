@@ -53,6 +53,10 @@ export interface LearnerDoc {
     goals?: string[];
     portfolioPublic?: boolean;
     portfolioSlug?: string;
+    academicGpa?: number | null;
+    academicCreditsEarned?: number | null;
+    academicCreditsRequired?: number | null;
+    academicCohort?: string;
   };
   /** Latest instructor badge label after mentor approval. */
   instructorBadge?: string | null;

@@ -25,6 +25,10 @@ export async function POST(req: NextRequest) {
       notifySocial?: boolean;
       notifyInstitution?: boolean;
       notifySystem?: boolean;
+      academicGpa?: number | null;
+      academicCreditsEarned?: number | null;
+      academicCreditsRequired?: number | null;
+      academicCohort?: string;
     };
   } = {};
 
@@ -74,6 +78,24 @@ export async function POST(req: NextRequest) {
     }
     if (typeof p.notifySystem === 'boolean') {
       patch.preferences.notifySystem = p.notifySystem;
+    }
+    if (p.academicGpa === null) patch.preferences.academicGpa = null;
+    else if (typeof p.academicGpa === 'number' && Number.isFinite(p.academicGpa)) {
+      patch.preferences.academicGpa = Math.max(0, Math.min(5, p.academicGpa));
+    }
+    if (p.academicCreditsEarned === null) patch.preferences.academicCreditsEarned = null;
+    else if (typeof p.academicCreditsEarned === 'number' && Number.isFinite(p.academicCreditsEarned)) {
+      patch.preferences.academicCreditsEarned = Math.max(0, p.academicCreditsEarned);
+    }
+    if (p.academicCreditsRequired === null) patch.preferences.academicCreditsRequired = null;
+    else if (
+      typeof p.academicCreditsRequired === 'number' &&
+      Number.isFinite(p.academicCreditsRequired)
+    ) {
+      patch.preferences.academicCreditsRequired = Math.max(0, p.academicCreditsRequired);
+    }
+    if (typeof p.academicCohort === 'string') {
+      patch.preferences.academicCohort = p.academicCohort.slice(0, 80);
     }
   }
 

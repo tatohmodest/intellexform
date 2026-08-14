@@ -20,6 +20,7 @@ import CloudinaryDocViewer from '@/components/dashboard/CloudinaryDocViewer';
 import { formatCountdown, toDatetimeLocalValue } from '@/lib/learn/countdown';
 import { uploadMentorAsset } from '@/lib/learn/mentorUpload';
 import MarkdownLite from '@/components/dashboard/MarkdownLite';
+import ContentVersionHistory from '@/components/dashboard/ContentVersionHistory';
 
 type CourseOption = { id: string; title: string };
 type StudentOption = { id: string; name: string; email: string | null; courseTitle: string };
@@ -427,6 +428,12 @@ export default function AssessmentStudio({
                 </button>
               </div>
             </div>
+
+            {draft.id ? (
+              <div className="mb-5">
+                <ContentVersionHistory entityType="assessment" entityId={draft.id} accent={accent} />
+              </div>
+            ) : null}
 
             {!draft.published && (
               <div

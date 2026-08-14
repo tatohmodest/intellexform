@@ -6,6 +6,8 @@ import { ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react';
 import LessonStudyNotes from '@/components/dashboard/LessonStudyNotes';
 import LessonDiscussion from '@/components/dashboard/LessonDiscussion';
 import LessonAiAssist from '@/components/dashboard/LessonAiAssist';
+import LessonQuizPanel from '@/components/dashboard/LessonQuizPanel';
+import VideoWithCaptions from '@/components/dashboard/VideoWithCaptions';
 
 type Lesson = {
   id: string;
@@ -14,6 +16,7 @@ type Lesson = {
   contentType: string;
   contentMarkdown?: string | null;
   videoUrl?: string | null;
+  captionsUrl?: string | null;
   durationSeconds?: number;
 };
 
@@ -47,8 +50,9 @@ export default function OrgCoursePlayer({
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [rail, setRail] = useState<'notes' | 'resources' | 'discussion' | 'ai'>('notes');
+  const [rail, setRail] = useState<'notes' | 'resources' | 'discussion' | 'ai' | 'quiz'>('notes');
   const [resumeSec, setResumeSec] = useState(0);
+  const [quizPassed, setQuizPassed] = useState(false);
   const lastPosSave = useRef(0);
   const courseKey = `org:${slug}:${courseId}`;
 
@@ -89,6 +93,10 @@ export default function OrgCoursePlayer({
     }
     return null;
   }, [course, activeLessonId]);
+
+  useEffect(() => {
+    setQuizPassed(false);
+  }, [activeLessonId]);
 
   useEffect(() => {
     if (!activeLesson) return;
@@ -265,9 +273,10 @@ export default function OrgCoursePlayer({
                       allowFullScreen
                     />
                   ) : (
-                    <OrgResumeVideo
+                    <VideoWithCaptions
                       key={activeLesson.id}
                       src={activeLesson.videoUrl}
+                      captionsUrl={activeLesson.captionsUrl}
                       startAt={resumeSec}
                       onProgress={saveVideoPosition}
                     />
@@ -288,27 +297,31 @@ export default function OrgCoursePlayer({
                 </p>
               ) : null}
 
-              <div className="mt-8">
+              <div className="sticky bottom-24 z-10 mt-8 lg:static lg:bottom-auto">
                 <button
                   type="button"
-                  disabled={busy || progress[activeLesson.id]}
+                  disabled={busy || progress[activeLesson.id] || !quizPassed}
                   onClick={markComplete}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold text-white disabled:opacity-60"
+                  className="inline-flex w-full items-center justify-center gap-2 px-4 py-3 text-[13px] font-semibold text-white disabled:opacity-60 sm:w-auto"
                   style={{ background: accent }}
                 >
                   {busy ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-                  {progress[activeLesson.id] ? 'Completed' : 'Mark complete'}
+                  {progress[activeLesson.id]
+                    ? 'Completed'
+                    : quizPassed
+                      ? 'Mark complete'
+                      : 'Pass quiz to complete'}
                 </button>
               </div>
 
               <div className="mt-8 border-t pt-5" style={{ borderColor: 'var(--line)' }}>
-                <div className="mb-3 flex flex-wrap gap-2">
-                  {(['notes', 'resources', 'discussion', 'ai'] as const).map((t) => (
+                <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+                  {(['quiz', 'notes', 'resources', 'discussion', 'ai'] as const).map((t) => (
                     <button
                       key={t}
                       type="button"
                       onClick={() => setRail(t)}
-                      className="border px-3 py-1.5 text-[12px] font-semibold capitalize"
+                      className="shrink-0 border px-3 py-1.5 text-[12px] font-semibold capitalize"
                       style={{
                         borderColor: rail === t ? accent : 'var(--line)',
                         color: rail === t ? accent : 'var(--ink-soft)',
@@ -318,6 +331,15 @@ export default function OrgCoursePlayer({
                     </button>
                   ))}
                 </div>
+                {rail === 'quiz' ? (
+                  <LessonQuizPanel
+                    courseKey={courseKey}
+                    lessonKey={activeLesson.id}
+                    lessonTitle={activeLesson.title}
+                    accent={accent}
+                    onPassed={() => setQuizPassed(true)}
+                  />
+                ) : null}
                 {rail === 'notes' ? (
                   <LessonStudyNotes
                     courseKey={courseKey}
@@ -354,35 +376,5 @@ export default function OrgCoursePlayer({
         </section>
       </div>
     </div>
-  );
-}
-
-function OrgResumeVideo({
-  src,
-  startAt,
-  onProgress,
-}: {
-  src: string;
-  startAt: number;
-  onProgress: (sec: number) => void;
-}) {
-  const ref = useRef<HTMLVideoElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const onMeta = () => {
-      if (startAt > 0 && startAt < (el.duration || Infinity)) el.currentTime = startAt;
-    };
-    el.addEventListener('loadedmetadata', onMeta);
-    return () => el.removeEventListener('loadedmetadata', onMeta);
-  }, [startAt]);
-  return (
-    <video
-      ref={ref}
-      src={src}
-      controls
-      className="h-full w-full"
-      onTimeUpdate={(e) => onProgress(e.currentTarget.currentTime)}
-    />
   );
 }

@@ -21,62 +21,38 @@ Every major screen answers: **What can the user do next?**
 ## Shipped
 
 ### Slice 1 — Today command center
-
-| Surface | Path | Behavior |
-|---------|------|----------|
-| Student Today command center | `/dashboard` | Greeting, focus count, Attention required, Today timeline with actions, Continue learning, weekly progress, assignment snapshot, recommended |
-| Assignment center | `/dashboard/assignments` | Buckets: due today / overdue / this week / upcoming / submitted / graded |
-| My Learning | `/dashboard/my-learning` | Currently / upcoming / completed / recommended |
-| Academic calendar | `/dashboard/calendar` | Day / week / month views |
-| Tasks | `/dashboard/todos` | Academic todos + personal CRUD tasks (`/api/learn/tasks`) |
-| Teaching home | `/dashboard/teach` | Instructor Today + Attention required + Needs grading |
-| Navigation | `DashboardShell` | Grouped: Home → Learn → Academic → Community → Career → Personal (+ Teaching) |
-
 ### Slice 2 — Player, messaging, career, grading
-
-| Surface | Path | Behavior |
-|---------|------|----------|
-| Drive course player | `/dashboard/drive-player/[slug]` | Mark complete → progress API, resume incomplete lesson, study notes + resources rail |
-| Org course player | learn player | Notes / resources / discussion rail |
-| Lesson study notes | `/api/learn/lesson-notes` | Per-lesson personal notes |
-| Messages inbox | `/dashboard/messages` | 1:1 threads, send/receive, notification on new message |
-| Message student | My Students / Monitoring | Starts thread with course context |
-| Portfolio | `/dashboard/portfolio` | Skills, in-progress, certificates from learning activity |
-| Opportunities | `/dashboard/opportunities` | Career opportunities board |
-| Grading center | `/dashboard/teach/grading` | Queue of assignments needing grades |
-| Student monitoring | `/dashboard/teach/monitoring` | Inactive / at-risk signals + contact |
-
 ### Slice 3 — Notifications, discussions, career polish, player/AI, grading & early-warning
 
+See prior tables in git history for full Slice 1–3 surface maps.
+
+### Slice 4 — Player excellence, academic overview, versioning, mobile
+
 | Surface | Path | Behavior |
 |---------|------|----------|
-| Categorized notifications | `/dashboard/notifications` | Filters: academic / social / institution / system; mute categories in Settings |
-| Study groups | `/dashboard/study-groups` | Create/join groups |
-| Lesson discussions | player rail | Upvote, pin (instructors), official answers |
-| Skills & goals editor | `/dashboard/portfolio` | Editable bio/skills/goals + public share toggle |
-| Public portfolio | `/p/[slug]` | Shareable career profile |
-| Certificate verify | `/verify/cert/[id]` | Validate completion certificates |
-| Video timestamp resume | progress API `positionSec` | HTML5 players seek to last position; notes link timestamp |
-| Rapid grade | `/dashboard/teach/grading` | Keyboard queue (j/k/Enter) + studio Enter-to-save |
-| Early-warning | monitoring | High/medium/low: inactivity, missing assignments, low progress |
-| In-course AI | player AI tab | Context-aware tutor for current lesson |
+| Captions | HTML5 players | Optional VTT `captionsUrl` on lessons; Course Studio field |
+| In-lesson quizzes | player Quiz tab | Checkpoint quiz; gates Mark complete until passed |
+| Academic overview | `/dashboard/academic` | Program/cohort/GPA/credits + journey links + soft prefs |
+| Content versioning | Course / Assessment studios | Snapshot on publish; restore as draft |
+| Mobile More sheet | `MobileBottomNav` | Messages, Academic, Portfolio, Teaching, Settings |
+| PWA | `manifest.ts` | `start_url: /dashboard`, flexible orientation |
 
-Data engines: `commandCenter.ts`, `messaging.ts`, `lessonNotes.ts`, `portfolio.ts`, `studentMonitoring.ts`, `discussions.ts`, `notifications.ts`.
+Data engines added: `lessonQuizzes.ts`, `academicOverview.ts`, `contentRevisions.ts`.
 
-## Roadmap (next slices)
+## Roadmap (later)
 
-1. Course player excellence — captions, in-lesson quizzes, Drive seek when API allows
+1. ~~Course player excellence — captions, in-lesson quizzes~~ (Drive iframe seek still limited)
 2. ~~Inbox / messaging~~
 3. ~~Notifications categories~~
 4. ~~Study groups & course discussions~~
-5. Academic overview & journey — program/cohort/GPA/credits when org enables
+5. ~~Academic overview & journey~~ (official transcript sync when campus enables)
 6. ~~Skills profile & goals~~
-7. ~~Career / opportunities / portfolio~~ (+ public share / verify)
+7. ~~Career / opportunities / portfolio~~
 8. ~~Grading center UX / rapid-grade~~
 9. ~~Student monitoring & early warning~~
 10. ~~AI assistant in-course~~
-11. Content builder + versioning — professional authoring
-12. Mobile-native flows — not compressed desktop
+11. ~~Content builder + versioning~~ (Prisma org course revisions next)
+12. ~~Mobile-native flows~~ (deeper offline / teach mobile later)
 
 ## Feature flags
 

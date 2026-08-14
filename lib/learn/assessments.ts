@@ -426,6 +426,23 @@ export async function updateAssessment(
   );
   if (patch.published === true && existing && !existing.published) {
     await awardXp(authorId, XP.PUBLISH_ASSESSMENT).catch(() => {});
+    try {
+      const { recordContentRevision } = await import('@/lib/learn/contentRevisions');
+      const fresh = await db.collection('assessments').findOne({ _id: oid });
+      if (fresh) {
+        const { _id, ...snap } = fresh as Record<string, unknown> & { _id: unknown };
+        await recordContentRevision({
+          entityType: 'assessment',
+          entityId: id,
+          snapshot: snap,
+          authorId,
+          authorName: String(fresh.authorName || 'Instructor'),
+          label: 'Published',
+        });
+      }
+    } catch {
+      /* non-blocking */
+    }
   }
 }
 

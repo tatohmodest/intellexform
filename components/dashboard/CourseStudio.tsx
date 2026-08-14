@@ -28,6 +28,7 @@ import type {
   TeacherLesson,
 } from '@/lib/learn/courseTypes';
 import { isDirectVideo, toEmbedUrl } from '@/lib/learn/videoEmbed';
+import ContentVersionHistory from '@/components/dashboard/ContentVersionHistory';
 import { uploadMediaAsset } from '@/lib/learn/mentorUpload';
 import CourseRoster from '@/components/dashboard/CourseRoster';
 
@@ -408,6 +409,12 @@ export default function CourseStudio({
                 </button>
               </div>
             </div>
+
+            {draft.id ? (
+              <div className="mt-4">
+                <ContentVersionHistory entityType="teacher_course" entityId={draft.id} accent={accent} />
+              </div>
+            ) : null}
 
             <div className="flex flex-wrap gap-4 border-b" style={{ borderColor: 'var(--line)' }}>
               {(
@@ -1042,6 +1049,17 @@ export default function CourseStudio({
                             Free preview lesson
                           </label>
                         </div>
+                        <label className="mb-1 block font-mono text-[10px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
+                          Captions VTT URL (HTML5 players)
+                        </label>
+                        <input
+                          className="form-input !rounded-none mb-3 text-[13px]"
+                          placeholder="https://…/captions.vtt"
+                          value={lesson.captionsUrl || ''}
+                          onChange={(e) =>
+                            updateLesson(i, { captionsUrl: e.target.value.trim() || null })
+                          }
+                        />
                         <textarea
                           className="form-input !rounded-none mb-3 text-[13px]"
                           rows={2}

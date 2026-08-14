@@ -1332,6 +1332,23 @@ export async function updateTeacherCourse(
   });
   if (patch.published === true && existing && !existing.published) {
     await awardXp(editorId, XP.PUBLISH_COURSE).catch(() => {});
+    try {
+      const { recordContentRevision } = await import('@/lib/learn/contentRevisions');
+      const fresh = await db.collection('teacher_courses').findOne({ _id: oid });
+      if (fresh) {
+        const { _id, ...snap } = fresh as Record<string, unknown> & { _id: unknown };
+        await recordContentRevision({
+          entityType: 'teacher_course',
+          entityId: id,
+          snapshot: snap,
+          authorId: editorId,
+          authorName: String(fresh.authorName || fresh.instructorName || 'Instructor'),
+          label: 'Published',
+        });
+      }
+    } catch {
+      /* non-blocking */
+    }
   }
 }
 

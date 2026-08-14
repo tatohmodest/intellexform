@@ -79,6 +79,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Academic',
     items: [
+      { href: '/dashboard/academic', label: 'Overview', icon: GraduationCap },
       { href: '/dashboard/calendar', label: 'Calendar', icon: CalendarDays },
       { href: '/dashboard/assignments', label: 'Assignments', icon: ClipboardList },
       { href: '/dashboard/todos', label: 'Tasks', icon: CheckSquare },
@@ -801,7 +802,7 @@ export default function DashboardShell({
         <OngoingClassBanner accent={accent} />
         {children}
       </main>
-      <MobileBottomNav accent={accent} />
+      <MobileBottomNav accent={accent} isMentor={Boolean(user.roles?.includes('mentor'))} />
     </div>
   );
 }
