@@ -52,24 +52,56 @@ export interface ShellUser {
   onboardingComplete?: boolean;
 }
 
-const NAV = [
-  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, exact: true },
-  { href: '/dashboard/courses', label: 'My Courses', icon: BookOpen },
-  { href: '/dashboard/my-learning', label: 'My Learning', icon: Sparkles },
-  { href: '/dashboard/assignments', label: 'Assignments', icon: ClipboardList },
-  { href: '/dashboard/calendar', label: 'Calendar', icon: CalendarDays },
-  { href: '/dashboard/todos', label: 'To-do', icon: CheckSquare },
-  { href: '/dashboard/classroom', label: 'My Classroom', icon: School },
-  { href: '/dashboard/mentorship', label: 'Mentorship', icon: Users },
-  { href: '/dashboard/library', label: 'Library', icon: BookMarked },
-  { href: '/dashboard/notes', label: 'Notes', icon: FileText },
-  { href: '/dashboard/videos', label: 'Video Hall', icon: Youtube },
-  { href: '/dashboard/tutor', label: 'InTelleX AI', icon: Bot },
-  { href: '/dashboard/institutions', label: 'Institutions', icon: Building2 },
-  { href: '/dashboard/achievements', label: 'Achievements', icon: Trophy },
-  { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
-  { href: '/dashboard/subscription', label: 'Subscription', icon: Award },
-  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
+type NavItem = {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  exact?: boolean;
+};
+
+type NavGroup = { label: string; items: NavItem[] };
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    label: 'Home',
+    items: [{ href: '/dashboard', label: 'Today', icon: LayoutDashboard, exact: true }],
+  },
+  {
+    label: 'Learn',
+    items: [
+      { href: '/dashboard/my-learning', label: 'My Learning', icon: Sparkles },
+      { href: '/dashboard/courses', label: 'My Courses', icon: BookOpen },
+      { href: '/dashboard/library', label: 'Library', icon: BookMarked },
+      { href: '/dashboard/classroom', label: 'Classroom', icon: School },
+    ],
+  },
+  {
+    label: 'Academic',
+    items: [
+      { href: '/dashboard/calendar', label: 'Calendar', icon: CalendarDays },
+      { href: '/dashboard/assignments', label: 'Assignments', icon: ClipboardList },
+      { href: '/dashboard/todos', label: 'Tasks', icon: CheckSquare },
+      { href: '/dashboard/achievements', label: 'Progress', icon: Trophy },
+    ],
+  },
+  {
+    label: 'Community',
+    items: [
+      { href: '/dashboard/mentorship', label: 'Mentorship', icon: Users },
+      { href: '/dashboard/notes', label: 'Notes', icon: FileText },
+      { href: '/dashboard/institutions', label: 'Institutions', icon: Building2 },
+    ],
+  },
+  {
+    label: 'Personal',
+    items: [
+      { href: '/dashboard/tutor', label: 'AI Tutor', icon: Bot },
+      { href: '/dashboard/videos', label: 'Video Hall', icon: Youtube },
+      { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
+      { href: '/dashboard/subscription', label: 'Subscription', icon: Award },
+      { href: '/dashboard/settings', label: 'Settings', icon: Settings },
+    ],
+  },
 ];
 
 function initials(name: string): string {
@@ -170,48 +202,63 @@ function NavLinks({
 
   return (
     <nav className="flex flex-col gap-1">
-      {NAV.map((item) => {
-        const active = item.exact
-          ? pathname === item.href
-          : item.href === '/dashboard/mentorship'
-            ? pathname.startsWith('/dashboard/mentorship')
-            : pathname.startsWith(item.href) &&
-              !(item.href === '/dashboard/courses' && mentorActive);
-        const Icon = item.icon;
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNavigate}
-            className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
-            style={
-              active
-                ? { background: activeBg, color: activeColor }
-                : { color: 'var(--ink-soft)' }
-            }
-          >
-            <Icon size={17} strokeWidth={active ? 2.4 : 2} />
-            {item.label}
-          </Link>
-        );
-      })}
+      {NAV_GROUPS.map((group) => (
+        <div key={group.label} className={group.label === 'Home' ? '' : 'mt-3'}>
+          {group.label !== 'Home' ? (
+            <div
+              className="mono mb-1.5 px-3.5 text-[10px] uppercase tracking-[0.16em]"
+              style={{ color: 'var(--ink-soft)' }}
+            >
+              {group.label}
+            </div>
+          ) : null}
+          {group.items.map((item) => {
+            const active = item.exact
+              ? pathname === item.href
+              : item.href === '/dashboard/mentorship'
+                ? pathname.startsWith('/dashboard/mentorship')
+                : pathname.startsWith(item.href) &&
+                  !(item.href === '/dashboard/courses' && mentorActive);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onNavigate}
+                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
+                style={
+                  active
+                    ? { background: activeBg, color: activeColor }
+                    : { color: 'var(--ink-soft)' }
+                }
+              >
+                <Icon size={17} strokeWidth={active ? 2.4 : 2} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      ))}
 
       <div className="mt-4 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
         <div className="mono mb-1.5 px-3.5 text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
           {isMentor ? 'Teaching' : 'Teach'}
         </div>
         <Link
-          href="/dashboard/mentor"
+          href={isMentor ? '/dashboard/teach' : '/dashboard/mentor'}
           onClick={onNavigate}
           className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
           style={
-            mentorActive
+            mentorActive || pathname.startsWith('/dashboard/teach')
               ? { background: 'rgba(74,144,226,0.12)', color: 'var(--blue-ink)' }
               : { color: 'var(--ink-soft)' }
           }
         >
-          <GraduationCap size={17} strokeWidth={mentorActive ? 2.4 : 2} />
-          {isMentor ? 'Mentor Studio' : 'Apply to mentor'}
+          <GraduationCap
+            size={17}
+            strokeWidth={mentorActive || pathname.startsWith('/dashboard/teach') ? 2.4 : 2}
+          />
+          {isMentor ? 'Teaching home' : 'Apply to mentor'}
         </Link>
         {isMentor && (
           <>
@@ -229,7 +276,7 @@ function NavLinks({
                 size={17}
                 strokeWidth={pathname.startsWith('/dashboard/teach/courses') ? 2.4 : 2}
               />
-              Course Studio
+              Course studio
             </Link>
             <Link
               href="/dashboard/students"

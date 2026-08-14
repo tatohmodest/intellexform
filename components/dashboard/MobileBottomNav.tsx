@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   BookOpen,
-  Bot,
   Building2,
+  ClipboardList,
   LayoutDashboard,
   Settings,
   type LucideIcon,
@@ -21,21 +21,27 @@ type Tab = {
 const TABS: Tab[] = [
   {
     href: '/dashboard',
-    label: 'Home',
+    label: 'Today',
     icon: LayoutDashboard,
     match: (p) => p === '/dashboard',
   },
   {
-    href: '/dashboard/courses',
-    label: 'Courses',
+    href: '/dashboard/my-learning',
+    label: 'Learn',
     icon: BookOpen,
-    match: (p) => p.startsWith('/dashboard/courses'),
+    match: (p) =>
+      p.startsWith('/dashboard/my-learning') ||
+      p.startsWith('/dashboard/courses') ||
+      p.startsWith('/dashboard/classroom'),
   },
   {
-    href: '/dashboard/tutor',
-    label: 'InTelleX AI',
-    icon: Bot,
-    match: (p) => p.startsWith('/dashboard/tutor'),
+    href: '/dashboard/assignments',
+    label: 'Work',
+    icon: ClipboardList,
+    match: (p) =>
+      p.startsWith('/dashboard/assignments') ||
+      p.startsWith('/dashboard/calendar') ||
+      p.startsWith('/dashboard/todos'),
   },
   {
     href: '/dashboard/institutions',

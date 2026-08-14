@@ -4,28 +4,15 @@ import {
   ArrowRight,
   BookOpen,
   Bot,
-  CalendarClock,
-  CalendarDays,
-  CheckCircle2,
   CheckSquare,
-  Clock,
+  ClipboardList,
   Flame,
-  GraduationCap,
-  PlayCircle,
-  Plus,
-  Video,
+  Sparkles,
+  Trophy,
   Zap,
 } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
-import {
-  getBookings,
-  getEnrollments,
-  getLearner,
-  getProgress,
-} from '@/lib/learn/repo';
-import { getCatalog, getCatalogTrack, getNextLesson } from '@/lib/learn/catalog';
-import { getStudentAgenda } from '@/lib/learn/studentAgenda';
-import TrackLogo from '@/components/TrackLogo';
+import { getStudentCommandCenter } from '@/lib/learn/commandCenter';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +21,7 @@ function firstName(name: string): string {
 }
 
 function greeting(): string {
-  const h = new Date().getUTCHours() + 1; // WAT
+  const h = new Date().getUTCHours() + 1;
   if (h < 12) return 'Good morning';
   if (h < 18) return 'Good afternoon';
   return 'Good evening';
@@ -44,228 +31,127 @@ export default async function DashboardOverview() {
   const session = getSessionUser();
   if (!session) redirect('/login?next=/dashboard');
 
-  const [learner, enrollments, progress, bookings, agenda] = await Promise.all([
-    getLearner(session.uid),
-    getEnrollments(session.uid),
-    getProgress(session.uid),
-    getBookings(session.uid),
-    getStudentAgenda(session.uid).catch(() => ({ events: [], todos: [] })),
-  ]);
-
-  const completedByCourse = new Map<string, Set<string>>();
-  let minutesLearned = 0;
-  for (const p of progress) {
-    if (!completedByCourse.has(p.courseSlug)) completedByCourse.set(p.courseSlug, new Set());
-    completedByCourse.get(p.courseSlug)!.add(p.lessonSlug);
-    minutesLearned += p.minutes || 0;
-  }
-
-  const continueCards = enrollments
-    .map((e) => {
-      const track = getCatalogTrack(e.courseSlug);
-      if (!track) return null;
-      const done = completedByCourse.get(e.courseSlug) ?? new Set<string>();
-      const next = getNextLesson(e.courseSlug, done);
-      const pct = track.totalLessons
-        ? Math.round((done.size / track.totalLessons) * 100)
-        : 0;
-      return { track, next, pct, done: done.size };
-    })
-    .filter((c): c is NonNullable<typeof c> => c !== null)
-    .slice(0, 3);
-
-  const enrolledSlugs = new Set(enrollments.map((e) => e.courseSlug));
-  const recommended = getCatalog()
-    .filter((t) => !enrolledSlugs.has(t.slug))
-    .slice(0, 4);
-
-  const upcoming = bookings
-    .filter((b) => b.status === 'upcoming' && new Date(b.scheduledAt).getTime() > Date.now() - 60 * 60 * 1000)
-    .slice(0, 3);
-
-  const lessonsDone = progress.length;
-  const hoursLearned = Math.round((minutesLearned / 60) * 10) / 10;
-  const streak = learner?.streakCount ?? 0;
-  const xp = learner?.xp ?? 0;
-
-  const stats = [
-    { icon: Flame, label: 'Day streak', value: String(streak), color: '#c2570a' },
-    { icon: Zap, label: 'Total XP', value: xp.toLocaleString(), color: 'var(--green-deep)' },
-    { icon: CheckCircle2, label: 'Lessons completed', value: String(lessonsDone), color: 'var(--blue-ink)' },
-    { icon: Clock, label: 'Hours learned', value: String(hoursLearned), color: 'var(--ink)' },
-  ];
-
-  const affiliations = learner?.affiliations ?? [];
+  const cc = await getStudentCommandCenter(session.uid);
+  const name = firstName(cc.learner?.name ?? session.name);
 
   return (
     <div className="mx-auto max-w-[1080px] overflow-x-hidden">
-      <header className="mb-10 border-b pb-8" style={{ borderColor: 'var(--line)' }}>
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <div className="max-w-[540px]">
-            <p className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: 'var(--ink-soft)' }}>
-              Learning HQ
-            </p>
-            <h1 className="mt-2 font-display text-[32px] leading-[0.95] tracking-tight sm:text-[40px]">
-              {greeting()}, {firstName(learner?.name ?? session.name)}.
-            </h1>
-            <p className="mt-3 text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              {streak > 0
-                ? `You're on a ${streak}-day streak - keep the fire alive.`
-                : 'Complete one lesson today to start a new streak.'}
-              {affiliations.length
-                ? ` Affiliated with ${affiliations.map((a) => a.institutionName).join(', ')}.`
-                : ' One identity - switch campuses from the context menu.'}
-            </p>
-          </div>
-          <Link
-            href="/dashboard/tutor"
-            className="inline-flex shrink-0 items-center justify-center gap-2 px-5 py-3 text-[13.5px] font-semibold text-white"
-            style={{ background: 'var(--ink)' }}
-          >
-            <Bot size={16} /> Ask the AI Tutor
+      <header className="mb-8 border-b pb-8" style={{ borderColor: 'var(--line)' }}>
+        <p className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: 'var(--ink-soft)' }}>
+          Today
+        </p>
+        <h1 className="mt-2 font-display text-[34px] leading-[0.95] tracking-tight sm:text-[44px]">
+          {greeting()}, {name}.
+        </h1>
+        <p className="mt-3 text-[16px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+          {cc.focusCount > 0 ? (
+            <>
+              You have <span style={{ color: 'var(--ink)', fontWeight: 600 }}>{cc.focusCount} things</span> to
+              focus on today.
+            </>
+          ) : (
+            <>You&apos;re clear for now — keep the streak alive with a short lesson.</>
+          )}
+        </p>
+        <div className="mt-5 flex flex-wrap gap-2 text-[12.5px] font-semibold">
+          <Link href="/dashboard/calendar" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
+            Calendar
+          </Link>
+          <Link href="/dashboard/assignments" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
+            Assignments
+          </Link>
+          <Link href="/dashboard/my-learning" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
+            My Learning
+          </Link>
+          <Link href="/dashboard/tutor" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
+            AI Tutor
           </Link>
         </div>
       </header>
 
-      <div className="mb-12 grid grid-cols-2 gap-px lg:grid-cols-4" style={{ background: 'var(--line)' }}>
-        {stats.map((s) => (
-          <div key={s.label} className="bg-[var(--paper)] p-5 sm:p-6">
-            <s.icon size={16} style={{ color: s.color }} />
-            <div className="mt-3 font-display text-[28px] leading-none">{s.value}</div>
-            <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
-              {s.label}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {(agenda.todos.length > 0 || agenda.events.length > 0) && (
-        <section className="mb-12 grid gap-6 lg:grid-cols-2">
-          <div className="border p-5" style={{ borderColor: 'var(--line)' }}>
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckSquare size={16} style={{ color: 'var(--green-deep)' }} />
-                <h2 className="font-display text-[20px]">To-do</h2>
-              </div>
-              <Link href="/dashboard/todos" className="text-[12.5px] font-semibold" style={{ color: 'var(--green-deep)' }}>
-                View all
-              </Link>
-            </div>
-            <ul className="space-y-2">
-              {agenda.todos.slice(0, 4).map((t) => (
-                <li key={t.id}>
-                  <Link href={t.href} className="block text-[14px] font-semibold hover:underline">
-                    {t.title}
-                  </Link>
-                  <p className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-                    {t.detail}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="border p-5" style={{ borderColor: 'var(--line)' }}>
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CalendarDays size={16} style={{ color: 'var(--green-deep)' }} />
-                <h2 className="font-display text-[20px]">Up next</h2>
-              </div>
-              <Link href="/dashboard/calendar" className="text-[12.5px] font-semibold" style={{ color: 'var(--green-deep)' }}>
-                Calendar
-              </Link>
-            </div>
-            <ul className="space-y-2">
-              {agenda.events.slice(0, 4).map((e) => (
-                <li key={e.id}>
-                  <Link href={e.href} className="block text-[14px] font-semibold hover:underline">
-                    {e.title}
-                  </Link>
-                  <p className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-                    {new Date(e.startsAt).toLocaleString()}
-                    {e.meta ? ` · ${e.meta}` : ''}
-                  </p>
-                </li>
-              ))}
-              {agenda.events.length === 0 ? (
-                <li className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                  No upcoming deadlines or live classes.
-                </li>
-              ) : null}
-            </ul>
-          </div>
+      {cc.attention.length > 0 ? (
+        <section className="mb-10">
+          <h2 className="mb-3 font-display text-[20px]">Attention required</h2>
+          <ul className="space-y-2">
+            {cc.attention.map((a) => (
+              <li key={a.id}>
+                <Link
+                  href={a.href}
+                  className="flex items-start justify-between gap-4 border p-4"
+                  style={{
+                    borderColor:
+                      a.severity === 'high'
+                        ? 'rgba(185,28,28,0.35)'
+                        : 'var(--line)',
+                    background:
+                      a.severity === 'high' ? 'rgba(185,28,28,0.04)' : 'transparent',
+                  }}
+                >
+                  <div>
+                    <p className="font-semibold">{a.title}</p>
+                    <p className="mt-0.5 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+                      {a.detail}
+                    </p>
+                  </div>
+                  <ArrowRight size={16} className="mt-1 shrink-0" style={{ color: 'var(--ink-soft)' }} />
+                </Link>
+              </li>
+            ))}
+          </ul>
         </section>
-      )}
+      ) : null}
 
-      <section className="mb-12">
-        <div className="mb-6 flex items-end justify-between gap-4 border-b pb-4" style={{ borderColor: 'var(--line)' }}>
-          <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
-              In progress
-            </p>
-            <h2 className="font-display text-[24px]">Continue learning</h2>
-          </div>
-          <Link
-            href="/dashboard/courses"
-            className="flex items-center gap-1 text-[13.5px] font-semibold"
-            style={{ color: 'var(--green-deep)' }}
-          >
-            All courses <ArrowRight size={14} />
+      <section className="mb-10">
+        <div className="mb-4 flex items-end justify-between gap-3">
+          <h2 className="font-display text-[22px]">Today</h2>
+          <Link href="/dashboard/calendar" className="text-[13px] font-semibold" style={{ color: 'var(--green-deep)' }}>
+            Full calendar →
           </Link>
         </div>
-
-        {continueCards.length === 0 ? (
-          <div className="border border-dashed px-6 py-12 text-center" style={{ borderColor: 'var(--line)' }}>
-            <GraduationCap size={26} className="mx-auto mb-4" style={{ color: 'var(--green-deep)' }} />
-            <h3 className="font-display text-[19px]">Your journey starts here</h3>
-            <p className="mx-auto mt-1 max-w-sm text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-              Enroll in a self-paced track - hands-on lessons are waiting.
+        {cc.today.length === 0 ? (
+          <div className="border border-dashed p-8 text-center" style={{ borderColor: 'var(--line)' }}>
+            <p className="font-display text-[18px]">No timed items today</p>
+            <p className="mt-1 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
+              Continue a course or set a personal task.
             </p>
-            <Link
-              href="/dashboard/courses"
-              className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 text-[13.5px] font-semibold text-white"
-              style={{ background: 'var(--green)' }}
-            >
-              <Plus size={16} /> Browse courses
-            </Link>
+            <div className="mt-4 flex flex-wrap justify-center gap-3">
+              <Link
+                href="/dashboard/my-learning"
+                className="px-4 py-2.5 text-[13px] font-semibold text-white"
+                style={{ background: 'var(--ink)' }}
+              >
+                Continue learning
+              </Link>
+              <Link
+                href="/dashboard/todos"
+                className="border px-4 py-2.5 text-[13px] font-semibold"
+                style={{ borderColor: 'var(--line)' }}
+              >
+                Add a task
+              </Link>
+            </div>
           </div>
         ) : (
-          <ul className="divide-y" style={{ borderColor: 'var(--line)' }}>
-            {continueCards.map(({ track, next, pct }, index) => (
-              <li key={track.slug}>
+          <ul className="divide-y border" style={{ borderColor: 'var(--line)' }}>
+            {cc.today.map((item) => (
+              <li key={item.id} className="flex flex-wrap items-center gap-4 px-4 py-4 sm:flex-nowrap">
+                <div className="w-16 shrink-0 font-mono text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                  {item.timeLabel}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold">{item.title}</p>
+                  <p className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+                    {item.subtitle}
+                  </p>
+                </div>
                 <Link
-                  href={
-                    next
-                      ? `/dashboard/courses/${track.slug}/${next.slug}`
-                      : `/dashboard/courses/${track.slug}`
-                  }
-                  className="grid gap-4 py-6 sm:grid-cols-[72px_1fr_auto] sm:items-center sm:gap-6"
+                  href={item.href}
+                  className="shrink-0 px-3.5 py-2 text-[13px] font-semibold text-white"
+                  style={{
+                    background: item.urgency === 'now' ? '#b91c1c' : 'var(--green-deep)',
+                  }}
                 >
-                  <div
-                    className="relative flex h-[72px] w-[72px] items-end overflow-hidden"
-                    style={{
-                      background: `linear-gradient(145deg, ${track.color} 0%, ${track.color}88 45%, #0C1116 100%)`,
-                    }}
-                  >
-                    <span className="absolute right-2 top-2 font-mono text-[10px] text-white/55">
-                      {String(index + 1).padStart(2, '0')}
-                    </span>
-                    <div className="relative z-[1] p-2">
-                      <TrackLogo slug={track.slug} color="#fff" size={28} />
-                    </div>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-display text-[20px] leading-tight sm:text-[22px]">{track.shortTitle}</div>
-                    <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
-                      {track.tag} · {pct}% complete · {track.totalLessons} lessons
-                    </p>
-                    <div className="mt-3 h-1 max-w-md overflow-hidden" style={{ background: 'var(--paper-dim)' }}>
-                      <div className="h-full" style={{ width: `${Math.max(pct, 2)}%`, background: 'var(--green)' }} />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-[13.5px] font-semibold" style={{ color: 'var(--green-deep)' }}>
-                    <PlayCircle size={16} />
-                    <span className="max-w-[180px] truncate">{next ? next.title : 'Review'}</span>
-                  </div>
+                  {item.actionLabel}
                 </Link>
               </li>
             ))}
@@ -273,77 +159,151 @@ export default async function DashboardOverview() {
         )}
       </section>
 
-      <div className="grid gap-10 lg:grid-cols-5">
-        <section className="lg:col-span-3">
-          <div className="mb-4 flex items-end justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
-            <h2 className="font-display text-[22px]">Upcoming sessions</h2>
-            <Link href="/dashboard/mentorship" className="text-[13px] font-semibold" style={{ color: 'var(--green-deep)' }}>
-              Book instructor <ArrowRight size={14} className="inline" />
+      <section className="mb-10">
+        <div className="mb-4 flex items-end justify-between">
+          <h2 className="font-display text-[22px]">Continue learning</h2>
+          <Link href="/dashboard/my-learning" className="text-[13px] font-semibold" style={{ color: 'var(--green-deep)' }}>
+            My Learning →
+          </Link>
+        </div>
+        {cc.continueLearning.length === 0 ? (
+          <div className="border border-dashed p-6" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
+            Enroll in a course to see continue cards here.{' '}
+            <Link href="/dashboard/courses" className="font-semibold" style={{ color: 'var(--green-deep)' }}>
+              Browse courses
             </Link>
           </div>
-          {upcoming.length === 0 ? (
-            <div className="border-t pt-5" style={{ borderColor: 'var(--line)' }}>
-              <Video size={18} style={{ color: 'var(--blue-ink)' }} />
-              <p className="mt-3 text-[14.5px] font-semibold">No sessions booked yet</p>
-              <p className="mt-1 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                Book a 1-on-1 with an instructor - live HD video, screen sharing, and a plan tailored to you.
-              </p>
-              <Link href="/dashboard/mentorship" className="mt-3 inline-flex text-[13.5px] font-semibold" style={{ color: 'var(--blue-ink)' }}>
-                Meet instructors →
-              </Link>
-            </div>
-          ) : (
-            <ul className="divide-y" style={{ borderColor: 'var(--line)' }}>
-              {upcoming.map((b) => {
-                const when = new Date(b.scheduledAt);
-                return (
-                  <li key={b.id} className="flex flex-wrap items-center gap-4 py-4">
-                    <CalendarClock size={18} style={{ color: 'var(--green-deep)' }} />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-[14.5px] font-semibold">{b.topic}</div>
-                      <div className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                        with {b.mentorName} ·{' '}
-                        {when.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} at{' '}
-                        {when.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                      </div>
+        ) : (
+          <ul className="space-y-3">
+            {cc.continueLearning.map((row) => (
+              <li key={row.course.id}>
+                <Link
+                  href={row.href}
+                  className="block border p-4 transition-shadow hover:shadow-card"
+                  style={{ borderColor: 'var(--line)' }}
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold">{row.course.title}</p>
+                      <p className="mt-0.5 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+                        {row.nextTitle}
+                      </p>
                     </div>
-                    <Link
-                      href={`/dashboard/sessions/${b.channel}`}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 text-[13px] font-semibold text-white"
-                      style={{ background: 'var(--ink)' }}
-                    >
-                      <Video size={15} /> Join room
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-
-        <section className="lg:col-span-2">
-          <div className="mb-4 border-b pb-3" style={{ borderColor: 'var(--line)' }}>
-            <h2 className="font-display text-[22px]">Recommended</h2>
-          </div>
-          <ul className="divide-y" style={{ borderColor: 'var(--line)' }}>
-            {recommended.map((t) => (
-              <li key={t.slug}>
-                <Link href={`/dashboard/courses/${t.slug}`} className="flex items-center gap-3.5 py-4">
-                  <TrackLogo slug={t.slug} color={t.color} size={36} />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[14px] font-semibold">{t.shortTitle}</div>
-                    <div className="flex items-center gap-2 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-                      <BookOpen size={11} /> {t.totalLessons} lessons
-                      <Clock size={11} /> ~{Math.round(t.totalMinutes / 60)}h
-                    </div>
+                    <span className="text-[13px] font-semibold" style={{ color: 'var(--green-deep)' }}>
+                      Continue →
+                    </span>
                   </div>
-                  <ArrowRight size={15} style={{ color: 'var(--ink-soft)' }} />
+                  <div className="mt-3 h-1.5 w-full" style={{ background: 'var(--paper-dim)' }}>
+                    <div
+                      className="h-full"
+                      style={{
+                        width: `${Math.min(100, Math.max(0, row.course.pct))}%`,
+                        background: 'var(--green-deep)',
+                      }}
+                    />
+                  </div>
+                  <p className="mt-1.5 font-mono text-[11px]" style={{ color: 'var(--ink-soft)' }}>
+                    {Math.round(row.course.pct)}% complete
+                  </p>
                 </Link>
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      <section className="mb-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          { icon: Flame, label: 'Day streak', value: String(cc.stats.streak) },
+          { icon: Zap, label: 'XP', value: cc.stats.xp.toLocaleString() },
+          {
+            icon: BookOpen,
+            label: 'Weekly learning',
+            value: `${cc.stats.weeklyHours}h / ${cc.stats.weeklyGoalHours}h`,
+          },
+          { icon: Trophy, label: 'Lessons done', value: String(cc.stats.lessonsDone) },
+        ].map((s) => (
+          <div key={s.label} className="border p-4" style={{ borderColor: 'var(--line)' }}>
+            <s.icon size={16} style={{ color: 'var(--green-deep)' }} />
+            <p className="mt-2 font-display text-[24px] leading-none">{s.value}</p>
+            <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
+              {s.label}
+            </p>
+          </div>
+        ))}
+      </section>
+
+      <section className="mb-10 grid gap-6 lg:grid-cols-2">
+        <div className="border p-5" style={{ borderColor: 'var(--line)' }}>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-display text-[18px]">Assignments</h2>
+            <Link href="/dashboard/assignments" className="text-[12.5px] font-semibold" style={{ color: 'var(--green-deep)' }}>
+              Center →
+            </Link>
+          </div>
+          <ul className="space-y-2 text-[13.5px]">
+            <li>
+              Due today:{' '}
+              <strong>{cc.assignmentBuckets.due_today.length}</strong>
+            </li>
+            <li>
+              This week:{' '}
+              <strong>{cc.assignmentBuckets.due_week.length}</strong>
+            </li>
+            <li>
+              Overdue:{' '}
+              <strong>{cc.assignmentBuckets.overdue.length}</strong>
+            </li>
+            <li>
+              Graded:{' '}
+              <strong>{cc.assignmentBuckets.graded.length}</strong>
+            </li>
+          </ul>
+        </div>
+        <div className="border p-5" style={{ borderColor: 'var(--line)' }}>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-display text-[18px]">Quick actions</h2>
+          </div>
+          <div className="flex flex-col gap-2 text-[13.5px] font-semibold">
+            <Link href="/dashboard/todos" className="inline-flex items-center gap-2" style={{ color: 'var(--ink)' }}>
+              <CheckSquare size={15} /> My tasks
+            </Link>
+            <Link href="/dashboard/assignments" className="inline-flex items-center gap-2" style={{ color: 'var(--ink)' }}>
+              <ClipboardList size={15} /> Assignment center
+            </Link>
+            <Link href="/dashboard/achievements" className="inline-flex items-center gap-2" style={{ color: 'var(--ink)' }}>
+              <Trophy size={15} /> Achievements
+            </Link>
+            <Link href="/dashboard/tutor" className="inline-flex items-center gap-2" style={{ color: 'var(--ink)' }}>
+              <Bot size={15} /> Ask AI Tutor
+            </Link>
+            <Link href="/dashboard/courses" className="inline-flex items-center gap-2" style={{ color: 'var(--ink)' }}>
+              <Sparkles size={15} /> Explore courses
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {cc.recommended.length > 0 ? (
+        <section className="mb-8">
+          <h2 className="mb-4 font-display text-[22px]">Recommended for you</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {cc.recommended.map((r) => (
+              <Link
+                key={r.slug}
+                href={r.href}
+                className="border p-4"
+                style={{ borderColor: 'var(--line)' }}
+              >
+                <p className="font-semibold">{r.title}</p>
+                <p className="mt-1 text-[12.5px] font-semibold" style={{ color: 'var(--green-deep)' }}>
+                  Start →
+                </p>
+              </Link>
+            ))}
+          </div>
         </section>
-      </div>
+      ) : null}
     </div>
   );
 }

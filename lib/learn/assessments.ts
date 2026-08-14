@@ -450,6 +450,68 @@ export async function listSubmissions(assessmentId: string): Promise<SubmissionV
   return docs.map((d) => toSubmission(d as Record<string, unknown>));
 }
 
+/** Batch-load a student's submissions for assignment hubs / Today. */
+export async function listSubmissionsForStudent(
+  studentId: string,
+  assessmentIds?: string[],
+): Promise<SubmissionView[]> {
+  await ensureAssessmentCollections();
+  const db = await getDb();
+  const query: Record<string, unknown> = { studentId };
+  if (assessmentIds?.length) query.assessmentId = { $in: assessmentIds };
+  const docs = await db
+    .collection('assessment_submissions')
+    .find(query)
+    .sort({ updatedAt: -1 })
+    .limit(300)
+    .toArray();
+  return docs.map((d) => toSubmission(d as Record<string, unknown>));
+}
+
+/** Needs grading for an instructor across their assessments. */
+export async function listNeedsGradingForAuthor(authorId: string): Promise<
+  {
+    assessmentId: string;
+    title: string;
+    pendingCount: number;
+    kind: string;
+  }[]
+> {
+  await ensureAssessmentCollections();
+  const db = await getDb();
+  const assessments = await db
+    .collection('assessments')
+    .find({ authorId, published: true, kind: 'assignment' })
+    .project({ _id: 1, title: 1, kind: 1 })
+    .limit(100)
+    .toArray();
+  if (!assessments.length) return [];
+
+  const results: {
+    assessmentId: string;
+    title: string;
+    pendingCount: number;
+    kind: string;
+  }[] = [];
+
+  for (const a of assessments) {
+    const id = String((a._id as { toString(): string }).toString());
+    const pendingCount = await db.collection('assessment_submissions').countDocuments({
+      assessmentId: id,
+      status: { $in: ['submitted', 'late'] },
+    });
+    if (pendingCount > 0) {
+      results.push({
+        assessmentId: id,
+        title: String(a.title || 'Assignment'),
+        pendingCount,
+        kind: String(a.kind || 'assignment'),
+      });
+    }
+  }
+  return results.sort((a, b) => b.pendingCount - a.pendingCount);
+}
+
 export async function upsertSubmission(opts: {
   assessmentId: string;
   studentId: string;

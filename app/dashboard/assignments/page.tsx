@@ -1,39 +1,38 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowRight, ClipboardList } from 'lucide-react';
+import { ClipboardList } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
-import { getLearner } from '@/lib/learn/repo';
-import { listPublishedForStudent } from '@/lib/learn/assessments';
+import { getStudentCommandCenter } from '@/lib/learn/commandCenter';
 
 export const dynamic = 'force-dynamic';
 
-const PAGE_SIZE = 12;
+const BUCKETS = [
+  { id: 'due_today', label: 'Due today' },
+  { id: 'overdue', label: 'Overdue' },
+  { id: 'due_week', label: 'Due this week' },
+  { id: 'upcoming', label: 'Upcoming' },
+  { id: 'submitted', label: 'Submitted' },
+  { id: 'graded', label: 'Graded' },
+] as const;
 
 export default async function AssignmentsIndexPage({
   searchParams,
 }: {
-  searchParams?: { page?: string };
+  searchParams?: { bucket?: string };
 }) {
   const session = getSessionUser();
   if (!session) redirect('/login?next=/dashboard/assignments');
 
-  const page = Math.max(1, Number(searchParams?.page || '1'));
-  const learner = await getLearner(session.uid);
-  const institutionSlug =
-    learner?.activeContext?.kind === 'institution'
-      ? learner.activeContext.institutionSlug
-      : null;
+  const cc = await getStudentCommandCenter(session.uid);
+  const active =
+    BUCKETS.find((b) => b.id === searchParams?.bucket)?.id ||
+    (cc.assignmentBuckets.due_today.length
+      ? 'due_today'
+      : cc.assignmentBuckets.overdue.length
+        ? 'overdue'
+        : 'due_week');
 
-  const assignments = await listPublishedForStudent({
-    studentId: session.uid,
-    institutionSlug,
-    kind: 'assignment',
-    page,
-    pageSize: PAGE_SIZE + 1,
-  });
-
-  const items = assignments.slice(0, PAGE_SIZE);
-  const hasNext = assignments.length > PAGE_SIZE;
+  const items = cc.assignmentBuckets[active] || [];
 
   return (
     <div className="mx-auto max-w-[920px]">
@@ -41,12 +40,32 @@ export default async function AssignmentsIndexPage({
         <div className="tab mb-2 inline-flex items-center gap-1.5">
           <ClipboardList size={11} /> Assignments
         </div>
-        <h1 className="font-display text-[30px] leading-tight">My assignments</h1>
+        <h1 className="font-display text-[30px] leading-tight">Assignment center</h1>
         <p className="mt-2 max-w-[620px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Assignments from all your instructors, ordered by publish time. Open any item to read,
-          review attached documents, and submit your work.
+          Due today, this week, submitted, and graded — with a clear next action on every item.
         </p>
       </header>
+
+      <nav className="mb-6 flex gap-2 overflow-x-auto pb-1">
+        {BUCKETS.map((b) => {
+          const count = cc.assignmentBuckets[b.id]?.length || 0;
+          const isActive = active === b.id;
+          return (
+            <Link
+              key={b.id}
+              href={`/dashboard/assignments?bucket=${b.id}`}
+              className="shrink-0 border px-3 py-2 text-[12.5px] font-semibold"
+              style={{
+                borderColor: isActive ? 'var(--ink)' : 'var(--line)',
+                background: isActive ? 'var(--ink)' : 'transparent',
+                color: isActive ? '#fff' : 'var(--ink-soft)',
+              }}
+            >
+              {b.label} ({count})
+            </Link>
+          );
+        })}
+      </nav>
 
       {items.length === 0 ? (
         <div
@@ -54,79 +73,49 @@ export default async function AssignmentsIndexPage({
           style={{ borderColor: 'var(--line)' }}
         >
           <ClipboardList size={28} style={{ color: 'var(--ink-soft)' }} />
-          <p className="mt-3 font-display text-[20px]">No assignments yet</p>
+          <p className="mt-3 font-display text-[20px]">Nothing in this list</p>
           <p className="mt-1 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-            When instructors publish assignments, they will appear here.
+            When instructors publish work, it will appear in the right bucket.
           </p>
         </div>
       ) : (
-        <>
-          <ul className="space-y-3">
-            {items.map((a) => (
-              <li key={a.id}>
-                <Link
-                  href={`/dashboard/assignments/${a.id}`}
-                  className="flex items-start justify-between gap-4 rounded-2xl border p-4 transition-shadow hover:shadow-card"
-                  style={{ borderColor: 'var(--line)' }}
-                >
+        <ul className="space-y-3">
+          {items.map((a) => (
+            <li key={a.id}>
+              <Link
+                href={a.href}
+                className="block border p-4 transition-shadow hover:shadow-card"
+                style={{ borderColor: 'var(--line)' }}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h2 className="line-clamp-2 text-[16px] font-semibold">{a.title}</h2>
+                    <h2 className="text-[16px] font-semibold">{a.title}</h2>
                     <p className="mt-1 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
-                      by {a.authorName} · sent {new Date(a.createdAt).toLocaleString()}
+                      {a.authorName}
                       {a.dueAt ? ` · due ${new Date(a.dueAt).toLocaleString()}` : ''}
                     </p>
-                    {a.instructions ? (
-                      <p
-                        className="mt-2 line-clamp-2 text-[13.5px] leading-relaxed"
-                        style={{ color: 'var(--ink-soft)' }}
-                      >
-                        {a.instructions}
-                      </p>
-                    ) : null}
+                    <p className="mt-2 text-[12px] font-semibold uppercase tracking-wide">
+                      {a.status.replace(/_/g, ' ')}
+                      {a.status === 'graded' && a.score != null
+                        ? ` · ${a.score}${a.maxScore != null ? `/${a.maxScore}` : ''}`
+                        : ''}
+                    </p>
                   </div>
                   <span
-                    className="mt-0.5 inline-flex shrink-0 items-center gap-1 text-[12.5px] font-semibold"
-                    style={{ color: 'var(--green-deep)' }}
+                    className="shrink-0 px-3 py-2 text-[13px] font-semibold text-white"
+                    style={{ background: 'var(--green-deep)' }}
                   >
-                    Open <ArrowRight size={13} />
+                    {a.status === 'graded'
+                      ? 'View feedback'
+                      : a.status === 'submitted'
+                        ? 'View submission'
+                        : 'Open assignment'}
                   </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-
-          <nav className="mt-6 flex items-center justify-between">
-            <Link
-              href={page > 1 ? `/dashboard/assignments?page=${page - 1}` : '#'}
-              aria-disabled={page <= 1}
-              className="border px-3 py-2 text-[13px] font-semibold disabled:pointer-events-none"
-              style={{
-                borderColor: 'var(--line)',
-                color: page > 1 ? 'var(--ink)' : 'var(--ink-soft)',
-                pointerEvents: page > 1 ? 'auto' : 'none',
-                opacity: page > 1 ? 1 : 0.5,
-              }}
-            >
-              Previous
-            </Link>
-            <span className="font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
-              Page {page}
-            </span>
-            <Link
-              href={hasNext ? `/dashboard/assignments?page=${page + 1}` : '#'}
-              aria-disabled={!hasNext}
-              className="border px-3 py-2 text-[13px] font-semibold disabled:pointer-events-none"
-              style={{
-                borderColor: 'var(--line)',
-                color: hasNext ? 'var(--ink)' : 'var(--ink-soft)',
-                pointerEvents: hasNext ? 'auto' : 'none',
-                opacity: hasNext ? 1 : 0.5,
-              }}
-            >
-              Next
-            </Link>
-          </nav>
-        </>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

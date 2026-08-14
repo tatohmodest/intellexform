@@ -3,7 +3,10 @@
  */
 
 import { getLearner } from '@/lib/learn/repo';
-import { listPublishedForStudent } from '@/lib/learn/assessments';
+import {
+  listPublishedForStudent,
+  listSubmissionsForStudent,
+} from '@/lib/learn/assessments';
 import { listOngoingClassesForUser, listClassroomForUser } from '@/lib/learn/courseClassSessions';
 import { getMyCourseSections } from '@/lib/learn/myCourses';
 
@@ -52,6 +55,12 @@ export async function getStudentAgenda(userId: string): Promise<{
     getMyCourseSections(userId).catch(() => ({ sections: [], total: 0, inProgress: 0 })),
   ]);
 
+  const subs = await listSubmissionsForStudent(
+    userId,
+    assignments.map((a) => a.id),
+  ).catch(() => []);
+  const subByAssessment = new Map(subs.map((s) => [s.assessmentId, s]));
+
   const events: AgendaEvent[] = [];
   const todos: StudentTodo[] = [];
   const now = Date.now();
@@ -78,6 +87,11 @@ export async function getStudentAgenda(userId: string): Promise<{
   }
 
   for (const a of assignments) {
+    const sub = subByAssessment.get(a.id);
+    const done =
+      sub &&
+      (sub.status === 'submitted' || sub.status === 'graded' || sub.status === 'late');
+
     if (a.dueAt) {
       const dueMs = new Date(a.dueAt).getTime();
       events.push({
@@ -87,9 +101,11 @@ export async function getStudentAgenda(userId: string): Promise<{
         startsAt: new Date(a.dueAt).toISOString(),
         href: `/dashboard/assignments/${a.id}`,
         meta: `Due · ${a.authorName}`,
-        status: dueMs < now ? 'overdue' : 'upcoming',
+        status: done ? sub!.status : dueMs < now ? 'overdue' : 'upcoming',
       });
     }
+
+    if (done) continue;
 
     const dueMs = a.dueAt ? new Date(a.dueAt).getTime() : null;
     const overdue = dueMs !== null && dueMs < now;
@@ -111,7 +127,6 @@ export async function getStudentAgenda(userId: string): Promise<{
     }
   }
 
-  // Recent past live sessions still worth reviewing (last 48h ended).
   for (const group of classroom.groups || []) {
     for (const past of group.past.slice(0, 2)) {
       const end = past.endAt ? new Date(past.endAt).getTime() : 0;
@@ -130,7 +145,6 @@ export async function getStudentAgenda(userId: string): Promise<{
     }
   }
 
-  // Nudge continue learning on enrolled courses.
   const enrolledSection =
     courseData.sections.find((s) => s.id === 'enrolled') ||
     courseData.sections.find((s) => s.courses.some((c) => c.enrolled));
