@@ -65,7 +65,7 @@ export async function verifyDomainDns(hostRaw: string): Promise<DnsVerifyResult>
     const hostIps = new Set(hostAddrs.map((a) => a.address));
     const overlap = targetAddrs.some((a) => hostIps.has(a.address));
     if (overlap && hostIps.size > 0) {
-      found.push(...[...hostIps].map((ip) => `A:${ip}`));
+      found.push(...Array.from(hostIps).map((ip) => `A:${ip}`));
       return {
         ok: true,
         host,

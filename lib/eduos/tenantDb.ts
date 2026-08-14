@@ -102,7 +102,7 @@ export async function getTenantPrisma(institutionId: string): Promise<{
   // Dedicated / customer-managed: connection via credentialRef will be resolved
   // by infrastructure. Until secondary pools exist, use platform pool with
   // organization_id isolation still enforced at the application layer.
-  if (config?.credentialRef) {
+  if (config?.credentialRefPresent) {
     // Placeholder for secrets-manager lookup + pooled PrismaClient cache.
     // Never log or return the resolved connection string.
   }
