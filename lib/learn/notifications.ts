@@ -8,7 +8,7 @@ export type NotificationDoc = {
   title: string;
   body: string;
   href?: string | null;
-  kind: 'assignment' | 'exam' | 'system' | 'badge' | 'note';
+  kind: 'assignment' | 'exam' | 'system' | 'badge' | 'note' | 'message';
   data?: Record<string, unknown>;
   readAt?: Date | null;
   createdAt: Date;

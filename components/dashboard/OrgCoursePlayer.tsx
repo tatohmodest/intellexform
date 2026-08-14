@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react';
+import LessonStudyNotes from '@/components/dashboard/LessonStudyNotes';
 
 type Lesson = {
   id: string;
@@ -44,6 +45,7 @@ export default function OrgCoursePlayer({
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [rail, setRail] = useState<'notes' | 'resources' | 'discussion'>('notes');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -256,6 +258,50 @@ export default function OrgCoursePlayer({
                   {busy ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
                   {progress[activeLesson.id] ? 'Completed' : 'Mark complete'}
                 </button>
+              </div>
+
+              <div className="mt-8 border-t pt-5" style={{ borderColor: 'var(--line)' }}>
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {(['notes', 'resources', 'discussion'] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setRail(t)}
+                      className="border px-3 py-1.5 text-[12px] font-semibold capitalize"
+                      style={{
+                        borderColor: rail === t ? accent : 'var(--line)',
+                        color: rail === t ? accent : 'var(--ink-soft)',
+                      }}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+                {rail === 'notes' ? (
+                  <LessonStudyNotes
+                    courseKey={`org:${slug}:${courseId}`}
+                    lessonKey={activeLesson.id}
+                    accent={accent}
+                  />
+                ) : null}
+                {rail === 'resources' ? (
+                  <p className="text-[14px]" style={{ color: 'var(--ink-soft)' }}>
+                    Lesson attachments and downloads will appear here when instructors add them.
+                    For now, use course materials shared in class notes or Drive.
+                  </p>
+                ) : null}
+                {rail === 'discussion' ? (
+                  <div className="space-y-2 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
+                    <p>Ask your instructor about this lesson via Messages.</p>
+                    <Link
+                      href={`/dashboard/messages?compose=1&subject=${encodeURIComponent(activeLesson.title)}`}
+                      className="inline-block font-semibold"
+                      style={{ color: accent }}
+                    >
+                      Open messages →
+                    </Link>
+                  </div>
+                ) : null}
               </div>
             </>
           )}

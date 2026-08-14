@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import type { InstructorCourseStudents } from '@/lib/learn/ecosystem';
 import type { CourseClassSessionView } from '@/lib/learn/courseClassSessions';
+import MessageStudentButton from '@/components/dashboard/MessageStudentButton';
 
 export default function MyStudentsPanel({
   groups,
@@ -415,6 +416,11 @@ export default function MyStudentsPanel({
                           {' · '}
                           {new Date(s.enrolledAt).toLocaleDateString()}
                         </span>
+                        <MessageStudentButton
+                          studentId={s.studentId}
+                          studentName={s.studentName}
+                          courseTitle={active.courseTitle}
+                        />
                       </li>
                     ))}
                   </ul>

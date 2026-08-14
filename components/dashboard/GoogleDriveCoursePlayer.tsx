@@ -31,6 +31,7 @@ export default function GoogleDriveCoursePlayer({
   initialActiveIndex = 0,
   trackColor = '#00b369',
   onLessonComplete,
+  onActiveChange,
 }: {
   courseTitle: string;
   lessons: DriveLessonItem[];
@@ -38,11 +39,18 @@ export default function GoogleDriveCoursePlayer({
   initialActiveIndex?: number;
   trackColor?: string;
   onLessonComplete?: (lessonId: string | number) => void;
+  onActiveChange?: (lesson: DriveLessonItem, index: number) => void;
 }) {
   const [activeIndex, setActiveIndex] = useState(initialActiveIndex);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const activeLesson = lessons[activeIndex] || lessons[0];
+
+  function selectLesson(idx: number) {
+    setActiveIndex(idx);
+    const lesson = lessons[idx];
+    if (lesson && onActiveChange) onActiveChange(lesson, idx);
+  }
 
   // Determine active video embed URL
   const rawVideoUrl = activeLesson?.googleDriveUrl || activeLesson?.videoUrl || googleDriveFolderUrl || '';
@@ -147,7 +155,7 @@ export default function GoogleDriveCoursePlayer({
               {nextLesson && (
                 <button
                   type="button"
-                  onClick={() => setActiveIndex((i) => Math.min(lessons.length - 1, i + 1))}
+                  onClick={() => selectLesson(Math.min(lessons.length - 1, activeIndex + 1))}
                   className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
                   style={{ background: trackColor }}
                 >
@@ -199,7 +207,7 @@ export default function GoogleDriveCoursePlayer({
             <p className="mt-1 font-semibold text-[13.5px] text-gray-900 truncate">{nextLesson.title}</p>
             <button
               type="button"
-              onClick={() => setActiveIndex(activeIndex + 1)}
+              onClick={() => selectLesson(activeIndex + 1)}
               className="mt-2 text-[12px] font-semibold text-emerald-600 hover:underline inline-flex items-center gap-1"
             >
               Play next <ChevronRight size={12} />
@@ -217,7 +225,7 @@ export default function GoogleDriveCoursePlayer({
               <button
                 key={lesson.id || idx}
                 type="button"
-                onClick={() => setActiveIndex(idx)}
+                onClick={() => selectLesson(idx)}
                 className={`mb-1 flex w-full items-start gap-3 rounded-xl p-3 text-left transition-all ${
                   isActive
                     ? 'border bg-emerald-50/70 text-emerald-950 font-medium'

@@ -28,21 +28,35 @@ Every major screen answers: **What can the user do next?**
 | Academic calendar | `/dashboard/calendar` | Day / week / month views |
 | Tasks | `/dashboard/todos` | Academic todos + personal CRUD tasks (`/api/learn/tasks`) |
 | Teaching home | `/dashboard/teach` | Instructor Today + Attention required + Needs grading |
-| Navigation | `DashboardShell` | Grouped: Home → Learn → Academic → Community → Personal (+ Teaching) |
+| Navigation | `DashboardShell` | Grouped: Home → Learn → Academic → Community → Career → Personal (+ Teaching) |
 
-Data engine: `lib/learn/commandCenter.ts` (`getStudentCommandCenter`, `getInstructorCommandCenter`).
+### Slice 2 — Player, messaging, career, grading
+
+| Surface | Path | Behavior |
+|---------|------|----------|
+| Drive course player | `/dashboard/drive-player/[slug]` | Mark complete → progress API, resume incomplete lesson, study notes + resources rail |
+| Org course player | learn player | Notes / resources / discussion rail |
+| Lesson study notes | `/api/learn/lesson-notes` | Per-lesson personal notes |
+| Messages inbox | `/dashboard/messages` | 1:1 threads, send/receive, notification on new message |
+| Message student | My Students / Monitoring | Starts thread with course context |
+| Portfolio | `/dashboard/portfolio` | Skills, in-progress, certificates from learning activity |
+| Opportunities | `/dashboard/opportunities` | Career opportunities board |
+| Grading center | `/dashboard/teach/grading` | Queue of assignments needing grades |
+| Student monitoring | `/dashboard/teach/monitoring` | Inactive / at-risk signals + contact |
+
+Data engines: `lib/learn/commandCenter.ts`, `messaging.ts`, `lessonNotes.ts`, `portfolio.ts`, `studentMonitoring.ts`.
 
 ## Roadmap (next slices)
 
-1. **Course player excellence** — resume timestamp, in-lesson notes, discussion, resources rail
-2. **Inbox / messaging** — instructor ↔ student with course context
+1. **Course player excellence** — video timestamp resume, captions, in-lesson quizzes
+2. ~~**Inbox / messaging**~~ — shipped v0 threads
 3. **Notifications categories** — academic / social / institution / system + preferences
 4. **Study groups & course discussions** — upvote, pin, official answers
 5. **Academic overview & journey** — program/cohort/GPA/credits when org enables
-6. **Skills profile & goals** — derived from courses/assessments
-7. **Career / opportunities / portfolio / certificates verification**
-8. **Grading center UX** — rapid grade + keyboard shortcuts
-9. **Student monitoring & early warning** — support tool, not judgment
+6. **Skills profile & goals** — editable skills + learning goals
+7. ~~**Career / opportunities / portfolio**~~ — shipped v0; next: public share URL + certificate verify
+8. ~~**Grading center UX**~~ — shipped queue; next: keyboard rapid-grade
+9. ~~**Student monitoring & early warning**~~ — shipped inactivity signals
 10. **AI assistant in-course** — context-aware, permissioned
 11. **Content builder + versioning** — professional authoring
 12. **Mobile-native flows** — not compressed desktop

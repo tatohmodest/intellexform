@@ -33,6 +33,12 @@ export default async function TeachHomePage() {
           <Link href="/dashboard/teach/courses" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
             Course studio
           </Link>
+          <Link href="/dashboard/teach/grading" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
+            Grading center
+          </Link>
+          <Link href="/dashboard/teach/monitoring" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
+            Monitoring
+          </Link>
           <Link href="/dashboard/teach/assessments" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
             Assignments
           </Link>
@@ -41,6 +47,9 @@ export default async function TeachHomePage() {
           </Link>
           <Link href="/dashboard/students" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
             My students
+          </Link>
+          <Link href="/dashboard/messages" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
+            Messages
           </Link>
         </div>
       </header>

@@ -31,6 +31,7 @@ import {
   Award,
   CalendarDays,
   CheckSquare,
+  MessageSquare,
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 import MobileBottomNav from '@/components/dashboard/MobileBottomNav';
@@ -81,15 +82,23 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/dashboard/calendar', label: 'Calendar', icon: CalendarDays },
       { href: '/dashboard/assignments', label: 'Assignments', icon: ClipboardList },
       { href: '/dashboard/todos', label: 'Tasks', icon: CheckSquare },
-      { href: '/dashboard/achievements', label: 'Progress', icon: Trophy },
     ],
   },
   {
     label: 'Community',
     items: [
+      { href: '/dashboard/messages', label: 'Messages', icon: MessageSquare },
       { href: '/dashboard/mentorship', label: 'Mentorship', icon: Users },
       { href: '/dashboard/notes', label: 'Notes', icon: FileText },
       { href: '/dashboard/institutions', label: 'Institutions', icon: Building2 },
+    ],
+  },
+  {
+    label: 'Career',
+    items: [
+      { href: '/dashboard/portfolio', label: 'Portfolio', icon: Award },
+      { href: '/dashboard/opportunities', label: 'Opportunities', icon: Sparkles },
+      { href: '/dashboard/achievements', label: 'Progress', icon: Trophy },
     ],
   },
   {
@@ -309,6 +318,38 @@ function NavLinks({
                 strokeWidth={pathname.startsWith('/dashboard/classroom') ? 2.4 : 2}
               />
               My Classroom
+            </Link>
+            <Link
+              href="/dashboard/teach/grading"
+              onClick={onNavigate}
+              className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
+              style={
+                pathname.startsWith('/dashboard/teach/grading')
+                  ? { background: activeBg, color: activeColor }
+                  : { color: 'var(--ink-soft)' }
+              }
+            >
+              <ClipboardList
+                size={17}
+                strokeWidth={pathname.startsWith('/dashboard/teach/grading') ? 2.4 : 2}
+              />
+              Grading center
+            </Link>
+            <Link
+              href="/dashboard/teach/monitoring"
+              onClick={onNavigate}
+              className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
+              style={
+                pathname.startsWith('/dashboard/teach/monitoring')
+                  ? { background: activeBg, color: activeColor }
+                  : { color: 'var(--ink-soft)' }
+              }
+            >
+              <Users
+                size={17}
+                strokeWidth={pathname.startsWith('/dashboard/teach/monitoring') ? 2.4 : 2}
+              />
+              Monitoring
             </Link>
             <Link
               href="/dashboard/teach/assessments"
