@@ -33,6 +33,14 @@ import {
   listCatalogPlans,
   updateCatalogPlanPrice,
 } from '@/lib/eduos/subscriptionCatalog';
+import {
+  FEATURE_FLAG_CATALOG,
+  featuresFromModules,
+  isFeatureFlagId,
+  modulesFromFeatures,
+  resolveInstitutionFeatures,
+  type FeatureFlagId,
+} from '@/lib/eduos/featureFlags';
 
 function isPack(v: string): v is CapabilityPack {
   return v === 'foundation' || v === 'professional' || v === 'enterprise' || v === 'custom';
@@ -224,7 +232,23 @@ export async function getPlatformOverview() {
     recentAudit,
     packs: CAPABILITY_PACKS,
     modules: MODULE_CATALOG,
+    featureFlags: FEATURE_FLAG_CATALOG,
+    intellexInstitutionId: (
+      await prisma.institution.findFirst({
+        where: { isPlatformHome: true },
+        select: { id: true, slug: true, name: true },
+      })
+    ),
   };
+}
+
+export async function getIntellexInstitution() {
+  const home = await prisma.institution.findFirst({
+    where: { OR: [{ isPlatformHome: true }, { slug: 'intellex' }] },
+    select: { id: true },
+  });
+  if (!home) return null;
+  return getInstitutionDetail(home.id);
 }
 
 export async function listInstitutions(opts?: { q?: string; status?: string }) {
@@ -430,11 +454,18 @@ export async function getInstitutionDetail(id: string) {
   if (!inst) return null;
 
   const database = await getTenantDatabaseConfig(inst.id).catch(() => null);
+  const resolvedFeatures = resolveInstitutionFeatures({
+    capabilityPack: inst.capabilityPack,
+    enabledModules: inst.enabledModules,
+    featuresEnabled: inst.featuresEnabled,
+  });
 
   return {
     ...inst,
     cnameTarget: platformCnameTarget(),
     database,
+    featureCatalog: FEATURE_FLAG_CATALOG,
+    resolvedFeatures,
     resolvedModules: resolveCampusModules({
       capabilityPack: isPack(inst.capabilityPack) ? inst.capabilityPack : 'foundation',
       enabledModules: inst.enabledModules as ModuleId[],
@@ -578,11 +609,13 @@ export async function updateInstitution(
     verified?: boolean;
     capabilityPack?: CapabilityPack;
     enabledModules?: ModuleId[];
+    featuresEnabled?: string[];
     deploymentModel?: string;
     primaryColor?: string;
     visibility?: 'PUBLIC' | 'PRIVATE';
     logoUrl?: string | null;
     coverUrl?: string | null;
+    settings?: Record<string, unknown>;
     actorEmail?: string;
   },
 ) {
@@ -607,20 +640,55 @@ export async function updateInstitution(
   if (patch.deploymentModel !== undefined) {
     data.deploymentModel = patch.deploymentModel as never;
   }
+  if (patch.settings !== undefined) {
+    const prev =
+      current.settings && typeof current.settings === 'object' && !Array.isArray(current.settings)
+        ? (current.settings as Record<string, unknown>)
+        : {};
+    data.settings = { ...prev, ...patch.settings } as never;
+  }
+
+  let nextModules: ModuleId[] | undefined;
+
+  if (patch.featuresEnabled !== undefined) {
+    const flags = patch.featuresEnabled.filter(isFeatureFlagId) as FeatureFlagId[];
+    data.featuresEnabled = flags;
+    // Keep modules in sync with selected SaaS flags (additive with existing pack modules).
+    const fromFlags = modulesFromFeatures(flags);
+    const packModules =
+      current.capabilityPack === 'custom'
+        ? (current.enabledModules as ModuleId[])
+        : modulesForPack(isPack(current.capabilityPack) ? current.capabilityPack : 'foundation');
+    nextModules = Array.from(new Set([...packModules, ...fromFlags]));
+    data.enabledModules = nextModules;
+    if (fromFlags.length && current.capabilityPack !== 'custom') {
+      // Preserve pack label unless admin is already on custom.
+    }
+  }
 
   if (patch.capabilityPack !== undefined) {
     const pack = patch.capabilityPack;
     data.capabilityPack = pack;
     if (pack === 'custom') {
-      data.enabledModules = Array.from(new Set(patch.enabledModules ?? current.enabledModules));
+      nextModules = Array.from(
+        new Set(patch.enabledModules ?? (current.enabledModules as ModuleId[])),
+      );
+      data.enabledModules = nextModules;
     } else if (patch.enabledModules !== undefined) {
-      data.enabledModules = Array.from(new Set(patch.enabledModules));
+      nextModules = Array.from(new Set(patch.enabledModules));
+      data.enabledModules = nextModules;
     } else {
-      data.enabledModules = modulesForPack(pack);
+      nextModules = modulesForPack(pack);
+      data.enabledModules = nextModules;
     }
   } else if (patch.enabledModules !== undefined) {
     data.capabilityPack = 'custom';
-    data.enabledModules = Array.from(new Set(patch.enabledModules));
+    nextModules = Array.from(new Set(patch.enabledModules));
+    data.enabledModules = nextModules;
+  }
+
+  if (nextModules && patch.featuresEnabled === undefined) {
+    data.featuresEnabled = featuresFromModules(nextModules);
   }
 
   const inst = await prisma.institution.update({ where: { id }, data });

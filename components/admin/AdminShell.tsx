@@ -25,11 +25,13 @@ import BrandLogo from '@/components/BrandLogo';
 
 const NAV = [
   { href: '/admin/overview', label: 'Overview', icon: LayoutDashboard },
-  { href: '/admin/institutions', label: 'Institutions', icon: Building2 },
+  { href: '/admin/institutions', label: 'Organizations', icon: Building2 },
+  { href: '/admin/intellex-institution', label: 'Intellex Institution', icon: GraduationCap },
   { href: '/admin/personnel', label: 'Personnel', icon: Users },
   { href: '/admin/finance', label: 'Finance', icon: Wallet },
   { href: '/admin/applications', label: 'Applications', icon: ClipboardCheck },
   { href: '/admin/onboarding', label: 'Onboarding', icon: ClipboardCheck },
+  { href: '/admin/plans', label: 'Plans & pricing', icon: Tags },
   { href: '/admin/connections', label: 'Connections', icon: Network },
   { href: '/admin/content', label: 'Content pricing', icon: Tags },
   { href: '/admin/library', label: 'Library', icon: BookOpen },

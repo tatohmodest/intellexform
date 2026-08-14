@@ -33,6 +33,14 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
       adminFirstName: body.adminFirstName ? String(body.adminFirstName) : undefined,
       adminLastName: body.adminLastName ? String(body.adminLastName) : undefined,
       adminTitle: body.adminTitle ? String(body.adminTitle) : undefined,
+      learningStructure: Array.isArray(body.learningStructure)
+        ? body.learningStructure.map(String)
+        : [],
+      studentRegistration: body.studentRegistration
+        ? String(body.studentRegistration)
+        : undefined,
+      instructorMode: body.instructorMode ? String(body.instructorMode) : undefined,
+      instructorCanPublish: Boolean(body.instructorCanPublish),
       billingCycle: (body.billingCycle === 'monthly' ? 'monthly' : 'yearly') as BillingCycle,
       selectedModules: Array.isArray(body.selectedModules)
         ? body.selectedModules.map(String)

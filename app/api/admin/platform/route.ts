@@ -4,6 +4,7 @@ import {
   createInstitution,
   getFinanceSnapshot,
   getInstitutionDetail,
+  getIntellexInstitution,
   getPlatformCatalogPlans,
   getPlatformOverview,
   checkInstitutionDatabase,
@@ -99,6 +100,11 @@ export async function GET(req: NextRequest) {
         });
       case 'catalog_plans':
         return NextResponse.json(await getPlatformCatalogPlans());
+      case 'intellex_institution': {
+        const detail = await getIntellexInstitution();
+        if (!detail) return NextResponse.json({ error: 'Intellex Institution not found' }, { status: 404 });
+        return NextResponse.json(detail);
+      }
       default:
         return NextResponse.json({ error: 'Unknown resource' }, { status: 400 });
     }

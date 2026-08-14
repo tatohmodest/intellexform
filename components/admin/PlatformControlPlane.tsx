@@ -17,10 +17,13 @@ import {
   Trash2,
   Shield,
   Globe2,
+  GraduationCap,
+  Tags,
 } from 'lucide-react';
 import { CAPABILITY_PACKS, MODULE_CATALOG, type CapabilityPack } from '@/lib/eduos/capabilities';
 import { COMMERCIAL_PLANS, type CommercialPlanId } from '@/lib/eduos/plans';
 import { DATABASE_MODE_META, type TenantDatabaseMode } from '@/lib/eduos/databaseModes';
+import { FEATURE_FLAG_CATALOG } from '@/lib/eduos/featureFlags';
 import { formatXAF } from '@/lib/format';
 import ImageUploadField from '@/components/media/ImageUploadField';
 import ColorPickerField from '@/components/media/ColorPickerField';
@@ -29,11 +32,13 @@ import { normalizeHexColor } from '@/lib/imageColor';
 type Section =
   | 'overview'
   | 'institutions'
+  | 'intellex'
   | 'personnel'
   | 'finance'
   | 'governance'
   | 'connections'
   | 'onboarding'
+  | 'plans'
   | 'catalogue';
 
 function fmt(d: string | Date | null | undefined) {
@@ -120,6 +125,7 @@ export default function PlatformControlPlane({
   const [governance, setGovernance] = useState<Record<string, unknown> | null>(null);
   const [connections, setConnections] = useState<Record<string, unknown> | null>(null);
   const [onboarding, setOnboarding] = useState<Record<string, unknown> | null>(null);
+  const [plans, setPlans] = useState<Record<string, unknown> | null>(null);
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -152,6 +158,11 @@ export default function PlatformControlPlane({
       if (section === 'governance') setGovernance(await apiGet('governance'));
       if (section === 'connections') setConnections(await apiGet('connections'));
       if (section === 'onboarding') setOnboarding(await apiGet('onboarding_invites'));
+      if (section === 'plans') setPlans(await apiGet('catalog_plans'));
+      if (section === 'intellex') {
+        const detail = await apiGet('intellex_institution');
+        setSelectedInst(detail);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load');
     } finally {
@@ -202,12 +213,14 @@ export default function PlatformControlPlane({
 
   const NAV: { id: Section; label: string; icon: typeof Users }[] = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'institutions', label: 'Institutions', icon: Building2 },
+    { id: 'institutions', label: 'Organizations', icon: Building2 },
+    { id: 'intellex', label: 'Intellex Institution', icon: GraduationCap },
     { id: 'personnel', label: 'Personnel', icon: Users },
     { id: 'finance', label: 'Finance', icon: Wallet },
     { id: 'governance', label: 'Applications', icon: ClipboardCheck },
     { id: 'connections', label: 'Connections', icon: Network },
     { id: 'onboarding', label: 'Onboarding', icon: ClipboardCheck },
+    { id: 'plans', label: 'Plans & pricing', icon: Tags },
     { id: 'catalogue', label: 'Catalogue', icon: Trash2 },
   ];
 
@@ -438,10 +451,96 @@ export default function PlatformControlPlane({
                     setSelectedInst(detail as Record<string, unknown>);
                   }
                 }}
+                onUpdateFeatures={async (featuresEnabled) => {
+                  await run('update_institution', {
+                    id: selectedInst.id,
+                    featuresEnabled,
+                  });
+                }}
               />
             )}
           </div>
         </div>
+      ) : null}
+
+      {section === 'intellex' ? (
+        <div className="space-y-4">
+          <div className="rounded-2xl border p-5" style={{ borderColor: 'var(--line)' }}>
+            <h3 className="font-display text-lg font-semibold">Intellex Institution</h3>
+            <p className="mt-1 text-sm" style={{ color: 'var(--ink-soft)' }}>
+              The official LMS tenant operated by Intellex itself — same engine sold to organizations.
+              Manage students, instructors, mentors, and courses here.
+            </p>
+          </div>
+          {selectedInst ? (
+            <div className="rounded-2xl border p-5" style={{ borderColor: 'var(--line)' }}>
+              <InstitutionDetail
+                inst={selectedInst}
+                busy={busy}
+                onProvision={() => run('provision_institution', { id: selectedInst.id })}
+                onUpdatePack={async (pack, modules) => {
+                  await run('update_institution', {
+                    id: selectedInst.id,
+                    capabilityPack: pack,
+                    enabledModules: modules,
+                  });
+                }}
+                onStatus={async (status) => {
+                  await run('update_institution', { id: selectedInst.id, status });
+                }}
+                onBrand={async (fields) => {
+                  await run('update_institution', { id: selectedInst.id, ...fields });
+                }}
+                onSuspendMember={async (membershipId, suspend) => {
+                  await run('suspend_membership', { membershipId, suspend });
+                }}
+                onDomain={async (payload) => {
+                  const result = (await run('manage_institution_domain', {
+                    slug: selectedInst.slug,
+                    id: selectedInst.id,
+                    ...payload,
+                  })) as { institution?: Record<string, unknown> };
+                  if (result?.institution) setSelectedInst(result.institution);
+                }}
+                onDatabase={async (payload) => {
+                  if (payload.action === 'test') {
+                    await run('test_institution_database', { id: selectedInst.id });
+                  } else {
+                    await run('set_institution_database', {
+                      id: selectedInst.id,
+                      databaseMode: payload.databaseMode,
+                      credentialRef: payload.credentialRef || null,
+                    });
+                  }
+                  const detail = await apiGet('intellex_institution');
+                  setSelectedInst(detail as Record<string, unknown>);
+                }}
+                onUpdateFeatures={async (featuresEnabled) => {
+                  await run('update_institution', {
+                    id: selectedInst.id,
+                    featuresEnabled,
+                  });
+                }}
+              />
+            </div>
+          ) : (
+            <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
+              Loading Intellex Institution…
+            </p>
+          )}
+        </div>
+      ) : null}
+
+      {section === 'plans' ? (
+        <CatalogPlansPanel
+          data={plans}
+          busy={busy}
+          onSave={async (code, patch) => {
+            await run('update_catalog_plan', { code, ...patch });
+            setPlans(await apiGet('catalog_plans'));
+          }}
+          onRefresh={load}
+        />
       ) : null}
 
       {section === 'personnel' ? (
@@ -688,6 +787,7 @@ function InstitutionDetail({
   onSuspendMember,
   onDomain,
   onDatabase,
+  onUpdateFeatures,
 }: {
   inst: Record<string, unknown>;
   busy: boolean;
@@ -707,12 +807,18 @@ function InstitutionDetail({
     databaseMode?: TenantDatabaseMode;
     credentialRef?: string;
   }) => Promise<unknown>;
+  onUpdateFeatures?: (features: string[]) => Promise<unknown>;
 }) {
   const [pack, setPack] = useState<CapabilityPack>(
     (inst.capabilityPack as CapabilityPack) || 'foundation',
   );
   const [modules, setModules] = useState<string[]>(
     (inst.enabledModules as string[]) || (inst.resolvedModules as string[]) || [],
+  );
+  const [features, setFeatures] = useState<string[]>(
+    (inst.resolvedFeatures as string[]) ||
+      (inst.featuresEnabled as string[]) ||
+      [],
   );
   const [logoUrl, setLogoUrl] = useState(String(inst.logoUrl || ''));
   const [coverUrl, setCoverUrl] = useState(String(inst.coverUrl || ''));
@@ -744,6 +850,9 @@ function InstitutionDetail({
     setDescription(String(inst.description || ''));
     setDomainInput(String(inst.pendingCustomDomain || inst.customDomain || ''));
     setSubdomainInput(String(inst.subdomain || ''));
+    setFeatures(
+      (inst.resolvedFeatures as string[]) || (inst.featuresEnabled as string[]) || [],
+    );
     const nextDb = (inst.database as Record<string, unknown> | null) || null;
     if (nextDb?.databaseMode) setDbMode(nextDb.databaseMode as TenantDatabaseMode);
   }, [inst]);
@@ -1076,6 +1185,49 @@ function InstitutionDetail({
           onClick={() => onUpdatePack(pack, pack === 'custom' ? modules : [])}
         >
           Save privileges
+        </button>
+      </div>
+
+      <div className="space-y-2 overflow-hidden rounded-xl border p-4" style={{ borderColor: 'var(--line)' }}>
+        <div className="flex items-center gap-2">
+          <Tags size={14} />
+          <h4 className="font-semibold">LMS feature flags</h4>
+        </div>
+        <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>
+          Fine-grained SaaS toggles for this organization. Saving syncs related capability modules.
+        </p>
+        <div className="grid max-w-full gap-2 overflow-hidden sm:grid-cols-2">
+          {FEATURE_FLAG_CATALOG.map((f) => {
+            const on = features.includes(f.id);
+            return (
+              <label key={f.id} className="flex min-w-0 items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-1 shrink-0"
+                  checked={on}
+                  onChange={() =>
+                    setFeatures((prev) =>
+                      on ? prev.filter((x) => x !== f.id) : [...prev, f.id],
+                    )
+                  }
+                />
+                <span className="min-w-0 break-words">
+                  <span className="font-semibold">{f.label}</span>
+                  <span className="mt-0.5 block text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                    {f.description}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          className="btn btn-primary !rounded-none"
+          disabled={busy || !onUpdateFeatures}
+          onClick={() => onUpdateFeatures?.(features)}
+        >
+          Save feature flags
         </button>
       </div>
 
@@ -1595,6 +1747,140 @@ function OnboardingInvitesPanel({
               </div>
             );
           })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CatalogPlansPanel({
+  data,
+  busy,
+  onSave,
+  onRefresh,
+}: {
+  data: Record<string, unknown> | null;
+  busy: boolean;
+  onSave: (
+    code: string,
+    patch: { priceMonthly?: number; priceYearly?: number | null; name?: string; summary?: string },
+  ) => Promise<void>;
+  onRefresh: () => Promise<void>;
+}) {
+  const student = ((data?.student as Array<Record<string, unknown>>) || []);
+  const organization = ((data?.organization as Array<Record<string, unknown>>) || []);
+  const [drafts, setDrafts] = useState<Record<string, { priceMonthly: string; priceYearly: string; name: string }>>({});
+
+  useEffect(() => {
+    const next: Record<string, { priceMonthly: string; priceYearly: string; name: string }> = {};
+    for (const p of [...student, ...organization]) {
+      next[String(p.code)] = {
+        priceMonthly: String(p.priceMonthly ?? ''),
+        priceYearly: p.priceYearly == null ? '' : String(p.priceYearly),
+        name: String(p.name || ''),
+      };
+    }
+    setDrafts(next);
+  }, [data]);
+
+  function PlanCard({ plan }: { plan: Record<string, unknown> }) {
+    const code = String(plan.code);
+    const draft = drafts[code] || {
+      priceMonthly: String(plan.priceMonthly ?? ''),
+      priceYearly: plan.priceYearly == null ? '' : String(plan.priceYearly),
+      name: String(plan.name || ''),
+    };
+    return (
+      <div className="border p-4" style={{ borderColor: 'var(--line)' }}>
+        <p className="font-mono text-[10px] uppercase tracking-wide" style={{ color: 'var(--ink-soft)' }}>
+          {String(plan.kind)} · {code}
+        </p>
+        <input
+          className="form-input !rounded-none mt-2"
+          value={draft.name}
+          onChange={(e) =>
+            setDrafts((d) => ({ ...d, [code]: { ...draft, name: e.target.value } }))
+          }
+        />
+        <p className="mt-2 text-xs" style={{ color: 'var(--ink-soft)' }}>
+          {String(plan.summary || '')}
+        </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <div>
+            <label className="text-[11px] font-semibold">Monthly (XAF)</label>
+            <input
+              className="form-input !rounded-none"
+              type="number"
+              value={draft.priceMonthly}
+              onChange={(e) =>
+                setDrafts((d) => ({ ...d, [code]: { ...draft, priceMonthly: e.target.value } }))
+              }
+            />
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold">Yearly (XAF)</label>
+            <input
+              className="form-input !rounded-none"
+              type="number"
+              value={draft.priceYearly}
+              onChange={(e) =>
+                setDrafts((d) => ({ ...d, [code]: { ...draft, priceYearly: e.target.value } }))
+              }
+            />
+          </div>
+        </div>
+        <button
+          type="button"
+          className="btn btn-primary !rounded-none mt-3"
+          disabled={busy}
+          onClick={() =>
+            onSave(code, {
+              name: draft.name,
+              priceMonthly: Number(draft.priceMonthly) || 0,
+              priceYearly: draft.priceYearly === '' ? null : Number(draft.priceYearly),
+            })
+          }
+        >
+          Save
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="font-display text-lg font-semibold">Plans & pricing</h3>
+          <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
+            Edit catalog prices without hard-coding. Student resource membership defaults to 1,999 XAF / month.
+          </p>
+        </div>
+        <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => onRefresh()}>
+          Refresh
+        </button>
+      </div>
+
+      <div>
+        <h4 className="mb-3 font-semibold">Student resource subscriptions</h4>
+        <div className="grid gap-3 lg:grid-cols-2">
+          {student.map((p) => (
+            <PlanCard key={String(p.code)} plan={p} />
+          ))}
+          {student.length === 0 ? (
+            <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
+              No student plans yet — created on first catalog load / seed.
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      <div>
+        <h4 className="mb-3 font-semibold">Organization LMS plans</h4>
+        <div className="grid gap-3 lg:grid-cols-2">
+          {organization.map((p) => (
+            <PlanCard key={String(p.code)} plan={p} />
+          ))}
         </div>
       </div>
     </div>

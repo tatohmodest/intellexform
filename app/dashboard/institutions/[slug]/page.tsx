@@ -201,6 +201,13 @@ export default async function CampusPage({
 
           {membership === 'owner' && (
             <>
+              <Link
+                href={`/dashboard/institutions/${inst.slug}/admin`}
+                className="inline-flex items-center justify-center border px-3 py-2.5 text-[13px] font-semibold text-white"
+                style={{ background: accent, borderColor: accent }}
+              >
+                Organization admin
+              </Link>
               <CampusInstructorSalesToggle
                 slug={inst.slug}
                 initial={Boolean(inst.allowInstructorSales)}

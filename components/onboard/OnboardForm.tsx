@@ -41,10 +41,20 @@ const ORG_TYPES = [
   'Other',
 ] as const;
 
+const STRUCTURE_OPTIONS = [
+  { id: 'departments', label: 'Departments / Faculties' },
+  { id: 'programs', label: 'Programs' },
+  { id: 'cohorts', label: 'Cohorts / Classes' },
+  { id: 'groups', label: 'Groups' },
+  { id: 'levels', label: 'Levels' },
+] as const;
+
 const STEPS = [
   { id: 'organization', label: 'Organization' },
   { id: 'platform', label: 'Platform' },
   { id: 'administrator', label: 'Administrator' },
+  { id: 'structure', label: 'Structure' },
+  { id: 'people', label: 'People' },
   { id: 'modules', label: 'Modules' },
   { id: 'review', label: 'Launch' },
 ] as const;
@@ -89,6 +99,14 @@ export default function OnboardForm({
     invite.billingOptions[0] || 'yearly',
   );
   const [selected, setSelected] = useState<string[]>(invite.allowedModules);
+  const [structures, setStructures] = useState<string[]>(['programs', 'cohorts']);
+  const [studentRegistration, setStudentRegistration] = useState<
+    'public' | 'admin_only' | 'invite_only' | 'code'
+  >('invite_only');
+  const [instructorMode, setInstructorMode] = useState<
+    'admin_create' | 'apply' | 'invite'
+  >('admin_create');
+  const [instructorCanPublish, setInstructorCanPublish] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState<{ slug: string; platformUrl?: string } | null>(null);
@@ -149,6 +167,10 @@ export default function OnboardForm({
           adminTitle,
           billingCycle,
           selectedModules: selected,
+          learningStructure: structures,
+          studentRegistration,
+          instructorMode,
+          instructorCanPublish,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -189,11 +211,18 @@ export default function OnboardForm({
           </p>
         ) : null}
         <a
-          href={`/dashboard/institutions/${done.slug}`}
+          href={`/dashboard/institutions/${done.slug}/admin`}
           className="mt-6 inline-flex px-5 py-2.5 text-[13.5px] font-semibold text-white"
           style={{ background: 'var(--green)' }}
         >
-          Open your LMS
+          Open admin
+        </a>
+        <a
+          href={`/dashboard/institutions/${done.slug}`}
+          className="mt-3 inline-flex px-5 py-2.5 text-[13.5px] font-semibold border"
+          style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+        >
+          Open campus
         </a>
       </div>
     );
@@ -399,6 +428,77 @@ export default function OnboardForm({
 
         {step === 3 ? (
           <>
+            <h2 className="font-display text-[20px]">Learning structure</h2>
+            <p className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+              Enable only what your organization needs. You can change this later in admin settings.
+            </p>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {STRUCTURE_OPTIONS.map((opt) => {
+                const on = structures.includes(opt.id);
+                return (
+                  <label
+                    key={opt.id}
+                    className="flex items-center gap-2 border p-3 text-sm"
+                    style={{ borderColor: 'var(--line)' }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={on}
+                      onChange={() =>
+                        setStructures((prev) =>
+                          on ? prev.filter((x) => x !== opt.id) : [...prev, opt.id],
+                        )
+                      }
+                    />
+                    <span className="font-semibold">{opt.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </>
+        ) : null}
+
+        {step === 4 ? (
+          <>
+            <h2 className="font-display text-[20px]">Students & instructors</h2>
+            <Field label="How students join">
+              <select
+                className="form-input !rounded-none"
+                value={studentRegistration}
+                onChange={(e) =>
+                  setStudentRegistration(e.target.value as typeof studentRegistration)
+                }
+              >
+                <option value="invite_only">Invitation only</option>
+                <option value="admin_only">Admin creates accounts</option>
+                <option value="public">Public registration</option>
+                <option value="code">Organization / enrollment codes</option>
+              </select>
+            </Field>
+            <Field label="How instructors are added">
+              <select
+                className="form-input !rounded-none"
+                value={instructorMode}
+                onChange={(e) => setInstructorMode(e.target.value as typeof instructorMode)}
+              >
+                <option value="admin_create">Admins create / search Intellex users</option>
+                <option value="invite">Invitation links</option>
+                <option value="apply">Instructors can apply (approval required)</option>
+              </select>
+            </Field>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={instructorCanPublish}
+                onChange={(e) => setInstructorCanPublish(e.target.checked)}
+              />
+              Instructors may publish courses without admin review
+            </label>
+          </>
+        ) : null}
+
+        {step === 5 ? (
+          <>
             <Field label="Billing">
               <div className="flex flex-wrap gap-2">
                 {invite.billingOptions.map((b) => (
@@ -460,13 +560,16 @@ export default function OnboardForm({
           </>
         ) : null}
 
-        {step === 4 ? (
+        {step === 6 ? (
           <div className="space-y-3 border p-5 text-[14px]" style={{ borderColor: 'var(--line)' }}>
             <h2 className="font-display text-[22px]">Your LMS is ready to launch</h2>
             <Row label="Organization" value={name} />
             <Row label="Platform" value={platformName} />
             <Row label="Type" value={institutionType} />
             <Row label="Administrator" value={`${adminFirstName} ${adminLastName}`.trim()} />
+            <Row label="Structure" value={structures.join(', ') || 'None'} />
+            <Row label="Students" value={studentRegistration.replace(/_/g, ' ')} />
+            <Row label="Instructors" value={instructorMode.replace(/_/g, ' ')} />
             <Row label="Plan" value={`${plan?.name} · ${billingCycle}`} />
             <Row label="Modules" value={selected.length ? selected.join(', ') : 'Core only'} />
             <Row label="Database" value={DATABASE_MODE_META[dbMode].label} />

@@ -217,6 +217,10 @@ export async function completeOnboardingInvite(opts: {
   adminFirstName?: string;
   adminLastName?: string;
   adminTitle?: string;
+  learningStructure?: string[];
+  studentRegistration?: string;
+  instructorMode?: string;
+  instructorCanPublish?: boolean;
 }): Promise<{ slug: string; institutionId: string; subdomain: string | null; platformUrl: string }> {
   const invite = await getOnboardingInvite(opts.token);
   if (!invite) throw new Error('Invite not found');
@@ -273,7 +277,14 @@ export async function completeOnboardingInvite(opts: {
     },
     address: opts.address || null,
     city: opts.city || null,
+    learningStructure: opts.learningStructure || [],
+    studentRegistration: opts.studentRegistration || 'invite_only',
+    instructorMode: opts.instructorMode || 'admin_create',
+    instructorCanPublish: Boolean(opts.instructorCanPublish),
   };
+
+  const { featuresFromModules } = await import('@/lib/eduos/featureFlags');
+  const moduleIds = (selected.length ? selected : enabledModules) as ModuleId[];
 
   await prisma.institution.update({
     where: { id: inst.id },
@@ -284,7 +295,16 @@ export async function completeOnboardingInvite(opts: {
       city: opts.city || undefined,
       address: opts.address || undefined,
       settings: settings as never,
-      featuresEnabled: selected.length ? selected : enabledModules,
+      featuresEnabled: featuresFromModules(moduleIds),
+      enabledModules: moduleIds,
+      enrollmentPolicy:
+        opts.studentRegistration === 'public'
+          ? 'PUBLIC_OPEN'
+          : opts.studentRegistration === 'code'
+            ? 'CODE_BASED'
+            : opts.studentRegistration === 'admin_only'
+              ? 'INVITE_ONLY'
+              : 'INVITE_ONLY',
       onboardingState: 'completed',
       onboardingProgress: 100,
     },
