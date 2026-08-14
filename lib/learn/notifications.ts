@@ -1,6 +1,17 @@
 import { ObjectId } from 'mongodb';
 import { getDb } from '@/lib/repo';
 import { ensureLearnCollections } from '@/lib/learn/ecosystem';
+import { getLearner } from '@/lib/learn/repo';
+import {
+  CATEGORY_LABELS,
+  categoryForKind,
+  type NotificationCategory,
+  type NotificationKind,
+  type NotificationView,
+} from '@/lib/learn/notificationTypes';
+
+export type { NotificationCategory, NotificationKind, NotificationView };
+export { CATEGORY_LABELS, categoryForKind };
 
 export type NotificationDoc = {
   _id?: ObjectId;
@@ -8,22 +19,11 @@ export type NotificationDoc = {
   title: string;
   body: string;
   href?: string | null;
-  kind: 'assignment' | 'exam' | 'system' | 'badge' | 'note' | 'message';
+  kind: NotificationKind;
+  category: NotificationCategory;
   data?: Record<string, unknown>;
   readAt?: Date | null;
   createdAt: Date;
-};
-
-export type NotificationView = {
-  id: string;
-  userId: string;
-  title: string;
-  body: string;
-  href?: string | null;
-  kind: NotificationDoc['kind'];
-  data?: Record<string, unknown>;
-  readAt?: string | null;
-  createdAt: string;
 };
 
 async function ensureNotificationCollections() {
@@ -38,6 +38,7 @@ async function ensureNotificationCollections() {
   await Promise.all([
     db.collection('notifications').createIndex({ userId: 1, createdAt: -1 }),
     db.collection('notifications').createIndex({ userId: 1, readAt: 1 }),
+    db.collection('notifications').createIndex({ userId: 1, category: 1, createdAt: -1 }),
   ]).catch(() => {});
 }
 
@@ -45,17 +46,36 @@ function toView(d: Record<string, unknown>): NotificationView {
   const id = String((d._id as ObjectId).toString());
   const readAt = d.readAt ? new Date(d.readAt as string | Date).toISOString() : null;
   const createdAt = new Date(d.createdAt as string | Date).toISOString();
+  const kind = (d.kind as NotificationKind) || 'system';
+  const category =
+    (d.category as NotificationCategory) || categoryForKind(kind);
   return {
     id,
     userId: String(d.userId),
     title: String(d.title),
     body: String(d.body),
     href: (d.href as string) || null,
-    kind: (d.kind as NotificationDoc['kind']) || 'system',
+    kind,
+    category,
     data: (d.data as Record<string, unknown>) || undefined,
     readAt,
     createdAt,
   };
+}
+
+async function categoryEnabled(userId: string, category: NotificationCategory): Promise<boolean> {
+  try {
+    const learner = await getLearner(userId);
+    const prefs = learner?.preferences;
+    if (!prefs) return true;
+    if (category === 'academic' && prefs.notifyAcademic === false) return false;
+    if (category === 'social' && prefs.notifySocial === false) return false;
+    if (category === 'institution' && prefs.notifyInstitution === false) return false;
+    if (category === 'system' && prefs.notifySystem === false) return false;
+    return true;
+  } catch {
+    return true;
+  }
 }
 
 export async function createNotification(opts: {
@@ -63,9 +83,14 @@ export async function createNotification(opts: {
   title: string;
   body: string;
   href?: string | null;
-  kind?: NotificationDoc['kind'];
+  kind?: NotificationKind;
+  category?: NotificationCategory;
   data?: Record<string, unknown>;
-}): Promise<string> {
+}): Promise<string | null> {
+  const kind = opts.kind || 'system';
+  const category = opts.category || categoryForKind(kind);
+  if (!(await categoryEnabled(opts.userId, category))) return null;
+
   await ensureNotificationCollections();
   const db = await getDb();
   const res = await db.collection('notifications').insertOne({
@@ -73,7 +98,8 @@ export async function createNotification(opts: {
     title: opts.title.slice(0, 160),
     body: opts.body.slice(0, 1000),
     href: opts.href || null,
-    kind: opts.kind || 'system',
+    kind,
+    category,
     data: opts.data || {},
     readAt: null,
     createdAt: new Date(),
@@ -90,16 +116,25 @@ export async function createNotificationsForUsers(
   await ensureNotificationCollections();
   const db = await getDb();
   const now = new Date();
-  const docs = unique.map((userId) => ({
-    userId,
-    title: payload.title.slice(0, 160),
-    body: payload.body.slice(0, 1000),
-    href: payload.href || null,
-    kind: payload.kind || 'system',
-    data: payload.data || {},
-    readAt: null,
-    createdAt: now,
-  }));
+  const kind = payload.kind || 'system';
+  const category = payload.category || categoryForKind(kind);
+
+  const docs: Record<string, unknown>[] = [];
+  for (const userId of unique) {
+    if (!(await categoryEnabled(userId, category))) continue;
+    docs.push({
+      userId,
+      title: payload.title.slice(0, 160),
+      body: payload.body.slice(0, 1000),
+      href: payload.href || null,
+      kind,
+      category,
+      data: payload.data || {},
+      readAt: null,
+      createdAt: now,
+    });
+  }
+  if (!docs.length) return 0;
   const res = await db.collection('notifications').insertMany(docs);
   return res.insertedCount;
 }
@@ -107,15 +142,19 @@ export async function createNotificationsForUsers(
 export async function listNotifications(
   userId: string,
   limit = 40,
-  opts?: { page?: number },
+  opts?: { page?: number; category?: NotificationCategory | 'all' },
 ): Promise<NotificationView[]> {
   await ensureNotificationCollections();
   const db = await getDb();
   const page = Math.max(1, Number(opts?.page) || 1);
   const skip = (page - 1) * Math.max(1, limit);
+  const query: Record<string, unknown> = { userId };
+  if (opts?.category && opts.category !== 'all') {
+    query.category = opts.category;
+  }
   const docs = await db
     .collection('notifications')
-    .find({ userId })
+    .find(query)
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit)
@@ -168,7 +207,6 @@ export async function resolveAssignmentAudience(opts: {
     ).filter((id) => id && id !== opts.authorId);
   }
 
-  // Prefer course roster when the assessment is tied to a teacher course.
   if (opts.recipientMode === 'course' || opts.courseId) {
     const [teacherStudentIds, tutorialStudentIds] = await Promise.all([
       db
@@ -196,7 +234,6 @@ export async function resolveAssignmentAudience(opts: {
       .filter((id) => id && id !== opts.authorId);
   }
 
-  // Fallback: students enrolled in any of this instructor's courses
   const roster = await db
     .collection('course_enrollments')
     .distinct('studentId', { instructorId: opts.authorId })

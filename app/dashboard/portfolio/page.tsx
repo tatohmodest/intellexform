@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { Award, Briefcase } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getPortfolioSnapshot } from '@/lib/learn/portfolio';
+import PortfolioEditor from '@/components/dashboard/PortfolioEditor';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,11 +30,22 @@ export default async function PortfolioPage() {
           <Link href="/dashboard/achievements" style={{ color: 'var(--ink-soft)' }}>
             Achievements
           </Link>
-          <Link href="/dashboard/settings" style={{ color: 'var(--ink-soft)' }}>
-            Edit profile
-          </Link>
+          {p.publicUrl ? (
+            <Link href={p.publicUrl} style={{ color: 'var(--ink-soft)' }}>
+              Public view
+            </Link>
+          ) : null}
         </div>
       </header>
+
+      <PortfolioEditor
+        initialBio={p.bio}
+        initialSkills={p.skills}
+        initialGoals={p.goals}
+        initialPublic={p.portfolioPublic}
+        initialSlug={p.portfolioSlug || ''}
+        publicUrl={p.publicUrl}
+      />
 
       <section className="mb-8 grid gap-3 sm:grid-cols-4">
         {[
@@ -50,6 +62,19 @@ export default async function PortfolioPage() {
           </div>
         ))}
       </section>
+
+      {p.goals.length > 0 ? (
+        <section className="mb-8">
+          <h2 className="mb-3 font-display text-[20px]">Goals</h2>
+          <ul className="space-y-1">
+            {p.goals.map((g) => (
+              <li key={g} className="text-[14px]" style={{ color: 'var(--ink-soft)' }}>
+                → {g}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {p.skills.length > 0 ? (
         <section className="mb-8">
@@ -95,9 +120,14 @@ export default async function PortfolioPage() {
         ) : (
           <ul className="space-y-2">
             {p.certificates.map((c) => (
-              <li key={c.id} className="flex items-center gap-2 border p-3" style={{ borderColor: 'var(--line)' }}>
-                <Award size={16} style={{ color: 'var(--green-deep)' }} />
-                <span className="font-semibold">{c.title}</span>
+              <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 border p-3" style={{ borderColor: 'var(--line)' }}>
+                <span className="inline-flex items-center gap-2 font-semibold">
+                  <Award size={16} style={{ color: 'var(--green-deep)' }} />
+                  {c.title}
+                </span>
+                <Link href={c.verifyUrl} className="text-[12.5px] font-semibold" style={{ color: 'var(--ink-soft)' }}>
+                  Verify
+                </Link>
               </li>
             ))}
           </ul>

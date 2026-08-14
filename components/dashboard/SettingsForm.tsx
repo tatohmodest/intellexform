@@ -12,6 +12,10 @@ type Prefs = {
   sessionReminders: boolean;
   reducedMotion: boolean;
   marketingEmails: boolean;
+  notifyAcademic: boolean;
+  notifySocial: boolean;
+  notifyInstitution: boolean;
+  notifySystem: boolean;
 };
 
 export default function SettingsForm({
@@ -36,6 +40,10 @@ export default function SettingsForm({
     sessionReminders: initialPreferences?.sessionReminders ?? true,
     reducedMotion: initialPreferences?.reducedMotion ?? false,
     marketingEmails: initialPreferences?.marketingEmails ?? false,
+    notifyAcademic: initialPreferences?.notifyAcademic ?? true,
+    notifySocial: initialPreferences?.notifySocial ?? true,
+    notifyInstitution: initialPreferences?.notifyInstitution ?? true,
+    notifySystem: initialPreferences?.notifySystem ?? true,
   });
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -213,6 +221,31 @@ export default function SettingsForm({
               ['sessionReminders', 'Reminders before live mentorship sessions'],
               ['reducedMotion', 'Reduce motion in the dashboard'],
               ['marketingEmails', 'Product updates from InTelleX'],
+            ] as const
+          ).map(([key, label]) => (
+            <label key={key} className="flex items-start gap-3 text-[14px]">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={prefs[key]}
+                onChange={(e) => setPrefs((p) => ({ ...p, [key]: e.target.checked }))}
+              />
+              <span>{label}</span>
+            </label>
+          ))}
+        </div>
+
+        <h3 className="mb-3 mt-8 font-display text-[18px]">Notification categories</h3>
+        <p className="mb-3 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+          Mute categories you do not want in your inbox.
+        </p>
+        <div className="space-y-3">
+          {(
+            [
+              ['notifyAcademic', 'Academic (assignments, exams, notes)'],
+              ['notifySocial', 'Social (messages, badges, discussions)'],
+              ['notifyInstitution', 'Institution announcements'],
+              ['notifySystem', 'System alerts'],
             ] as const
           ).map(([key, label]) => (
             <label key={key} className="flex items-start gap-3 text-[14px]">

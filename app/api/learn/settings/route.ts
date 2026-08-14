@@ -21,6 +21,10 @@ export async function POST(req: NextRequest) {
       sessionReminders?: boolean;
       reducedMotion?: boolean;
       marketingEmails?: boolean;
+      notifyAcademic?: boolean;
+      notifySocial?: boolean;
+      notifyInstitution?: boolean;
+      notifySystem?: boolean;
     };
   } = {};
 
@@ -58,6 +62,18 @@ export async function POST(req: NextRequest) {
     }
     if (typeof p.marketingEmails === 'boolean') {
       patch.preferences.marketingEmails = p.marketingEmails;
+    }
+    if (typeof p.notifyAcademic === 'boolean') {
+      patch.preferences.notifyAcademic = p.notifyAcademic;
+    }
+    if (typeof p.notifySocial === 'boolean') {
+      patch.preferences.notifySocial = p.notifySocial;
+    }
+    if (typeof p.notifyInstitution === 'boolean') {
+      patch.preferences.notifyInstitution = p.notifyInstitution;
+    }
+    if (typeof p.notifySystem === 'boolean') {
+      patch.preferences.notifySystem = p.notifySystem;
     }
   }
 

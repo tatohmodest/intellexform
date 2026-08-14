@@ -4,6 +4,7 @@ import {
   listNotifications,
   markNotificationsRead,
   unreadNotificationCount,
+  type NotificationCategory,
 } from '@/lib/learn/notifications';
 
 export const dynamic = 'force-dynamic';
@@ -15,12 +16,21 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const page = Math.max(1, Number(url.searchParams.get('page') || '1'));
   const pageSize = Math.min(50, Math.max(1, Number(url.searchParams.get('pageSize') || '20')));
+  const categoryParam = url.searchParams.get('category') || 'all';
+  const category =
+    categoryParam === 'all' ||
+    categoryParam === 'academic' ||
+    categoryParam === 'social' ||
+    categoryParam === 'institution' ||
+    categoryParam === 'system'
+      ? (categoryParam as NotificationCategory | 'all')
+      : 'all';
 
   const [notifications, unread] = await Promise.all([
-    listNotifications(session.uid, pageSize, { page }),
+    listNotifications(session.uid, pageSize, { page, category }),
     unreadNotificationCount(session.uid),
   ]);
-  return NextResponse.json({ notifications, unread, page, pageSize });
+  return NextResponse.json({ notifications, unread, page, pageSize, category });
 }
 
 export async function PATCH(req: NextRequest) {

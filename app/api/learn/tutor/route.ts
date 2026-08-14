@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
-  const messages: ChatMessage[] = Array.isArray(body.messages)
+  let messages: ChatMessage[] = Array.isArray(body.messages)
     ? body.messages
         .filter(
           (m: ChatMessage) =>
@@ -31,6 +31,17 @@ export async function POST(req: NextRequest) {
     : [];
   const lastUser = [...messages].reverse().find((m) => m.role === 'user');
   if (!lastUser) return NextResponse.json({ error: 'empty' }, { status: 400 });
+
+  const context = body.context as
+    | { courseTitle?: string; lessonTitle?: string; courseKey?: string; lessonKey?: string }
+    | undefined;
+  if (context?.courseTitle || context?.lessonTitle) {
+    const ctxLine = `[In-course context: course "${context.courseTitle || ''}" · lesson "${context.lessonTitle || ''}"${context.courseKey ? ` · key ${context.courseKey}` : ''}${context.lessonKey ? ` · lessonKey ${context.lessonKey}` : ''}. Stay focused on this lesson unless the learner asks to broaden.]`;
+    messages = [
+      { role: 'system', content: ctxLine },
+      ...messages.filter((m) => m.role !== 'system'),
+    ];
+  }
 
   if (isLLMConfigured()) {
     try {
@@ -43,8 +54,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const catalogueHits = await findRelevantCatalogueCourses(lastUser.content, 4);
-  const answer = interactiveTutorAnswer(messages, catalogueHits);
+  const questionWithContext = context?.lessonTitle
+    ? `${lastUser.content}\n\n(Context: studying ${context.courseTitle || 'course'} / ${context.lessonTitle})`
+    : lastUser.content;
+  const catalogueHits = await findRelevantCatalogueCourses(questionWithContext, 4);
+  const answer = interactiveTutorAnswer(
+    context?.lessonTitle
+      ? [...messages.filter((m) => m.role !== 'system'), { role: 'user', content: questionWithContext }]
+      : messages,
+    catalogueHits,
+  );
   return new Response(answer, {
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',

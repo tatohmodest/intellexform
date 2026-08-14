@@ -856,10 +856,13 @@ export default function AssessmentStudio({
                 {draft.kind === 'assignment' && draft.dueAt && (
                   <DueClock dueAt={draft.dueAt} accent={accent} />
                 )}
+                <p className="font-mono text-[11px]" style={{ color: 'var(--ink-soft)' }}>
+                  Rapid grade: focus score · Enter to save · open Grading center for j/k queue
+                </p>
                 {subs.length === 0 ? (
                   <p style={{ color: 'var(--ink-soft)' }}>No submissions yet.</p>
                 ) : (
-                  subs.map((s) => (
+                  subs.map((s, idx) => (
                     <div key={s.id} className="border-t pt-5" style={{ borderColor: 'var(--line)' }}>
                       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
                         <div>
@@ -899,6 +902,7 @@ export default function AssessmentStudio({
                         accent={accent}
                         defaultScore={s.score ?? 0}
                         defaultFeedback={s.feedback || ''}
+                        autoFocus={idx === 0 && (s.status === 'submitted' || s.status === 'late')}
                         onSave={(score, feedback) => grade(s.studentId, score, feedback)}
                       />
                     </div>
@@ -924,11 +928,13 @@ function GradeRow({
   defaultScore,
   defaultFeedback,
   onSave,
+  autoFocus,
 }: {
   accent: string;
   defaultScore: number;
   defaultFeedback: string;
   onSave: (score: number, feedback: string) => void;
+  autoFocus?: boolean;
 }) {
   const [score, setScore] = useState(defaultScore);
   const [feedback, setFeedback] = useState(defaultFeedback);
@@ -938,13 +944,26 @@ function GradeRow({
         type="number"
         className="form-input !w-24 !rounded-none !py-1.5 text-[13px]"
         value={score}
+        autoFocus={autoFocus}
         onChange={(e) => setScore(Number(e.target.value) || 0)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            onSave(score, feedback);
+          }
+        }}
       />
       <input
         className="form-input !rounded-none min-w-[200px] flex-1 !py-1.5 text-[13px]"
-        placeholder="Feedback to student"
+        placeholder="Feedback to student · Enter to save"
         value={feedback}
         onChange={(e) => setFeedback(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            onSave(score, feedback);
+          }
+        }}
       />
       <button
         type="button"

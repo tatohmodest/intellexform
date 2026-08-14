@@ -27,8 +27,8 @@ export default async function StudentMonitoringPage() {
         </div>
         <h1 className="font-display text-[30px] leading-tight">Student monitoring</h1>
         <p className="mt-2 max-w-[640px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Early signals for students who may need support — inactivity and missing engagement.
-          Treat this as a coaching tool, not a judgment.
+          Early-warning signals: inactivity, missing assignments, and low progress. Treat this as a
+          coaching tool, not a judgment.
         </p>
         <div className="mt-4 flex flex-wrap gap-3 text-[13px] font-semibold">
           <Link href="/dashboard/teach/grading" style={{ color: 'var(--green-deep)' }}>
@@ -54,15 +54,36 @@ export default async function StudentMonitoringPage() {
               key={`${r.courseId}-${r.studentId}`}
               className="border p-4"
               style={{
-                borderColor: r.risk === 'medium' ? 'rgba(185,28,28,0.35)' : 'var(--line)',
+                borderColor:
+                  r.risk === 'high'
+                    ? 'rgba(185,28,28,0.55)'
+                    : r.risk === 'medium'
+                      ? 'rgba(185,28,28,0.35)'
+                      : 'var(--line)',
               }}
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="font-semibold">{r.studentName}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold">{r.studentName}</p>
+                    <span
+                      className="font-mono text-[10px] uppercase tracking-wide"
+                      style={{
+                        color:
+                          r.risk === 'high'
+                            ? '#b91c1c'
+                            : r.risk === 'medium'
+                              ? '#c2410c'
+                              : 'var(--ink-soft)',
+                      }}
+                    >
+                      {r.risk} risk
+                    </span>
+                  </div>
                   <p className="text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
                     {r.courseTitle}
                     {r.studentEmail ? ` · ${r.studentEmail}` : ''}
+                    {r.progressPct != null ? ` · ${r.progressPct}% progress` : ''}
                   </p>
                   <ul className="mt-2 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
                     {r.reasons.map((reason) => (

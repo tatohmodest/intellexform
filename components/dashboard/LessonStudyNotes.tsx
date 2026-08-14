@@ -7,10 +7,12 @@ export default function LessonStudyNotes({
   courseKey,
   lessonKey,
   accent = '#00b369',
+  timestampSec,
 }: {
   courseKey: string;
   lessonKey: string;
   accent?: string;
+  timestampSec?: number;
 }) {
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(true);
@@ -34,7 +36,12 @@ export default function LessonStudyNotes({
       await fetch('/api/learn/lesson-notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ courseKey, lessonKey, body }),
+        body: JSON.stringify({
+          courseKey,
+          lessonKey,
+          body,
+          timestampSec: typeof timestampSec === 'number' ? timestampSec : undefined,
+        }),
       });
       setSaved(true);
     } finally {
@@ -52,6 +59,11 @@ export default function LessonStudyNotes({
 
   return (
     <div className="space-y-2">
+      {typeof timestampSec === 'number' && timestampSec > 0 ? (
+        <p className="font-mono text-[11px]" style={{ color: 'var(--ink-soft)' }}>
+          Linked to {Math.floor(timestampSec / 60)}:{String(timestampSec % 60).padStart(2, '0')}
+        </p>
+      ) : null}
       <textarea
         className="form-input !rounded-none min-h-[140px]"
         placeholder="Write study notes for this lesson…"

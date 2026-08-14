@@ -3,7 +3,11 @@ import { redirect } from 'next/navigation';
 import { ClipboardCheck } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getRoles } from '@/lib/learn/ecosystem';
-import { getInstructorMonitoringSummary } from '@/lib/learn/studentMonitoring';
+import {
+  getInstructorMonitoringSummary,
+  listPendingGradeQueue,
+} from '@/lib/learn/studentMonitoring';
+import RapidGradePanel from '@/components/dashboard/RapidGradePanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +20,10 @@ export default async function GradingCenterPage() {
     redirect('/dashboard/mentor');
   }
 
-  const summary = await getInstructorMonitoringSummary(session.uid);
+  const [summary, queue] = await Promise.all([
+    getInstructorMonitoringSummary(session.uid),
+    listPendingGradeQueue(session.uid),
+  ]);
 
   return (
     <div className="mx-auto max-w-[960px]">
@@ -29,7 +36,7 @@ export default async function GradingCenterPage() {
           {summary.pendingSubmissionCount} submission
           {summary.pendingSubmissionCount === 1 ? '' : 's'} awaiting feedback across{' '}
           {summary.needsGrading.length} assignment
-          {summary.needsGrading.length === 1 ? '' : 's'}.
+          {summary.needsGrading.length === 1 ? '' : 's'}. Use rapid grade for keyboard flow.
         </p>
         <div className="mt-4 flex flex-wrap gap-3 text-[13px] font-semibold">
           <Link href="/dashboard/teach" style={{ color: 'var(--green-deep)' }}>
@@ -44,6 +51,12 @@ export default async function GradingCenterPage() {
         </div>
       </header>
 
+      <section className="mb-10">
+        <h2 className="mb-3 font-display text-[22px]">Rapid grade</h2>
+        <RapidGradePanel initialQueue={queue} />
+      </section>
+
+      <h2 className="mb-3 font-display text-[22px]">By assignment</h2>
       {summary.needsGrading.length === 0 ? (
         <div className="border border-dashed p-10 text-center" style={{ borderColor: 'var(--line)' }}>
           <p className="font-display text-[20px]">You&apos;re caught up</p>

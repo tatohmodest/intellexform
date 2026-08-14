@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Bell } from 'lucide-react';
-import type { NotificationView } from '@/lib/learn/notifications';
+import type { NotificationView } from '@/lib/learn/notificationTypes';
 
 export default function NotificationBell({ accent = '#00b369' }: { accent?: string }) {
   const [open, setOpen] = useState(false);

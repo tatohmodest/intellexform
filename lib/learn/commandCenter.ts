@@ -371,7 +371,7 @@ export async function getStudentCommandCenter(userId: string) {
   // Approximate "this week" minutes from recent progress (best-effort).
   const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
   const weeklyMinutes = progress
-    .filter((p) => new Date(p.completedAt).getTime() >= weekAgo)
+    .filter((p) => p.completedAt && new Date(p.completedAt).getTime() >= weekAgo)
     .reduce((sum, p) => sum + (p.minutes || 0), 0);
 
   return {

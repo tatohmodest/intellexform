@@ -36,13 +36,23 @@ export interface LearnerDoc {
   /** YYYY-MM-DD of the last day the learner did something. */
   lastActiveDay: string | null;
   weeklyGoalMinutes: number;
-  /** Preferences - locale, notifications, motion. */
+  /** Preferences - locale, notifications, motion, career profile. */
   preferences?: {
     locale?: string;
     emailNotifications?: boolean;
     sessionReminders?: boolean;
     reducedMotion?: boolean;
     marketingEmails?: boolean;
+    /** Category notification toggles (default on). */
+    notifyAcademic?: boolean;
+    notifySocial?: boolean;
+    notifyInstitution?: boolean;
+    notifySystem?: boolean;
+    bio?: string;
+    skills?: string[];
+    goals?: string[];
+    portfolioPublic?: boolean;
+    portfolioSlug?: string;
   };
   /** Latest instructor badge label after mentor approval. */
   instructorBadge?: string | null;
@@ -64,8 +74,10 @@ export interface ProgressDoc {
   userId: string;
   courseSlug: string;
   lessonSlug: string;
-  completedAt: Date;
+  completedAt?: Date | null;
   minutes: number;
+  /** Last playback position for resume (seconds). */
+  lastPositionSec?: number;
 }
 
 export interface BookingDoc {
@@ -440,21 +452,28 @@ export async function setLessonComplete(opts: {
     .createIndex({ userId: 1, courseSlug: 1, lessonSlug: 1 }, { unique: true })
     .catch(() => {});
   if (opts.done) {
+    const existing = await col.findOne({
+      userId: opts.userId,
+      courseSlug: opts.courseSlug,
+      lessonSlug: opts.lessonSlug,
+    });
     const res = await col.updateOne(
       { userId: opts.userId, courseSlug: opts.courseSlug, lessonSlug: opts.lessonSlug },
       {
-        $setOnInsert: {
+        $set: {
+          completedAt: existing?.completedAt || new Date(),
+          minutes: opts.minutes,
           userId: opts.userId,
           courseSlug: opts.courseSlug,
           lessonSlug: opts.lessonSlug,
-          completedAt: new Date(),
-          minutes: opts.minutes,
         },
       },
       { upsert: true },
     );
-    if (res.upsertedCount > 0) {
-      await awardXp(opts.userId, XP.COMPLETE_LESSON).catch(() => {});
+    if (res.upsertedCount > 0 || !existing?.completedAt) {
+      if (!existing?.completedAt) {
+        await awardXp(opts.userId, XP.COMPLETE_LESSON).catch(() => {});
+      }
     }
   } else {
     await col.deleteOne({
@@ -466,6 +485,47 @@ export async function setLessonComplete(opts: {
   await db.collection('enrollments').updateOne(
     { userId: opts.userId, courseSlug: opts.courseSlug },
     { $set: { lastLessonSlug: opts.lessonSlug, lastTouchedAt: new Date() } },
+  );
+}
+
+/** Persist video/audio playback position without marking complete. */
+export async function setLessonPosition(opts: {
+  userId: string;
+  courseSlug: string;
+  lessonSlug: string;
+  positionSec: number;
+  minutes?: number;
+}) {
+  const db = await getDb();
+  const col = db.collection('lesson_progress');
+  await col
+    .createIndex({ userId: 1, courseSlug: 1, lessonSlug: 1 }, { unique: true })
+    .catch(() => {});
+  const positionSec = Math.max(0, Math.round(opts.positionSec));
+  await col.updateOne(
+    {
+      userId: opts.userId,
+      courseSlug: opts.courseSlug,
+      lessonSlug: opts.lessonSlug,
+    },
+    {
+      $set: {
+        lastPositionSec: positionSec,
+        userId: opts.userId,
+        courseSlug: opts.courseSlug,
+        lessonSlug: opts.lessonSlug,
+        minutes: opts.minutes ?? Math.max(1, Math.round(positionSec / 60)),
+      },
+      $setOnInsert: {
+        completedAt: null,
+      },
+    },
+    { upsert: true },
+  );
+  await db.collection('enrollments').updateOne(
+    { userId: opts.userId, courseSlug: opts.courseSlug },
+    { $set: { lastLessonSlug: opts.lessonSlug, lastTouchedAt: new Date() } },
+    { upsert: false },
   );
 }
 

@@ -88,6 +88,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Community',
     items: [
       { href: '/dashboard/messages', label: 'Messages', icon: MessageSquare },
+      { href: '/dashboard/study-groups', label: 'Study groups', icon: Users },
       { href: '/dashboard/mentorship', label: 'Mentorship', icon: Users },
       { href: '/dashboard/notes', label: 'Notes', icon: FileText },
       { href: '/dashboard/institutions', label: 'Institutions', icon: Building2 },

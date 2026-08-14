@@ -1,9 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react';
 import LessonStudyNotes from '@/components/dashboard/LessonStudyNotes';
+import LessonDiscussion from '@/components/dashboard/LessonDiscussion';
+import LessonAiAssist from '@/components/dashboard/LessonAiAssist';
 
 type Lesson = {
   id: string;
@@ -45,7 +47,10 @@ export default function OrgCoursePlayer({
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [rail, setRail] = useState<'notes' | 'resources' | 'discussion'>('notes');
+  const [rail, setRail] = useState<'notes' | 'resources' | 'discussion' | 'ai'>('notes');
+  const [resumeSec, setResumeSec] = useState(0);
+  const lastPosSave = useRef(0);
+  const courseKey = `org:${slug}:${courseId}`;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -84,6 +89,37 @@ export default function OrgCoursePlayer({
     }
     return null;
   }, [course, activeLessonId]);
+
+  useEffect(() => {
+    if (!activeLesson) return;
+    fetch(
+      `/api/learn/progress?courseSlug=${encodeURIComponent(courseKey)}`,
+    )
+      .then((r) => r.json())
+      .then((d) => {
+        const row = (d.progress || []).find(
+          (p: { lessonSlug: string }) => String(p.lessonSlug) === activeLesson.id,
+        );
+        setResumeSec(typeof row?.lastPositionSec === 'number' ? row.lastPositionSec : 0);
+      })
+      .catch(() => setResumeSec(0));
+  }, [activeLesson, courseKey]);
+
+  function saveVideoPosition(sec: number) {
+    if (!activeLesson) return;
+    const now = Date.now();
+    if (now - lastPosSave.current < 4000) return;
+    lastPosSave.current = now;
+    void fetch('/api/learn/progress', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        courseSlug: courseKey,
+        lessonSlug: activeLesson.id,
+        positionSec: Math.floor(sec),
+      }),
+    });
+  }
 
   async function markComplete() {
     if (!activeLesson) return;
@@ -229,7 +265,12 @@ export default function OrgCoursePlayer({
                       allowFullScreen
                     />
                   ) : (
-                    <video src={activeLesson.videoUrl} controls className="h-full w-full" />
+                    <OrgResumeVideo
+                      key={activeLesson.id}
+                      src={activeLesson.videoUrl}
+                      startAt={resumeSec}
+                      onProgress={saveVideoPosition}
+                    />
                   )}
                 </div>
               ) : null}
@@ -262,7 +303,7 @@ export default function OrgCoursePlayer({
 
               <div className="mt-8 border-t pt-5" style={{ borderColor: 'var(--line)' }}>
                 <div className="mb-3 flex flex-wrap gap-2">
-                  {(['notes', 'resources', 'discussion'] as const).map((t) => (
+                  {(['notes', 'resources', 'discussion', 'ai'] as const).map((t) => (
                     <button
                       key={t}
                       type="button"
@@ -273,15 +314,16 @@ export default function OrgCoursePlayer({
                         color: rail === t ? accent : 'var(--ink-soft)',
                       }}
                     >
-                      {t}
+                      {t === 'ai' ? 'AI' : t}
                     </button>
                   ))}
                 </div>
                 {rail === 'notes' ? (
                   <LessonStudyNotes
-                    courseKey={`org:${slug}:${courseId}`}
+                    courseKey={courseKey}
                     lessonKey={activeLesson.id}
                     accent={accent}
+                    timestampSec={resumeSec}
                   />
                 ) : null}
                 {rail === 'resources' ? (
@@ -291,16 +333,20 @@ export default function OrgCoursePlayer({
                   </p>
                 ) : null}
                 {rail === 'discussion' ? (
-                  <div className="space-y-2 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-                    <p>Ask your instructor about this lesson via Messages.</p>
-                    <Link
-                      href={`/dashboard/messages?compose=1&subject=${encodeURIComponent(activeLesson.title)}`}
-                      className="inline-block font-semibold"
-                      style={{ color: accent }}
-                    >
-                      Open messages →
-                    </Link>
-                  </div>
+                  <LessonDiscussion
+                    courseKey={courseKey}
+                    lessonKey={activeLesson.id}
+                    accent={accent}
+                  />
+                ) : null}
+                {rail === 'ai' ? (
+                  <LessonAiAssist
+                    courseTitle={course.title}
+                    lessonTitle={activeLesson.title}
+                    courseKey={courseKey}
+                    lessonKey={activeLesson.id}
+                    accent={accent}
+                  />
                 ) : null}
               </div>
             </>
@@ -308,5 +354,35 @@ export default function OrgCoursePlayer({
         </section>
       </div>
     </div>
+  );
+}
+
+function OrgResumeVideo({
+  src,
+  startAt,
+  onProgress,
+}: {
+  src: string;
+  startAt: number;
+  onProgress: (sec: number) => void;
+}) {
+  const ref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onMeta = () => {
+      if (startAt > 0 && startAt < (el.duration || Infinity)) el.currentTime = startAt;
+    };
+    el.addEventListener('loadedmetadata', onMeta);
+    return () => el.removeEventListener('loadedmetadata', onMeta);
+  }, [startAt]);
+  return (
+    <video
+      ref={ref}
+      src={src}
+      controls
+      className="h-full w-full"
+      onTimeUpdate={(e) => onProgress(e.currentTarget.currentTime)}
+    />
   );
 }
