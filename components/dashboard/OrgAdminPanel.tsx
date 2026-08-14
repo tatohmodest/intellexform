@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { FEATURE_FLAG_CATALOG } from '@/lib/eduos/featureFlags';
 import { getModuleMeta, type ModuleId } from '@/lib/eduos/capabilities';
+import CampusWebsiteBuilder from '@/components/dashboard/CampusWebsiteBuilder';
 
 export default function OrgAdminPanel({
   slug,
@@ -124,6 +125,8 @@ export default function OrgAdminPanel({
           </Link>
         </div>
       </section>
+
+      <CampusWebsiteBuilder slug={slug} accent={accent} />
 
       <section className="border p-5" style={{ borderColor: 'var(--line)' }}>
         <h2 className="font-display text-[20px]">Enabled features</h2>

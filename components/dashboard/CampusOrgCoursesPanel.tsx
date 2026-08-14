@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { BookOpen, Loader2, Plus } from 'lucide-react';
+import OrgCourseCurriculumEditor from '@/components/dashboard/OrgCourseCurriculumEditor';
 
 type Course = {
   id: string;
@@ -30,6 +31,7 @@ export default function CampusOrgCoursesPanel({
   const [description, setDescription] = useState('');
   const [enrollCourseId, setEnrollCourseId] = useState('');
   const [enrollEmail, setEnrollEmail] = useState('');
+  const [editCourseId, setEditCourseId] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -63,6 +65,25 @@ export default function CampusOrgCoursesPanel({
       if (!res.ok) throw new Error(data.error || 'Could not create');
       setTitle('');
       setDescription('');
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function publishCourse(courseId: string) {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/org/${encodeURIComponent(slug)}/learning`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'publish_course', courseId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not publish');
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed');
@@ -205,7 +226,7 @@ export default function CampusOrgCoursesPanel({
           <table className="w-full text-sm">
             <thead>
               <tr style={{ background: 'var(--paper-dim)' }}>
-                {['Title', 'Status', 'Enrollments', 'Price'].map((h) => (
+                {['Title', 'Status', 'Enrollments', 'Price', 'Actions'].map((h) => (
                   <th key={h} className="px-3 py-2 text-left text-xs" style={{ color: 'var(--ink-soft)' }}>
                     {h}
                   </th>
@@ -219,12 +240,36 @@ export default function CampusOrgCoursesPanel({
                   <td className="px-3 py-2">{c.status}</td>
                   <td className="px-3 py-2">{c._count?.enrollments ?? 0}</td>
                   <td className="px-3 py-2">{c.priceXaf ? `${c.priceXaf} XAF` : 'Free'}</td>
+                  <td className="px-3 py-2">
+                    <div className="flex flex-wrap gap-2 text-[12px] font-semibold">
+                      <button type="button" onClick={() => setEditCourseId(c.id)} style={{ color: accent }}>
+                        Curriculum
+                      </button>
+                      <Link href={`/dashboard/institutions/${slug}/learn/${c.id}`} style={{ color: accent }}>
+                        Player
+                      </Link>
+                      {c.status !== 'PUBLISHED' ? (
+                        <button type="button" disabled={busy} onClick={() => publishCourse(c.id)}>
+                          Publish
+                        </button>
+                      ) : null}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      {editCourseId ? (
+        <OrgCourseCurriculumEditor
+          slug={slug}
+          courseId={editCourseId}
+          courseTitle={courses.find((c) => c.id === editCourseId)?.title || 'Course'}
+          accent={accent}
+        />
+      ) : null}
     </section>
   );
 }

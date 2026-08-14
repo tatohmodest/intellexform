@@ -61,6 +61,25 @@ See also: `InstitutionFederationLink` (`databaseMode`, `schemaVersion`, `credent
 - Organization admins connect custom domains from Settings → Domains.
 - DNS CNAME instructions are shown; `Verify Domain` checks ownership then activates.
 - Middleware resolves Host → campus gateway → organization.
+- Guests on custom hosts land on `/site/{slug}` (public LMS website); signed-in users go to the campus dashboard.
+
+## Phase 4 — Organization LMS data plane
+
+Preferred tenant operations for people/courses/enrollments/progress use **Prisma** (`lib/orgLms`, `/api/org/[slug]/*`).
+
+| Surface | Path |
+|---------|------|
+| Members / instructors | `/api/org/[slug]/members` |
+| Courses / enrollments | `/api/org/[slug]/courses` |
+| Learning tree + progress | `/api/org/[slug]/learning` |
+| Learner player | `/dashboard/institutions/[slug]/learn/[courseId]` |
+| Summary metrics | `/api/org/[slug]/summary` |
+| Website builder API | `/api/org/[slug]/website` |
+| Public website | `/site/[slug]` |
+| Dedicated DB secrets | `lib/eduos/secretsDb.ts` (`env:`, `intellex-secret:`, `TENANT_DB_URLS`) |
+| Learner dashboard merge | `lib/orgLms/learnerPlane.ts` → `getEnrollments` / `getProgress` |
+
+Mongo `teacher_courses` remains available in Teaching Studio during migration. Catalogue enrollments may still use Mongo; org LMS enrollments/progress prefer Prisma.
 
 ## Hierarchy of authority
 

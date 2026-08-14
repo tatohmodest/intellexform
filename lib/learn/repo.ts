@@ -327,6 +327,7 @@ export async function awardXp(lbId: string, xpGain: number) {
 // ── Enrollments ───────────────────────────────────────────────────────────────
 
 export async function getEnrollments(userId: string): Promise<EnrollmentDoc[]> {
+  let mongo: EnrollmentDoc[] = [];
   try {
     const db = await getDb();
     const docs = await db
@@ -334,10 +335,37 @@ export async function getEnrollments(userId: string): Promise<EnrollmentDoc[]> {
       .find({ userId }, { projection: { _id: 0 } })
       .sort({ lastTouchedAt: -1, enrolledAt: -1 })
       .toArray();
-    return docs as unknown as EnrollmentDoc[];
+    mongo = docs as unknown as EnrollmentDoc[];
   } catch {
-    return [];
+    mongo = [];
   }
+
+  // Phase 4: merge Prisma org LMS enrollments (preferred for tenant courses).
+  let prismaRows: EnrollmentDoc[] = [];
+  try {
+    const { resolvePrismaUserId, listPrismaEnrollmentsForUser } = await import(
+      '@/lib/orgLms/learnerPlane'
+    );
+    const learner = await getLearner(userId).catch(() => null);
+    const prismaUserId = await resolvePrismaUserId({
+      userId,
+      email: learner?.email,
+    });
+    if (prismaUserId) {
+      prismaRows = await listPrismaEnrollmentsForUser(prismaUserId);
+    }
+  } catch {
+    prismaRows = [];
+  }
+
+  const bySlug = new Map<string, EnrollmentDoc>();
+  for (const row of mongo) bySlug.set(row.courseSlug, row);
+  for (const row of prismaRows) bySlug.set(row.courseSlug, row);
+  return Array.from(bySlug.values()).sort((a, b) => {
+    const at = new Date(a.lastTouchedAt || a.enrolledAt).getTime();
+    const bt = new Date(b.lastTouchedAt || b.enrolledAt).getTime();
+    return bt - at;
+  });
 }
 
 export async function enroll(userId: string, courseSlug: string) {
@@ -361,6 +389,7 @@ export async function getProgress(
   userId: string,
   courseSlug?: string,
 ): Promise<ProgressDoc[]> {
+  let mongo: ProgressDoc[] = [];
   try {
     const db = await getDb();
     const query: Record<string, unknown> = { userId };
@@ -369,10 +398,33 @@ export async function getProgress(
       .collection('lesson_progress')
       .find(query, { projection: { _id: 0 } })
       .toArray();
-    return docs as unknown as ProgressDoc[];
+    mongo = docs as unknown as ProgressDoc[];
   } catch {
-    return [];
+    mongo = [];
   }
+
+  let prismaRows: ProgressDoc[] = [];
+  try {
+    const { resolvePrismaUserId, listPrismaProgressForUser } = await import(
+      '@/lib/orgLms/learnerPlane'
+    );
+    const learner = await getLearner(userId).catch(() => null);
+    const prismaUserId = await resolvePrismaUserId({
+      userId,
+      email: learner?.email,
+    });
+    if (prismaUserId) {
+      prismaRows = await listPrismaProgressForUser(prismaUserId, courseSlug);
+    }
+  } catch {
+    prismaRows = [];
+  }
+
+  const key = (p: ProgressDoc) => `${p.courseSlug}::${p.lessonSlug}`;
+  const map = new Map<string, ProgressDoc>();
+  for (const row of mongo) map.set(key(row), row);
+  for (const row of prismaRows) map.set(key(row), row);
+  return Array.from(map.values());
 }
 
 export async function setLessonComplete(opts: {

@@ -135,8 +135,17 @@ export async function recomputeEnrollmentProgress(opts: {
   const { client } = await getTenantPrisma(opts.institutionId);
   const { prisma } = await import('@/lib/db/prisma');
 
+  const course = await client.course.findFirst({
+    where: {
+      institutionId: opts.institutionId,
+      OR: [{ id: opts.courseId }, { slug: opts.courseId }],
+    },
+    select: { id: true },
+  });
+  if (!course) return 0;
+
   const lessons = await client.lesson.findMany({
-    where: { section: { courseId: opts.courseId } },
+    where: { section: { courseId: course.id } },
     select: { id: true },
   });
   if (lessons.length === 0) return 0;
@@ -151,7 +160,7 @@ export async function recomputeEnrollmentProgress(opts: {
   const percent = Math.round((done / lessons.length) * 1000) / 10;
 
   await client.enrollment.updateMany({
-    where: { userId: opts.userId, courseId: opts.courseId },
+    where: { userId: opts.userId, courseId: course.id },
     data: {
       progressPercent: percent,
       lastAccessedAt: new Date(),
