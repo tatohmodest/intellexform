@@ -59,13 +59,19 @@ export async function verifyDomainDns(hostRaw: string): Promise<DnsVerifyResult>
   // Some providers flatten CNAME to A records. Best-effort: resolve both hosts.
   try {
     const [hostAddrs, targetAddrs] = await Promise.all([
-      dns.lookup(host, { all: true }).catch(() => []),
-      dns.lookup(expected, { all: true }).catch(() => []),
+      dns.lookup(host, { all: true }).catch(() => [] as { address: string }[]),
+      dns.lookup(expected, { all: true }).catch(() => [] as { address: string }[]),
     ]);
-    const hostIps = new Set(hostAddrs.map((a) => a.address));
-    const overlap = targetAddrs.some((a) => hostIps.has(a.address));
-    if (overlap && hostIps.size > 0) {
-      found.push(...Array.from(hostIps).map((ip) => `A:${ip}`));
+    const hostIpList = hostAddrs.map((a) => a.address);
+    const hostIpLookup: Record<string, true> = {};
+    for (const ip of hostIpList) hostIpLookup[ip] = true;
+    const overlap = targetAddrs.some((a) => Boolean(hostIpLookup[a.address]));
+    if (overlap && hostIpList.length > 0) {
+      const uniqueIps: string[] = [];
+      for (const ip of hostIpList) {
+        if (!uniqueIps.includes(ip)) uniqueIps.push(ip);
+      }
+      for (const ip of uniqueIps) found.push(`A:${ip}`);
       return {
         ok: true,
         host,
