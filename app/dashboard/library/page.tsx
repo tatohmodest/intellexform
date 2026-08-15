@@ -8,7 +8,7 @@ import {
   listPublishedBooks,
 } from '@/lib/learn/ecosystem';
 import { hasActiveCertSubscription } from '@/lib/learn/certSubscription';
-import { listBookRequestsByUser } from '@/lib/learn/bookRequests';
+import { getBookRequestQuota, listBookRequestsByUser } from '@/lib/learn/bookRequests';
 import {
   getPurchasedNoteIds,
   listLibraryNotes,
@@ -17,7 +17,7 @@ import {
 import { STUDENT_MONTHLY_XAF } from '@/lib/learn/studentMembership';
 import GetBookButton from '@/components/dashboard/GetBookButton';
 import GetNoteButton from '@/components/dashboard/GetNoteButton';
-import BookRequestForm from '@/components/dashboard/BookRequestForm';
+import BookRequestButton from '@/components/dashboard/BookRequestButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,15 +25,16 @@ export default async function LibraryPage() {
   const session = getSessionUser();
   if (!session) redirect('/login?next=/dashboard/library');
 
-  const [books, purchased, roles, libraryNotes, purchasedNotes, isMember, myRequests] =
+  const isMember = await hasActiveCertSubscription(session.uid);
+  const [books, purchased, roles, libraryNotes, purchasedNotes, myRequests, quota] =
     await Promise.all([
       listPublishedBooks(),
       getPurchasedBookIds(session.uid),
       getRoles(session.uid),
       listLibraryNotes(),
       getPurchasedNoteIds(session.uid),
-      hasActiveCertSubscription(session.uid),
       listBookRequestsByUser(session.uid),
+      getBookRequestQuota(session.uid, isMember),
     ]);
 
   const myShelf = books.filter(
@@ -110,10 +111,17 @@ export default async function LibraryPage() {
         </div>
       )}
 
-      <section className="mb-10">
-        <BookRequestForm />
+      <section className="mb-10 rounded-2xl border p-5 sm:p-6" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
+        <div className="mb-4">
+          <h3 className="font-display text-[18px]">Need a title we don’t have?</h3>
+          <p className="mt-1 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
+            Request books without cluttering the shelf. Students get 10 requests per month; everyone
+            else gets 2.
+          </p>
+        </div>
+        <BookRequestButton initialQuota={quota} />
         {myRequests.length > 0 && (
-          <div className="mt-4 rounded-2xl border p-4" style={{ borderColor: 'var(--line)' }}>
+          <div className="mt-5 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
             <div className="mb-2 text-[13px] font-semibold">Your recent requests</div>
             <ul className="space-y-2 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
               {myRequests.slice(0, 5).map((r) => (

@@ -17,6 +17,7 @@ import {
 import type { InstructorCourseStudents } from '@/lib/learn/ecosystem';
 import type { CourseClassSessionView } from '@/lib/learn/courseClassSessions';
 import MessageStudentButton from '@/components/dashboard/MessageStudentButton';
+import MentorScheduleButton from '@/components/dashboard/MentorScheduleButton';
 
 export default function MyStudentsPanel({
   groups,
@@ -134,8 +135,8 @@ export default function MyStudentsPanel({
             Grouped by enrolment
           </p>
           <p className="mt-2 text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-            See who is in each of your courses. Start class immediately, or assign an exam or
-            assignment to everyone enrolled in that course.
+            See who is in each of your courses. Start class, set weekly school or call times on
+            their calendar, or assign an exam or assignment to everyone enrolled.
           </p>
         </div>
         <div
@@ -416,6 +417,10 @@ export default function MyStudentsPanel({
                           {' · '}
                           {new Date(s.enrolledAt).toLocaleDateString()}
                         </span>
+                        <MentorScheduleButton
+                          studentId={s.studentId}
+                          studentName={s.studentName}
+                        />
                         <MessageStudentButton
                           studentId={s.studentId}
                           studentName={s.studentName}

@@ -19,9 +19,28 @@ export type BookRequestDoc = {
 
 export type BookRequestView = Omit<BookRequestDoc, '_id'> & { id: string };
 
+/** Monthly request caps — students get more; everyone else is limited. */
+export const BOOK_REQUEST_LIMIT_STUDENT = 10;
+export const BOOK_REQUEST_LIMIT_GUEST = 2;
+
+export type BookRequestQuota = {
+  isStudent: boolean;
+  limit: number;
+  used: number;
+  remaining: number;
+  monthLabel: string;
+};
+
 function toView(d: Record<string, unknown>): BookRequestView {
   const { _id, ...rest } = d as unknown as BookRequestDoc & { _id: ObjectId };
   return { ...(rest as Omit<BookRequestDoc, '_id'>), id: _id.toString() };
+}
+
+function monthBounds(ref = new Date()): { start: Date; end: Date; label: string } {
+  const start = new Date(ref.getFullYear(), ref.getMonth(), 1);
+  const end = new Date(ref.getFullYear(), ref.getMonth() + 1, 1);
+  const label = start.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  return { start, end, label };
 }
 
 async function ensure() {
@@ -30,6 +49,36 @@ async function ensure() {
     db.collection('book_requests').createIndex({ userId: 1, createdAt: -1 }),
     db.collection('book_requests').createIndex({ status: 1, createdAt: -1 }),
   ]).catch(() => {});
+}
+
+export async function countBookRequestsThisMonth(userId: string): Promise<number> {
+  try {
+    await ensure();
+    const db = await getDb();
+    const { start, end } = monthBounds();
+    return await db.collection('book_requests').countDocuments({
+      userId,
+      createdAt: { $gte: start, $lt: end },
+    });
+  } catch {
+    return 0;
+  }
+}
+
+export async function getBookRequestQuota(
+  userId: string,
+  isStudent: boolean,
+): Promise<BookRequestQuota> {
+  const { label } = monthBounds();
+  const limit = isStudent ? BOOK_REQUEST_LIMIT_STUDENT : BOOK_REQUEST_LIMIT_GUEST;
+  const used = await countBookRequestsThisMonth(userId);
+  return {
+    isStudent,
+    limit,
+    used,
+    remaining: Math.max(0, limit - used),
+    monthLabel: label,
+  };
 }
 
 export async function createBookRequest(opts: {

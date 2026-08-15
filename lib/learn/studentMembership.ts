@@ -49,7 +49,7 @@ export const STUDENT_BENEFITS: StudentBenefit[] = [
   },
   {
     title: 'Request books from InTelleX',
-    desc: 'Ask for titles you need - admins review requests and publish to the library.',
+    desc: 'Ask for titles you need — students get up to 10 requests per month (guests get 2). Admins review and publish to the library.',
   },
   {
     title: 'AI tutor & live learning',
