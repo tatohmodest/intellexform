@@ -29,6 +29,7 @@ import {
   type SetTenantDatabaseInput,
 } from '@/lib/eduos/tenantDb';
 import { isMissingPrismaColumn } from '@/lib/eduos/prismaErrors';
+import { ensurePlatformSchema, fetchInstitutionRaw } from '@/lib/eduos/ensureSchema';
 import {
   ensureDefaultCatalogPlans,
   listCatalogPlans,
@@ -141,6 +142,7 @@ async function mirrorInstitutionToMongo(inst: {
 }
 
 export async function getPlatformOverview() {
+  await ensurePlatformSchema().catch(() => {});
   // Keep user counts aligned with live OAuth registrations in Mongo.
   await syncMongoLearnersToPrisma(800).catch((err) =>
     console.error('overview learner sync failed:', err),
@@ -263,6 +265,7 @@ export async function getIntellexInstitution() {
 }
 
 export async function listInstitutions(opts?: { q?: string; status?: string }) {
+  await ensurePlatformSchema().catch(() => {});
   await syncMongoInstitutionsIntoPrisma();
 
   const where: Prisma.InstitutionWhereInput = {};
@@ -420,6 +423,7 @@ export async function syncMongoInstitutionsIntoPrisma() {
 }
 
 export async function getInstitutionDetail(id: string) {
+  await ensurePlatformSchema().catch(() => {});
   await syncMongoInstitutionsIntoPrisma();
   const includeBase = {
     owner: { select: { id: true, email: true, name: true, bannedAt: true } },
@@ -483,39 +487,90 @@ export async function getInstitutionDetail(id: string) {
     },
   };
 
-  let inst;
+  let inst: Record<string, unknown> | null = null;
   try {
-    inst = await prisma.institution.findUnique({
+    inst = (await prisma.institution.findUnique({
       where: { id },
       include: { ...includeBase, federationLink: true },
-    });
+    })) as unknown as Record<string, unknown> | null;
   } catch (err) {
     if (!isMissingPrismaColumn(err)) throw err;
-    inst = await prisma.institution.findUnique({
-      where: { id },
-      include: includeBase,
-    });
-    if (inst) (inst as { federationLink?: null }).federationLink = null;
+    console.warn(
+      '[platform] Institution schema behind app — using raw fallback. Run npm run db:fix-schema',
+    );
+    try {
+      // Retry after ensure; then raw SELECT *
+      await ensurePlatformSchema().catch(() => {});
+      inst = (await prisma.institution.findUnique({
+        where: { id },
+        include: includeBase,
+      })) as unknown as Record<string, unknown> | null;
+      if (inst) inst.federationLink = null;
+    } catch (err2) {
+      if (!isMissingPrismaColumn(err2)) throw err2;
+      const raw = await fetchInstitutionRaw(id);
+      if (!raw) return null;
+      // Attach empty relation stubs the UI expects
+      inst = {
+        ...raw,
+        owner: null,
+        departments: [],
+        memberships: [],
+        courses: [],
+        withdrawalRequests: [],
+        instructorApplications: [],
+        auditLogs: [],
+        federationLink: null,
+        _count: {
+          memberships: 0,
+          courses: 0,
+          certificates: 0,
+          liveClasses: 0,
+          departments: 0,
+        },
+      };
+    }
   }
   if (!inst) return null;
 
-  const database = await getTenantDatabaseConfig(inst.id).catch(() => null);
+  const database = await getTenantDatabaseConfig(String(inst.id)).catch(() => null);
   const resolvedFeatures = resolveInstitutionFeatures({
-    capabilityPack: inst.capabilityPack,
-    enabledModules: inst.enabledModules,
-    featuresEnabled: inst.featuresEnabled,
+    capabilityPack: String(inst.capabilityPack || 'foundation'),
+    enabledModules: (inst.enabledModules as string[]) || [],
+    featuresEnabled: (inst.featuresEnabled as string[]) || [],
   });
 
   return {
     ...inst,
+    id: String(inst.id),
+    slug: String(inst.slug || ''),
+    name: String(inst.name || ''),
+    subdomain: (inst.subdomain as string | null | undefined) ?? null,
+    capabilityPack: String(inst.capabilityPack || 'foundation'),
+    enabledModules: (inst.enabledModules as string[]) || [],
+    featuresEnabled: (inst.featuresEnabled as string[]) || [],
+    deploymentModel: inst.deploymentModel || 'SHARED_SAAS',
+    onboardingState: String(inst.onboardingState || 'invited'),
+    onboardingProgress: Number(inst.onboardingProgress || 0),
     cnameTarget: platformCnameTarget(),
     database,
     featureCatalog: FEATURE_FLAG_CATALOG,
     resolvedFeatures,
     resolvedModules: resolveCampusModules({
-      capabilityPack: isPack(inst.capabilityPack) ? inst.capabilityPack : 'foundation',
-      enabledModules: inst.enabledModules as ModuleId[],
+      capabilityPack: isPack(String(inst.capabilityPack || ''))
+        ? (String(inst.capabilityPack) as CapabilityPack)
+        : 'foundation',
+      enabledModules: (inst.enabledModules as ModuleId[]) || [],
     }),
+  } as Record<string, unknown> & {
+    id: string;
+    slug: string;
+    name: string;
+    subdomain: string | null;
+    capabilityPack: string;
+    enabledModules: string[];
+    featuresEnabled: string[];
+    cnameTarget: string;
   };
 }
 
@@ -535,6 +590,7 @@ export async function createInstitution(opts: {
   ownerEmail?: string;
   actorEmail?: string;
 }) {
+  await ensurePlatformSchema().catch(() => {});
   const name = opts.name.trim().slice(0, 120);
   if (name.length < 2) throw new Error('Name is required');
 
@@ -757,7 +813,12 @@ export async function provisionInstitution(
   id: string,
   opts: { actorEmail?: string; activate?: boolean } = {},
 ) {
-  const current = await prisma.institution.findUnique({ where: { id } });
+  await ensurePlatformSchema().catch(() => {});
+  const current = await prisma.institution.findUnique({ where: { id } }).catch(async (err) => {
+    if (!isMissingPrismaColumn(err)) throw err;
+    const raw = await fetchInstitutionRaw(id);
+    return raw as never;
+  });
   if (!current) throw new Error('Institution not found');
 
   const actorId = await actorUserId(opts.actorEmail);
@@ -802,15 +863,33 @@ export async function provisionInstitution(
       );
     });
 
-  await prisma.institution.update({
-    where: { id },
-    data: {
-      onboardingState: 'published',
-      onboardingProgress: 100,
-      // Auto-assign Intellex subdomain from slug when missing.
-      subdomain: inst.subdomain || inst.slug,
-    },
-  });
+  await prisma.institution
+    .update({
+      where: { id },
+      data: {
+        onboardingState: 'published',
+        onboardingProgress: 100,
+        // Auto-assign Intellex subdomain from slug when missing.
+        subdomain: inst.subdomain || inst.slug,
+      },
+    })
+    .catch(async (err) => {
+      if (!isMissingPrismaColumn(err)) throw err;
+      // Minimal update without Phase-4 columns
+      await prisma.$executeRawUnsafe(
+        `UPDATE "Institution" SET "updatedAt" = NOW() WHERE id = $1`,
+        id,
+      );
+      try {
+        await prisma.$executeRawUnsafe(
+          `UPDATE "Institution" SET subdomain = COALESCE(subdomain, $2) WHERE id = $1`,
+          id,
+          inst.subdomain || inst.slug,
+        );
+      } catch {
+        /* subdomain column may also be missing */
+      }
+    });
 
   await writeAudit({
     actorEmail: opts.actorEmail,
