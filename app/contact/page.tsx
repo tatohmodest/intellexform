@@ -1,16 +1,21 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Building2, Compass, Mail, MessageCircle } from 'lucide-react';
 import TopNav from '@/components/landing/TopNav';
 import Footer from '@/components/landing/Footer';
 import ContactWizard from '@/components/landing/ContactWizard';
 import BrandLogo from '@/components/BrandLogo';
-import { PLATFORM_CONTACT } from '@/lib/contact';
+import {
+  PLATFORM_CONTACT,
+  integrationWhatsappLink,
+  orientationWhatsappLink,
+  platformMailto,
+} from '@/lib/contact';
 
 export const metadata = {
   title: 'Contact - InTelleX',
   description:
-    'Contact InTelleX for learning questions, mentorship quotes, or institution partnership inquiries.',
+    'Contact InTelleX for student path orientation, mentorship quotes, or organization platform & integration questions. WhatsApp +237 650 318 856 · intellexplatform@gmail.com',
 };
 
 export default function ContactPage() {
@@ -24,34 +29,65 @@ export default function ContactPage() {
               <ArrowLeft size={15} /> Back to home
             </Link>
             <BrandLogo href="/" height={32} className="mb-5" />
-            <div className="tab mb-4">Contact</div>
+            <div className="tab mb-4">Contact us</div>
             <h1 className="mb-3.5 text-[26px] leading-[1.15] sm:text-[34px] sm:leading-[1.1]">
-              Talk to the InTelleX team
+              Chat with the InTelleX team
             </h1>
             <p className="text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Learners, mentors, and institutions use this form. Tell us who you are - we save your
-              message and can continue the conversation on WhatsApp. To start learning right away,{' '}
-              <Link href="/signup" className="font-semibold" style={{ color: 'var(--green-deep)' }}>
-                sign up
-              </Link>
-              .
+              Students who need orientation on which path to follow, organizations that want to know
+              how the platform and integration work, mentors, and campuses — tell us who you are. We
+              save your message and continue on WhatsApp or email.
             </p>
-            <ul className="mt-6 space-y-2.5 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-              <li>
-                <span className="font-semibold" style={{ color: 'var(--ink)' }}>Learners</span>
-                {' - '}plans, courses, AI tutor questions
+
+            <div className="mt-6 grid gap-3">
+              <a
+                href={orientationWhatsappLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex gap-3 border p-3.5 transition-colors hover:border-[var(--ink)]"
+                style={{ borderColor: 'var(--line)' }}
+              >
+                <Compass size={18} className="mt-0.5 shrink-0" style={{ color: 'var(--green-deep)' }} />
+                <span>
+                  <span className="block text-[14px] font-semibold">Student orientation</span>
+                  <span className="text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+                    WhatsApp us for help choosing a path
+                  </span>
+                </span>
+              </a>
+              <a
+                href={integrationWhatsappLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex gap-3 border p-3.5 transition-colors hover:border-[var(--ink)]"
+                style={{ borderColor: 'var(--line)' }}
+              >
+                <Building2 size={18} className="mt-0.5 shrink-0" style={{ color: 'var(--ink)' }} />
+                <span>
+                  <span className="block text-[14px] font-semibold">Organizations</span>
+                  <span className="text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+                    Platform walkthrough & how integration works
+                  </span>
+                </span>
+              </a>
+            </div>
+
+            <ul className="mt-6 space-y-2 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
+              <li className="flex items-center gap-2">
+                <MessageCircle size={14} style={{ color: 'var(--green-deep)' }} />
+                WhatsApp {PLATFORM_CONTACT.phoneDisplay}
               </li>
-              <li>
-                <span className="font-semibold" style={{ color: 'var(--ink)' }}>Institutions</span>
-                {' - '}campus partnership & capability provisioning
-              </li>
-              <li>
-                <span className="font-semibold" style={{ color: 'var(--ink)' }}>Mentorship</span>
-                {' - '}live online or onsite quotes
+              <li className="flex items-center gap-2">
+                <Mail size={14} style={{ color: 'var(--green-deep)' }} />
+                <a href={platformMailto()} className="font-semibold" style={{ color: 'var(--ink)' }}>
+                  {PLATFORM_CONTACT.email}
+                </a>
               </li>
             </ul>
-            <p className="mt-6 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-              Platform Team · {PLATFORM_CONTACT.email} · WhatsApp {PLATFORM_CONTACT.phoneDisplay}
+            <p className="mt-4 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+              Prefer the form? Fill it on the right — or use the{' '}
+              <span className="font-semibold" style={{ color: 'var(--ink)' }}>Chat with us</span>{' '}
+              button anywhere on the site.
             </p>
           </div>
           <Suspense

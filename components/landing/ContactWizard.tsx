@@ -22,6 +22,7 @@ import {
 import type { ContactType } from '@/lib/types';
 
 const LEARNER_TOPICS = [
+  'Orientation — help me choose a path',
   'Full-Stack Web Development',
   'Data / AI',
   'Cybersecurity',
@@ -32,6 +33,8 @@ const LEARNER_TOPICS = [
 ];
 
 const INSTITUTION_INTERESTS = [
+  'How the platform works',
+  'How integration / onboarding works',
   'Partner our university / school',
   'Digital Learning (video courses)',
   'Live Teaching',

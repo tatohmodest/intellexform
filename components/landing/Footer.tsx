@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { buildWhatsappLink } from '@/lib/whatsapp';
+import { PLATFORM_CONTACT, generalWhatsappLink, platformMailto } from '@/lib/contact';
 import BrandLogo from '@/components/BrandLogo';
 
 export default function Footer() {
@@ -85,15 +85,18 @@ export default function Footer() {
               Looping Binary
             </a>
             <Link href="/contact" className="mb-2 block text-sm text-paper/80">Contact us</Link>
+            <Link href="/#contact-us" className="mb-2 block text-sm text-paper/80">Chat with us</Link>
             <a
-              href={buildWhatsappLink('Hello Intellex! I have a question about the platform.')}
+              href={generalWhatsappLink()}
               target="_blank"
               rel="noopener noreferrer"
               className="mb-2 block text-sm text-paper/80"
             >
-              WhatsApp
+              WhatsApp {PLATFORM_CONTACT.phoneDisplay}
             </a>
-            <a href="mailto:loopingbinary@gmail.com" className="mb-2 block text-sm text-paper/80">Email</a>
+            <a href={platformMailto()} className="mb-2 block text-sm text-paper/80">
+              {PLATFORM_CONTACT.email}
+            </a>
             <a href="/sitemap.xml" className="mb-2 block text-sm text-paper/80">Sitemap</a>
           </div>
         </div>

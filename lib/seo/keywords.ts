@@ -57,7 +57,7 @@ export const SITE_GEO = {
   geoPosition: '4.0511;9.7679',
   address: 'Douala, Cameroon',
   phone: '+237650318856',
-  email: 'intellex@loopingbinary.com',
+  email: 'intellexplatform@gmail.com',
 } as const;
 
 export const FOUNDER = {

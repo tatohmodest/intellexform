@@ -35,11 +35,11 @@ export async function POST() {
     {
       error: 'institutions_not_self_serve',
       message:
-        'Institutions are onboarded by the InTelleX Platform Team. Contact loopingbinary@gmail.com or WhatsApp +237 650 318 856.',
+        'Institutions are onboarded by the InTelleX Platform Team. Contact intellexplatform@gmail.com or WhatsApp +237 650 318 856.',
       contact: {
-        email: 'loopingbinary@gmail.com',
+        email: 'intellexplatform@gmail.com',
         whatsapp: '+237 650 318 856',
-        page: '/network#partner',
+        page: '/contact?type=institution',
       },
     },
     { status: 403 },

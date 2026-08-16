@@ -21,6 +21,7 @@ import CoursesBrowser from '@/components/dashboard/CoursesBrowser';
 import Reveal from '@/components/Reveal';
 import HomeHero from '@/components/landing/HomeHero';
 import HeroCard from '@/components/landing/HeroCard';
+import ContactUsSection from '@/components/landing/ContactUsSection';
 import { ECOSYSTEM, LOOPING_BINARY } from '@/lib/ecosystem';
 
 export const dynamic = 'force-dynamic';
@@ -717,6 +718,8 @@ export default async function HomePage() {
       </section>
 
       <Testimonials />
+
+      <ContactUsSection />
 
       <section className="py-14 sm:py-16">
         <div className="wrap">
