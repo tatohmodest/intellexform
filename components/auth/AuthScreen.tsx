@@ -17,65 +17,26 @@ import BrandLogo from '@/components/BrandLogo';
 
 type Step = 'form' | 'otp';
 
-export type AuthCampusBrand = {
-  slug: string;
-  name: string;
-  accent: string;
-  logoUrl?: string | null;
-  homeHref: string;
-  loginHref: string;
-  signupHref: string;
-  portalHref: string;
-  tagline?: string;
-};
-
-function CampusMark({
-  brand,
-  invert = false,
-}: {
-  brand: AuthCampusBrand;
-  invert?: boolean;
-}) {
-  return (
-    <Link href={brand.homeHref} className="flex items-center gap-2.5">
-      {brand.logoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={brand.logoUrl}
-          alt={brand.name}
-          className={`h-8 w-8 object-contain ${invert ? 'brightness-0 invert' : ''}`}
-        />
-      ) : (
-        <span
-          className="flex h-8 w-8 items-center justify-center font-display text-[14px] font-bold text-white"
-          style={{ background: brand.accent }}
-        >
-          {brand.name.charAt(0)}
-        </span>
-      )}
-      <span
-        className={`font-display text-[18px] leading-none ${invert ? 'text-white' : ''}`}
-        style={invert ? undefined : { color: 'var(--ink)' }}
-      >
-        {brand.name}
-      </span>
-    </Link>
-  );
+function withParams(path: string, next: string, campus: string | null) {
+  const q = new URLSearchParams();
+  if (next && next !== '/dashboard') q.set('next', next);
+  if (campus) q.set('campus', campus);
+  const s = q.toString();
+  return s ? `${path}?${s}` : path;
 }
 
-export default function AuthScreen({
-  mode,
-  campus = null,
-}: {
-  mode: 'login' | 'signup';
-  campus?: AuthCampusBrand | null;
-}) {
+/**
+ * Shared InTelleX credentials auth.
+ * Optional `campus` query binds the session to an institution after OTP
+ * (enrollment policy still decides whether they may join).
+ */
+export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
   const params = useSearchParams();
   const router = useRouter();
-  const defaultNext = campus ? campus.portalHref : '/dashboard';
+  const campus = (params.get('campus') || '').trim().toLowerCase().slice(0, 64) || null;
+  const defaultNext = campus ? `/dashboard/institutions/${campus}` : '/dashboard';
   const next = params.get('next') || defaultNext;
   const isSignup = mode === 'signup';
-  const accent = campus?.accent || '#00B369';
 
   const [step, setStep] = useState<Step>('form');
   const [name, setName] = useState('');
@@ -87,12 +48,8 @@ export default function AuthScreen({
   const [busy, setBusy] = useState(false);
   const [resendBusy, setResendBusy] = useState(false);
 
-  const loginHref = campus
-    ? `${campus.loginHref}${next !== defaultNext ? `?next=${encodeURIComponent(next)}` : ''}`
-    : `/login${next !== '/dashboard' ? `?next=${encodeURIComponent(next)}` : ''}`;
-  const signupHref = campus
-    ? `${campus.signupHref}${next !== defaultNext ? `?next=${encodeURIComponent(next)}` : ''}`
-    : `/signup${next !== '/dashboard' ? `?next=${encodeURIComponent(next)}` : ''}`;
+  const loginHref = withParams('/login', next, campus);
+  const signupHref = withParams('/signup', next, campus);
 
   async function submitForm(e: FormEvent) {
     e.preventDefault();
@@ -135,7 +92,7 @@ export default function AuthScreen({
           code,
           purpose: isSignup ? 'signup' : 'login',
           next,
-          campus: campus?.slug || undefined,
+          campus: campus || undefined,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as {
@@ -181,24 +138,19 @@ export default function AuthScreen({
     }
   }
 
-  const panelBg = campus
-    ? `radial-gradient(1200px 600px at -10% -10%, ${accent}59, transparent 60%), radial-gradient(900px 500px at 110% 110%, rgba(12,17,22,0.35), transparent 60%), #0C1116`
-    : 'radial-gradient(1200px 600px at -10% -10%, rgba(0,179,105,0.35), transparent 60%), radial-gradient(900px 500px at 110% 110%, rgba(74,144,226,0.3), transparent 60%), #0C1116';
-
   return (
     <div className="flex min-h-screen">
       <div
         className="relative hidden w-[46%] flex-col justify-between overflow-hidden p-12 lg:flex"
-        style={{ background: panelBg }}
+        style={{
+          background:
+            'radial-gradient(1200px 600px at -10% -10%, rgba(0,179,105,0.35), transparent 60%), radial-gradient(900px 500px at 110% 110%, rgba(74,144,226,0.3), transparent 60%), #0C1116',
+        }}
       >
         <div className="flex items-center gap-2.5">
-          {campus ? (
-            <CampusMark brand={campus} invert />
-          ) : (
-            <BrandLogo href="/" height={30} className="brightness-0 invert" />
-          )}
+          <BrandLogo href="/" height={30} className="brightness-0 invert" />
           <span className="mono rounded-full border border-white/20 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.14em] text-white/70">
-            {campus ? 'Campus' : 'Learning'}
+            Learning
           </span>
         </div>
 
@@ -209,28 +161,16 @@ export default function AuthScreen({
             transition={{ duration: 0.5 }}
             className="font-display text-[40px] leading-[1.15] text-white"
           >
-            {campus ? (
-              <>
-                Welcome to{' '}
-                <span className="italic" style={{ color: accent }}>
-                  {campus.name}
-                </span>
-              </>
-            ) : (
-              <>
-                Learn like the world is
-                <span className="italic" style={{ color: '#1ED77E' }}>
-                  {' '}
-                  watching you win.
-                </span>
-              </>
-            )}
+            Learn like the world is
+            <span className="italic" style={{ color: '#1ED77E' }}>
+              {' '}
+              watching you win.
+            </span>
           </motion.h1>
           <p className="mt-4 max-w-md text-[15.5px] leading-relaxed text-white/70">
             {campus
-              ? campus.tagline ||
-                `Sign ${isSignup ? 'up' : 'in'} to access courses, mentors, and your ${campus.name} learning dashboard.`
-              : 'Self-paced courses with real curricula, live mentorship over crystal-clear video, and an AI tutor that never sleeps. Create your account once — then join any campus that invites you.'}
+              ? 'One InTelleX account. After you sign in, you will continue into your campus dashboard when you have access.'
+              : 'Self-paced courses with real curricula, live mentorship, and an AI tutor. Create your account once — then join any campus that invites you.'}
           </p>
 
           {!campus && (
@@ -263,9 +203,7 @@ export default function AuthScreen({
 
         <div className="flex items-center gap-2 text-[12.5px] text-white/50">
           <ShieldCheck size={14} />
-          {campus
-            ? `Secure email OTP · Powered by InTelleX for ${campus.name}`
-            : 'Email verification with a one-time code — your password stays on InTelleX.'}
+          Email verification with a one-time code — your password stays on InTelleX.
         </div>
       </div>
 
@@ -277,30 +215,22 @@ export default function AuthScreen({
           className="w-full max-w-[420px]"
         >
           <div className="mb-10 lg:hidden">
-            {campus ? <CampusMark brand={campus} /> : <BrandLogo href="/" height={28} />}
+            <BrandLogo href="/" height={28} />
           </div>
 
           <div className="tab mb-4 inline-flex items-center gap-1.5">
             {step === 'otp'
               ? 'Check your email'
               : isSignup
-                ? campus
-                  ? `Join ${campus.name}`
-                  : 'Create your account'
-                : campus
-                  ? `Sign in to ${campus.name}`
-                  : 'Welcome back'}
+                ? 'Create your account'
+                : 'Welcome back'}
           </div>
           <h2 className="font-display text-[30px] leading-tight">
             {step === 'otp'
               ? 'Enter your code'
               : isSignup
-                ? campus
-                  ? 'Create your campus account'
-                  : 'Start learning in minutes'
-                : campus
-                  ? 'Continue learning'
-                  : 'Sign in to keep learning'}
+                ? 'Start learning in minutes'
+                : 'Sign in to keep learning'}
           </h2>
           <p className="mt-2 text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
             {step === 'otp'
@@ -326,9 +256,9 @@ export default function AuthScreen({
             <div
               className="mt-6 rounded-xl border px-4 py-3 text-[13.5px]"
               style={{
-                background: `${accent}14`,
-                borderColor: `${accent}47`,
-                color: accent,
+                background: 'rgba(0,179,105,0.08)',
+                borderColor: 'rgba(0,179,105,0.28)',
+                color: 'var(--green-deep)',
               }}
             >
               {info}
@@ -381,7 +311,7 @@ export default function AuthScreen({
                 type="submit"
                 disabled={busy}
                 className="mt-2 flex w-full items-center justify-center gap-2 rounded-full px-6 py-4 text-[15px] font-semibold text-white transition-transform hover:-translate-y-0.5 disabled:opacity-60"
-                style={{ background: campus ? accent : '#0C1116' }}
+                style={{ background: '#0C1116' }}
               >
                 {busy ? 'Sending code…' : isSignup ? 'Create account' : 'Continue'}
                 {!busy && <ArrowRight size={16} className="opacity-70" />}
@@ -409,7 +339,7 @@ export default function AuthScreen({
                 type="submit"
                 disabled={busy || code.length !== 6}
                 className="mt-2 flex w-full items-center justify-center gap-2 rounded-full px-6 py-4 text-[15px] font-semibold text-white transition-transform hover:-translate-y-0.5 disabled:opacity-60"
-                style={{ background: campus ? accent : '#0C1116' }}
+                style={{ background: '#0C1116' }}
               >
                 <Mail size={16} className="opacity-80" />
                 {busy ? 'Verifying…' : 'Verify & continue'}
@@ -434,7 +364,7 @@ export default function AuthScreen({
                   disabled={resendBusy}
                   onClick={resendCode}
                   className="font-semibold disabled:opacity-60"
-                  style={{ color: accent }}
+                  style={{ color: 'var(--green-deep)' }}
                 >
                   {resendBusy ? 'Sending…' : 'Resend code'}
                 </button>
@@ -447,14 +377,14 @@ export default function AuthScreen({
               {isSignup ? (
                 <>
                   Already have an account?{' '}
-                  <Link href={loginHref} className="font-semibold" style={{ color: accent }}>
+                  <Link href={loginHref} className="font-semibold" style={{ color: 'var(--green-deep)' }}>
                     Sign in
                   </Link>
                 </>
               ) : (
                 <>
-                  {campus ? 'New here?' : 'New to Intellex?'}{' '}
-                  <Link href={signupHref} className="font-semibold" style={{ color: accent }}>
+                  New to Intellex?{' '}
+                  <Link href={signupHref} className="font-semibold" style={{ color: 'var(--green-deep)' }}>
                     Create an account
                   </Link>
                 </>
@@ -462,21 +392,12 @@ export default function AuthScreen({
             </p>
           )}
 
-          {campus ? (
-            <p className="mt-8 text-center text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-              <Link href={campus.homeHref} className="font-semibold" style={{ color: accent }}>
-                ← Back to {campus.name}
-              </Link>
-            </p>
-          ) : null}
-
           <p
-            className="mt-6 text-center text-[12px] leading-relaxed"
+            className="mt-10 text-center text-[12px] leading-relaxed"
             style={{ color: 'var(--ink-soft)' }}
           >
-            {campus
-              ? `By continuing you join ${campus.name}. Email verification keeps your account secure.`
-              : 'By continuing you agree to the Intellex terms. We verify your email with a one-time code — no third-party sign-in required.'}
+            By continuing you agree to the Intellex terms. We verify your email with a one-time code
+            — no third-party sign-in required.
           </p>
         </motion.div>
       </div>

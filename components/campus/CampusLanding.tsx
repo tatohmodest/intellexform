@@ -8,7 +8,7 @@ import {
   Sparkles,
   Users,
 } from 'lucide-react';
-import type { CampusBrand } from '@/lib/campus/brand';
+import { admissionsCopy, type CampusBrand } from '@/lib/campus/brand';
 
 type CourseCard = {
   id: string;
@@ -46,6 +46,8 @@ export default function CampusLanding({
   const ctaHref =
     config.ctaHref ||
     (brand.enrollmentOpen ? brand.signupHref : brand.loginHref);
+  const joinNote =
+    config.admissionsNote || admissionsCopy(brand.studentRegistration, brand.platformName);
 
   return (
     <>
@@ -229,23 +231,33 @@ export default function CampusLanding({
           >
             <h2 className="font-display text-[28px]">Join {brand.platformName}</h2>
             <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              {config.admissionsNote ||
-                (brand.enrollmentOpen
-                  ? 'Create your account to join this campus and access courses, mentors, and your learner dashboard.'
-                  : 'This campus is invite-only. Sign in with the email your school registered, or ask an admin for access.')}
+              {joinNote}
+            </p>
+            <p className="mt-2 text-[12.5px] font-semibold uppercase tracking-[0.08em]" style={{ color: accent }}>
+              {brand.studentRegistration.replace(/_/g, ' ')}
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                href={brand.signupHref}
-                className="px-5 py-3 text-[13.5px] font-semibold text-white"
-                style={{ background: accent }}
-              >
-                Create student account
-              </Link>
+              {brand.studentRegistration === 'public' ? (
+                <Link
+                  href={brand.signupHref}
+                  className="px-5 py-3 text-[13.5px] font-semibold text-white"
+                  style={{ background: accent }}
+                >
+                  Create InTelleX account
+                </Link>
+              ) : null}
               <Link
                 href={brand.loginHref}
-                className="border px-5 py-3 text-[13.5px] font-semibold"
-                style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+                className={
+                  brand.studentRegistration === 'public'
+                    ? 'border px-5 py-3 text-[13.5px] font-semibold'
+                    : 'px-5 py-3 text-[13.5px] font-semibold text-white'
+                }
+                style={
+                  brand.studentRegistration === 'public'
+                    ? { borderColor: 'var(--line)', color: 'var(--ink)' }
+                    : { background: accent }
+                }
               >
                 Sign in
               </Link>

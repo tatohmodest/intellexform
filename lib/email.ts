@@ -237,7 +237,7 @@ export async function sendInstitutionOnboardingCompleteEmail(opts: {
       `• Organization: ${opts.organizationName}`,
       `• Plan: ${opts.planName}`,
       `• Public campus site (students): ${opts.platformUrl}`,
-      `• Student signup: ${opts.platformUrl}/signup`,
+      `• Student sign-in (InTelleX): use /login then open the campus portal`,
       `• Short link: ${shortPathUrl}`,
       `• Subdomain host (needs DNS wildcard): ${subdomainUrl}`,
       `• Campus portal (signed in): ${opts.campusUrl}`,
@@ -265,7 +265,7 @@ export async function sendInstitutionOnboardingCompleteEmail(opts: {
         <div style="background:#f7f7f7;border:1px solid #e5e5e5;padding:16px 18px;margin:18px 0">
           <p style="margin:0 0 10px;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#666">Campus links</p>
           <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Public site:</strong> <a href="${opts.platformUrl}">${opts.platformUrl}</a></p>
-          <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Student signup:</strong> <a href="${opts.platformUrl}/signup">${opts.platformUrl}/signup</a></p>
+          <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Student access:</strong> InTelleX sign-in → campus portal (enrollment follows the mode you chose: invite, admin, public, or code)</p>
           <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Short link:</strong> <a href="${shortPathUrl}">${shortPathUrl}</a></p>
           <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Campus portal:</strong> <a href="${opts.campusUrl}">${opts.campusUrl}</a></p>
           <p style="margin:0;font-size:14px;line-height:1.6"><strong>Subdomain host:</strong> <a href="${subdomainUrl}">${subdomainUrl}</a> <span style="color:#666">(DNS wildcard required)</span></p>
@@ -276,7 +276,7 @@ export async function sendInstitutionOnboardingCompleteEmail(opts: {
           </a>
         </p>
         <p style="font-size:13px;line-height:1.6;color:#666;margin:0">
-          Your logo and brand stay on the campus site — students do not get sent back to the InTelleX marketing homepage.
+          Sign in with <strong>${opts.ownerEmail}</strong>. Student access follows the enrollment mode you chose in onboarding (invite, admin-created, public, or enrollment code) — they use the shared InTelleX sign-in, then open your campus portal.
         </p>
         <p style="font-size:12px;color:#888;margin-top:28px">InTelleX Platform</p>
       </div>
