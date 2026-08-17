@@ -419,7 +419,7 @@ export async function completeOnboardingInvite(opts: {
   /** Path URL works immediately on the main Intellex host (no DNS needed). */
   const publicSiteUrl = `${site}/site/${inst.slug}`;
   const shortPathUrl = `${site}/${inst.slug}`;
-  const adminPath = `/dashboard/institutions/${inst.slug}/admin`;
+  const adminPath = `/site/${inst.slug}/admin`;
   const campusPath = `/dashboard/institutions/${inst.slug}`;
   const adminUrl = `${site}${adminPath}`;
   const campusUrl = `${site}${campusPath}`;

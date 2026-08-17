@@ -5,6 +5,7 @@ import { getSessionUser } from '@/lib/auth/getUser';
 import { getLearner } from '@/lib/learn/repo';
 import { isOnboardingComplete } from '@/lib/learn/identity';
 import { getCampusBrand } from '@/lib/campus/brand';
+import { enterCampusContext } from '@/lib/campus/session';
 import AuthScreen from '@/components/auth/AuthScreen';
 import CampusPwaBrand from '@/components/CampusPwaBrand';
 
@@ -26,8 +27,10 @@ export async function generateMetadata({
 
 export default async function CampusLoginPage({
   params,
+  searchParams,
 }: {
   params: { slug: string };
+  searchParams?: { next?: string };
 }) {
   const brand = await getCampusBrand(params.slug);
   if (!brand || !brand.config.published) notFound();
@@ -35,9 +38,18 @@ export default async function CampusLoginPage({
   const session = getSessionUser();
   if (session) {
     const learner = await getLearner(session.uid);
-    redirect(
-      isOnboardingComplete(learner) ? brand.portalHref : '/dashboard/onboarding',
-    );
+    const entry = await enterCampusContext({
+      userId: session.uid,
+      userName: session.name || learner?.name || 'Learner',
+      userEmail: session.email,
+      slug: brand.slug,
+      allowJoin: brand.enrollmentOpen,
+    });
+    const dest =
+      searchParams?.next?.startsWith(`/dashboard/institutions/${brand.slug}`)
+        ? searchParams.next
+        : entry?.portalHref || brand.portalHref;
+    redirect(isOnboardingComplete(learner) ? dest : `/dashboard/onboarding?next=${encodeURIComponent(dest)}`);
   }
 
   return (
