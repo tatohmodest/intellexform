@@ -48,7 +48,7 @@ export async function getStudentAgenda(userId: string): Promise<{
       institutionSlug,
       kind: 'assignment',
       page: 1,
-      pageSize: 40,
+      pageSize: 200,
     }).catch(() => []),
     listOngoingClassesForUser(userId).catch(() => []),
     listClassroomForUser(userId).catch(() => ({ live: [], groups: [], totalSessions: 0 })),

@@ -63,6 +63,7 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(30_000),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string; email?: string };
       if (!res.ok) {
@@ -72,8 +73,11 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
       if (data.email) setEmail(data.email);
       setStep('otp');
       setInfo('We sent a 6-digit code to your email. Enter it below to continue.');
-    } catch {
-      setError('Network error. Please try again.');
+    } catch (err) {
+      const timedOut =
+        (err instanceof DOMException && err.name === 'AbortError') ||
+        (err instanceof Error && err.name === 'TimeoutError');
+      setError(timedOut ? 'That took too long. Please try again.' : 'Network error. Please try again.');
     } finally {
       setBusy(false);
     }
@@ -94,6 +98,7 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
           next,
           campus: campus || undefined,
         }),
+        signal: AbortSignal.timeout(30_000),
       });
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
@@ -105,8 +110,11 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
       }
       router.replace(data.next || defaultNext);
       router.refresh();
-    } catch {
-      setError('Network error. Please try again.');
+    } catch (err) {
+      const timedOut =
+        (err instanceof DOMException && err.name === 'AbortError') ||
+        (err instanceof Error && err.name === 'TimeoutError');
+      setError(timedOut ? 'That took too long. Please try again.' : 'Network error. Please try again.');
     } finally {
       setBusy(false);
     }
@@ -124,6 +132,7 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
           email,
           purpose: isSignup ? 'signup' : 'login',
         }),
+        signal: AbortSignal.timeout(30_000),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
@@ -290,7 +299,7 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@school.edu"
+                  placeholder="example@example.com"
                 />
               </label>
               <label className="block">

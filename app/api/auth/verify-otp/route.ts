@@ -35,10 +35,19 @@ export async function POST(req: NextRequest) {
     .toLowerCase()
     .slice(0, 64);
 
-  const result =
-    purpose === 'signup'
-      ? await verifySignupOtp({ email, code })
-      : await verifyLoginOtp({ email, code });
+  let result: Awaited<ReturnType<typeof verifySignupOtp>>;
+  try {
+    result =
+      purpose === 'signup'
+        ? await verifySignupOtp({ email, code })
+        : await verifyLoginOtp({ email, code });
+  } catch (err) {
+    console.error('verify-otp failed:', err);
+    return NextResponse.json(
+      { error: 'Could not verify that code. Please try again.' },
+      { status: 500 },
+    );
+  }
 
   if ('error' in result) {
     return NextResponse.json({ error: result.error }, { status: result.status });

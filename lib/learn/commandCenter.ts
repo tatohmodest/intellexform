@@ -124,7 +124,7 @@ export async function getStudentCommandCenter(userId: string) {
       institutionSlug,
       kind: 'assignment',
       page: 1,
-      pageSize: 60,
+      pageSize: 200,
     }).catch(() => [] as AssessmentView[]),
     listOngoingClassesForUser(userId).catch(() => []),
     listClassroomForUser(userId).catch(() => ({ live: [], groups: [], totalSessions: 0 })),
@@ -160,6 +160,7 @@ export async function getStudentCommandCenter(userId: string) {
   });
 
   const buckets = {
+    all: assignmentItems,
     due_today: assignmentItems.filter((a) => a.status === 'due_today'),
     due_week: assignmentItems.filter((a) => a.status === 'due_week'),
     upcoming: assignmentItems.filter((a) => a.status === 'upcoming' || a.status === 'open'),

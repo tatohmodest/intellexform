@@ -1,8 +1,13 @@
 /**
  * Email + password auth with OTP verification (signup + login).
  * Replaces LoopingBinary OAuth for learner accounts.
+ *
+ * Mongo is the source of truth for credentials (same store as learners).
+ * Prisma/Postgres is synced when reachable, but a hung DATABASE_URL must
+ * never block sending the OTP email.
  */
 
+import { randomBytes } from 'crypto';
 import { getDb } from '@/lib/repo';
 import { prisma } from '@/lib/db/prisma';
 import {
@@ -19,12 +24,15 @@ import { createSession, type SessionUser } from '@/lib/auth/session';
 import { isOnboardingComplete } from '@/lib/learn/identity';
 import type { LearnerDoc } from '@/lib/learn/repo';
 import { PERSONAL_CONTEXT } from '@/lib/learn/identity';
+import { withTimeout } from '@/lib/withTimeout';
 
 export const AUTH_OTP = {
   ttlMs: ADMIN_OTP.ttlMs,
   resendMs: ADMIN_OTP.resendMs,
   maxAttempts: ADMIN_OTP.maxAttempts,
 } as const;
+
+const PRISMA_MS = 3_500;
 
 export type AuthOtpPurpose = 'signup' | 'login';
 
@@ -36,11 +44,35 @@ type PendingSignup = {
   expiresAt: Date;
 };
 
+type CredentialAccount = {
+  email: string;
+  passwordHash: string;
+  userId: string;
+  name: string;
+  emailVerified: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 function splitName(name: string): { firstName: string | null; lastName: string | null } {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return { firstName: null, lastName: null };
   if (parts.length === 1) return { firstName: parts[0], lastName: null };
   return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
+}
+
+function newLocalUserId() {
+  return `usr_${randomBytes(12).toString('hex')}`;
+}
+
+function smtpErrorMessage(err: unknown) {
+  if (err instanceof Error && err.message === 'smtp_not_configured') {
+    return 'Email delivery is not configured.';
+  }
+  if (err instanceof Error && err.message === 'smtp_timeout') {
+    return 'Could not send the code in time. Please try again.';
+  }
+  return 'Could not send code. Please try again.';
 }
 
 async function otpsCol() {
@@ -53,6 +85,88 @@ async function pendingCol() {
   const db = await getDb();
   await db.collection('auth_pending_signups').createIndex({ email: 1 }, { unique: true }).catch(() => {});
   return db.collection('auth_pending_signups');
+}
+
+async function credentialsCol() {
+  const db = await getDb();
+  await db.collection('auth_credentials').createIndex({ email: 1 }, { unique: true }).catch(() => {});
+  await db.collection('auth_credentials').createIndex({ userId: 1 }).catch(() => {});
+  return db.collection('auth_credentials');
+}
+
+async function prismaUserByEmail(email: string): Promise<{
+  user: {
+    id: string;
+    email: string;
+    name: string | null;
+    passwordHash: string | null;
+    emailVerified: Date | null;
+    image: string | null;
+  } | null;
+  timedOut: boolean;
+}> {
+  try {
+    const user = await withTimeout(
+      prisma.user.findUnique({
+        where: { email },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          passwordHash: true,
+          emailVerified: true,
+          image: true,
+        },
+      }),
+      PRISMA_MS,
+      'prisma',
+    );
+    return { user, timedOut: false };
+  } catch (err) {
+    console.error('prisma user lookup failed:', err);
+    return { user: null, timedOut: true };
+  }
+}
+
+async function syncPrismaUser(opts: {
+  email: string;
+  name: string;
+  passwordHash: string;
+}): Promise<{ id: string } | null> {
+  const { firstName, lastName } = splitName(opts.name);
+  const now = new Date();
+  try {
+    const user = await withTimeout(
+      prisma.user.upsert({
+        where: { email: opts.email },
+        create: {
+          email: opts.email,
+          name: opts.name,
+          firstName,
+          lastName,
+          passwordHash: opts.passwordHash,
+          emailVerified: now,
+          lastLoginAt: now,
+          globalRole: 'USER',
+        },
+        update: {
+          name: opts.name,
+          firstName,
+          lastName,
+          passwordHash: opts.passwordHash,
+          emailVerified: now,
+          lastLoginAt: now,
+        },
+        select: { id: true },
+      }),
+      PRISMA_MS,
+      'prisma',
+    );
+    return user;
+  } catch (err) {
+    console.error('prisma user sync failed:', err);
+    return null;
+  }
 }
 
 export async function upsertLearnerLocal(opts: {
@@ -108,7 +222,10 @@ export async function upsertLearnerLocal(opts: {
       },
       { upsert: true },
     );
-    const doc = await col.findOne({ lbId: opts.id }, { projection: { _id: 0 } });
+    const doc = await col.findOne(
+      { lbId: opts.id },
+      { projection: { _id: 0, passwordHash: 0 } },
+    );
     return (doc as unknown as LearnerDoc) ?? base;
   } catch (err) {
     console.error('upsertLearnerLocal failed:', err);
@@ -156,11 +273,8 @@ async function issueOtp(opts: {
     });
   } catch (err) {
     console.error('auth otp email failed:', err);
-    const msg =
-      err instanceof Error && err.message === 'smtp_not_configured'
-        ? 'Email delivery is not configured.'
-        : 'Could not send code. Please try again.';
-    return { error: msg, status: 503 };
+    await col.deleteOne({ email, purpose: opts.purpose }).catch(() => {});
+    return { error: smtpErrorMessage(err), status: 503 };
   }
 
   return { ok: true, expiresInSec: Math.floor(AUTH_OTP.ttlMs / 1000) };
@@ -179,8 +293,14 @@ export async function startSignup(opts: {
   if (!email.includes('@')) return { error: 'Enter a valid email.', status: 400 };
   if (password.length < 8) return { error: 'Password must be at least 8 characters.', status: 400 };
 
-  const existing = await prisma.user.findUnique({ where: { email } }).catch(() => null);
-  if (existing?.passwordHash && existing.emailVerified) {
+  const creds = await credentialsCol();
+  const existingCred = (await creds.findOne({ email })) as CredentialAccount | null;
+  if (existingCred?.passwordHash && existingCred.emailVerified) {
+    return { error: 'An account with this email already exists. Sign in instead.', status: 409 };
+  }
+
+  const prismaLookup = await prismaUserByEmail(email);
+  if (prismaLookup.user?.passwordHash && prismaLookup.user.emailVerified) {
     return { error: 'An account with this email already exists. Sign in instead.', status: 409 };
   }
 
@@ -214,12 +334,52 @@ export async function startLogin(opts: {
   if (!email.includes('@')) return { error: 'Enter a valid email.', status: 400 };
   if (!opts.password) return { error: 'Enter your password.', status: 400 };
 
-  const user = await prisma.user.findUnique({ where: { email } }).catch(() => null);
-  if (!user?.passwordHash) {
+  const creds = await credentialsCol();
+  let account = (await creds.findOne({ email })) as CredentialAccount | null;
+
+  if (!account?.passwordHash) {
+    const prismaLookup = await prismaUserByEmail(email);
+    if (prismaLookup.user?.passwordHash) {
+      const now = new Date();
+      account = {
+        email,
+        passwordHash: prismaLookup.user.passwordHash,
+        userId: prismaLookup.user.id,
+        name: prismaLookup.user.name || email.split('@')[0],
+        emailVerified: prismaLookup.user.emailVerified,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await creds
+        .updateOne(
+          { email },
+          {
+            $set: {
+              email,
+              passwordHash: account.passwordHash,
+              userId: account.userId,
+              name: account.name,
+              emailVerified: account.emailVerified,
+              updatedAt: now,
+            },
+            $setOnInsert: { createdAt: now },
+          },
+          { upsert: true },
+        )
+        .catch((err) => console.error('backfill auth_credentials failed:', err));
+    } else if (prismaLookup.timedOut) {
+      return {
+        error: 'Sign-in is taking too long. Please try again in a moment.',
+        status: 503,
+      };
+    }
+  }
+
+  if (!account?.passwordHash) {
     return { error: 'Invalid email or password.', status: 401 };
   }
-  if (!user.emailVerified) {
-    // Allow completing signup verification
+
+  if (!account.emailVerified) {
     const pending = await pendingCol();
     const p = await pending.findOne({ email });
     if (!p) {
@@ -230,7 +390,7 @@ export async function startLogin(opts: {
     }
   }
 
-  const ok = await verifyPassword(opts.password, user.passwordHash);
+  const ok = await verifyPassword(opts.password, account.passwordHash);
   if (!ok) return { error: 'Invalid email or password.', status: 401 };
 
   const otp = await issueOtp({ email, purpose: 'login' });
@@ -246,10 +406,24 @@ export async function resendAuthOtp(opts: {
   if (opts.purpose === 'signup') {
     const pending = await pendingCol();
     const p = await pending.findOne({ email });
-    if (!p) return { error: 'Start signup again — this email is not pending verification.', status: 400 };
+    if (!p) {
+      return { error: 'Start signup again — this email is not pending verification.', status: 400 };
+    }
   } else {
-    const user = await prisma.user.findUnique({ where: { email } }).catch(() => null);
-    if (!user?.passwordHash) return { error: 'No account found for this email.', status: 404 };
+    const creds = await credentialsCol();
+    const account = await creds.findOne({ email });
+    if (!account?.passwordHash) {
+      const prismaLookup = await prismaUserByEmail(email);
+      if (!prismaLookup.user?.passwordHash) {
+        if (prismaLookup.timedOut) {
+          return {
+            error: 'Could not look up this account in time. Please try again.',
+            status: 503,
+          };
+        }
+        return { error: 'No account found for this email.', status: 404 };
+      }
+    }
   }
   const otp = await issueOtp({ email, purpose: opts.purpose });
   if ('error' in otp) return otp;
@@ -298,39 +472,41 @@ export async function verifySignupOtp(opts: {
     return { error: 'Signup expired. Start again.', status: 400 };
   }
 
-  const { firstName, lastName } = splitName(p.name);
-  const now = new Date();
-  const user = await prisma.user.upsert({
-    where: { email },
-    create: {
-      email,
-      name: p.name,
-      firstName,
-      lastName,
-      passwordHash: p.passwordHash,
-      emailVerified: now,
-      lastLoginAt: now,
-      globalRole: 'USER',
-    },
-    update: {
-      name: p.name,
-      firstName,
-      lastName,
-      passwordHash: p.passwordHash,
-      emailVerified: now,
-      lastLoginAt: now,
-    },
+  const creds = await credentialsCol();
+  const existingCred = (await creds.findOne({ email })) as CredentialAccount | null;
+  const prismaUser = await syncPrismaUser({
+    email,
+    name: p.name,
+    passwordHash: p.passwordHash,
   });
+  const userId = prismaUser?.id || existingCred?.userId || newLocalUserId();
+  const now = new Date();
+
+  await creds.updateOne(
+    { email },
+    {
+      $set: {
+        email,
+        passwordHash: p.passwordHash,
+        userId,
+        name: p.name,
+        emailVerified: now,
+        updatedAt: now,
+      },
+      $setOnInsert: { createdAt: now },
+    },
+    { upsert: true },
+  );
 
   await pending.deleteOne({ email });
   const learner = await upsertLearnerLocal({
-    id: user.id,
+    id: userId,
     email,
     name: p.name,
   });
 
   const sessionUser = {
-    uid: user.id,
+    uid: userId,
     name: learner.name || p.name,
     email,
   };
@@ -350,25 +526,58 @@ export async function verifyLoginOtp(opts: {
   const consumed = await consumeOtp(email, 'login', opts.code);
   if ('error' in consumed) return consumed;
 
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user?.passwordHash) return { error: 'Account not found.', status: 404 };
+  const creds = await credentialsCol();
+  let account = (await creds.findOne({ email })) as CredentialAccount | null;
+  if (!account?.passwordHash) {
+    const prismaLookup = await prismaUserByEmail(email);
+    if (!prismaLookup.user?.passwordHash) {
+      return { error: 'Account not found.', status: 404 };
+    }
+    account = {
+      email,
+      passwordHash: prismaLookup.user.passwordHash,
+      userId: prismaLookup.user.id,
+      name: prismaLookup.user.name || email.split('@')[0],
+      emailVerified: prismaLookup.user.emailVerified,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { lastLoginAt: new Date(), emailVerified: user.emailVerified ?? new Date() },
+  const now = new Date();
+  const prismaUser = await syncPrismaUser({
+    email,
+    name: account.name,
+    passwordHash: account.passwordHash,
   });
+  const userId = prismaUser?.id || account.userId;
+
+  await creds.updateOne(
+    { email },
+    {
+      $set: {
+        email,
+        passwordHash: account.passwordHash,
+        userId,
+        name: account.name,
+        emailVerified: now,
+        updatedAt: now,
+      },
+      $setOnInsert: { createdAt: now },
+    },
+    { upsert: true },
+  );
 
   const learner = await upsertLearnerLocal({
-    id: user.id,
+    id: userId,
     email,
-    name: user.name || email.split('@')[0],
+    name: account.name || email.split('@')[0],
   });
 
   const sessionUser = {
-    uid: user.id,
-    name: learner.name || user.name || 'Learner',
+    uid: userId,
+    name: learner.name || account.name || 'Learner',
     email,
-    avatar: user.image || undefined,
   };
   const session = createSession(sessionUser);
   const nextPath = isOnboardingComplete(learner) ? '/dashboard' : '/dashboard/onboarding';

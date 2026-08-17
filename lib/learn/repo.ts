@@ -173,7 +173,7 @@ export async function getLearner(lbId: string): Promise<LearnerDoc | null> {
     const db = await getDb();
     const doc = await db
       .collection('learners')
-      .findOne({ lbId }, { projection: { _id: 0 } });
+      .findOne({ lbId }, { projection: { _id: 0, passwordHash: 0 } });
     return (doc as unknown as LearnerDoc) ?? null;
   } catch {
     return null;

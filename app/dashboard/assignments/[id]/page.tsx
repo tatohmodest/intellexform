@@ -23,7 +23,7 @@ export default async function AssignmentPage({ params }: { params: { id: string 
   const submission = await getSubmission(params.id, session.uid);
 
   return (
-    <div className="px-4 py-8">
+    <div className="px-0 py-4 sm:py-8">
       <AssignmentSubmitClient
         assessment={publicAssessment(assessment)}
         initial={submission}

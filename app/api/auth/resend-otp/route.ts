@@ -16,17 +16,25 @@ export async function POST(req: NextRequest) {
   }
 
   const purpose = (body.purpose === 'signup' ? 'signup' : 'login') as AuthOtpPurpose;
-  const result = await resendAuthOtp({
-    email: String(body.email || ''),
-    purpose,
-  });
+  try {
+    const result = await resendAuthOtp({
+      email: String(body.email || ''),
+      purpose,
+    });
 
-  if ('error' in result) {
-    return NextResponse.json({ error: result.error }, { status: result.status });
+    if ('error' in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      expiresInSec: result.expiresInSec,
+    });
+  } catch (err) {
+    console.error('resend-otp failed:', err);
+    return NextResponse.json(
+      { error: 'Could not resend the code. Please try again.' },
+      { status: 500 },
+    );
   }
-
-  return NextResponse.json({
-    ok: true,
-    expiresInSec: result.expiresInSec,
-  });
 }

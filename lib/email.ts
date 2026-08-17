@@ -1,4 +1,8 @@
 import nodemailer from 'nodemailer';
+import type { SendMailOptions } from 'nodemailer';
+import { withTimeout } from '@/lib/withTimeout';
+
+const SMTP_SEND_MS = 12_000;
 
 function getTransport() {
   const host = process.env.SMTP_HOST;
@@ -13,7 +17,24 @@ function getTransport() {
     port,
     secure: port === 465,
     auth: { user, pass },
+    connectionTimeout: 8_000,
+    greetingTimeout: 8_000,
+    socketTimeout: 12_000,
   });
+}
+
+async function sendMail(opts: SendMailOptions): Promise<void> {
+  const transport = getTransport();
+  try {
+    await withTimeout(transport.sendMail(opts), SMTP_SEND_MS, 'smtp');
+  } catch (err) {
+    if (err instanceof Error && err.message === 'smtp_timeout') {
+      throw new Error('smtp_timeout');
+    }
+    throw err;
+  } finally {
+    transport.close();
+  }
 }
 
 export async function sendAdminOtpEmail(opts: {
@@ -21,8 +42,7 @@ export async function sendAdminOtpEmail(opts: {
   code: string;
 }): Promise<void> {
   const from = process.env.EMAIL_FROM || 'intellexplatform@gmail.com';
-  const transport = getTransport();
-  await transport.sendMail({
+  await sendMail({
     from: `InTelleX Admin <${from}>`,
     to: opts.to,
     subject: `${opts.code} - InTelleX admin sign-in code`,
@@ -56,7 +76,6 @@ export async function sendLearnerAuthOtpEmail(opts: {
   purpose: 'signup' | 'login';
 }): Promise<void> {
   const from = process.env.EMAIL_FROM || 'intellexplatform@gmail.com';
-  const transport = getTransport();
   const isSignup = opts.purpose === 'signup';
   const subject = isSignup
     ? `${opts.code} - Verify your InTelleX account`
@@ -66,7 +85,7 @@ export async function sendLearnerAuthOtpEmail(opts: {
     ? 'Use this code to finish creating your InTelleX account:'
     : 'Use this code to finish signing in to InTelleX:';
 
-  await transport.sendMail({
+  await sendMail({
     from: `InTelleX <${from}>`,
     to: opts.to,
     subject,
@@ -101,7 +120,6 @@ export async function sendInstitutionOnboardingInviteEmail(opts: {
   note?: string | null;
 }): Promise<void> {
   const from = process.env.EMAIL_FROM || 'intellexplatform@gmail.com';
-  const transport = getTransport();
   const noteBlock = opts.note?.trim()
     ? [
         '',
@@ -110,7 +128,7 @@ export async function sendInstitutionOnboardingInviteEmail(opts: {
       ].join('\n')
     : '';
 
-  await transport.sendMail({
+  await sendMail({
     from: `InTelleX Platform <${from}>`,
     to: opts.to,
     subject: `Your InTelleX institution onboarding link is ready`,
@@ -161,9 +179,7 @@ export async function sendCampusActivationNoticeEmail(opts: {
   planName: string;
 }): Promise<void> {
   const from = process.env.EMAIL_FROM || 'intellexplatform@gmail.com';
-  const transport = getTransport();
-
-  await transport.sendMail({
+  await sendMail({
     from: `InTelleX Platform <${from}>`,
     to: opts.to,
     subject: `Your campus setup link is ready`,
@@ -214,11 +230,10 @@ export async function sendInstitutionOnboardingCompleteEmail(opts: {
   ownerEmail: string;
 }): Promise<void> {
   const from = process.env.EMAIL_FROM || 'intellexplatform@gmail.com';
-  const transport = getTransport();
   const subdomainUrl = opts.subdomainUrl || `https://${opts.platformHost}`;
   const shortPathUrl = opts.shortPathUrl || opts.platformUrl;
 
-  await transport.sendMail({
+  await sendMail({
     from: `InTelleX Platform <${from}>`,
     to: opts.to,
     subject: `${opts.organizationName} is live — your admin dashboard link`,

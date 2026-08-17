@@ -265,82 +265,103 @@ export async function listPublishedForStudent(opts: {
   await ensureAssessmentCollections();
   const db = await getDb();
   const page = Math.max(1, Number(opts.page) || 1);
-  const pageSize = Math.min(100, Math.max(1, Number(opts.pageSize) || 20));
+  const pageSize = Math.min(200, Math.max(1, Number(opts.pageSize) || 20));
   const skip = (page - 1) * pageSize;
+  const sid = String(opts.studentId || '').trim();
+  if (!sid) return [];
 
-  const [teacherCourseIds, tutorialCourseSlugs] = await Promise.all([
+  const [teacherCourseIds, tutorialCourseSlugs, memberSlugs, notified] = await Promise.all([
     db
       .collection('course_enrollments')
-      .distinct('courseId', { studentId: opts.studentId })
+      .distinct('courseId', { studentId: sid })
       .catch(() => [] as string[]),
     db
       .collection('enrollments')
-      .distinct('courseSlug', { userId: opts.studentId })
+      .distinct('courseSlug', { userId: sid })
       .catch(() => [] as string[]),
+    db
+      .collection('institution_members')
+      .distinct('institutionSlug', { userId: sid })
+      .catch(() => [] as string[]),
+    db
+      .collection('notifications')
+      .find({
+        userId: sid,
+        kind: { $in: ['assignment', 'exam'] },
+      })
+      .project({ href: 1, data: 1 })
+      .limit(200)
+      .toArray()
+      .catch(() => [] as Record<string, unknown>[]),
   ]);
 
   const enrolledCourseIds = Array.from(
     new Set([
       ...(teacherCourseIds as string[]),
       ...(tutorialCourseSlugs as string[]),
-    ]),
+    ].filter(Boolean)),
   );
 
-  const allAudience: Record<string, unknown>[] = opts.institutionSlug
-    ? [
-        {
-          recipientMode: 'all',
-          $or: [
-            { institutionSlug: opts.institutionSlug },
-            { institutionSlug: null },
-            { institutionSlug: { $exists: false } },
-          ],
-        },
-      ]
-    : [{ recipientMode: 'all' }];
+  const campusSlugs = Array.from(
+    new Set(
+      [
+        ...(memberSlugs as string[]),
+        ...(opts.institutionSlug ? [opts.institutionSlug] : []),
+      ].filter(Boolean),
+    ),
+  );
+
+  const notifiedIds: ObjectId[] = [];
+  for (const row of notified as Record<string, unknown>[]) {
+    const data = (row.data as Record<string, unknown> | undefined) || {};
+    const fromData = String(data.assessmentId || '').trim();
+    const href = String(row.href || '');
+    const fromHref =
+      href.match(/\/dashboard\/(?:assignments|exams)\/([a-f0-9]{24})/i)?.[1] || '';
+    const id = fromData || fromHref;
+    if (id && ObjectId.isValid(id)) notifiedIds.push(new ObjectId(id));
+  }
+
+  const or: Record<string, unknown>[] = [
+    { recipientStudentIds: sid },
+    { recipientMode: 'students', recipientStudentIds: sid },
+  ];
+
+  if (enrolledCourseIds.length) {
+    or.push({ recipientMode: 'course', courseId: { $in: enrolledCourseIds } });
+    or.push({ courseId: { $in: enrolledCourseIds } });
+  }
+
+  if (notifiedIds.length) {
+    or.push({ _id: { $in: notifiedIds } });
+  }
+
+  if (campusSlugs.length) {
+    or.push({ recipientMode: 'all', institutionSlug: { $in: campusSlugs } });
+    or.push({
+      recipientMode: { $exists: false },
+      institutionSlug: { $in: campusSlugs },
+    });
+  }
+
+  or.push(
+    { recipientMode: 'all', institutionSlug: null },
+    { recipientMode: 'all', institutionSlug: { $exists: false } },
+    { recipientMode: 'all', institutionSlug: '' },
+  );
+
+  // Personal InTelleX workspace: show every "all students" assignment the
+  // learner was sent, including campus-wide work they were notified about.
+  if (!opts.institutionSlug) {
+    or.push({ recipientMode: 'all' });
+    or.push({ recipientMode: { $exists: false }, courseId: null });
+    or.push({ recipientMode: { $exists: false }, courseId: { $exists: false } });
+  }
 
   const query: Record<string, unknown> = {
     published: true,
     ...(opts.kind ? { kind: opts.kind } : {}),
-    $or: [
-      ...allAudience,
-      {
-        recipientMode: 'course',
-        courseId: { $in: enrolledCourseIds },
-      },
-      {
-        recipientMode: 'students',
-        recipientStudentIds: opts.studentId,
-      },
-      // Legacy behavior before explicit audience targeting.
-      {
-        recipientMode: { $exists: false },
-        courseId: null,
-        ...(opts.institutionSlug
-          ? {
-              $or: [
-                { institutionSlug: opts.institutionSlug },
-                { institutionSlug: null },
-                { institutionSlug: { $exists: false } },
-              ],
-            }
-          : {}),
-      },
-      {
-        recipientMode: { $exists: false },
-        courseId: { $exists: false },
-        ...(opts.institutionSlug
-          ? {
-              $or: [
-                { institutionSlug: opts.institutionSlug },
-                { institutionSlug: null },
-                { institutionSlug: { $exists: false } },
-              ],
-            }
-          : {}),
-      },
-      { recipientMode: { $exists: false }, courseId: { $in: enrolledCourseIds } },
-    ],
+    $or: or,
   };
 
   const docs = await db
@@ -602,10 +623,12 @@ export async function canStudentAccessAssessment(
   if (assessment.authorId === studentId) return true;
   if (!assessment.published) return false;
 
+  const ids = Array.isArray(assessment.recipientStudentIds)
+    ? assessment.recipientStudentIds.map((id) => String(id || '').trim())
+    : [];
+  if (ids.includes(studentId)) return true;
+
   if (assessment.recipientMode === 'students') {
-    const ids = Array.isArray(assessment.recipientStudentIds)
-      ? assessment.recipientStudentIds
-      : [];
     return ids.includes(studentId);
   }
 
@@ -642,8 +665,19 @@ export async function canStudentAccessAssessment(
         userId: studentId,
       }),
     ]);
-    return Boolean(teacherEnrollment || tutorialEnrollment);
+    if (teacherEnrollment || tutorialEnrollment) return true;
   }
 
-  return true;
+  const db = await getDb();
+  const notified = await db.collection('notifications').findOne({
+    userId: studentId,
+    $or: [
+      { 'data.assessmentId': assessment.id },
+      { href: `/dashboard/assignments/${assessment.id}` },
+      { href: `/dashboard/exams/${assessment.id}` },
+    ],
+  });
+  if (notified) return true;
+
+  return !assessment.courseId;
 }

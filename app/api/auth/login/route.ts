@@ -28,19 +28,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
   }
 
-  const result = await startLogin({
-    email: String(body.email || ''),
-    password: String(body.password || ''),
-  });
+  try {
+    const result = await startLogin({
+      email: String(body.email || ''),
+      password: String(body.password || ''),
+    });
 
-  if ('error' in result) {
-    return NextResponse.json({ error: result.error }, { status: result.status });
+    if ('error' in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      email: result.email,
+      purpose: 'login',
+      expiresInSec: result.expiresInSec,
+    });
+  } catch (err) {
+    console.error('login failed:', err);
+    return NextResponse.json(
+      { error: 'Could not start sign-in. Please try again.' },
+      { status: 500 },
+    );
   }
-
-  return NextResponse.json({
-    ok: true,
-    email: result.email,
-    purpose: 'login',
-    expiresInSec: result.expiresInSec,
-  });
 }

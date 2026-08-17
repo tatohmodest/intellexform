@@ -92,18 +92,18 @@ export default function AssignmentSubmitClient({
   }
 
   return (
-    <div className="mx-auto max-w-[900px]">
-      <Link href="/dashboard/assignments" className="mb-6 inline-flex items-center gap-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+    <div className="mx-auto w-full max-w-[900px] overflow-x-hidden">
+      <Link href="/dashboard/assignments" className="mb-5 inline-flex min-h-[44px] items-center gap-1 text-[13px] sm:mb-6" style={{ color: 'var(--ink-soft)' }}>
         <ArrowLeft size={14} /> Assignments
       </Link>
       <p className="font-mono text-[11px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
         Assignment
       </p>
-      <h1 className="mt-1 font-display text-[32px] leading-tight">{assessment.title}</h1>
+      <h1 className="mt-1 font-display text-[24px] leading-tight sm:text-[32px]">{assessment.title}</h1>
 
       {assessment.dueAt && (
         <div
-          className="mt-4 inline-flex items-center gap-2 border px-3 py-2 text-[13px] font-semibold"
+          className="mt-4 flex flex-wrap items-center gap-2 border px-3 py-2 text-[13px] font-semibold"
           style={{
             borderColor: countdown.expired ? 'rgba(185,28,28,0.35)' : 'var(--line)',
             color: countdown.expired ? '#b91c1c' : 'var(--green-deep)',
@@ -111,10 +111,12 @@ export default function AssignmentSubmitClient({
           }}
         >
           {countdown.expired ? <Lock size={14} /> : <Clock size={14} />}
-          {countdown.expired
-            ? 'Deadline passed - submissions closed'
-            : `Time left ${countdown.label}`}
-          <span className="font-normal" style={{ color: 'var(--ink-soft)' }}>
+          <span>
+            {countdown.expired
+              ? 'Deadline passed - submissions closed'
+              : `Time left ${countdown.label}`}
+          </span>
+          <span className="w-full font-normal sm:w-auto" style={{ color: 'var(--ink-soft)' }}>
             · due {new Date(assessment.dueAt).toLocaleString()}
           </span>
         </div>
@@ -244,7 +246,7 @@ export default function AssignmentSubmitClient({
             type="button"
             onClick={submit}
             disabled={busy || !file}
-            className="btn btn-primary disabled:opacity-40"
+            className="btn btn-primary min-h-[44px] w-full disabled:opacity-40 sm:w-auto"
           >
             {busy ? <Loader2 className="animate-spin" size={16} /> : null}
             Submit assignment
