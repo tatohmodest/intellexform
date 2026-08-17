@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 import MobileBottomNav from '@/components/dashboard/MobileBottomNav';
+import CampusReturnBanner from '@/components/dashboard/CampusReturnBanner';
 import NotificationBell from '@/components/dashboard/NotificationBell';
 import OngoingClassBanner from '@/components/dashboard/OngoingClassBanner';
 import type { ActiveContext, Affiliation, CampusBrand, PrimaryIntent } from '@/lib/learn/identity';
@@ -811,9 +812,16 @@ export default function DashboardShell({
 
       <main className="px-4 pb-28 pt-6 sm:px-6 lg:pb-16 lg:pl-[268px] lg:pr-10">
         <OngoingClassBanner accent={accent} />
+        <CampusReturnBanner accent={accent} />
         {children}
       </main>
-      <MobileBottomNav accent={accent} isMentor={Boolean(user.roles?.includes('mentor'))} />
+      <MobileBottomNav
+        accent={accent}
+        isMentor={Boolean(user.roles?.includes('mentor'))}
+        campusSlug={inCampus && campusBrand ? campusBrand.slug : null}
+        campusModules={(campusBrand?.enabledModules as string[]) || []}
+        campusRole={campusRole || 'student'}
+      />
     </div>
   );
 }

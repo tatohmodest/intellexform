@@ -16,9 +16,9 @@ import CampusDomainSettings from '@/components/dashboard/CampusDomainSettings';
 import CampusPwaBrand from '@/components/CampusPwaBrand';
 import {
   getModuleMeta,
-  resolveCampusModules,
   type ModuleId,
 } from '@/lib/eduos/capabilities';
+import { getCampusTierInfo } from '@/lib/campus/tier';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,10 +74,11 @@ export default async function CampusPage({
     affiliation?.profileComplete === false &&
     (searchParams?.complete === '1' || affiliation?.profileComplete === false);
 
-  const modules = resolveCampusModules({
+  const tier = await getCampusTierInfo(params.slug, {
     capabilityPack: inst.capabilityPack,
-    enabledModules: (inst.enabledModules ?? []) as ModuleId[],
+    enabledModules: inst.enabledModules,
   });
+  const modules = tier.enabledModules;
   const role =
     affiliation?.role ||
     (membership === 'owner' ? 'owner' : membership ? 'member' : 'viewer');
@@ -185,12 +186,13 @@ export default async function CampusPage({
             slug={inst.slug}
             institutionName={inst.name}
             accent={accent}
-            pack={inst.capabilityPack || 'foundation'}
+            pack={tier.capabilityPack}
             modules={modules}
             role={role}
             tab={tab}
             posts={posts}
             canAnnounce={membership === 'owner'}
+            planName={tier.planName}
           />
         </div>
 
@@ -227,9 +229,11 @@ export default async function CampusPage({
           )}
 
           <div className="overflow-hidden border-t pt-5" style={{ borderColor: 'var(--line)' }}>
-            <h3 className="mb-2 font-display text-[18px]">Capabilities</h3>
+            <h3 className="mb-2 font-display text-[18px]">Your plan capabilities</h3>
             <p className="mb-3 text-[13px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Every campus starts with InTelleX Core. Additional capabilities are provisioned by the Platform Team.
+              {tier.planName
+                ? `${tier.planName} · Core campus plus the modules below.`
+                : 'Every campus starts with InTelleX Core. Additional capabilities come from your institution plan.'}
             </p>
             {modules.length === 0 ? (
               <p className="text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>

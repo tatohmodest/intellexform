@@ -5,7 +5,8 @@ import { getSessionUser } from '@/lib/auth/getUser';
 import { getLearner } from '@/lib/learn/repo';
 import { getInstitution } from '@/lib/learn/ecosystem';
 import { isOnboardingComplete, type CampusBrand } from '@/lib/learn/identity';
-import { resolveCampusModules, type ModuleId } from '@/lib/eduos/capabilities';
+import { type ModuleId } from '@/lib/eduos/capabilities';
+import { getCampusTierInfo } from '@/lib/campus/tier';
 import DashboardShell from '@/components/dashboard/DashboardShell';
 
 export const metadata: Metadata = {
@@ -37,9 +38,9 @@ export default async function DashboardLayout({
   if (ctx.kind === 'institution' && ctx.institutionSlug) {
     const inst = await getInstitution(ctx.institutionSlug);
     if (inst) {
-      const modules = resolveCampusModules({
+      const tier = await getCampusTierInfo(ctx.institutionSlug, {
         capabilityPack: inst.capabilityPack,
-        enabledModules: (inst.enabledModules ?? []) as ModuleId[],
+        enabledModules: inst.enabledModules,
       });
       campusBrand = {
         slug: inst.slug,
@@ -47,8 +48,8 @@ export default async function DashboardLayout({
         color: inst.color || '#00b369',
         logoUrl: inst.logoUrl ?? null,
         tagline: inst.tagline,
-        capabilityPack: inst.capabilityPack ?? 'foundation',
-        enabledModules: modules,
+        capabilityPack: tier.capabilityPack,
+        enabledModules: tier.enabledModules as ModuleId[],
       };
     }
   }
