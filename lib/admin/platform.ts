@@ -1050,6 +1050,8 @@ export async function provisionInstitution(
         onboardingProgress: 100,
         // Auto-assign Intellex subdomain from slug when missing.
         subdomain: inst.subdomain || inst.slug,
+        // Intellex-managed subdomain is live for host routing.
+        domainStatus: inst.domainStatus === 'none' || !inst.domainStatus ? 'active' : inst.domainStatus,
       },
     })
     .catch(async (err) => {
@@ -1061,7 +1063,7 @@ export async function provisionInstitution(
       );
       try {
         await prisma.$executeRawUnsafe(
-          `UPDATE "Institution" SET subdomain = COALESCE(subdomain, $2) WHERE id = $1`,
+          `UPDATE "Institution" SET subdomain = COALESCE(subdomain, $2), "domainStatus" = CASE WHEN "domainStatus" = 'none' OR "domainStatus" IS NULL OR "domainStatus" = '' THEN 'active' ELSE "domainStatus" END WHERE id = $1`,
           id,
           inst.subdomain || inst.slug,
         );
@@ -1069,6 +1071,10 @@ export async function provisionInstitution(
         /* subdomain column may also be missing */
       }
     });
+
+  // Re-read for mongo mirror so subdomain + domainStatus are current.
+  const mirrored =
+    (await prisma.institution.findUnique({ where: { id } }).catch(() => null)) || inst;
 
   await writeAudit({
     actorEmail: opts.actorEmail,
@@ -1079,7 +1085,7 @@ export async function provisionInstitution(
     summary: `Provisioned institution ${inst.name}`,
   });
 
-  await mirrorInstitutionToMongo(inst);
+  await mirrorInstitutionToMongo(mirrored);
   return getInstitutionDetail(id);
 }
 

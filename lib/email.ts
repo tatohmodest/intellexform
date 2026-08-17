@@ -160,13 +160,18 @@ export async function sendInstitutionOnboardingCompleteEmail(opts: {
   planName: string;
   subdomain: string;
   platformHost: string;
+  /** Immediate path URL on the main Intellex host, e.g. /site/slug */
   platformUrl: string;
+  subdomainUrl?: string;
+  shortPathUrl?: string;
   adminUrl: string;
   campusUrl: string;
   ownerEmail: string;
 }): Promise<void> {
   const from = process.env.EMAIL_FROM || 'intellexplatform@gmail.com';
   const transport = getTransport();
+  const subdomainUrl = opts.subdomainUrl || `https://${opts.platformHost}`;
+  const shortPathUrl = opts.shortPathUrl || opts.platformUrl;
 
   await transport.sendMail({
     from: `InTelleX Platform <${from}>`,
@@ -181,11 +186,12 @@ export async function sendInstitutionOnboardingCompleteEmail(opts: {
       `• Organization: ${opts.organizationName}`,
       `• Plan: ${opts.planName}`,
       `• Owner email (sign in with this): ${opts.ownerEmail}`,
-      `• Subdomain: ${opts.subdomain}`,
-      `• Campus hostname: ${opts.platformHost}`,
-      `• Campus URL: ${opts.platformUrl}`,
+      `• Subdomain label: ${opts.subdomain}`,
+      `• Public campus site (works now): ${opts.platformUrl}`,
+      `• Short link: ${shortPathUrl}`,
+      `• Subdomain host (needs DNS wildcard): ${subdomainUrl}`,
       `• Admin dashboard: ${opts.adminUrl}`,
-      `• Campus portal: ${opts.campusUrl}`,
+      `• Campus portal (signed in): ${opts.campusUrl}`,
       '',
       'Save this email — these are the links you need to access and manage your LMS.',
       'Sign in with the same email that received the invite to open admin.',
@@ -205,9 +211,10 @@ export async function sendInstitutionOnboardingCompleteEmail(opts: {
           <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Organization:</strong> ${opts.organizationName}</p>
           <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Plan:</strong> ${opts.planName}</p>
           <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Sign in as:</strong> ${opts.ownerEmail}</p>
-          <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Subdomain:</strong> <code>${opts.subdomain}</code></p>
-          <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Campus host:</strong> <code>${opts.platformHost}</code></p>
-          <p style="margin:0;font-size:14px;line-height:1.6"><strong>Campus URL:</strong> <a href="${opts.platformUrl}">${opts.platformUrl}</a></p>
+          <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Subdomain label:</strong> <code>${opts.subdomain}</code></p>
+          <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Public site (works now):</strong> <a href="${opts.platformUrl}">${opts.platformUrl}</a></p>
+          <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Short link:</strong> <a href="${shortPathUrl}">${shortPathUrl}</a></p>
+          <p style="margin:0;font-size:14px;line-height:1.6"><strong>Subdomain host:</strong> <a href="${subdomainUrl}">${subdomainUrl}</a> <span style="color:#666">(DNS wildcard required)</span></p>
         </div>
         <p style="margin:24px 0 10px">
           <a href="${opts.adminUrl}" style="display:inline-block;background:#00b369;color:#fff;text-decoration:none;padding:12px 18px;font-size:14px;font-weight:700">
@@ -220,7 +227,7 @@ export async function sendInstitutionOnboardingCompleteEmail(opts: {
           </a>
         </p>
         <p style="font-size:13px;line-height:1.6;color:#666;margin:0">
-          Sign in with <strong>${opts.ownerEmail}</strong> to manage your campus. If DNS for your subdomain is still propagating, the dashboard links above work immediately on intellex.loopingbinary.com.
+          Sign in with <strong>${opts.ownerEmail}</strong> to manage your campus. Prefer the public site / short links above — they work on intellex.loopingbinary.com without waiting on DNS.
         </p>
         <p style="font-size:12px;color:#888;margin-top:28px">InTelleX Platform · Looping Binary</p>
       </div>

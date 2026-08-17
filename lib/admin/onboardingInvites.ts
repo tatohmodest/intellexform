@@ -227,6 +227,8 @@ export async function completeOnboardingInvite(opts: {
   subdomain: string;
   platformHost: string;
   platformUrl: string;
+  subdomainUrl: string;
+  shortPathUrl: string;
   adminUrl: string;
   campusUrl: string;
   emailSent: boolean;
@@ -351,8 +353,11 @@ export async function completeOnboardingInvite(opts: {
   const cname = platformCnameTarget();
   const subdomain = String(inst.subdomain || inst.slug);
   const platformHost = `${subdomain}.${cname}`;
-  const platformUrl = `https://${platformHost}`;
+  const subdomainUrl = `https://${platformHost}`;
   const site = getSiteUrl().replace(/\/$/, '');
+  /** Path URL works immediately on the main Intellex host (no DNS needed). */
+  const publicSiteUrl = `${site}/site/${inst.slug}`;
+  const shortPathUrl = `${site}/${inst.slug}`;
   const adminPath = `/dashboard/institutions/${inst.slug}/admin`;
   const campusPath = `/dashboard/institutions/${inst.slug}`;
   const adminUrl = `${site}${adminPath}`;
@@ -369,7 +374,9 @@ export async function completeOnboardingInvite(opts: {
       planName,
       subdomain,
       platformHost,
-      platformUrl,
+      platformUrl: publicSiteUrl,
+      subdomainUrl,
+      shortPathUrl,
       adminUrl,
       campusUrl,
       ownerEmail: invite.email,
@@ -384,7 +391,9 @@ export async function completeOnboardingInvite(opts: {
     institutionId: String(inst.id),
     subdomain,
     platformHost,
-    platformUrl,
+    platformUrl: publicSiteUrl,
+    subdomainUrl,
+    shortPathUrl,
     adminUrl,
     campusUrl,
     emailSent,

@@ -182,6 +182,8 @@ export default function OnboardForm({
         subdomain: data.subdomain,
         platformHost: data.platformHost,
         platformUrl: data.platformUrl,
+        subdomainUrl: data.subdomainUrl,
+        shortPathUrl: data.shortPathUrl,
         adminUrl: data.adminUrl,
         campusUrl: data.campusUrl,
         emailSent: Boolean(data.emailSent),

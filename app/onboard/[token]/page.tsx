@@ -35,14 +35,15 @@ async function buildCompletedAccess(opts: {
   }
   const cname = platformCnameTarget();
   const platformHost = `${subdomain}.${cname}`;
-  const platformUrl = `https://${platformHost}`;
   const site = getSiteUrl().replace(/\/$/, '');
   return {
     slug: opts.slug,
     organizationName: orgName || undefined,
     subdomain,
     platformHost,
-    platformUrl,
+    platformUrl: `${site}/site/${opts.slug}`,
+    shortPathUrl: `${site}/${opts.slug}`,
+    subdomainUrl: `https://${platformHost}`,
     adminUrl: `${site}/dashboard/institutions/${opts.slug}/admin`,
     campusUrl: `${site}/dashboard/institutions/${opts.slug}`,
     emailTo: opts.email,

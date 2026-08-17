@@ -9,6 +9,8 @@ export type OnboardAccessDetails = {
   subdomain?: string;
   platformHost?: string;
   platformUrl?: string;
+  subdomainUrl?: string;
+  shortPathUrl?: string;
   adminUrl?: string;
   campusUrl?: string;
   emailSent?: boolean;
@@ -74,11 +76,19 @@ export default function OnboardSuccessPanel({ access }: { access: OnboardAccessD
       </div>
 
       <div className="mt-6 space-y-2">
-        {access.subdomain ? <CopyRow label="Subdomain" value={access.subdomain} /> : null}
-        {access.platformHost ? (
-          <CopyRow label="Campus hostname" value={access.platformHost} />
+        {access.subdomain ? <CopyRow label="Subdomain label" value={access.subdomain} /> : null}
+        {access.platformUrl ? (
+          <CopyRow label="Public campus site (works now)" value={access.platformUrl} />
         ) : null}
-        {access.platformUrl ? <CopyRow label="Campus URL" value={access.platformUrl} /> : null}
+        {access.shortPathUrl ? (
+          <CopyRow label="Short link" value={access.shortPathUrl} />
+        ) : null}
+        {access.subdomainUrl || access.platformHost ? (
+          <CopyRow
+            label="Subdomain host (DNS wildcard)"
+            value={access.subdomainUrl || `https://${access.platformHost}`}
+          />
+        ) : null}
         <CopyRow label="Admin dashboard" value={adminHref} />
         <CopyRow label="Campus portal" value={campusHref} />
       </div>

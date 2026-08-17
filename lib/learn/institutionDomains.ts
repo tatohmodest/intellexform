@@ -137,7 +137,7 @@ export async function resolveInstitutionByHost(
       };
     }
 
-    // {subdomain}.{platform-apex} → campus
+    // {subdomain}.{platform-apex} → campus (Intellex-assigned subdomain always resolves)
     const cnameTarget = platformCnameTarget();
     const parts = host.split('.');
     if (parts.length >= 2) {
@@ -149,18 +149,38 @@ export async function resolveInstitutionByHost(
         host === `${label}.${cnameTarget}` ||
         (cnameTarget.includes('.') && parent === cnameTarget);
 
-      if (parentIsPlatform && label) {
+      if (parentIsPlatform && label && label !== 'www') {
         const bySub = await db.collection('institutions').findOne({
-          subdomain: label,
-          $or: [{ domainStatus: 'active' }, { domainStatus: 'pending' }],
+          $or: [{ subdomain: label }, { slug: label }],
         });
         if (bySub) {
           return {
             slug: String(bySub.slug),
             name: String(bySub.name || bySub.slug),
             customDomain: bySub.customDomain ? String(bySub.customDomain) : null,
-            subdomain: label,
+            subdomain: bySub.subdomain ? String(bySub.subdomain) : label,
           };
+        }
+
+        // Prisma fallback for onboarded campuses not yet mirrored to Mongo.
+        try {
+          const prismaSub = await prisma.institution.findFirst({
+            where: {
+              OR: [{ subdomain: label }, { slug: label }],
+              status: { notIn: ['ARCHIVED', 'REJECTED'] },
+            },
+            select: { slug: true, name: true, customDomain: true, subdomain: true },
+          });
+          if (prismaSub) {
+            return {
+              slug: prismaSub.slug,
+              name: prismaSub.name,
+              customDomain: prismaSub.customDomain,
+              subdomain: prismaSub.subdomain || label,
+            };
+          }
+        } catch {
+          /* schema may not be pushed yet */
         }
       }
     }
