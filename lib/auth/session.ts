@@ -2,14 +2,14 @@ import crypto from 'crypto';
 
 /**
  * Learner session - stateless HMAC-signed cookie (same pattern as the admin
- * session in lib/adminAuth.ts, but for LoopingBinary learner accounts).
+ * session in lib/adminAuth.ts).
  */
 
 export const SESSION_COOKIE = 'intellex_session';
 export const SESSION_MAX_AGE = 30 * 24 * 60 * 60; // 30 days (seconds)
 
 export interface SessionUser {
-  /** LoopingBinary account id (userinfo `sub`). */
+  /** Local account id (Prisma User.id / learner lbId). */
   uid: string;
   name: string;
   email: string;

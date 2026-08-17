@@ -278,7 +278,7 @@ export default function ContactWizard() {
                     <p className="mt-4 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
                       Ready to learn now?{' '}
                       <Link href="/signup" className="font-semibold" style={{ color: 'var(--green-deep)' }}>
-                        Sign up with Looping Binary
+                        Create an account
                       </Link>
                     </p>
                   </StepShell>

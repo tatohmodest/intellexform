@@ -37,21 +37,11 @@ export default async function SettingsPage() {
           <ShieldCheck size={19} />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="text-[14px] font-semibold">Signed in with LoopingBinary</div>
+          <div className="text-[14px] font-semibold">Signed in with email</div>
           <div className="truncate text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-            {learner?.email || session.email || 'Connected account'} · account id{' '}
-            <span className="mono">{session.uid.slice(0, 12)}…</span>
+            {learner?.email || session.email || 'Connected account'}
           </div>
         </div>
-        <a
-          href="https://auth.loopingbinary.com"
-          target="_blank"
-          rel="noreferrer"
-          className="text-[13px] font-semibold underline"
-          style={{ color: 'var(--blue-ink)' }}
-        >
-          Manage account
-        </a>
       </div>
 
       <SettingsForm

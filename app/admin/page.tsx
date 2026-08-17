@@ -106,7 +106,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
             <p className="text-center text-xs" style={{ color: 'var(--ink-soft)' }}>
               Or{' '}
               <a href="/login?next=/admin/overview" className="font-semibold underline" style={{ color: 'var(--green-deep)' }}>
-                sign in with Looping Binary
+                sign in with your InTelleX account
               </a>
             </p>
           </form>

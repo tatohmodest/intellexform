@@ -8,7 +8,7 @@ import AuthScreen from '@/components/auth/AuthScreen';
 
 export const metadata: Metadata = {
   title: 'Sign in - Intellex',
-  description: 'Sign in to Intellex with your LoopingBinary account.',
+  description: 'Sign in to Intellex with your email and password.',
 };
 
 export const dynamic = 'force-dynamic';
