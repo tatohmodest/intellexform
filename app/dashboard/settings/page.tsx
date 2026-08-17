@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { Settings, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getLearner } from '@/lib/learn/repo';
 import SettingsForm from '@/components/dashboard/SettingsForm';
