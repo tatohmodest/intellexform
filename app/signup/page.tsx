@@ -9,7 +9,7 @@ import AuthScreen from '@/components/auth/AuthScreen';
 export const metadata: Metadata = {
   title: 'Sign up - Intellex',
   description:
-    'Create your Intellex account with LoopingBinary - self-paced courses, live mentorship and AI tutoring.',
+    'Create your Intellex account with email and password - self-paced courses, live mentorship and AI tutoring.',
 };
 
 export const dynamic = 'force-dynamic';

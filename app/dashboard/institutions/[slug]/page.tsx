@@ -13,6 +13,7 @@ import CampusProfileComplete from '@/components/dashboard/CampusProfileComplete'
 import CampusCapabilityView from '@/components/dashboard/CampusCapabilityView';
 import CampusInstructorSalesToggle from '@/components/dashboard/CampusInstructorSalesToggle';
 import CampusDomainSettings from '@/components/dashboard/CampusDomainSettings';
+import CampusPwaBrand from '@/components/CampusPwaBrand';
 import {
   getModuleMeta,
   resolveCampusModules,
@@ -87,6 +88,14 @@ export default async function CampusPage({
 
   return (
     <div className="mx-auto max-w-[960px] overflow-x-hidden px-0">
+      <CampusPwaBrand
+        brand={{
+          slug: inst.slug,
+          name: inst.name,
+          accent,
+          logoUrl: logo,
+        }}
+      />
       {showProfileComplete && (
         <CampusProfileComplete
           slug={inst.slug}

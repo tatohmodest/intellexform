@@ -1,8 +1,10 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { listOrgCourses } from '@/lib/orgLms';
 import { resolveInstitutionFeatures } from '@/lib/eduos/featureFlags';
 import { getOrgWebsite } from '@/lib/orgLms/website';
+import CampusPwaBrand from '@/components/CampusPwaBrand';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +13,31 @@ export const dynamic = 'force-dynamic';
  * Custom domains can rewrite here via campus-gateway.
  * Copy/branding come from the org website builder (`settings.website`).
  */
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const site = await getOrgWebsite(params.slug);
+  if (!site) return { title: 'Campus' };
+  const name = site.config.platformName || site.institution.name;
+  const slug = site.institution.slug;
+  const logo = site.institution.logoUrl;
+  return {
+    title: name,
+    description: site.config.tagline || site.institution.description || `${name} on InTelleX`,
+    applicationName: name,
+    appleWebApp: { capable: true, title: name, statusBarStyle: 'default' },
+    manifest: `/api/pwa/manifest?slug=${encodeURIComponent(slug)}`,
+    icons: logo
+      ? {
+          icon: [{ url: `/api/pwa/icon?slug=${encodeURIComponent(slug)}&size=192` }],
+          apple: [{ url: `/api/pwa/icon?slug=${encodeURIComponent(slug)}&size=192` }],
+        }
+      : undefined,
+  };
+}
+
 export default async function OrgPublicSitePage({
   params,
 }: {
@@ -44,6 +71,14 @@ export default async function OrgPublicSitePage({
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--paper)', color: 'var(--ink)' }}>
+      <CampusPwaBrand
+        brand={{
+          slug: inst.slug,
+          name: platformName,
+          accent,
+          logoUrl: inst.logoUrl,
+        }}
+      />
       <header
         className="relative overflow-hidden text-white"
         style={{

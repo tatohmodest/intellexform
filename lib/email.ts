@@ -49,6 +49,51 @@ export async function sendAdminOtpEmail(opts: {
   });
 }
 
+/** Learner signup / login email verification codes (replaces LoopingBinary OAuth). */
+export async function sendLearnerAuthOtpEmail(opts: {
+  to: string;
+  code: string;
+  purpose: 'signup' | 'login';
+}): Promise<void> {
+  const from = process.env.EMAIL_FROM || 'intellexplatform@gmail.com';
+  const transport = getTransport();
+  const isSignup = opts.purpose === 'signup';
+  const subject = isSignup
+    ? `${opts.code} - Verify your InTelleX account`
+    : `${opts.code} - Your InTelleX sign-in code`;
+  const headline = isSignup ? 'Verify your email' : 'Your sign-in code';
+  const intro = isSignup
+    ? 'Use this code to finish creating your InTelleX account:'
+    : 'Use this code to finish signing in to InTelleX:';
+
+  await transport.sendMail({
+    from: `InTelleX <${from}>`,
+    to: opts.to,
+    subject,
+    text: [
+      intro,
+      '',
+      opts.code,
+      '',
+      'It expires in 10 minutes. If you did not request this, you can ignore this email.',
+      '',
+      '- InTelleX',
+    ].join('\n'),
+    html: `
+      <div style="font-family:Georgia,serif;max-width:480px;margin:0 auto;padding:24px;color:#1a1a1a">
+        <p style="font-size:14px;color:#666;margin:0 0 16px">InTelleX</p>
+        <h1 style="font-size:22px;margin:0 0 12px">${headline}</h1>
+        <p style="font-size:15px;line-height:1.6;color:#333;margin:0 0 8px">${intro}</p>
+        <p style="font-size:32px;letter-spacing:0.2em;font-weight:700;margin:24px 0">${opts.code}</p>
+        <p style="font-size:14px;line-height:1.5;color:#444">
+          Expires in <strong>10 minutes</strong>. If you did not request this, ignore this email.
+        </p>
+        <p style="font-size:12px;color:#888;margin-top:28px">InTelleX</p>
+      </div>
+    `,
+  });
+}
+
 export async function sendInstitutionOnboardingInviteEmail(opts: {
   to: string;
   inviteUrl: string;

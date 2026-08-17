@@ -345,7 +345,7 @@ export default function TopNav() {
               ) : (
                 <>
                   <Link href="/signup" onClick={() => setOpen(false)} className="btn btn-primary w-full">
-                    Sign up with LoopingBinary <ArrowRight size={18} />
+                    Create account <ArrowRight size={18} />
                   </Link>
                   <Link href="/login" onClick={() => setOpen(false)} className="btn btn-ghost w-full">
                     Sign in

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Download, Share, PlusSquare, X, Smartphone } from 'lucide-react';
+import { readCampusPwaBrand, type CampusPwaBrandInfo } from '@/components/CampusPwaBrand';
 
 const STORAGE_KEY = 'intellex_pwa_install_prompt';
 const COOKIE_KEY = 'intellex_cookie_consent';
@@ -28,15 +29,28 @@ function isIosDevice(): boolean {
   return iOS || iPadOs;
 }
 
+function brandFromPath(): CampusPwaBrandInfo | null {
+  if (typeof window === 'undefined') return null;
+  const path = window.location.pathname;
+  const site = path.match(/^\/site\/([^/]+)/);
+  if (site?.[1]) return { slug: decodeURIComponent(site[1]), name: decodeURIComponent(site[1]) };
+  const dash = path.match(/^\/dashboard\/institutions\/([^/]+)/);
+  if (dash?.[1]) return { slug: decodeURIComponent(dash[1]), name: decodeURIComponent(dash[1]) };
+  return null;
+}
+
 export default function PwaInstallPrompt() {
   const [open, setOpen] = useState(false);
   const [ios, setIos] = useState(false);
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [installing, setInstalling] = useState(false);
   const [installed, setInstalled] = useState(false);
+  const [brand, setBrand] = useState<CampusPwaBrandInfo | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    setBrand(readCampusPwaBrand() || brandFromPath());
+
     if (isStandalone()) {
       setInstalled(true);
       return;
@@ -67,7 +81,6 @@ export default function PwaInstallPrompt() {
     window.addEventListener('beforeinstallprompt', onBip);
     window.addEventListener('appinstalled', onInstalled);
 
-    // Let the cookie banner settle first so prompts don't stack.
     let cancelled = false;
     let attempts = 0;
     const maybeOpen = () => {
@@ -82,7 +95,10 @@ export default function PwaInstallPrompt() {
       } catch {
         /* ignore */
       }
-      if (!cancelled) setOpen(true);
+      if (!cancelled) {
+        setBrand(readCampusPwaBrand() || brandFromPath());
+        setOpen(true);
+      }
     };
     const timer = window.setTimeout(maybeOpen, 2400);
 
@@ -121,6 +137,11 @@ export default function PwaInstallPrompt() {
   if (!open || installed) return null;
 
   const canNativeInstall = Boolean(deferred) && !ios;
+  const appName = brand?.name || 'InTelleX';
+  const iconSrc = brand?.slug
+    ? `/api/pwa/icon?slug=${encodeURIComponent(brand.slug)}&size=192`
+    : '/pwa/icon-192.png';
+  const accent = brand?.accent || '#00B369';
 
   return (
     <div className="fixed inset-0 z-[95] flex items-end justify-center p-4 sm:items-center sm:p-6">
@@ -144,8 +165,7 @@ export default function PwaInstallPrompt() {
         <div
           className="relative px-5 pb-4 pt-5"
           style={{
-            background:
-              'linear-gradient(160deg, rgba(0,179,105,0.14) 0%, rgba(242,246,251,0.9) 48%, var(--paper) 100%)',
+            background: `linear-gradient(160deg, ${accent}24 0%, rgba(242,246,251,0.9) 48%, var(--paper) 100%)`,
           }}
         >
           <button
@@ -165,7 +185,7 @@ export default function PwaInstallPrompt() {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/pwa/icon-192.png"
+                src={iconSrc}
                 alt=""
                 width={48}
                 height={48}
@@ -175,16 +195,17 @@ export default function PwaInstallPrompt() {
             <div>
               <p
                 className="text-[11px] font-semibold uppercase tracking-[0.14em]"
-                style={{ color: 'var(--green-deep)' }}
+                style={{ color: accent }}
               >
                 Get the app
               </p>
               <h2 id="pwa-install-title" className="display mt-1 text-[1.35rem] leading-tight">
-                Install InTelleX
+                Install {appName}
               </h2>
               <p className="mt-1.5 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                Open courses, mentors, and your dashboard like a real app - home screen icon, faster
-                launches, and a full-screen experience.
+                {brand
+                  ? `Add ${appName} to your home screen — your campus icon, one-tap login, and a full-screen learning experience.`
+                  : 'Open courses, mentors, and your dashboard like a real app - home screen icon, faster launches, and a full-screen experience.'}
               </p>
             </div>
           </div>
@@ -196,7 +217,7 @@ export default function PwaInstallPrompt() {
               <li className="flex gap-3 text-[13.5px] leading-snug">
                 <span
                   className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[12px] font-semibold"
-                  style={{ background: 'rgba(0,179,105,0.12)', color: 'var(--green-deep)' }}
+                  style={{ background: `${accent}1f`, color: accent }}
                 >
                   1
                 </span>
@@ -214,7 +235,7 @@ export default function PwaInstallPrompt() {
               <li className="flex gap-3 text-[13.5px] leading-snug">
                 <span
                   className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[12px] font-semibold"
-                  style={{ background: 'rgba(0,179,105,0.12)', color: 'var(--green-deep)' }}
+                  style={{ background: `${accent}1f`, color: accent }}
                 >
                   2
                 </span>
@@ -232,12 +253,12 @@ export default function PwaInstallPrompt() {
               <li className="flex gap-3 text-[13.5px] leading-snug">
                 <span
                   className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[12px] font-semibold"
-                  style={{ background: 'rgba(0,179,105,0.12)', color: 'var(--green-deep)' }}
+                  style={{ background: `${accent}1f`, color: accent }}
                 >
                   3
                 </span>
                 <span>
-                  Tap <span className="font-semibold">Add</span> - InTelleX lands on your Home Screen
+                  Tap <span className="font-semibold">Add</span> — {appName} lands on your Home Screen
                   like an app.
                 </span>
               </li>
@@ -254,11 +275,11 @@ export default function PwaInstallPrompt() {
               <Smartphone
                 size={18}
                 className="mt-0.5 flex-shrink-0"
-                style={{ color: 'var(--green-deep)' }}
+                style={{ color: accent }}
               />
               <p>
                 {canNativeInstall
-                  ? 'Install InTelleX on this device for one-tap access from your home screen or app drawer.'
+                  ? `Install ${appName} on this device for one-tap access from your home screen or app drawer.`
                   : 'On Android Chrome, use the menu (⋮) and choose Install app or Add to Home screen.'}
               </p>
             </div>

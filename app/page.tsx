@@ -747,7 +747,7 @@ export default async function HomePage() {
             </div>
             <div className="flex flex-wrap gap-3">
               <Link href="/signup" className="btn btn-primary">
-                Sign in with Looping Binary
+                Create free account
               </Link>
               <Link
                 href="/enterprise"
