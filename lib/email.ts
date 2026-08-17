@@ -221,60 +221,64 @@ export async function sendInstitutionOnboardingCompleteEmail(opts: {
   await transport.sendMail({
     from: `InTelleX Platform <${from}>`,
     to: opts.to,
-    subject: `${opts.organizationName} is live on InTelleX — your access details`,
+    subject: `${opts.organizationName} is live — your admin dashboard link`,
     text: [
       `Hello,`,
       '',
-      `Onboarding for ${opts.organizationName} is complete. Your campus is ready on InTelleX.`,
+      `Onboarding for ${opts.organizationName} is complete. Your campus LMS is ready.`,
+      '',
+      'IMPORTANT — Admin dashboard (sent for you to manage the campus):',
+      opts.adminUrl,
+      '',
+      'Sign in with this email to open admin:',
+      opts.ownerEmail,
       '',
       'Access details:',
       `• Organization: ${opts.organizationName}`,
       `• Plan: ${opts.planName}`,
-      `• Owner email (sign in with this): ${opts.ownerEmail}`,
-      `• Subdomain label: ${opts.subdomain}`,
-      `• Public campus site (works now): ${opts.platformUrl}`,
+      `• Public campus site (students): ${opts.platformUrl}`,
+      `• Student signup: ${opts.platformUrl}/signup`,
       `• Short link: ${shortPathUrl}`,
       `• Subdomain host (needs DNS wildcard): ${subdomainUrl}`,
-      `• Admin dashboard: ${opts.adminUrl}`,
       `• Campus portal (signed in): ${opts.campusUrl}`,
       '',
-      'Save this email — these are the links you need to access and manage your LMS.',
-      'Sign in with the same email that received the invite to open admin.',
+      'Your public site uses your logo and branding. Students who open it stay on your campus.',
       '',
-      '- InTelleX Platform · Looping Binary',
+      '- InTelleX Platform',
     ].join('\n'),
     html: `
       <div style="font-family:Georgia,serif;max-width:640px;margin:0 auto;padding:24px;color:#1a1a1a">
         <p style="font-size:14px;color:#666;margin:0 0 16px">InTelleX Platform</p>
-        <h1 style="font-size:26px;line-height:1.2;margin:0 0 12px">Your campus is live</h1>
+        <h1 style="font-size:26px;line-height:1.2;margin:0 0 12px">Your admin dashboard is ready</h1>
         <p style="font-size:15px;line-height:1.7;color:#333;margin:0 0 14px">
           Onboarding for <strong>${opts.organizationName}</strong> is complete.
-          Keep this email — it has everything you need to access your LMS.
+          We are sending you the <strong>admin dashboard link</strong> so you can manage your campus LMS.
         </p>
-        <div style="background:#f7f7f7;border:1px solid #e5e5e5;padding:16px 18px;margin:18px 0">
-          <p style="margin:0 0 10px;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#666">Access details</p>
-          <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Organization:</strong> ${opts.organizationName}</p>
-          <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Plan:</strong> ${opts.planName}</p>
-          <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Sign in as:</strong> ${opts.ownerEmail}</p>
-          <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Subdomain label:</strong> <code>${opts.subdomain}</code></p>
-          <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Public site (works now):</strong> <a href="${opts.platformUrl}">${opts.platformUrl}</a></p>
-          <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Short link:</strong> <a href="${shortPathUrl}">${shortPathUrl}</a></p>
-          <p style="margin:0;font-size:14px;line-height:1.6"><strong>Subdomain host:</strong> <a href="${subdomainUrl}">${subdomainUrl}</a> <span style="color:#666">(DNS wildcard required)</span></p>
-        </div>
         <p style="margin:24px 0 10px">
-          <a href="${opts.adminUrl}" style="display:inline-block;background:#00b369;color:#fff;text-decoration:none;padding:12px 18px;font-size:14px;font-weight:700">
+          <a href="${opts.adminUrl}" style="display:inline-block;background:#00b369;color:#fff;text-decoration:none;padding:14px 20px;font-size:15px;font-weight:700">
             Open admin dashboard
           </a>
         </p>
-        <p style="margin:0 0 18px">
-          <a href="${opts.campusUrl}" style="display:inline-block;background:#0f172a;color:#fff;text-decoration:none;padding:12px 18px;font-size:14px;font-weight:700">
-            Open campus portal
+        <p style="font-size:13px;line-height:1.6;color:#666;margin:0 0 18px">
+          Sign in with <strong>${opts.ownerEmail}</strong> to manage courses, branding, students, and settings.
+        </p>
+        <div style="background:#f7f7f7;border:1px solid #e5e5e5;padding:16px 18px;margin:18px 0">
+          <p style="margin:0 0 10px;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#666">Campus links</p>
+          <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Public site:</strong> <a href="${opts.platformUrl}">${opts.platformUrl}</a></p>
+          <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Student signup:</strong> <a href="${opts.platformUrl}/signup">${opts.platformUrl}/signup</a></p>
+          <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Short link:</strong> <a href="${shortPathUrl}">${shortPathUrl}</a></p>
+          <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><strong>Campus portal:</strong> <a href="${opts.campusUrl}">${opts.campusUrl}</a></p>
+          <p style="margin:0;font-size:14px;line-height:1.6"><strong>Subdomain host:</strong> <a href="${subdomainUrl}">${subdomainUrl}</a> <span style="color:#666">(DNS wildcard required)</span></p>
+        </div>
+        <p style="margin:18px 0">
+          <a href="${opts.platformUrl}" style="display:inline-block;background:#0f172a;color:#fff;text-decoration:none;padding:12px 18px;font-size:14px;font-weight:700">
+            View public campus site
           </a>
         </p>
         <p style="font-size:13px;line-height:1.6;color:#666;margin:0">
-          Sign in with <strong>${opts.ownerEmail}</strong> to manage your campus. Prefer the public site / short links above — they work on intellex.loopingbinary.com without waiting on DNS.
+          Your logo and brand stay on the campus site — students do not get sent back to the InTelleX marketing homepage.
         </p>
-        <p style="font-size:12px;color:#888;margin-top:28px">InTelleX Platform · Looping Binary</p>
+        <p style="font-size:12px;color:#888;margin-top:28px">InTelleX Platform</p>
       </div>
     `,
   });

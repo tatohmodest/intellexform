@@ -12,10 +12,15 @@ type WebsiteConfig = {
   ctaHref: string;
   showCourses: boolean;
   showCapabilities: boolean;
+  showPrograms?: boolean;
+  showContact?: boolean;
+  showJoin?: boolean;
   heroStyle: 'gradient' | 'cover';
   navLinks: { label: string; href: string }[];
   footerNote: string;
   published: boolean;
+  contactBlurb?: string;
+  admissionsNote?: string;
 };
 
 type Branding = {
@@ -257,12 +262,129 @@ export default function CampusWebsiteBuilder({
           <label className="inline-flex items-center gap-2">
             <input
               type="checkbox"
+              checked={config.showPrograms !== false}
+              onChange={(e) => setConfig({ ...config, showPrograms: e.target.checked })}
+            />
+            Show programs
+          </label>
+          <label className="inline-flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={config.showJoin !== false}
+              onChange={(e) => setConfig({ ...config, showJoin: e.target.checked })}
+            />
+            Show join section
+          </label>
+          <label className="inline-flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={config.showContact !== false}
+              onChange={(e) => setConfig({ ...config, showContact: e.target.checked })}
+            />
+            Show contact
+          </label>
+          <label className="inline-flex items-center gap-2">
+            <input
+              type="checkbox"
               checked={config.published}
               onChange={(e) => setConfig({ ...config, published: e.target.checked })}
             />
             Published
           </label>
         </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block text-[13px]">
+            <span className="font-semibold">Hero style</span>
+            <select
+              className="form-input !rounded-none mt-1"
+              value={config.heroStyle}
+              onChange={(e) =>
+                setConfig({
+                  ...config,
+                  heroStyle: e.target.value === 'cover' ? 'cover' : 'gradient',
+                })
+              }
+            >
+              <option value="gradient">Brand gradient</option>
+              <option value="cover">Cover image</option>
+            </select>
+          </label>
+          <label className="block text-[13px]">
+            <span className="font-semibold">Default CTA destination</span>
+            <select
+              className="form-input !rounded-none mt-1"
+              value={
+                config.ctaHref.includes('/signup')
+                  ? 'signup'
+                  : config.ctaHref.includes('/login')
+                    ? 'login'
+                    : 'custom'
+              }
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === 'signup') {
+                  setConfig({
+                    ...config,
+                    ctaHref: `/site/${slug}/signup`,
+                    ctaLabel: config.ctaLabel || 'Join campus',
+                  });
+                } else if (v === 'login') {
+                  setConfig({
+                    ...config,
+                    ctaHref: `/site/${slug}/login`,
+                    ctaLabel: config.ctaLabel || 'Sign in',
+                  });
+                }
+              }}
+            >
+              <option value="signup">Student signup</option>
+              <option value="login">Student login</option>
+              <option value="custom">Custom (edit CTA link)</option>
+            </select>
+          </label>
+        </div>
+
+        <label className="block text-[13px]">
+          <span className="font-semibold">Admissions / join note</span>
+          <textarea
+            className="form-input !rounded-none mt-1"
+            rows={2}
+            value={config.admissionsNote || ''}
+            onChange={(e) => setConfig({ ...config, admissionsNote: e.target.value })}
+          />
+        </label>
+        <label className="block text-[13px]">
+          <span className="font-semibold">Contact blurb</span>
+          <textarea
+            className="form-input !rounded-none mt-1"
+            rows={2}
+            value={config.contactBlurb || ''}
+            onChange={(e) => setConfig({ ...config, contactBlurb: e.target.value })}
+          />
+        </label>
+
+        <label className="block text-[13px]">
+          <span className="font-semibold">Nav links (label|href per line)</span>
+          <textarea
+            className="form-input !rounded-none mt-1 font-mono text-[12px]"
+            rows={4}
+            value={(config.navLinks || []).map((l) => `${l.label}|${l.href}`).join('\n')}
+            onChange={(e) => {
+              const navLinks = e.target.value
+                .split('\n')
+                .map((line) => {
+                  const [label, ...rest] = line.split('|');
+                  return {
+                    label: (label || '').trim(),
+                    href: rest.join('|').trim(),
+                  };
+                })
+                .filter((l) => l.label && l.href);
+              setConfig({ ...config, navLinks });
+            }}
+          />
+        </label>
 
         {error ? (
           <p className="text-[13px]" style={{ color: '#b91c1c' }}>

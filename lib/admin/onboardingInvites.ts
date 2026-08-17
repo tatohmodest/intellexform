@@ -299,6 +299,19 @@ export async function completeOnboardingInvite(opts: {
   const { featuresFromModules } = await import('@/lib/eduos/featureFlags');
   const moduleIds = (selected.length ? selected : enabledModules) as ModuleId[];
 
+  const { buildSeedWebsiteConfig } = await import('@/lib/campus/brand');
+  const website = buildSeedWebsiteConfig({
+    platformName: String(opts.platformName || orgName),
+    tagline: opts.tagline,
+    about: opts.description || opts.tagline,
+    slug: inst.slug,
+    learningStructure: opts.learningStructure || [],
+    studentRegistration: opts.studentRegistration || 'invite_only',
+  });
+  settings.website = website;
+
+  const isPublicEnrollment = opts.studentRegistration === 'public';
+
   await prisma.institution.update({
     where: { id: inst.id },
     data: {
@@ -310,6 +323,7 @@ export async function completeOnboardingInvite(opts: {
       settings: settings as never,
       featuresEnabled: featuresFromModules(moduleIds),
       enabledModules: moduleIds,
+      visibility: isPublicEnrollment ? 'PUBLIC' : 'PRIVATE',
       enrollmentPolicy:
         opts.studentRegistration === 'public'
           ? 'PUBLIC_OPEN'
@@ -322,6 +336,42 @@ export async function completeOnboardingInvite(opts: {
       onboardingProgress: 100,
     },
   });
+
+  // Ensure Mongo owner membership + learner affiliation so admin/campus chrome works.
+  try {
+    const db = await getDb();
+    const owner = await prisma.user.findUnique({
+      where: { email: invite.email.toLowerCase() },
+      select: { id: true, name: true, email: true },
+    });
+    if (owner) {
+      await db.collection('institution_members').updateOne(
+        { institutionSlug: inst.slug, userId: owner.id },
+        {
+          $set: {
+            institutionSlug: inst.slug,
+            userId: owner.id,
+            userName: owner.name || owner.email || 'Owner',
+            role: 'owner',
+            joinedAt: new Date(),
+          },
+        },
+        { upsert: true },
+      );
+      const { upsertAffiliation } = await import('@/lib/learn/repo');
+      await upsertAffiliation(owner.id, {
+        institutionSlug: inst.slug,
+        institutionName: String(opts.platformName || orgName),
+        role: 'owner',
+        status: 'verified',
+        profileComplete: true,
+        joinedAt: new Date(),
+        verifiedAt: new Date(),
+      });
+    }
+  } catch (err) {
+    console.error('owner campus membership sync failed:', err);
+  }
 
   const db = await getDb();
   const completed: OnboardingInviteDoc = {
