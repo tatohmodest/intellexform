@@ -9,7 +9,12 @@ import {
   type CommercialPlanId,
 } from '@/lib/eduos/plans';
 import { MODULE_CATALOG } from '@/lib/eduos/capabilities';
-import { DATABASE_MODE_META, type TenantDatabaseMode } from '@/lib/eduos/databaseModes';
+import {
+  DATABASE_MODE_META,
+  type TenantDatabaseMode,
+} from '@/lib/eduos/databaseModes';
+import { INSTITUTION_TYPE_OPTIONS, normalizeInstitutionType } from '@/lib/eduos/institutionType';
+import type { InstitutionType } from '@prisma/client';
 
 type InvitePayload = {
   token: string;
@@ -26,20 +31,6 @@ type InvitePayload = {
   note?: string | null;
   expiresAt: string;
 };
-
-const ORG_TYPES = [
-  'University',
-  'School',
-  'Academy',
-  'Training Center',
-  'Company',
-  'Corporate Training',
-  'Bootcamp',
-  'NGO',
-  'Government Organization',
-  'Professional Institution',
-  'Other',
-] as const;
 
 const STRUCTURE_OPTIONS = [
   { id: 'departments', label: 'Departments / Faculties' },
@@ -78,7 +69,9 @@ export default function OnboardForm({
   const [city, setCity] = useState('');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
-  const [institutionType, setInstitutionType] = useState(invite.organizationType || 'Academy');
+  const [institutionType, setInstitutionType] = useState(
+    () => normalizeInstitutionType(invite.organizationType) || 'ACADEMY',
+  );
   const [tagline, setTagline] = useState('');
 
   const [platformName, setPlatformName] = useState('');
@@ -289,11 +282,13 @@ export default function OnboardForm({
               <select
                 className="form-input !rounded-none"
                 value={institutionType}
-                onChange={(e) => setInstitutionType(e.target.value)}
+                onChange={(e) =>
+                  setInstitutionType(e.target.value as InstitutionType)
+                }
               >
-                {ORG_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
+                {INSTITUTION_TYPE_OPTIONS.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
                   </option>
                 ))}
               </select>
@@ -565,7 +560,13 @@ export default function OnboardForm({
             <h2 className="font-display text-[22px]">Your LMS is ready to launch</h2>
             <Row label="Organization" value={name} />
             <Row label="Platform" value={platformName} />
-            <Row label="Type" value={institutionType} />
+            <Row
+              label="Type"
+              value={
+                INSTITUTION_TYPE_OPTIONS.find((t) => t.value === institutionType)?.label ||
+                institutionType
+              }
+            />
             <Row label="Administrator" value={`${adminFirstName} ${adminLastName}`.trim()} />
             <Row label="Structure" value={structures.join(', ') || 'None'} />
             <Row label="Students" value={studentRegistration.replace(/_/g, ' ')} />

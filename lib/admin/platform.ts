@@ -30,6 +30,7 @@ import {
 } from '@/lib/eduos/tenantDb';
 import { isMissingPrismaColumn } from '@/lib/eduos/prismaErrors';
 import { ensurePlatformSchema, fetchInstitutionRaw } from '@/lib/eduos/ensureSchema';
+import { normalizeInstitutionType } from '@/lib/eduos/institutionType';
 import {
   ensureDefaultCatalogPlans,
   listCatalogPlans,
@@ -653,7 +654,7 @@ export async function createInstitution(opts: {
       email: opts.email?.trim().toLowerCase() || null,
       country: opts.country || null,
       website: opts.website || null,
-      institutionType: (opts.institutionType as never) || null,
+      institutionType: normalizeInstitutionType(opts.institutionType),
       capabilityPack: pack,
       enabledModules,
       deploymentModel,
