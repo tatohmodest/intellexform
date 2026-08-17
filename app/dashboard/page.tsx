@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getStudentCommandCenter } from '@/lib/learn/commandCenter';
+import { getLearner } from '@/lib/learn/repo';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +31,13 @@ function greeting(): string {
 export default async function DashboardOverview() {
   const session = getSessionUser();
   if (!session) redirect('/login?next=/dashboard');
+
+  // Campus students land on their institution dashboard (tier features), not personal Today.
+  const learner = await getLearner(session.uid);
+  const ctx = learner?.activeContext;
+  if (ctx?.kind === 'institution' && ctx.institutionSlug) {
+    redirect(`/dashboard/institutions/${ctx.institutionSlug}`);
+  }
 
   const cc = await getStudentCommandCenter(session.uid);
   const name = firstName(cc.learner?.name ?? session.name);

@@ -200,12 +200,15 @@ export function campusNavItems(opts: {
         : 'My courses',
       href: `${base}?tab=courses`,
     },
-    {
+  ];
+  if (hasModule(opts.modules, 'assessment') || isStaff) {
+    items.push({
       id: 'assignments',
       label: 'Exams & work',
       href: `${base}?tab=assignments`,
-    },
-  ];
+      module: 'assessment',
+    });
+  }
   if (hasModule(opts.modules, 'live_teaching')) {
     items.push({
       id: 'live',

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import {
   BookOpen,
   Building2,
@@ -16,6 +16,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react';
+import { campusNavItems, type ModuleId } from '@/lib/eduos/capabilities';
 
 type Tab = {
   href: string;
@@ -67,19 +68,63 @@ const MORE_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
-/** Fixed bottom tab bar - mobile / tablet only. */
+/** Fixed bottom tab bar - mobile / tablet only. Campus-aware when in institution context. */
 export default function MobileBottomNav({
   accent = '#00b369',
   isMentor = false,
+  campusSlug = null,
+  campusModules = [],
+  campusRole = 'student',
 }: {
   accent?: string;
   isMentor?: boolean;
+  campusSlug?: string | null;
+  campusModules?: string[];
+  campusRole?: string;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get('tab');
   const [moreOpen, setMoreOpen] = useState(false);
 
+  const campusTabs: Tab[] | null = campusSlug
+    ? (() => {
+        const items = campusNavItems({
+          slug: campusSlug,
+          role: campusRole,
+          modules: campusModules as ModuleId[],
+        }).slice(0, 4);
+        const iconFor = (id: string): LucideIcon => {
+          if (id === 'courses') return BookOpen;
+          if (id === 'assignments') return ClipboardList;
+          if (id === 'calendar' || id === 'events') return LayoutDashboard;
+          if (id === 'announcements') return MessageSquare;
+          return Building2;
+        };
+        return items.map((item) => ({
+          href: item.href,
+          label: item.label.split(' ')[0] || item.label,
+          icon: iconFor(item.id),
+          match: (p: string) => {
+            const onCampus = p.startsWith(`/dashboard/institutions/${campusSlug}`);
+            if (!onCampus) return false;
+            if (item.id === 'home') return !currentTab;
+            return currentTab === item.id;
+          },
+        }));
+      })()
+    : null;
+
+  const tabs = campusTabs || TABS;
   const moreActive = MORE_LINKS.some((l) => pathname.startsWith(l.href));
   const links = MORE_LINKS.filter((l) => (l.href === '/dashboard/teach' ? isMentor : true));
+  if (campusSlug) {
+    links.unshift({
+      href: `/dashboard/institutions/${campusSlug}`,
+      label: 'Campus home',
+      icon: Building2,
+    });
+  }
 
   return (
     <>
@@ -141,7 +186,7 @@ export default function MobileBottomNav({
         aria-label="Primary mobile"
       >
         <ul className="mx-auto flex max-w-lg items-stretch justify-between px-1 pt-1.5 pb-1.5">
-          {TABS.map((tab) => {
+          {tabs.map((tab) => {
             const active = tab.match ? tab.match(pathname) : pathname.startsWith(tab.href);
             const Icon = tab.icon;
             return (

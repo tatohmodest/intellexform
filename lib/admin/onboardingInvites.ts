@@ -358,6 +358,17 @@ export async function completeOnboardingInvite(opts: {
         },
         { upsert: true },
       );
+      await db.collection('institutions').updateOne(
+        { slug: inst.slug },
+        {
+          $set: {
+            capabilityPack: selected.length ? 'custom' : capabilityPack,
+            enabledModules: moduleIds,
+            status: 'ACTIVE',
+            updatedAt: new Date(),
+          },
+        },
+      );
       const { upsertAffiliation } = await import('@/lib/learn/repo');
       await upsertAffiliation(owner.id, {
         institutionSlug: inst.slug,
