@@ -67,12 +67,14 @@ export async function GET(req: NextRequest) {
           if (!detail) return NextResponse.json({ error: 'Not found' }, { status: 404 });
           return NextResponse.json(detail);
         }
-        return NextResponse.json(
-          await listInstitutions({
-            q: searchParams.get('q') || undefined,
-            status: searchParams.get('status') || undefined,
-          }),
-        );
+        const institutions = await listInstitutions({
+          q: searchParams.get('q') || undefined,
+          status: searchParams.get('status') || undefined,
+        });
+        return NextResponse.json({
+          institutions,
+          total: institutions.length,
+        });
       }
       case 'personnel':
         return NextResponse.json(

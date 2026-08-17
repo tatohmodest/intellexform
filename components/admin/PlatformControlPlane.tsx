@@ -141,6 +141,7 @@ export default function PlatformControlPlane({
   useEffect(() => {
     setSection(initialSection);
     setSelectedInst(null);
+    setQ('');
   }, [initialSection]);
 
   const load = useCallback(async () => {
@@ -149,7 +150,13 @@ export default function PlatformControlPlane({
     try {
       if (section === 'overview') setOverview(await apiGet('overview'));
       if (section === 'institutions') {
-        setInstitutions(await apiGet('institutions', q ? { q } : {}));
+        const data = await apiGet('institutions', q ? { q } : {});
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.institutions)
+            ? data.institutions
+            : [];
+        setInstitutions(list as Record<string, unknown>[]);
       }
       if (section === 'personnel') {
         setPersonnel(await apiGet('personnel', q ? { q } : {}));
@@ -165,6 +172,7 @@ export default function PlatformControlPlane({
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load');
+      if (section === 'institutions') setInstitutions([]);
     } finally {
       setLoading(false);
     }
@@ -265,7 +273,15 @@ export default function PlatformControlPlane({
 
       <div className="hidden">
         {NAV.map((n) => (
-          <button key={n.id} type="button" onClick={() => setSection(n.id)}>
+          <button
+            key={n.id}
+            type="button"
+            onClick={() => {
+              setSection(n.id);
+              setQ('');
+              setSelectedInst(null);
+            }}
+          >
             {n.label}
           </button>
         ))}
@@ -340,14 +356,30 @@ export default function PlatformControlPlane({
             <div className="flex flex-wrap gap-2">
               <input
                 className="form-input flex-1"
-                placeholder="Search institutions…"
+                placeholder="Search by name, slug, email, subdomain…"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
               />
+              {q ? (
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setQ('')}
+                >
+                  Clear
+                </button>
+              ) : null}
+              <button type="button" className="btn btn-ghost" onClick={() => load()} disabled={loading}>
+                <RefreshCw size={14} className={loading ? 'animate-spin' : undefined} /> Refresh
+              </button>
               <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>
                 <Plus size={14} /> Create
               </button>
             </div>
+            <p className="text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+              Every campus in the InTelleX ecosystem — including orgs that finished invite onboarding.
+              {institutions.length ? ` Showing ${institutions.length}.` : ''}
+            </p>
             <div className="space-y-2">
               {institutions.map((inst) => (
                 <div
@@ -364,6 +396,7 @@ export default function PlatformControlPlane({
                         <p className="font-semibold">{String(inst.name)}</p>
                         <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>
                           /{String(inst.slug)} · pack {String(inst.capabilityPack)}
+                          {inst.subdomain ? ` · ${String(inst.subdomain)}` : ''}
                         </p>
                       </div>
                       <Badge
@@ -377,6 +410,8 @@ export default function PlatformControlPlane({
                     <p className="mt-2 text-xs" style={{ color: 'var(--ink-soft)' }}>
                       {(inst._count as { memberships?: number; courses?: number })?.memberships ?? 0} members ·{' '}
                       {(inst._count as { courses?: number })?.courses ?? 0} courses
+                      {inst.onboardingState ? ` · onboard ${String(inst.onboardingState)}` : ''}
+                      {inst.email ? ` · ${String(inst.email)}` : ''}
                       {inst.customDomain || inst.pendingCustomDomain ? (
                         <span className="mt-1 block text-[11px]" style={{ color: 'var(--ink-soft)' }}>
                           Domain: {String(inst.customDomain || inst.pendingCustomDomain)}
@@ -396,7 +431,9 @@ export default function PlatformControlPlane({
               ))}
               {!loading && institutions.length === 0 ? (
                 <p className="py-8 text-center text-sm" style={{ color: 'var(--ink-soft)' }}>
-                  No institutions yet. Create one or approve an application.
+                  {q
+                    ? `No institutions match “${q}”. Clear search to see the full ecosystem.`
+                    : 'No institutions yet. After an org completes onboarding, they appear here. You can also Create one or approve an application.'}
                 </p>
               ) : null}
             </div>
@@ -1695,7 +1732,7 @@ function OnboardingInvitesPanel({
           <table className="w-full text-sm">
             <thead>
               <tr style={{ background: 'var(--paper-dim)' }}>
-                {['Organization', 'Email', 'Plan', 'DB', 'Status', 'Expires', 'Link'].map((h) => (
+                {['Organization', 'Email', 'Plan', 'DB', 'Status', 'Campus', 'Link'].map((h) => (
                   <th key={h} className="px-3 py-2 text-left text-xs" style={{ color: 'var(--ink-soft)' }}>
                     {h}
                   </th>
@@ -1710,7 +1747,21 @@ function OnboardingInvitesPanel({
                   <td className="px-3 py-2">{String(inv.plan)}</td>
                   <td className="px-3 py-2">{String(inv.databaseMode || 'SHARED')}</td>
                   <td className="px-3 py-2">{String(inv.status)}</td>
-                  <td className="px-3 py-2">{fmt(inv.expiresAt as string)}</td>
+                  <td className="px-3 py-2 text-xs">
+                    {inv.status === 'completed' && inv.provisionedInstitutionId ? (
+                      <a
+                        href={`/admin/institutions/${String(inv.provisionedInstitutionId)}`}
+                        className="font-semibold"
+                        style={{ color: 'var(--green-deep)' }}
+                      >
+                        {String(inv.provisionedSlug || 'Open')} →
+                      </a>
+                    ) : inv.status === 'completed' && inv.provisionedSlug ? (
+                      <span>/{String(inv.provisionedSlug)}</span>
+                    ) : (
+                      <span style={{ color: 'var(--ink-soft)' }}>—</span>
+                    )}
+                  </td>
                   <td className="px-3 py-2 font-mono text-xs">
                     /onboard/{String(inv.token).slice(0, 10)}…
                   </td>

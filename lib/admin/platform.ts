@@ -94,6 +94,8 @@ async function mirrorInstitutionToMongo(inst: {
   ownerUserId: string | null;
   logoUrl?: string | null;
   coverUrl?: string | null;
+  subdomain?: string | null;
+  customDomain?: string | null;
 }) {
   try {
     const db = await getDb();
@@ -126,6 +128,8 @@ async function mirrorInstitutionToMongo(inst: {
           capabilityPack: inst.capabilityPack,
           enabledModules: modules,
           status: inst.status,
+          subdomain: inst.subdomain ?? null,
+          customDomain: inst.customDomain ?? null,
           ownerId,
           ownerName,
           updatedAt: new Date(),
@@ -163,7 +167,10 @@ export async function getPlatformOverview() {
     wallets,
     recentAudit,
   ] = await Promise.all([
-    prisma.institution.groupBy({ by: ['status'], _count: true }),
+    prisma.institution.groupBy({ by: ['status'], _count: true }).catch((err) => {
+      console.error('overview institution groupBy failed:', err);
+      return [] as Array<{ status: InstitutionLifecycleStatus; _count: number }>;
+    }),
     prisma.user.count(),
     prisma.institutionMembership.count({ where: { isActive: true } }),
     prisma.course.count(),
@@ -217,12 +224,13 @@ export async function getPlatformOverview() {
     }),
   ]);
 
-  const byStatus = Object.fromEntries(institutions.map((r) => [r.status, r._count]));
+  const statusRows = institutions as Array<{ status: InstitutionLifecycleStatus; _count: number }>;
+  const byStatus = Object.fromEntries(statusRows.map((r) => [r.status, r._count]));
   const [instApps, instructorApps, mentorApps] = applications;
 
   return {
     institutions: {
-      total: institutions.reduce((a, b) => a + b._count, 0),
+      total: statusRows.reduce((a, b) => a + b._count, 0),
       byStatus,
     },
     users,
@@ -268,6 +276,9 @@ export async function getIntellexInstitution() {
 export async function listInstitutions(opts?: { q?: string; status?: string }) {
   await ensurePlatformSchema().catch(() => {});
   await syncMongoInstitutionsIntoPrisma();
+  await reconcileProvisionedInvitesIntoPrisma().catch((err) =>
+    console.error('reconcileProvisionedInvitesIntoPrisma failed:', err),
+  );
 
   const where: Prisma.InstitutionWhereInput = {};
   if (opts?.status && opts.status !== 'all') {
@@ -279,14 +290,41 @@ export async function listInstitutions(opts?: { q?: string; status?: string }) {
       { name: { contains: q, mode: 'insensitive' } },
       { slug: { contains: q, mode: 'insensitive' } },
       { email: { contains: q, mode: 'insensitive' } },
+      { subdomain: { contains: q, mode: 'insensitive' } },
     ];
   }
 
-  let rows;
+  type ListRow = {
+    id: string;
+    slug: string;
+    name: string;
+    email: string | null;
+    status: InstitutionLifecycleStatus;
+    capabilityPack: string;
+    enabledModules: string[];
+    subdomain: string | null;
+    customDomain: string | null;
+    pendingCustomDomain: string | null;
+    onboardingState: string;
+    onboardingProgress: number;
+    visibility: string;
+    createdAt: Date;
+    updatedAt: Date;
+    owner: { id: string; email: string | null; name: string | null } | null;
+    federationLink: unknown;
+    _count: {
+      memberships: number;
+      courses: number;
+      departments: number;
+      withdrawalRequests: number;
+    };
+  };
+
+  let rows: ListRow[] = [];
   try {
-    rows = await prisma.institution.findMany({
+    rows = (await prisma.institution.findMany({
       where,
-      orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
       include: {
         owner: { select: { id: true, email: true, name: true } },
         federationLink: true,
@@ -299,37 +337,177 @@ export async function listInstitutions(opts?: { q?: string; status?: string }) {
           },
         },
       },
-    });
+    })) as unknown as ListRow[];
   } catch (err) {
-    if (!isMissingPrismaColumn(err)) throw err;
-    console.warn(
-      '[platform] Federation columns missing — listing institutions without federationLink. Run npm run db:fix-federation',
-    );
-    rows = await prisma.institution.findMany({
-      where,
-      orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
-      include: {
-        owner: { select: { id: true, email: true, name: true } },
-        _count: {
-          select: {
-            memberships: true,
-            courses: true,
-            departments: true,
-            withdrawalRequests: true,
-          },
+    if (!isMissingPrismaColumn(err)) {
+      console.warn('[platform] Full institution list failed, trying lean query:', err);
+    } else {
+      console.warn(
+        '[platform] Federation/schema columns missing — listing institutions lean. Run npm run db:fix-schema',
+      );
+    }
+    try {
+      rows = (await prisma.institution.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }],
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          email: true,
+          status: true,
+          capabilityPack: true,
+          enabledModules: true,
+          subdomain: true,
+          customDomain: true,
+          pendingCustomDomain: true,
+          onboardingState: true,
+          onboardingProgress: true,
+          visibility: true,
+          createdAt: true,
+          updatedAt: true,
+          ownerUserId: true,
         },
-      },
-    });
-    rows = rows.map((r) => ({ ...r, federationLink: null }));
+      })) as unknown as ListRow[];
+      rows = rows.map((r) => ({
+        ...r,
+        owner: null,
+        federationLink: null,
+        _count: {
+          memberships: 0,
+          courses: 0,
+          departments: 0,
+          withdrawalRequests: 0,
+        },
+      }));
+    } catch (err2) {
+      console.error('[platform] Lean institution list failed — raw fallback:', err2);
+      const raw = await prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(
+        `SELECT id, slug, name, email, status, "capabilityPack", "enabledModules", subdomain,
+                "customDomain", "pendingCustomDomain", "onboardingState", "onboardingProgress",
+                visibility, "createdAt", "updatedAt"
+         FROM "Institution"
+         ORDER BY "createdAt" DESC
+         LIMIT 500`,
+      );
+      const q = opts?.q?.trim().toLowerCase();
+      rows = raw
+        .filter((r) => {
+          if (opts?.status && opts.status !== 'all' && String(r.status) !== opts.status) {
+            return false;
+          }
+          if (!q) return true;
+          const hay = `${r.name || ''} ${r.slug || ''} ${r.email || ''} ${r.subdomain || ''}`.toLowerCase();
+          return hay.includes(q);
+        })
+        .map((r) => ({
+          id: String(r.id),
+          slug: String(r.slug),
+          name: String(r.name),
+          email: (r.email as string) || null,
+          status: r.status as InstitutionLifecycleStatus,
+          capabilityPack: String(r.capabilityPack || 'foundation'),
+          enabledModules: Array.isArray(r.enabledModules) ? (r.enabledModules as string[]) : [],
+          subdomain: (r.subdomain as string) || null,
+          customDomain: (r.customDomain as string) || null,
+          pendingCustomDomain: (r.pendingCustomDomain as string) || null,
+          onboardingState: String(r.onboardingState || ''),
+          onboardingProgress: Number(r.onboardingProgress || 0),
+          visibility: String(r.visibility || 'PRIVATE'),
+          createdAt: new Date(r.createdAt as string),
+          updatedAt: new Date(r.updatedAt as string),
+          owner: null,
+          federationLink: null,
+          _count: {
+            memberships: 0,
+            courses: 0,
+            departments: 0,
+            withdrawalRequests: 0,
+          },
+        }));
+    }
   }
 
   return rows.map((r) => ({
     ...r,
     resolvedModules: resolveCampusModules({
       capabilityPack: isPack(r.capabilityPack) ? r.capabilityPack : 'foundation',
-      enabledModules: r.enabledModules as ModuleId[],
+      enabledModules: (r.enabledModules || []) as ModuleId[],
     }),
   }));
+}
+
+/**
+ * Ensure completed onboarding invites still have a Prisma Institution row
+ * (heal if create succeeded in a prior attempt but list/query drifted).
+ */
+async function reconcileProvisionedInvitesIntoPrisma() {
+  try {
+    const db = await getDb();
+    const invites = await db
+      .collection('onboarding_invites')
+      .find({
+        status: 'completed',
+        provisionedInstitutionId: { $exists: true, $ne: null },
+      })
+      .limit(100)
+      .toArray();
+
+    for (const raw of invites) {
+      const id = String(raw.provisionedInstitutionId || '');
+      const slug = String(raw.provisionedSlug || '').trim();
+      if (!id && !slug) continue;
+
+      const existing = id
+        ? await prisma.institution.findUnique({ where: { id }, select: { id: true } }).catch(() => null)
+        : null;
+      if (existing) continue;
+
+      if (slug) {
+        const bySlug = await prisma.institution
+          .findUnique({ where: { slug }, select: { id: true } })
+          .catch(() => null);
+        if (bySlug) continue;
+      }
+
+      // Institution row missing — recreate a minimal ACTIVE campus from invite metadata.
+      const name = String(raw.organizationName || slug || 'Organization').slice(0, 120);
+      const safeSlug =
+        slug ||
+        name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '')
+          .slice(0, 48) ||
+        `org-${Date.now().toString(36)}`;
+
+      await prisma.institution
+        .create({
+          data: {
+            ...(id ? { id } : {}),
+            name,
+            slug: safeSlug,
+            subdomain: String(raw.suggestedSubdomain || safeSlug).slice(0, 48),
+            email: String(raw.email || '').toLowerCase() || null,
+            status: 'ACTIVE',
+            visibility: 'PRIVATE',
+            onboardingState: 'completed',
+            onboardingProgress: 100,
+            verified: true,
+            verifiedAt: new Date(),
+            capabilityPack: 'custom',
+            enabledModules: Array.isArray(raw.allowedModules)
+              ? (raw.allowedModules as string[])
+              : [],
+          },
+        })
+        .catch((err) => {
+          console.warn('[platform] Could not heal missing institution from invite', safeSlug, err);
+        });
+    }
+  } catch (err) {
+    console.error('reconcileProvisionedInvitesIntoPrisma error:', err);
+  }
 }
 
 /**
