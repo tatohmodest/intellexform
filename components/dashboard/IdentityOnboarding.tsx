@@ -75,7 +75,14 @@ const JOIN_PATHS: {
   },
 ];
 
-export default function IdentityOnboarding({ firstName }: { firstName: string }) {
+export default function IdentityOnboarding({
+  firstName,
+  continueTo = '/dashboard',
+}: {
+  firstName: string;
+  /** Where to land after onboarding when not joining a campus from search. */
+  continueTo?: string;
+}) {
   const router = useRouter();
   const [step, setStep] = useState<'intent' | 'path' | 'search' | 'verify'>('intent');
   const [intent, setIntent] = useState<Intent | null>(null);
@@ -167,7 +174,12 @@ export default function IdentityOnboarding({ firstName }: { firstName: string })
       await finishOnboarding({
         primaryIntent: intent,
         joinPath: id,
-        next: intent === 'teach' ? '/dashboard/mentor' : '/dashboard',
+        next:
+          intent === 'teach'
+            ? '/dashboard/mentor'
+            : continueTo.startsWith('/dashboard')
+              ? continueTo
+              : '/dashboard',
       });
       return;
     }

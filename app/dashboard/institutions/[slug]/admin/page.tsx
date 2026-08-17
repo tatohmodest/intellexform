@@ -11,15 +11,25 @@ import {
 } from '@/lib/eduos/capabilities';
 import { resolveInstitutionFeatures } from '@/lib/eduos/featureFlags';
 import { prisma } from '@/lib/db/prisma';
+import { enterCampusContext } from '@/lib/campus/session';
 
 export const dynamic = 'force-dynamic';
 
 export default async function OrgAdminPage({ params }: { params: { slug: string } }) {
   const session = getSessionUser();
-  if (!session) redirect(`/login?next=/dashboard/institutions/${params.slug}/admin`);
+  if (!session) redirect(`/site/${params.slug}/login?next=${encodeURIComponent(`/dashboard/institutions/${params.slug}/admin`)}`);
 
   const inst = await getInstitution(params.slug);
   if (!inst) notFound();
+
+  // Bind session to this institution so dashboard chrome stays on campus.
+  await enterCampusContext({
+    userId: session.uid,
+    userName: session.name || 'Admin',
+    userEmail: session.email,
+    slug: params.slug,
+    allowJoin: false,
+  });
 
   const membership = await getMembership(params.slug, session.uid);
   if (membership !== 'owner') {

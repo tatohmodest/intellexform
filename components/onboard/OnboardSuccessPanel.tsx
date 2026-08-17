@@ -61,7 +61,7 @@ function CopyRow({ label, value }: { label: string; value: string }) {
 }
 
 export default function OnboardSuccessPanel({ access }: { access: OnboardAccessDetails }) {
-  const adminHref = access.adminUrl || `/dashboard/institutions/${access.slug}/admin`;
+  const adminHref = access.adminUrl || `/site/${access.slug}/admin`;
   const campusHref = access.campusUrl || `/dashboard/institutions/${access.slug}`;
   const publicHref = access.platformUrl || `/site/${access.slug}`;
 
@@ -113,6 +113,10 @@ export default function OnboardSuccessPanel({ access }: { access: OnboardAccessD
 
       <div className="mt-5 space-y-2">
         <CopyRow label="Admin dashboard (owners)" value={adminHref} />
+        <CopyRow
+          label="Admin path (same campus)"
+          value={`/site/${access.slug}/admin`}
+        />
         {access.platformUrl ? (
           <CopyRow label="Public campus site (students)" value={access.platformUrl} />
         ) : null}

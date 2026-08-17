@@ -2,15 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyLoginOtp, verifySignupOtp, type AuthOtpPurpose } from '@/lib/auth/credentials';
 import { SESSION_COOKIE, sessionCookieOptions } from '@/lib/auth/session';
 import { getCampusBrand } from '@/lib/campus/brand';
-import { joinInstitution } from '@/lib/learn/ecosystem';
-import { upsertAffiliation } from '@/lib/learn/repo';
-import { prisma } from '@/lib/db/prisma';
+import { enterCampusContext } from '@/lib/campus/session';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/auth/verify-otp
  * Body: { email, code, purpose, next?, campus? }
+ *
+ * Campus login/signup always binds activeContext to that institution and
+ * redirects to the institution dashboard (unless first-time onboarding).
  */
 export async function POST(req: NextRequest) {
   let body: {
@@ -45,70 +46,55 @@ export async function POST(req: NextRequest) {
 
   let nextPath = result.nextPath;
   const requested = String(body.next || '').trim();
+  const needsOnboarding =
+    nextPath === '/dashboard/onboarding' || nextPath.startsWith('/dashboard/onboarding?');
 
-  // Attach learner to campus when signing up/in from a campus-branded auth page.
   if (campusSlug) {
     try {
       const brand = await getCampusBrand(campusSlug);
       if (brand) {
-        if (brand.enrollmentOpen) {
-          await joinInstitution(campusSlug, result.user.uid, result.user.name).catch(() => {});
-          await upsertAffiliation(result.user.uid, {
-            institutionSlug: campusSlug,
-            institutionName: brand.platformName,
-            role: 'student',
-            status: 'verified',
-            profileComplete: false,
-            joinedAt: new Date(),
-            verifiedAt: new Date(),
-          }).catch(() => {});
+        const entry = await enterCampusContext({
+          userId: result.user.uid,
+          userName: result.user.name,
+          userEmail: result.user.email || email,
+          slug: campusSlug,
+          // Public / code campuses: join on signup (and login if not yet a member).
+          allowJoin: brand.enrollmentOpen,
+        });
 
-          const inst = await prisma.institution.findUnique({
-            where: { slug: campusSlug },
-            select: { id: true },
-          });
-          if (inst) {
-            await prisma.institutionMembership
-              .upsert({
-                where: {
-                  institutionId_userId: {
-                    institutionId: inst.id,
-                    userId: result.user.uid,
-                  },
-                },
-                create: {
-                  institutionId: inst.id,
-                  userId: result.user.uid,
-                  role: 'STUDENT',
-                  isActive: true,
-                },
-                update: { isActive: true },
-              })
-              .catch(() => {});
-          }
-        }
+        const campusHome = entry?.portalHref || brand.portalHref;
+        const adminHome = entry?.adminHref || brand.adminHref;
 
-        if (!requested || requested === '/dashboard') {
-          if (nextPath !== '/dashboard/onboarding') {
-            nextPath = brand.portalHref;
-          } else {
-            nextPath = `/dashboard/onboarding?next=${encodeURIComponent(brand.portalHref)}`;
-          }
+        // Prefer explicit next when it stays on this campus (or onboarding).
+        const requestedIsCampus =
+          requested.startsWith(`/dashboard/institutions/${campusSlug}`) ||
+          requested.startsWith(`/site/${campusSlug}`);
+
+        if (needsOnboarding) {
+          const after = requestedIsCampus
+            ? requested
+            : entry?.isStaff && requested.includes('/admin')
+              ? adminHome
+              : campusHome;
+          nextPath = `/dashboard/onboarding?next=${encodeURIComponent(after)}`;
+        } else if (requestedIsCampus) {
+          nextPath = requested;
+        } else if (entry?.isStaff && requested.includes('/admin')) {
+          nextPath = adminHome;
+        } else {
+          // Default: institution student/admin dashboard for this campus.
+          nextPath = campusHome;
         }
       }
     } catch (err) {
       console.error('campus attach on auth failed:', err);
     }
-  }
-
-  if (requested.startsWith('/') && !requested.startsWith('//') && nextPath !== '/dashboard/onboarding') {
-    nextPath = requested;
-  } else if (
-    requested.startsWith('/') &&
-    !requested.startsWith('//') &&
-    (nextPath === '/dashboard/onboarding' || nextPath.startsWith('/dashboard/onboarding?'))
-  ) {
-    nextPath = `/dashboard/onboarding?next=${encodeURIComponent(requested)}`;
+  } else if (requested.startsWith('/') && !requested.startsWith('//')) {
+    if (needsOnboarding) {
+      nextPath = `/dashboard/onboarding?next=${encodeURIComponent(requested)}`;
+    } else {
+      nextPath = requested;
+    }
   }
 
   const res = NextResponse.json({
