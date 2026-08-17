@@ -583,7 +583,7 @@ export default function DashboardShell({
 
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/');
+    router.push(inCampus && campusBrand ? `/site/${campusBrand.slug}` : '/');
     router.refresh();
   }
 
@@ -611,7 +611,7 @@ export default function DashboardShell({
     <div className="flex h-full min-h-0 flex-col">
       <div className="mb-4 shrink-0 px-1">
         {inCampus && campusBrand ? (
-          <div className="flex items-center gap-2.5">
+          <Link href={`/site/${campusBrand.slug}`} className="flex items-center gap-2.5">
             <span
               className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl text-[14px] font-bold text-white"
               style={{ background: accent }}
@@ -629,7 +629,7 @@ export default function DashboardShell({
                 Powered by InTelleX
               </div>
             </div>
-          </div>
+          </Link>
         ) : (
           <div className="flex items-center gap-2.5 px-1">
             <BrandLogo href="/" height={32} variant="full" />
@@ -664,14 +664,25 @@ export default function DashboardShell({
             Powered by InTelleX
           </p>
         )}
-        <Link
-          href="/"
-          className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
-          style={{ color: 'var(--ink-soft)' }}
-        >
-          <Home size={17} />
-          Back to site
-        </Link>
+        {inCampus && campusBrand ? (
+          <Link
+            href={`/site/${campusBrand.slug}`}
+            className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
+            style={{ color: 'var(--ink-soft)' }}
+          >
+            <Home size={17} />
+            Campus home
+          </Link>
+        ) : (
+          <Link
+            href="/"
+            className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
+            style={{ color: 'var(--ink-soft)' }}
+          >
+            <Home size={17} />
+            Back to site
+          </Link>
+        )}
         <button
           onClick={logout}
           className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-[14px] font-medium"

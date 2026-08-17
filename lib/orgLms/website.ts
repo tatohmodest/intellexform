@@ -13,10 +13,15 @@ export type OrgWebsiteConfig = {
   ctaHref: string;
   showCourses: boolean;
   showCapabilities: boolean;
+  showPrograms: boolean;
+  showContact: boolean;
+  showJoin: boolean;
   heroStyle: 'gradient' | 'cover';
   navLinks: { label: string; href: string }[];
   footerNote: string;
   published: boolean;
+  contactBlurb: string;
+  admissionsNote: string;
 };
 
 const DEFAULTS: OrgWebsiteConfig = {
@@ -27,13 +32,21 @@ const DEFAULTS: OrgWebsiteConfig = {
   ctaHref: '',
   showCourses: true,
   showCapabilities: true,
+  showPrograms: true,
+  showContact: true,
+  showJoin: true,
   heroStyle: 'gradient',
   navLinks: [
     { label: 'About', href: '#about' },
+    { label: 'Programs', href: '#programs' },
     { label: 'Courses', href: '#courses' },
+    { label: 'Join', href: '#join' },
+    { label: 'Contact', href: '#contact' },
   ],
   footerNote: '',
   published: true,
+  contactBlurb: '',
+  admissionsNote: '',
 };
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -53,7 +66,7 @@ export function parseWebsiteConfig(
   return {
     platformName: String(site.platformName || root.platformName || fallbacks.name),
     tagline: String(
-      site.tagline || root.tagline || fallbacks.description || 'Learning powered by Intellex',
+      site.tagline || root.tagline || fallbacks.description || 'Learning powered by InTelleX',
     ),
     about: String(site.about || fallbacks.description || ''),
     ctaLabel: String(site.ctaLabel || DEFAULTS.ctaLabel),
@@ -61,6 +74,9 @@ export function parseWebsiteConfig(
     showCourses: site.showCourses !== undefined ? Boolean(site.showCourses) : true,
     showCapabilities:
       site.showCapabilities !== undefined ? Boolean(site.showCapabilities) : true,
+    showPrograms: site.showPrograms !== undefined ? Boolean(site.showPrograms) : true,
+    showContact: site.showContact !== undefined ? Boolean(site.showContact) : true,
+    showJoin: site.showJoin !== undefined ? Boolean(site.showJoin) : true,
     heroStyle: site.heroStyle === 'cover' ? 'cover' : 'gradient',
     navLinks: navRaw
       .map((item) => {
@@ -71,9 +87,11 @@ export function parseWebsiteConfig(
         };
       })
       .filter((l) => l.label && l.href)
-      .slice(0, 8),
+      .slice(0, 10),
     footerNote: String(site.footerNote || ''),
     published: site.published !== undefined ? Boolean(site.published) : true,
+    contactBlurb: String(site.contactBlurb || ''),
+    admissionsNote: String(site.admissionsNote || ''),
   };
 }
 
@@ -93,11 +111,15 @@ export async function getOrgWebsite(slug: string) {
       email: true,
       country: true,
       city: true,
+      address: true,
       status: true,
       settings: true,
       capabilityPack: true,
       enabledModules: true,
       featuresEnabled: true,
+      enrollmentPolicy: true,
+      visibility: true,
+      institutionType: true,
     },
   });
   if (!inst) return null;
@@ -143,6 +165,9 @@ export async function updateOrgWebsite(
     ...(patch.showCapabilities !== undefined
       ? { showCapabilities: Boolean(patch.showCapabilities) }
       : {}),
+    ...(patch.showPrograms !== undefined ? { showPrograms: Boolean(patch.showPrograms) } : {}),
+    ...(patch.showContact !== undefined ? { showContact: Boolean(patch.showContact) } : {}),
+    ...(patch.showJoin !== undefined ? { showJoin: Boolean(patch.showJoin) } : {}),
     ...(patch.heroStyle !== undefined
       ? { heroStyle: patch.heroStyle === 'cover' ? 'cover' : 'gradient' }
       : {}),
@@ -154,13 +179,19 @@ export async function updateOrgWebsite(
               href: String(l.href || '').slice(0, 200),
             }))
             .filter((l) => l.label && l.href)
-            .slice(0, 8),
+            .slice(0, 10),
         }
       : {}),
     ...(patch.footerNote !== undefined
       ? { footerNote: String(patch.footerNote).slice(0, 280) }
       : {}),
     ...(patch.published !== undefined ? { published: Boolean(patch.published) } : {}),
+    ...(patch.contactBlurb !== undefined
+      ? { contactBlurb: String(patch.contactBlurb).slice(0, 800) }
+      : {}),
+    ...(patch.admissionsNote !== undefined
+      ? { admissionsNote: String(patch.admissionsNote).slice(0, 800) }
+      : {}),
   };
 
   const root = asRecord(inst.settings);

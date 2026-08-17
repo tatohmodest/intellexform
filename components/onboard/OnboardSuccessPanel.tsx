@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, CheckCircle2, Copy, Mail } from 'lucide-react';
+import { Check, CheckCircle2, Copy, Mail, Shield } from 'lucide-react';
 
 export type OnboardAccessDetails = {
   slug: string;
@@ -63,64 +63,89 @@ function CopyRow({ label, value }: { label: string; value: string }) {
 export default function OnboardSuccessPanel({ access }: { access: OnboardAccessDetails }) {
   const adminHref = access.adminUrl || `/dashboard/institutions/${access.slug}/admin`;
   const campusHref = access.campusUrl || `/dashboard/institutions/${access.slug}`;
+  const publicHref = access.platformUrl || `/site/${access.slug}`;
 
   return (
     <div className="mx-auto max-w-[560px] border p-6 sm:p-8" style={{ borderColor: 'var(--line)' }}>
       <div className="text-center">
         <CheckCircle2 size={28} className="mx-auto mb-3" style={{ color: 'var(--green-deep)' }} />
-        <h1 className="font-display text-[26px]">Your LMS is ready</h1>
+        <h1 className="font-display text-[26px]">Your campus LMS is live</h1>
         <p className="mt-2 text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          {access.organizationName || 'Your campus'} is live on InTelleX. Stay on this page and copy
-          your access details — nothing will redirect you away.
+          {access.organizationName || 'Your campus'} now has its own public site, student signup, and
+          admin dashboard. Stay here and save your links.
         </p>
       </div>
 
-      <div className="mt-6 space-y-2">
-        {access.subdomain ? <CopyRow label="Subdomain label" value={access.subdomain} /> : null}
+      <div
+        className="mt-6 flex gap-2.5 border px-3.5 py-3.5 text-left text-[13.5px]"
+        style={{
+          borderColor: 'rgba(0,179,105,0.35)',
+          background: 'rgba(0,179,105,0.08)',
+          color: 'var(--ink)',
+        }}
+      >
+        <Shield size={18} className="mt-0.5 shrink-0" style={{ color: 'var(--green-deep)' }} />
+        <div>
+          <p className="font-semibold">Admin dashboard link sent to your email</p>
+          <p className="mt-1" style={{ color: 'var(--ink-soft)' }}>
+            {access.emailSent ? (
+              <>
+                Check <strong style={{ color: 'var(--ink)' }}>{access.emailTo}</strong> for the admin
+                dashboard link and all access details. Open it anytime to manage courses, branding,
+                students, and settings.
+              </>
+            ) : (
+              <>
+                Copy the admin link below now
+                {access.emailTo ? (
+                  <>
+                    {' '}
+                    (we could not confirm email to{' '}
+                    <strong style={{ color: 'var(--ink)' }}>{access.emailTo}</strong>)
+                  </>
+                ) : null}
+                . Ask the Platform Team to resend if needed.
+              </>
+            )}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 space-y-2">
+        <CopyRow label="Admin dashboard (owners)" value={adminHref} />
         {access.platformUrl ? (
-          <CopyRow label="Public campus site (works now)" value={access.platformUrl} />
+          <CopyRow label="Public campus site (students)" value={access.platformUrl} />
         ) : null}
         {access.shortPathUrl ? (
           <CopyRow label="Short link" value={access.shortPathUrl} />
         ) : null}
+        {access.subdomain ? <CopyRow label="Subdomain label" value={access.subdomain} /> : null}
         {access.subdomainUrl || access.platformHost ? (
           <CopyRow
             label="Subdomain host (DNS wildcard)"
             value={access.subdomainUrl || `https://${access.platformHost}`}
           />
         ) : null}
-        <CopyRow label="Admin dashboard" value={adminHref} />
-        <CopyRow label="Campus portal" value={campusHref} />
+        <CopyRow label="Campus portal (signed in)" value={campusHref} />
+        <CopyRow label="Student signup page" value={`/site/${access.slug}/signup`} />
       </div>
 
       <div
         className="mt-5 flex gap-2.5 border px-3.5 py-3 text-left text-[13px]"
         style={{
-          borderColor: access.emailSent ? 'rgba(0,179,105,0.35)' : 'var(--line)',
-          background: access.emailSent ? 'rgba(0,179,105,0.06)' : 'var(--paper-dim)',
+          borderColor: 'var(--line)',
+          background: 'var(--paper-dim)',
           color: 'var(--ink-soft)',
         }}
       >
         <Mail size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--green-deep)' }} />
         <span>
-          {access.emailSent ? (
-            <>
-              We emailed the full access details to{' '}
-              <strong style={{ color: 'var(--ink)' }}>{access.emailTo}</strong>. Check inbox (and
-              spam) so you can open them later.
-            </>
-          ) : (
-            <>
-              Copy the links above now. We could not confirm the completion email
-              {access.emailTo ? (
-                <>
-                  {' '}
-                  to <strong style={{ color: 'var(--ink)' }}>{access.emailTo}</strong>
-                </>
-              ) : null}
-              — ask the Platform Team to resend if needed.
-            </>
-          )}
+          Share the public site with students. Logo clicks stay on your campus — not InTelleX
+          marketing. Preview:{' '}
+          <a href={publicHref} className="font-semibold" style={{ color: 'var(--green-deep)' }}>
+            open site
+          </a>
+          .
         </span>
       </div>
 
@@ -130,14 +155,14 @@ export default function OnboardSuccessPanel({ access }: { access: OnboardAccessD
           className="inline-flex items-center justify-center px-5 py-2.5 text-[13.5px] font-semibold text-white"
           style={{ background: 'var(--green)' }}
         >
-          Open admin
+          Open admin dashboard
         </a>
         <a
-          href={campusHref}
+          href={publicHref}
           className="inline-flex items-center justify-center border px-5 py-2.5 text-[13.5px] font-semibold"
           style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
         >
-          Open campus
+          View public site
         </a>
       </div>
     </div>
