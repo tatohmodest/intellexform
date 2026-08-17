@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { CheckCircle2, ChevronLeft, ChevronRight, Loader2, Lock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Lock } from 'lucide-react';
 import {
   COMMERCIAL_PLANS,
   type BillingCycle,
@@ -15,6 +14,9 @@ import {
 } from '@/lib/eduos/databaseModes';
 import { INSTITUTION_TYPE_OPTIONS, normalizeInstitutionType } from '@/lib/eduos/institutionType';
 import type { InstitutionType } from '@prisma/client';
+import OnboardSuccessPanel, {
+  type OnboardAccessDetails,
+} from '@/components/onboard/OnboardSuccessPanel';
 
 type InvitePayload = {
   token: string;
@@ -30,6 +32,8 @@ type InvitePayload = {
   status: string;
   note?: string | null;
   expiresAt: string;
+  provisionedSlug?: string | null;
+  completedAccess?: OnboardAccessDetails | null;
 };
 
 const STRUCTURE_OPTIONS = [
@@ -57,7 +61,6 @@ export default function OnboardForm({
   invite: InvitePayload;
   sessionEmail: string | null;
 }) {
-  const router = useRouter();
   const plan = COMMERCIAL_PLANS[invite.plan];
   const dbMode = (invite.databaseMode || 'SHARED') as TenantDatabaseMode;
   const [step, setStep] = useState(0);
@@ -102,7 +105,9 @@ export default function OnboardForm({
   const [instructorCanPublish, setInstructorCanPublish] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [done, setDone] = useState<{ slug: string; platformUrl?: string } | null>(null);
+  const [done, setDone] = useState<OnboardAccessDetails | null>(
+    invite.completedAccess || null,
+  );
 
   const emailMatch = useMemo(() => {
     if (!sessionEmail) return false;
@@ -171,14 +176,41 @@ export default function OnboardForm({
         setError(data.error || 'Could not complete onboarding');
         return;
       }
-      setDone({ slug: data.slug, platformUrl: data.platformUrl });
-      router.refresh();
+      setDone({
+        slug: data.slug,
+        organizationName: data.organizationName || platformName || name,
+        subdomain: data.subdomain,
+        platformHost: data.platformHost,
+        platformUrl: data.platformUrl,
+        adminUrl: data.adminUrl,
+        campusUrl: data.campusUrl,
+        emailSent: Boolean(data.emailSent),
+        emailTo: data.emailTo || invite.email,
+      });
+      // Stay on this success screen so the invitee can copy links.
     } finally {
       setBusy(false);
     }
   }
 
+  if (done) {
+    return <OnboardSuccessPanel access={done} />;
+  }
+
   if (invite.status !== 'pending') {
+    if (invite.status === 'completed' && invite.provisionedSlug) {
+      return (
+        <OnboardSuccessPanel
+          access={
+            invite.completedAccess || {
+              slug: invite.provisionedSlug,
+              organizationName: invite.organizationName || undefined,
+              emailTo: invite.email,
+            }
+          }
+        />
+      );
+    }
     return (
       <div className="border p-8 text-center" style={{ borderColor: 'var(--line)' }}>
         <Lock size={22} className="mx-auto mb-3" style={{ color: 'var(--ink-soft)' }} />
@@ -186,37 +218,6 @@ export default function OnboardForm({
         <p className="mt-2 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
           This onboarding link is no longer active.
         </p>
-      </div>
-    );
-  }
-
-  if (done) {
-    return (
-      <div className="border p-8 text-center" style={{ borderColor: 'var(--line)' }}>
-        <CheckCircle2 size={28} className="mx-auto mb-3" style={{ color: 'var(--green-deep)' }} />
-        <h1 className="font-display text-[26px]">Your LMS is ready</h1>
-        <p className="mt-2 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-          {platformName || name} is live on Intellex.
-        </p>
-        {done.platformUrl ? (
-          <p className="mt-3 font-mono text-[13px]" style={{ color: 'var(--ink)' }}>
-            {done.platformUrl}
-          </p>
-        ) : null}
-        <a
-          href={`/dashboard/institutions/${done.slug}/admin`}
-          className="mt-6 inline-flex px-5 py-2.5 text-[13.5px] font-semibold text-white"
-          style={{ background: 'var(--green)' }}
-        >
-          Open admin
-        </a>
-        <a
-          href={`/dashboard/institutions/${done.slug}`}
-          className="mt-3 inline-flex px-5 py-2.5 text-[13.5px] font-semibold border"
-          style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
-        >
-          Open campus
-        </a>
       </div>
     );
   }

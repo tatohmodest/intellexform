@@ -221,7 +221,18 @@ export async function completeOnboardingInvite(opts: {
   studentRegistration?: string;
   instructorMode?: string;
   instructorCanPublish?: boolean;
-}): Promise<{ slug: string; institutionId: string; subdomain: string | null; platformUrl: string }> {
+}): Promise<{
+  slug: string;
+  institutionId: string;
+  subdomain: string;
+  platformHost: string;
+  platformUrl: string;
+  adminUrl: string;
+  campusUrl: string;
+  emailSent: boolean;
+  emailTo: string;
+  organizationName: string;
+}> {
   const invite = await getOnboardingInvite(opts.token);
   if (!invite) throw new Error('Invite not found');
   if (invite.status !== 'pending') throw new Error(`Invite is ${invite.status}`);
@@ -335,13 +346,49 @@ export async function completeOnboardingInvite(opts: {
   );
   await mirrorInviteToPrisma(completed);
 
-  const cname = (await import('@/lib/learn/institutionDomains')).platformCnameTarget();
+  const { platformCnameTarget } = await import('@/lib/learn/institutionDomains');
+  const { getSiteUrl } = await import('@/lib/seo/share');
+  const cname = platformCnameTarget();
   const subdomain = String(inst.subdomain || inst.slug);
+  const platformHost = `${subdomain}.${cname}`;
+  const platformUrl = `https://${platformHost}`;
+  const site = getSiteUrl().replace(/\/$/, '');
+  const adminPath = `/dashboard/institutions/${inst.slug}/admin`;
+  const campusPath = `/dashboard/institutions/${inst.slug}`;
+  const adminUrl = `${site}${adminPath}`;
+  const campusUrl = `${site}${campusPath}`;
+  const organizationName = String(opts.platformName || orgName);
+  const planName = plan?.name || invite.plan;
+
+  let emailSent = false;
+  try {
+    const { sendInstitutionOnboardingCompleteEmail } = await import('@/lib/email');
+    await sendInstitutionOnboardingCompleteEmail({
+      to: invite.email,
+      organizationName,
+      planName,
+      subdomain,
+      platformHost,
+      platformUrl,
+      adminUrl,
+      campusUrl,
+      ownerEmail: invite.email,
+    });
+    emailSent = true;
+  } catch (err) {
+    console.error('onboarding complete email failed:', err);
+  }
 
   return {
     slug: String(inst.slug),
     institutionId: String(inst.id),
     subdomain,
-    platformUrl: `${subdomain}.${cname}`,
+    platformHost,
+    platformUrl,
+    adminUrl,
+    campusUrl,
+    emailSent,
+    emailTo: invite.email,
+    organizationName,
   };
 }
