@@ -113,10 +113,7 @@ export default function OnboardSuccessPanel({ access }: { access: OnboardAccessD
 
       <div className="mt-5 space-y-2">
         <CopyRow label="Admin dashboard (owners)" value={adminHref} />
-        <CopyRow
-          label="Admin path (same campus)"
-          value={`/site/${access.slug}/admin`}
-        />
+        <CopyRow label="Admin entry" value={`/site/${access.slug}/admin`} />
         {access.platformUrl ? (
           <CopyRow label="Public campus site (students)" value={access.platformUrl} />
         ) : null}
@@ -130,8 +127,11 @@ export default function OnboardSuccessPanel({ access }: { access: OnboardAccessD
             value={access.subdomainUrl || `https://${access.platformHost}`}
           />
         ) : null}
-        <CopyRow label="Campus portal (signed in)" value={campusHref} />
-        <CopyRow label="Student signup page" value={`/site/${access.slug}/signup`} />
+        <CopyRow label="Campus portal (after sign-in)" value={campusHref} />
+        <CopyRow
+          label="Student sign-in (InTelleX)"
+          value={`/login?next=/dashboard/institutions/${access.slug}&campus=${access.slug}`}
+        />
       </div>
 
       <div

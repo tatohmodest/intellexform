@@ -98,11 +98,11 @@ export default function CampusSiteShell({
             )}
             {active !== 'signup' && (
               <Link
-                href={brand.signupHref}
+                href={brand.enrollmentOpen ? brand.signupHref : brand.loginHref}
                 className="px-3.5 py-2 text-[13px] font-semibold text-white"
                 style={{ background: accent }}
               >
-                {brand.enrollmentOpen ? 'Join' : 'Get started'}
+                {brand.enrollmentOpen ? 'Join' : 'Sign in'}
               </Link>
             )}
           </nav>
@@ -138,12 +138,12 @@ export default function CampusSiteShell({
                 Sign in
               </Link>
               <Link
-                href={brand.signupHref}
+                href={brand.enrollmentOpen ? brand.signupHref : brand.loginHref}
                 className="mt-1 inline-flex justify-center px-4 py-2.5 text-[14px] font-semibold text-white"
                 style={{ background: accent }}
                 onClick={() => setOpen(false)}
               >
-                {brand.enrollmentOpen ? 'Join campus' : 'Get started'}
+                {brand.enrollmentOpen ? 'Create account' : 'Enter campus'}
               </Link>
             </div>
           </div>

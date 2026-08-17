@@ -276,7 +276,7 @@ export async function sendInstitutionOnboardingCompleteEmail(opts: {
           </a>
         </p>
         <p style="font-size:13px;line-height:1.6;color:#666;margin:0">
-          Your logo and brand stay on the campus site — students do not get sent back to the InTelleX marketing homepage.
+          Sign in with <strong>${opts.ownerEmail}</strong>. Student access follows the enrollment mode you chose in onboarding (invite, admin-created, public, or enrollment code) — they use the shared InTelleX sign-in, then open your campus portal.
         </p>
         <p style="font-size:12px;color:#888;margin-top:28px">InTelleX Platform</p>
       </div>

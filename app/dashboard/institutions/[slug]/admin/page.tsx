@@ -12,12 +12,15 @@ import {
 import { resolveInstitutionFeatures } from '@/lib/eduos/featureFlags';
 import { prisma } from '@/lib/db/prisma';
 import { enterCampusContext } from '@/lib/campus/session';
+import { campusAuthUrls } from '@/lib/campus/brand';
 
 export const dynamic = 'force-dynamic';
 
 export default async function OrgAdminPage({ params }: { params: { slug: string } }) {
   const session = getSessionUser();
-  if (!session) redirect(`/site/${params.slug}/login?next=${encodeURIComponent(`/dashboard/institutions/${params.slug}/admin`)}`);
+  if (!session) {
+    redirect(campusAuthUrls(params.slug).adminLoginHref);
+  }
 
   const inst = await getInstitution(params.slug);
   if (!inst) notFound();

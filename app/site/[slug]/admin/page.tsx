@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Institution admin entry from the public campus host.
- * Sends owners to their campus admin; others authenticate first.
+ * Uses shared InTelleX login; access is still scoped to this institution only.
  */
 export default async function CampusAdminEntryPage({
   params,
@@ -17,12 +17,9 @@ export default async function CampusAdminEntryPage({
   const brand = await getCampusBrand(params.slug);
   if (!brand) notFound();
 
-  const adminPath = brand.adminHref;
   const session = getSessionUser();
   if (!session) {
-    redirect(
-      `${brand.loginHref}?next=${encodeURIComponent(adminPath)}`,
-    );
+    redirect(brand.adminLoginHref);
   }
 
   const entry = await enterCampusContext({
@@ -34,9 +31,8 @@ export default async function CampusAdminEntryPage({
   });
 
   if (entry?.isStaff) {
-    redirect(adminPath);
+    redirect(brand.adminHref);
   }
 
-  // Signed in but not staff for this campus — send to student campus dashboard.
   redirect(entry?.portalHref || brand.portalHref);
 }

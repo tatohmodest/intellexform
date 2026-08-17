@@ -58,8 +58,8 @@ export async function POST(req: NextRequest) {
           userName: result.user.name,
           userEmail: result.user.email || email,
           slug: campusSlug,
-          // Public / code campuses: join on signup (and login if not yet a member).
-          allowJoin: brand.enrollmentOpen,
+          // Only public self-registration auto-joins. Invite / code / admin use their own flows.
+          allowJoin: brand.studentRegistration === 'public',
         });
 
         const campusHome = entry?.portalHref || brand.portalHref;

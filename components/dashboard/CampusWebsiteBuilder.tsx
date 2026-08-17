@@ -323,23 +323,25 @@ export default function CampusWebsiteBuilder({
               }
               onChange={(e) => {
                 const v = e.target.value;
+                const portal = encodeURIComponent(`/dashboard/institutions/${slug}`);
+                const campus = encodeURIComponent(slug);
                 if (v === 'signup') {
                   setConfig({
                     ...config,
-                    ctaHref: `/site/${slug}/signup`,
-                    ctaLabel: config.ctaLabel || 'Join campus',
+                    ctaHref: `/signup?next=${portal}&campus=${campus}`,
+                    ctaLabel: config.ctaLabel || 'Create account & join',
                   });
                 } else if (v === 'login') {
                   setConfig({
                     ...config,
-                    ctaHref: `/site/${slug}/login`,
-                    ctaLabel: config.ctaLabel || 'Sign in',
+                    ctaHref: `/login?next=${portal}&campus=${campus}`,
+                    ctaLabel: config.ctaLabel || 'Sign in to campus',
                   });
                 }
               }}
             >
-              <option value="signup">Student signup</option>
-              <option value="login">Student login</option>
+              <option value="signup">InTelleX signup (public campuses)</option>
+              <option value="login">InTelleX sign-in</option>
               <option value="custom">Custom (edit CTA link)</option>
             </select>
           </label>
