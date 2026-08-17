@@ -69,47 +69,83 @@ export async function sendAdminOtpEmail(opts: {
   });
 }
 
-/** Learner signup / login email verification codes (replaces LoopingBinary OAuth). */
-export async function sendLearnerAuthOtpEmail(opts: {
-  to: string;
-  code: string;
-  purpose: 'signup' | 'login';
-}): Promise<void> {
-  const from = process.env.EMAIL_FROM || 'intellexplatform@gmail.com';
-  const isSignup = opts.purpose === 'signup';
-  const subject = isSignup
-    ? `${opts.code} - Verify your InTelleX account`
-    : `${opts.code} - Your InTelleX sign-in code`;
-  const headline = isSignup ? 'Verify your email' : 'Your sign-in code';
-  const intro = isSignup
-    ? 'Use this code to finish creating your InTelleX account:'
-    : 'Use this code to finish signing in to InTelleX:';
-
-  await sendMail({
-    from: `InTelleX <${from}>`,
-    to: opts.to,
-    subject,
-    text: [
-      intro,
-      '',
-      opts.code,
-      '',
-      'It expires in 10 minutes. If you did not request this, you can ignore this email.',
-      '',
-      '- InTelleX',
-    ].join('\n'),
-    html: `
+function learnerMailShell(opts: {
+  headline: string;
+  intro: string;
+  buttonLabel: string;
+  url: string;
+  expireLabel: string;
+}): { text: string; html: string } {
+  const text = [
+    opts.intro,
+    '',
+    opts.url,
+    '',
+    opts.expireLabel,
+    'If you did not request this, you can ignore this email.',
+    '',
+    '- InTelleX',
+  ].join('\n');
+  const html = `
       <div style="font-family:Georgia,serif;max-width:480px;margin:0 auto;padding:24px;color:#1a1a1a">
         <p style="font-size:14px;color:#666;margin:0 0 16px">InTelleX</p>
-        <h1 style="font-size:22px;margin:0 0 12px">${headline}</h1>
-        <p style="font-size:15px;line-height:1.6;color:#333;margin:0 0 8px">${intro}</p>
-        <p style="font-size:32px;letter-spacing:0.2em;font-weight:700;margin:24px 0">${opts.code}</p>
-        <p style="font-size:14px;line-height:1.5;color:#444">
-          Expires in <strong>10 minutes</strong>. If you did not request this, ignore this email.
+        <h1 style="font-size:22px;margin:0 0 12px">${opts.headline}</h1>
+        <p style="font-size:15px;line-height:1.6;color:#333;margin:0 0 8px">${opts.intro}</p>
+        <p style="margin:24px 0">
+          <a href="${opts.url}" style="display:inline-block;background:#0C1116;color:#fff;text-decoration:none;padding:12px 18px;font-size:14px;font-weight:700">
+            ${opts.buttonLabel}
+          </a>
+        </p>
+        <p style="font-size:13px;line-height:1.6;color:#666;word-break:break-all">${opts.url}</p>
+        <p style="font-size:14px;line-height:1.5;color:#444;margin-top:18px">
+          ${opts.expireLabel} If you did not request this, ignore this email.
         </p>
         <p style="font-size:12px;color:#888;margin-top:28px">InTelleX</p>
       </div>
-    `,
+    `;
+  return { text, html };
+}
+
+/** Signup: click the link to verify the email, then sign in with the password. */
+export async function sendLearnerVerifyEmail(opts: {
+  to: string;
+  verifyUrl: string;
+}): Promise<void> {
+  const from = process.env.EMAIL_FROM || 'intellexplatform@gmail.com';
+  const body = learnerMailShell({
+    headline: 'Verify your email',
+    intro: 'Confirm this email address to finish creating your InTelleX account. After that you can sign in with your password.',
+    buttonLabel: 'Verify email',
+    url: opts.verifyUrl,
+    expireLabel: 'This link expires in 24 hours.',
+  });
+  await sendMail({
+    from: `InTelleX <${from}>`,
+    to: opts.to,
+    subject: 'Verify your InTelleX email',
+    text: body.text,
+    html: body.html,
+  });
+}
+
+export async function sendLearnerPasswordResetEmail(opts: {
+  to: string;
+  resetUrl: string;
+}): Promise<void> {
+  const from = process.env.EMAIL_FROM || 'intellexplatform@gmail.com';
+  const body = learnerMailShell({
+    headline: 'Reset your password',
+    intro: 'Use this link to choose a new password for your InTelleX account.',
+    buttonLabel: 'Choose a new password',
+    url: opts.resetUrl,
+    expireLabel: 'This link expires in 1 hour.',
+  });
+  await sendMail({
+    from: `InTelleX <${from}>`,
+    to: opts.to,
+    subject: 'Reset your InTelleX password',
+    text: body.text,
+    html: body.html,
   });
 }
 

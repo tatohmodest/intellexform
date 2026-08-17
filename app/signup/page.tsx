@@ -9,7 +9,7 @@ import AuthScreen from '@/components/auth/AuthScreen';
 export const metadata: Metadata = {
   title: 'Sign up - Intellex',
   description:
-    'Create your Intellex account with email and password - self-paced courses, live mentorship and AI tutoring.',
+    'Create your Intellex account with email and password. We send a verification link, then you sign in.',
 };
 
 export const dynamic = 'force-dynamic';

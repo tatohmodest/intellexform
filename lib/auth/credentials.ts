@@ -1,45 +1,40 @@
 /**
- * Email + password auth with OTP verification (signup + login).
- * Replaces LoopingBinary OAuth for learner accounts.
+ * Email + password auth.
+ * Signup emails a verification link. After the learner verifies, they sign in
+ * with email and password. Forgot-password uses a one-time reset link.
  *
- * Mongo is the source of truth for credentials (same store as learners).
- * Prisma/Postgres is synced when reachable, but a hung DATABASE_URL must
- * never block sending the OTP email.
+ * Mongo is the source of truth for credentials. Prisma/Postgres is synced
+ * when reachable and must never block sending mail.
  */
 
-import { randomBytes } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import { getDb } from '@/lib/repo';
 import { prisma } from '@/lib/db/prisma';
+import { hashPassword, normalizeEmail, verifyPassword } from '@/lib/adminAuth';
 import {
-  generateOtpCode,
-  hashOtp,
-  hashPassword,
-  normalizeEmail,
-  verifyOtpCode,
-  verifyPassword,
-  ADMIN_OTP,
-} from '@/lib/adminAuth';
-import { sendLearnerAuthOtpEmail } from '@/lib/email';
+  sendLearnerPasswordResetEmail,
+  sendLearnerVerifyEmail,
+} from '@/lib/email';
 import { createSession, type SessionUser } from '@/lib/auth/session';
 import { isOnboardingComplete } from '@/lib/learn/identity';
 import type { LearnerDoc } from '@/lib/learn/repo';
 import { PERSONAL_CONTEXT } from '@/lib/learn/identity';
 import { withTimeout } from '@/lib/withTimeout';
 
-export const AUTH_OTP = {
-  ttlMs: ADMIN_OTP.ttlMs,
-  resendMs: ADMIN_OTP.resendMs,
-  maxAttempts: ADMIN_OTP.maxAttempts,
-} as const;
-
 const PRISMA_MS = 3_500;
 
-export type AuthOtpPurpose = 'signup' | 'login';
+export const AUTH_LINK = {
+  verifyTtlMs: 24 * 60 * 60 * 1000,
+  resetTtlMs: 60 * 60 * 1000,
+  resendMs: 60 * 1000,
+} as const;
 
 type PendingSignup = {
   email: string;
   name: string;
   passwordHash: string;
+  tokenHash?: string;
+  tokenSentAt?: Date;
   createdAt: Date;
   expiresAt: Date;
 };
@@ -54,6 +49,8 @@ type CredentialAccount = {
   updatedAt: Date;
 };
 
+type AuthError = { error: string; status: number; unverified?: boolean };
+
 function splitName(name: string): { firstName: string | null; lastName: string | null } {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return { firstName: null, lastName: null };
@@ -65,25 +62,28 @@ function newLocalUserId() {
   return `usr_${randomBytes(12).toString('hex')}`;
 }
 
+function generateLinkToken() {
+  return randomBytes(32).toString('base64url');
+}
+
+function hashLinkToken(token: string) {
+  return createHash('sha256').update(token).digest('hex');
+}
+
 function smtpErrorMessage(err: unknown) {
   if (err instanceof Error && err.message === 'smtp_not_configured') {
     return 'Email delivery is not configured.';
   }
   if (err instanceof Error && err.message === 'smtp_timeout') {
-    return 'Could not send the code in time. Please try again.';
+    return 'Could not send the email in time. Please try again.';
   }
-  return 'Could not send code. Please try again.';
-}
-
-async function otpsCol() {
-  const db = await getDb();
-  await db.collection('auth_otps').createIndex({ email: 1, purpose: 1 }).catch(() => {});
-  return db.collection('auth_otps');
+  return 'Could not send the email. Please try again.';
 }
 
 async function pendingCol() {
   const db = await getDb();
   await db.collection('auth_pending_signups').createIndex({ email: 1 }, { unique: true }).catch(() => {});
+  await db.collection('auth_pending_signups').createIndex({ tokenHash: 1 }).catch(() => {});
   return db.collection('auth_pending_signups');
 }
 
@@ -92,6 +92,13 @@ async function credentialsCol() {
   await db.collection('auth_credentials').createIndex({ email: 1 }, { unique: true }).catch(() => {});
   await db.collection('auth_credentials').createIndex({ userId: 1 }).catch(() => {});
   return db.collection('auth_credentials');
+}
+
+async function resetsCol() {
+  const db = await getDb();
+  await db.collection('auth_password_resets').createIndex({ tokenHash: 1 }, { unique: true }).catch(() => {});
+  await db.collection('auth_password_resets').createIndex({ email: 1 }).catch(() => {});
+  return db.collection('auth_password_resets');
 }
 
 async function prismaUserByEmail(email: string): Promise<{
@@ -132,9 +139,12 @@ async function syncPrismaUser(opts: {
   email: string;
   name: string;
   passwordHash: string;
+  emailVerified?: Date | null;
+  touchLogin?: boolean;
 }): Promise<{ id: string } | null> {
   const { firstName, lastName } = splitName(opts.name);
   const now = new Date();
+  const verifiedAt = opts.emailVerified === undefined ? now : opts.emailVerified;
   try {
     const user = await withTimeout(
       prisma.user.upsert({
@@ -145,8 +155,8 @@ async function syncPrismaUser(opts: {
           firstName,
           lastName,
           passwordHash: opts.passwordHash,
-          emailVerified: now,
-          lastLoginAt: now,
+          emailVerified: verifiedAt,
+          lastLoginAt: opts.touchLogin ? now : undefined,
           globalRole: 'USER',
         },
         update: {
@@ -154,8 +164,8 @@ async function syncPrismaUser(opts: {
           firstName,
           lastName,
           passwordHash: opts.passwordHash,
-          emailVerified: now,
-          lastLoginAt: now,
+          ...(verifiedAt ? { emailVerified: verifiedAt } : {}),
+          ...(opts.touchLogin ? { lastLoginAt: now } : {}),
         },
         select: { id: true },
       }),
@@ -233,58 +243,115 @@ export async function upsertLearnerLocal(opts: {
   }
 }
 
-async function issueOtp(opts: {
-  email: string;
-  purpose: AuthOtpPurpose;
-}): Promise<{ ok: true; expiresInSec: number } | { error: string; status: number }> {
-  const email = normalizeEmail(opts.email);
-  const col = await otpsCol();
-  const existing = await col.findOne({ email, purpose: opts.purpose });
-  if (
-    existing?.createdAt &&
-    Date.now() - new Date(existing.createdAt).getTime() < AUTH_OTP.resendMs
-  ) {
-    return { error: 'Please wait a minute before requesting another code.', status: 429 };
+async function loadAccount(email: string): Promise<{
+  account: CredentialAccount | null;
+  timedOut: boolean;
+}> {
+  const creds = await credentialsCol();
+  const existing = (await creds.findOne({ email })) as CredentialAccount | null;
+  if (existing?.passwordHash) return { account: existing, timedOut: false };
+
+  const prismaLookup = await prismaUserByEmail(email);
+  if (prismaLookup.user?.passwordHash) {
+    const now = new Date();
+    const account: CredentialAccount = {
+      email,
+      passwordHash: prismaLookup.user.passwordHash,
+      userId: prismaLookup.user.id,
+      name: prismaLookup.user.name || email.split('@')[0],
+      emailVerified: prismaLookup.user.emailVerified,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await creds
+      .updateOne(
+        { email },
+        {
+          $set: {
+            email,
+            passwordHash: account.passwordHash,
+            userId: account.userId,
+            name: account.name,
+            emailVerified: account.emailVerified,
+            updatedAt: now,
+          },
+          $setOnInsert: { createdAt: now },
+        },
+        { upsert: true },
+      )
+      .catch((err) => console.error('backfill auth_credentials failed:', err));
+    return { account, timedOut: false };
   }
 
-  const code = generateOtpCode();
-  const codeHash = await hashOtp(code);
+  return { account: existing, timedOut: prismaLookup.timedOut };
+}
+
+async function persistAccount(account: CredentialAccount) {
+  const creds = await credentialsCol();
   const now = new Date();
-  await col.updateOne(
-    { email, purpose: opts.purpose },
+  await creds.updateOne(
+    { email: account.email },
     {
       $set: {
-        email,
-        purpose: opts.purpose,
-        codeHash,
-        attempts: 0,
-        expiresAt: new Date(now.getTime() + AUTH_OTP.ttlMs),
-        createdAt: now,
+        email: account.email,
+        passwordHash: account.passwordHash,
+        userId: account.userId,
+        name: account.name,
+        emailVerified: account.emailVerified,
+        updatedAt: now,
       },
+      $setOnInsert: { createdAt: account.createdAt || now },
     },
     { upsert: true },
   );
+}
 
-  try {
-    await sendLearnerAuthOtpEmail({
-      to: email,
-      code,
-      purpose: opts.purpose,
-    });
-  } catch (err) {
-    console.error('auth otp email failed:', err);
-    await col.deleteOne({ email, purpose: opts.purpose }).catch(() => {});
-    return { error: smtpErrorMessage(err), status: 503 };
+async function sendVerificationForPending(opts: {
+  pending: PendingSignup;
+  origin: string;
+}): Promise<{ ok: true } | AuthError> {
+  const email = opts.pending.email;
+  const pending = await pendingCol();
+  if (
+    opts.pending.tokenSentAt &&
+    Date.now() - new Date(opts.pending.tokenSentAt).getTime() < AUTH_LINK.resendMs
+  ) {
+    return { error: 'Please wait a minute before requesting another email.', status: 429 };
   }
 
-  return { ok: true, expiresInSec: Math.floor(AUTH_OTP.ttlMs / 1000) };
+  const token = generateLinkToken();
+  const tokenHash = hashLinkToken(token);
+  const now = new Date();
+  await pending.updateOne(
+    { email },
+    {
+      $set: {
+        tokenHash,
+        tokenSentAt: now,
+        expiresAt: new Date(now.getTime() + AUTH_LINK.verifyTtlMs),
+      },
+    },
+  );
+
+  const verifyUrl = `${opts.origin.replace(/\/$/, '')}/verify-email?token=${encodeURIComponent(token)}`;
+  try {
+    await sendLearnerVerifyEmail({ to: email, verifyUrl });
+  } catch (err) {
+    console.error('verify email failed:', err);
+    await pending
+      .updateOne({ email }, { $unset: { tokenHash: '', tokenSentAt: '' } })
+      .catch(() => {});
+    return { error: smtpErrorMessage(err), status: 503 };
+  }
+  return { ok: true };
 }
 
 export async function startSignup(opts: {
   name: string;
   email: string;
   password: string;
-}): Promise<{ ok: true; email: string; expiresInSec: number } | { error: string; status: number }> {
+  origin: string;
+}): Promise<{ ok: true; email: string } | AuthError> {
   const email = normalizeEmail(opts.email);
   const name = opts.name.trim().slice(0, 120);
   const password = opts.password;
@@ -292,15 +359,10 @@ export async function startSignup(opts: {
   if (name.length < 2) return { error: 'Enter your name.', status: 400 };
   if (!email.includes('@')) return { error: 'Enter a valid email.', status: 400 };
   if (password.length < 8) return { error: 'Password must be at least 8 characters.', status: 400 };
+  if (!opts.origin) return { error: 'Could not build a verification link.', status: 500 };
 
-  const creds = await credentialsCol();
-  const existingCred = (await creds.findOne({ email })) as CredentialAccount | null;
-  if (existingCred?.passwordHash && existingCred.emailVerified) {
-    return { error: 'An account with this email already exists. Sign in instead.', status: 409 };
-  }
-
-  const prismaLookup = await prismaUserByEmail(email);
-  if (prismaLookup.user?.passwordHash && prismaLookup.user.emailVerified) {
+  const { account } = await loadAccount(email);
+  if (account?.passwordHash && account.emailVerified) {
     return { error: 'An account with this email already exists. Sign in instead.', status: 409 };
   }
 
@@ -315,258 +377,151 @@ export async function startSignup(opts: {
         name,
         passwordHash,
         createdAt: now,
-        expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
-      } satisfies PendingSignup,
+        expiresAt: new Date(now.getTime() + AUTH_LINK.verifyTtlMs),
+      } satisfies Omit<PendingSignup, 'tokenHash' | 'tokenSentAt'>,
     },
     { upsert: true },
   );
+  const row = (await pending.findOne({ email })) as PendingSignup | null;
+  if (!row) return { error: 'Could not start signup. Please try again.', status: 500 };
 
-  const otp = await issueOtp({ email, purpose: 'signup' });
-  if ('error' in otp) return otp;
-  return { ok: true, email, expiresInSec: otp.expiresInSec };
+  const sent = await sendVerificationForPending({ pending: row, origin: opts.origin });
+  if ('error' in sent) return sent;
+  return { ok: true, email };
 }
 
-export async function startLogin(opts: {
+export async function resendVerification(opts: {
+  email: string;
+  origin: string;
+}): Promise<{ ok: true; email: string } | AuthError> {
+  const email = normalizeEmail(opts.email);
+  if (!email.includes('@')) return { error: 'Enter a valid email.', status: 400 };
+
+  const { account } = await loadAccount(email);
+  if (account?.emailVerified) {
+    return { error: 'This email is already verified. Sign in instead.', status: 409 };
+  }
+
+  const pending = await pendingCol();
+  let row = (await pending.findOne({ email })) as PendingSignup | null;
+  if (!row?.passwordHash && account?.passwordHash) {
+    const now = new Date();
+    await pending.updateOne(
+      { email },
+      {
+        $set: {
+          email,
+          name: account.name,
+          passwordHash: account.passwordHash,
+          createdAt: now,
+          expiresAt: new Date(now.getTime() + AUTH_LINK.verifyTtlMs),
+        },
+      },
+      { upsert: true },
+    );
+    row = (await pending.findOne({ email })) as PendingSignup | null;
+  }
+  if (!row?.passwordHash) {
+    return { error: 'Start signup again — this email is not pending verification.', status: 400 };
+  }
+
+  const sent = await sendVerificationForPending({ pending: row, origin: opts.origin });
+  if ('error' in sent) return sent;
+  return { ok: true, email };
+}
+
+export async function verifyEmailToken(
+  token: string,
+): Promise<{ ok: true; email: string } | AuthError> {
+  const raw = String(token || '').trim();
+  if (!raw) return { error: 'Missing verification link.', status: 400 };
+
+  const tokenHash = hashLinkToken(raw);
+  const pending = await pendingCol();
+  const p = (await pending.findOne({ tokenHash })) as PendingSignup | null;
+  if (!p?.passwordHash) {
+    return {
+      error: 'This link is invalid or has already been used. If you already verified, sign in.',
+      status: 400,
+    };
+  }
+  if (new Date(p.expiresAt).getTime() < Date.now()) {
+    return { error: 'This verification link expired. Sign up again to get a new one.', status: 400 };
+  }
+
+  const email = normalizeEmail(p.email);
+  const { account: existingCred } = await loadAccount(email);
+  if (existingCred?.emailVerified) {
+    await pending.deleteOne({ email }).catch(() => {});
+    return { ok: true, email };
+  }
+
+  const now = new Date();
+  const prismaUser = await syncPrismaUser({
+    email,
+    name: p.name,
+    passwordHash: p.passwordHash,
+    emailVerified: now,
+    touchLogin: false,
+  });
+  const userId = prismaUser?.id || existingCred?.userId || newLocalUserId();
+
+  await persistAccount({
+    email,
+    passwordHash: p.passwordHash,
+    userId,
+    name: p.name,
+    emailVerified: now,
+    createdAt: existingCred?.createdAt || now,
+    updatedAt: now,
+  });
+  await upsertLearnerLocal({ id: userId, email, name: p.name });
+  await pending.deleteOne({ email });
+  return { ok: true, email };
+}
+
+export async function completeLogin(opts: {
   email: string;
   password: string;
-}): Promise<{ ok: true; email: string; expiresInSec: number } | { error: string; status: number }> {
+}): Promise<
+  | { ok: true; session: string; nextPath: string; user: Omit<SessionUser, 'iat'> }
+  | AuthError
+> {
   const email = normalizeEmail(opts.email);
   if (!email.includes('@')) return { error: 'Enter a valid email.', status: 400 };
   if (!opts.password) return { error: 'Enter your password.', status: 400 };
 
-  const creds = await credentialsCol();
-  let account = (await creds.findOne({ email })) as CredentialAccount | null;
-
-  if (!account?.passwordHash) {
-    const prismaLookup = await prismaUserByEmail(email);
-    if (prismaLookup.user?.passwordHash) {
-      const now = new Date();
-      account = {
-        email,
-        passwordHash: prismaLookup.user.passwordHash,
-        userId: prismaLookup.user.id,
-        name: prismaLookup.user.name || email.split('@')[0],
-        emailVerified: prismaLookup.user.emailVerified,
-        createdAt: now,
-        updatedAt: now,
-      };
-      await creds
-        .updateOne(
-          { email },
-          {
-            $set: {
-              email,
-              passwordHash: account.passwordHash,
-              userId: account.userId,
-              name: account.name,
-              emailVerified: account.emailVerified,
-              updatedAt: now,
-            },
-            $setOnInsert: { createdAt: now },
-          },
-          { upsert: true },
-        )
-        .catch((err) => console.error('backfill auth_credentials failed:', err));
-    } else if (prismaLookup.timedOut) {
+  const loaded = await loadAccount(email);
+  if (!loaded.account?.passwordHash) {
+    if (loaded.timedOut) {
       return {
         error: 'Sign-in is taking too long. Please try again in a moment.',
         status: 503,
       };
     }
-  }
-
-  if (!account?.passwordHash) {
     return { error: 'Invalid email or password.', status: 401 };
   }
 
-  if (!account.emailVerified) {
-    const pending = await pendingCol();
-    const p = await pending.findOne({ email });
-    if (!p) {
-      return {
-        error: 'Verify your email first. Request a new code from Sign up.',
-        status: 403,
-      };
-    }
-  }
-
+  const account = loaded.account;
   const ok = await verifyPassword(opts.password, account.passwordHash);
   if (!ok) return { error: 'Invalid email or password.', status: 401 };
 
-  const otp = await issueOtp({ email, purpose: 'login' });
-  if ('error' in otp) return otp;
-  return { ok: true, email, expiresInSec: otp.expiresInSec };
-}
-
-export async function resendAuthOtp(opts: {
-  email: string;
-  purpose: AuthOtpPurpose;
-}): Promise<{ ok: true; expiresInSec: number } | { error: string; status: number }> {
-  const email = normalizeEmail(opts.email);
-  if (opts.purpose === 'signup') {
-    const pending = await pendingCol();
-    const p = await pending.findOne({ email });
-    if (!p) {
-      return { error: 'Start signup again — this email is not pending verification.', status: 400 };
-    }
-  } else {
-    const creds = await credentialsCol();
-    const account = await creds.findOne({ email });
-    if (!account?.passwordHash) {
-      const prismaLookup = await prismaUserByEmail(email);
-      if (!prismaLookup.user?.passwordHash) {
-        if (prismaLookup.timedOut) {
-          return {
-            error: 'Could not look up this account in time. Please try again.',
-            status: 503,
-          };
-        }
-        return { error: 'No account found for this email.', status: 404 };
-      }
-    }
-  }
-  const otp = await issueOtp({ email, purpose: opts.purpose });
-  if ('error' in otp) return otp;
-  return { ok: true, expiresInSec: otp.expiresInSec };
-}
-
-async function consumeOtp(
-  email: string,
-  purpose: AuthOtpPurpose,
-  code: string,
-): Promise<{ ok: true } | { error: string; status: number }> {
-  const col = await otpsCol();
-  const row = await col.findOne({ email, purpose });
-  if (!row?.codeHash) return { error: 'No code found. Request a new one.', status: 400 };
-  if (new Date(row.expiresAt).getTime() < Date.now()) {
-    return { error: 'Code expired. Request a new one.', status: 400 };
-  }
-  if (Number(row.attempts || 0) >= AUTH_OTP.maxAttempts) {
-    return { error: 'Too many attempts. Request a new code.', status: 429 };
-  }
-
-  const match = await verifyOtpCode(code.trim(), String(row.codeHash));
-  if (!match) {
-    await col.updateOne({ email, purpose }, { $inc: { attempts: 1 } });
-    return { error: 'Incorrect code. Try again.', status: 401 };
-  }
-
-  await col.deleteOne({ email, purpose });
-  return { ok: true };
-}
-
-export async function verifySignupOtp(opts: {
-  email: string;
-  code: string;
-}): Promise<
-  | { ok: true; session: string; nextPath: string; user: Omit<SessionUser, 'iat'> }
-  | { error: string; status: number }
-> {
-  const email = normalizeEmail(opts.email);
-  const consumed = await consumeOtp(email, 'signup', opts.code);
-  if ('error' in consumed) return consumed;
-
-  const pending = await pendingCol();
-  const p = (await pending.findOne({ email })) as PendingSignup | null;
-  if (!p?.passwordHash) {
-    return { error: 'Signup expired. Start again.', status: 400 };
-  }
-
-  const creds = await credentialsCol();
-  const existingCred = (await creds.findOne({ email })) as CredentialAccount | null;
-  const prismaUser = await syncPrismaUser({
-    email,
-    name: p.name,
-    passwordHash: p.passwordHash,
-  });
-  const userId = prismaUser?.id || existingCred?.userId || newLocalUserId();
-  const now = new Date();
-
-  await creds.updateOne(
-    { email },
-    {
-      $set: {
-        email,
-        passwordHash: p.passwordHash,
-        userId,
-        name: p.name,
-        emailVerified: now,
-        updatedAt: now,
-      },
-      $setOnInsert: { createdAt: now },
-    },
-    { upsert: true },
-  );
-
-  await pending.deleteOne({ email });
-  const learner = await upsertLearnerLocal({
-    id: userId,
-    email,
-    name: p.name,
-  });
-
-  const sessionUser = {
-    uid: userId,
-    name: learner.name || p.name,
-    email,
-  };
-  const session = createSession(sessionUser);
-  const nextPath = isOnboardingComplete(learner) ? '/dashboard' : '/dashboard/onboarding';
-  return { ok: true, session, nextPath, user: sessionUser };
-}
-
-export async function verifyLoginOtp(opts: {
-  email: string;
-  code: string;
-}): Promise<
-  | { ok: true; session: string; nextPath: string; user: Omit<SessionUser, 'iat'> }
-  | { error: string; status: number }
-> {
-  const email = normalizeEmail(opts.email);
-  const consumed = await consumeOtp(email, 'login', opts.code);
-  if ('error' in consumed) return consumed;
-
-  const creds = await credentialsCol();
-  let account = (await creds.findOne({ email })) as CredentialAccount | null;
-  if (!account?.passwordHash) {
-    const prismaLookup = await prismaUserByEmail(email);
-    if (!prismaLookup.user?.passwordHash) {
-      return { error: 'Account not found.', status: 404 };
-    }
-    account = {
-      email,
-      passwordHash: prismaLookup.user.passwordHash,
-      userId: prismaLookup.user.id,
-      name: prismaLookup.user.name || email.split('@')[0],
-      emailVerified: prismaLookup.user.emailVerified,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+  if (!account.emailVerified) {
+    return {
+      error: 'Verify your email first. Open the link we sent, then come back and sign in.',
+      status: 403,
+      unverified: true,
     };
   }
 
-  const now = new Date();
   const prismaUser = await syncPrismaUser({
     email,
     name: account.name,
     passwordHash: account.passwordHash,
+    emailVerified: account.emailVerified,
+    touchLogin: true,
   });
-  const userId = prismaUser?.id || account.userId;
-
-  await creds.updateOne(
-    { email },
-    {
-      $set: {
-        email,
-        passwordHash: account.passwordHash,
-        userId,
-        name: account.name,
-        emailVerified: now,
-        updatedAt: now,
-      },
-      $setOnInsert: { createdAt: now },
-    },
-    { upsert: true },
-  );
+  const userId = account.userId || prismaUser?.id || newLocalUserId();
 
   const learner = await upsertLearnerLocal({
     id: userId,
@@ -582,4 +537,103 @@ export async function verifyLoginOtp(opts: {
   const session = createSession(sessionUser);
   const nextPath = isOnboardingComplete(learner) ? '/dashboard' : '/dashboard/onboarding';
   return { ok: true, session, nextPath, user: sessionUser };
+}
+
+export async function requestPasswordReset(opts: {
+  email: string;
+  origin: string;
+}): Promise<{ ok: true }> {
+  const email = normalizeEmail(opts.email);
+  if (!email.includes('@') || !opts.origin) return { ok: true };
+
+  const { account } = await loadAccount(email);
+  if (!account?.passwordHash) {
+    const pending = await pendingCol();
+    const p = (await pending.findOne({ email })) as PendingSignup | null;
+    if (p?.passwordHash) {
+      await sendVerificationForPending({ pending: p, origin: opts.origin }).catch(() => {});
+    }
+    return { ok: true };
+  }
+  if (!account.emailVerified) {
+    await resendVerification({ email, origin: opts.origin }).catch(() => {});
+    return { ok: true };
+  }
+
+  const resets = await resetsCol();
+  const recent = await resets.findOne({ email });
+  if (
+    recent?.createdAt &&
+    Date.now() - new Date(recent.createdAt).getTime() < AUTH_LINK.resendMs
+  ) {
+    return { ok: true };
+  }
+
+  const token = generateLinkToken();
+  const tokenHash = hashLinkToken(token);
+  const now = new Date();
+  await resets.deleteMany({ email }).catch(() => {});
+  await resets.insertOne({
+    email,
+    tokenHash,
+    createdAt: now,
+    expiresAt: new Date(now.getTime() + AUTH_LINK.resetTtlMs),
+  });
+
+  const resetUrl = `${opts.origin.replace(/\/$/, '')}/reset-password?token=${encodeURIComponent(token)}`;
+  try {
+    await sendLearnerPasswordResetEmail({ to: email, resetUrl });
+  } catch (err) {
+    console.error('password reset email failed:', err);
+    await resets.deleteMany({ email }).catch(() => {});
+  }
+  return { ok: true };
+}
+
+export async function resetPassword(opts: {
+  token: string;
+  password: string;
+}): Promise<{ ok: true } | AuthError> {
+  const raw = String(opts.token || '').trim();
+  if (!raw) return { error: 'Missing reset link.', status: 400 };
+  if (opts.password.length < 8) {
+    return { error: 'Password must be at least 8 characters.', status: 400 };
+  }
+
+  const tokenHash = hashLinkToken(raw);
+  const resets = await resetsCol();
+  const row = await resets.findOne({ tokenHash });
+  if (!row?.email) {
+    return { error: 'This reset link is invalid or has already been used.', status: 400 };
+  }
+  if (new Date(row.expiresAt).getTime() < Date.now()) {
+    await resets.deleteOne({ tokenHash }).catch(() => {});
+    return { error: 'This reset link expired. Request a new one.', status: 400 };
+  }
+
+  const email = normalizeEmail(String(row.email));
+  const loaded = await loadAccount(email);
+  if (!loaded.account?.passwordHash) {
+    await resets.deleteOne({ tokenHash }).catch(() => {});
+    return { error: 'No account found for this reset link.', status: 400 };
+  }
+
+  const passwordHash = await hashPassword(opts.password);
+  const account = loaded.account;
+  const prismaUser = await syncPrismaUser({
+    email,
+    name: account.name,
+    passwordHash,
+    emailVerified: account.emailVerified || new Date(),
+    touchLogin: false,
+  });
+  const userId = prismaUser?.id || account.userId;
+  await persistAccount({
+    ...account,
+    userId,
+    passwordHash,
+    updatedAt: new Date(),
+  });
+  await resets.deleteMany({ email }).catch(() => {});
+  return { ok: true };
 }

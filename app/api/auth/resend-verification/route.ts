@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { startSignup } from '@/lib/auth/credentials';
+import { resendVerification } from '@/lib/auth/credentials';
 import { requestOrigin } from '@/lib/auth/origin';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * POST /api/auth/signup
- * Body: { name, email, password }
- * Stores the pending account and emails a verification link.
+ * POST /api/auth/resend-verification
+ * Body: { email }
  */
 export async function POST(req: NextRequest) {
-  let body: { name?: string; email?: string; password?: string };
+  let body: { email?: string };
   try {
     body = await req.json();
   } catch {
@@ -18,10 +17,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await startSignup({
-      name: String(body.name || ''),
+    const result = await resendVerification({
       email: String(body.email || ''),
-      password: String(body.password || ''),
       origin: requestOrigin(req),
     });
 
@@ -29,14 +26,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
-    return NextResponse.json({
-      ok: true,
-      email: result.email,
-    });
+    return NextResponse.json({ ok: true, email: result.email });
   } catch (err) {
-    console.error('signup failed:', err);
+    console.error('resend-verification failed:', err);
     return NextResponse.json(
-      { error: 'Could not start signup. Please try again.' },
+      { error: 'Could not resend the email. Please try again.' },
       { status: 500 },
     );
   }

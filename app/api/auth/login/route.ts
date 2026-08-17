@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { startLogin } from '@/lib/auth/credentials';
+import { completeLogin } from '@/lib/auth/credentials';
+import { resolveAuthNext } from '@/lib/auth/resolveAuthNext';
+import { SESSION_COOKIE, sessionCookieOptions } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,11 +19,11 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/auth/login
- * Body: { email, password }
- * Verifies password and emails a login OTP.
+ * Body: { email, password, next?, campus? }
+ * Signs in a verified account with email + password.
  */
 export async function POST(req: NextRequest) {
-  let body: { email?: string; password?: string };
+  let body: { email?: string; password?: string; next?: string; campus?: string };
   try {
     body = await req.json();
   } catch {
@@ -29,25 +31,38 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await startLogin({
+    const result = await completeLogin({
       email: String(body.email || ''),
       password: String(body.password || ''),
     });
 
     if ('error' in result) {
-      return NextResponse.json({ error: result.error }, { status: result.status });
+      return NextResponse.json(
+        { error: result.error, unverified: result.unverified === true },
+        { status: result.status },
+      );
     }
 
-    return NextResponse.json({
-      ok: true,
-      email: result.email,
-      purpose: 'login',
-      expiresInSec: result.expiresInSec,
+    const nextPath = await resolveAuthNext({
+      userId: result.user.uid,
+      userName: result.user.name,
+      userEmail: result.user.email || String(body.email || ''),
+      defaultNext: result.nextPath,
+      requestedNext: body.next,
+      campusSlug: body.campus,
     });
+
+    const res = NextResponse.json({
+      ok: true,
+      next: nextPath,
+      user: result.user,
+    });
+    res.cookies.set(SESSION_COOKIE, result.session, sessionCookieOptions());
+    return res;
   } catch (err) {
     console.error('login failed:', err);
     return NextResponse.json(
-      { error: 'Could not start sign-in. Please try again.' },
+      { error: 'Could not sign in. Please try again.' },
       { status: 500 },
     );
   }

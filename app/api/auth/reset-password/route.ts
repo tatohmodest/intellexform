@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { resendVerification } from '@/lib/auth/credentials';
-import { requestOrigin } from '@/lib/auth/origin';
+import { resetPassword } from '@/lib/auth/credentials';
 
 export const dynamic = 'force-dynamic';
 
-/** @deprecated Use POST /api/auth/resend-verification */
+/**
+ * POST /api/auth/reset-password
+ * Body: { token, password }
+ */
 export async function POST(req: NextRequest) {
-  let body: { email?: string };
+  let body: { token?: string; password?: string };
   try {
     body = await req.json();
   } catch {
@@ -14,20 +16,20 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await resendVerification({
-      email: String(body.email || ''),
-      origin: requestOrigin(req),
+    const result = await resetPassword({
+      token: String(body.token || ''),
+      password: String(body.password || ''),
     });
 
     if ('error' in result) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
-    return NextResponse.json({ ok: true, email: result.email });
+    return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('resend-otp failed:', err);
+    console.error('reset-password failed:', err);
     return NextResponse.json(
-      { error: 'Could not resend the email. Please try again.' },
+      { error: 'Could not reset that password. Please try again.' },
       { status: 500 },
     );
   }

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 /**
- * Legacy LoopingBinary OAuth callback — auth is now email/password + OTP.
+ * Legacy LoopingBinary OAuth callback — auth is now email/password.
  * Keep the route so old bookmarks do not 404; send people to the login form.
  */
 export async function GET(req: NextRequest) {

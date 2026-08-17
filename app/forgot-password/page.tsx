@@ -4,16 +4,16 @@ import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getLearner } from '@/lib/learn/repo';
 import { isOnboardingComplete } from '@/lib/learn/identity';
-import AuthScreen from '@/components/auth/AuthScreen';
+import ForgotPasswordScreen from '@/components/auth/ForgotPasswordScreen';
 
 export const metadata: Metadata = {
-  title: 'Sign in - Intellex',
-  description: 'Sign in to Intellex with your email and password after verifying your inbox.',
+  title: 'Forgot password - Intellex',
+  description: 'Reset your Intellex password by email.',
 };
 
 export const dynamic = 'force-dynamic';
 
-export default async function LoginPage() {
+export default async function ForgotPasswordPage() {
   const session = getSessionUser();
   if (session) {
     const learner = await getLearner(session.uid);
@@ -21,7 +21,7 @@ export default async function LoginPage() {
   }
   return (
     <Suspense>
-      <AuthScreen mode="login" />
+      <ForgotPasswordScreen />
     </Suspense>
   );
 }
