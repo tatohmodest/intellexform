@@ -88,10 +88,7 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     images: [absoluteUrl('/way_selfpaced.webp')],
   },
-  other: {
-    ...cameroonGeoMeta(),
-    google: 'notranslate',
-  },
+  other: cameroonGeoMeta(),
 };
 
 export const viewport: Viewport = {
@@ -112,6 +109,9 @@ export default function RootLayout({
       className="notranslate scroll-smooth"
       suppressHydrationWarning
     >
+      <head>
+        <meta name="google" content="notranslate" />
+      </head>
       <body className="bg-paper text-ink font-body antialiased">
         <I18nRoot initialLocale={locale}>
           <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />

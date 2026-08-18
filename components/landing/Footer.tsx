@@ -1,12 +1,12 @@
+'use client';
+
 import Link from 'next/link';
 import { PLATFORM_CONTACT, generalWhatsappLink, platformMailto } from '@/lib/contact';
 import BrandLogo from '@/components/BrandLogo';
-import { getRequestLocale } from '@/lib/i18n/server';
-import { t } from '@/lib/i18n/translate';
+import { useT } from '@/components/i18n/I18nRoot';
 
 export default function Footer() {
-  const locale = getRequestLocale();
-  const tr = (s: string) => t(s, locale);
+  const tr = useT();
   return (
     <footer style={{ background: 'var(--ink)', color: 'rgba(251,248,240,0.7)' }} className="pb-8 pt-14">
       <div className="wrap">
