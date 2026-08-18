@@ -25,7 +25,7 @@ const PRISMA_MS = 3_500;
 
 export const AUTH_LINK = {
   verifyTtlMs: 24 * 60 * 60 * 1000,
-  resetTtlMs: 60 * 60 * 1000,
+  resetTtlMs: 24 * 60 * 60 * 1000,
   resendMs: 60 * 1000,
 } as const;
 
@@ -37,6 +37,22 @@ type PendingSignup = {
   tokenSentAt?: Date;
   createdAt: Date;
   expiresAt: Date;
+};
+
+type AuthLinkDoc = {
+  tokenHash: string;
+  purpose: 'verify' | 'reset';
+  email: string;
+  createdAt: Date;
+  expiresAt: Date;
+  usedAt?: Date | null;
+};
+
+export type AuthLinkPeek = {
+  purpose: 'verify' | 'reset';
+  email: string;
+  used: boolean;
+  expired: boolean;
 };
 
 type CredentialAccount = {
@@ -63,11 +79,19 @@ function newLocalUserId() {
 }
 
 function generateLinkToken() {
-  return randomBytes(32).toString('base64url');
+  // Hex only — email clients and query parsers never mangle 0-9a-f.
+  return randomBytes(32).toString('hex');
+}
+
+function normalizeToken(raw: string) {
+  return String(raw || '')
+    .trim()
+    .replace(/\s+/g, '')
+    .replace(/^token=/i, '');
 }
 
 function hashLinkToken(token: string) {
-  return createHash('sha256').update(token).digest('hex');
+  return createHash('sha256').update(normalizeToken(token)).digest('hex');
 }
 
 function smtpErrorMessage(err: unknown) {
@@ -99,6 +123,115 @@ async function resetsCol() {
   await db.collection('auth_password_resets').createIndex({ tokenHash: 1 }, { unique: true }).catch(() => {});
   await db.collection('auth_password_resets').createIndex({ email: 1 }).catch(() => {});
   return db.collection('auth_password_resets');
+}
+
+async function linksCol() {
+  const db = await getDb();
+  await db.collection('auth_links').createIndex({ tokenHash: 1 }, { unique: true }).catch(() => {});
+  await db.collection('auth_links').createIndex({ email: 1, purpose: 1, createdAt: -1 }).catch(() => {});
+  return db.collection('auth_links');
+}
+
+async function issueAuthLink(opts: {
+  email: string;
+  purpose: 'verify' | 'reset';
+  ttlMs: number;
+}): Promise<{ token: string } | AuthError> {
+  const email = normalizeEmail(opts.email);
+  const col = await linksCol();
+  const recent = await col.findOne(
+    { email, purpose: opts.purpose },
+    { sort: { createdAt: -1 } },
+  );
+  if (
+    recent?.createdAt &&
+    !recent.usedAt &&
+    Date.now() - new Date(recent.createdAt).getTime() < AUTH_LINK.resendMs
+  ) {
+    return { error: 'Please wait a minute before requesting another email.', status: 429 };
+  }
+
+  const token = generateLinkToken();
+  const now = new Date();
+  await col.insertOne({
+    tokenHash: hashLinkToken(token),
+    purpose: opts.purpose,
+    email,
+    createdAt: now,
+    expiresAt: new Date(now.getTime() + opts.ttlMs),
+    usedAt: null,
+  } satisfies AuthLinkDoc);
+  return { token };
+}
+
+async function lookupAuthLink(token: string): Promise<
+  | (AuthLinkDoc & { source: 'links' | 'pending' | 'resets' })
+  | null
+> {
+  const tokenHash = hashLinkToken(token);
+  if (!tokenHash || !normalizeToken(token)) return null;
+
+  const links = await linksCol();
+  const modern = (await links.findOne({ tokenHash })) as AuthLinkDoc | null;
+  if (modern?.email) return { ...modern, source: 'links' };
+
+  const pending = await pendingCol();
+  const p = (await pending.findOne({ tokenHash })) as PendingSignup | null;
+  if (p?.email) {
+    return {
+      tokenHash,
+      purpose: 'verify',
+      email: p.email,
+      createdAt: p.createdAt,
+      expiresAt: p.expiresAt,
+      usedAt: null,
+      source: 'pending',
+    };
+  }
+
+  const resets = await resetsCol();
+  const r = await resets.findOne({ tokenHash });
+  if (r?.email) {
+    return {
+      tokenHash,
+      purpose: 'reset',
+      email: String(r.email),
+      createdAt: r.createdAt ? new Date(r.createdAt as Date) : new Date(),
+      expiresAt: new Date(r.expiresAt as Date),
+      usedAt: null,
+      source: 'resets',
+    };
+  }
+  return null;
+}
+
+export async function inspectAuthLink(token: string): Promise<AuthLinkPeek | null> {
+  const raw = normalizeToken(token);
+  if (!raw) return null;
+  const row = await lookupAuthLink(raw);
+  if (!row) return null;
+  return {
+    purpose: row.purpose,
+    email: row.email,
+    used: Boolean(row.usedAt),
+    expired: new Date(row.expiresAt).getTime() < Date.now(),
+  };
+}
+
+async function markLinkUsed(row: AuthLinkDoc & { source: 'links' | 'pending' | 'resets' }) {
+  const now = new Date();
+  if (row.source === 'links') {
+    const col = await linksCol();
+    await col.updateOne({ tokenHash: row.tokenHash }, { $set: { usedAt: now } });
+    return;
+  }
+  if (row.source === 'pending') {
+    const pending = await pendingCol();
+    await pending.updateOne({ tokenHash: row.tokenHash }, { $unset: { tokenHash: '' } }).catch(() => {});
+    return;
+  }
+  const resets = await resetsCol();
+  await resets.deleteMany({ tokenHash: row.tokenHash }).catch(() => {});
 }
 
 async function prismaUserByEmail(email: string): Promise<{
@@ -306,38 +439,70 @@ async function persistAccount(account: CredentialAccount) {
   );
 }
 
+async function activateVerifiedAccount(opts: {
+  email: string;
+  name: string;
+  passwordHash: string;
+  existingUserId?: string;
+}): Promise<{ userId: string }> {
+  const email = normalizeEmail(opts.email);
+  const now = new Date();
+  const { account: existingCred } = await loadAccount(email);
+  const prismaUser = await syncPrismaUser({
+    email,
+    name: opts.name,
+    passwordHash: opts.passwordHash,
+    emailVerified: now,
+    touchLogin: false,
+  });
+  const userId = existingCred?.userId || opts.existingUserId || prismaUser?.id || newLocalUserId();
+  await persistAccount({
+    email,
+    passwordHash: opts.passwordHash,
+    userId,
+    name: opts.name,
+    emailVerified: now,
+    createdAt: existingCred?.createdAt || now,
+    updatedAt: now,
+  });
+  await upsertLearnerLocal({ id: userId, email, name: opts.name });
+  const pending = await pendingCol();
+  await pending.deleteOne({ email }).catch(() => {});
+  return { userId };
+}
+
 async function sendVerificationForPending(opts: {
   pending: PendingSignup;
   origin: string;
 }): Promise<{ ok: true } | AuthError> {
   const email = opts.pending.email;
-  const pending = await pendingCol();
-  if (
-    opts.pending.tokenSentAt &&
-    Date.now() - new Date(opts.pending.tokenSentAt).getTime() < AUTH_LINK.resendMs
-  ) {
-    return { error: 'Please wait a minute before requesting another email.', status: 429 };
-  }
+  const issued = await issueAuthLink({
+    email,
+    purpose: 'verify',
+    ttlMs: AUTH_LINK.verifyTtlMs,
+  });
+  if ('error' in issued) return issued;
 
-  const token = generateLinkToken();
-  const tokenHash = hashLinkToken(token);
+  const pending = await pendingCol();
   const now = new Date();
   await pending.updateOne(
     { email },
     {
       $set: {
-        tokenHash,
+        tokenHash: hashLinkToken(issued.token),
         tokenSentAt: now,
         expiresAt: new Date(now.getTime() + AUTH_LINK.verifyTtlMs),
       },
     },
   );
 
-  const verifyUrl = `${opts.origin.replace(/\/$/, '')}/verify-email?token=${encodeURIComponent(token)}`;
+  const verifyUrl = `${opts.origin.replace(/\/$/, '')}/verify-email?token=${issued.token}`;
   try {
     await sendLearnerVerifyEmail({ to: email, verifyUrl });
   } catch (err) {
     console.error('verify email failed:', err);
+    const col = await linksCol();
+    await col.deleteOne({ tokenHash: hashLinkToken(issued.token) }).catch(() => {});
     await pending
       .updateOne({ email }, { $unset: { tokenHash: '', tokenSentAt: '' } })
       .catch(() => {});
@@ -432,51 +597,53 @@ export async function resendVerification(opts: {
 
 export async function verifyEmailToken(
   token: string,
-): Promise<{ ok: true; email: string } | AuthError> {
-  const raw = String(token || '').trim();
+): Promise<{ ok: true; email: string } | { redirect: string } | AuthError> {
+  const raw = normalizeToken(token);
   if (!raw) return { error: 'Missing verification link.', status: 400 };
 
-  const tokenHash = hashLinkToken(raw);
-  const pending = await pendingCol();
-  const p = (await pending.findOne({ tokenHash })) as PendingSignup | null;
-  if (!p?.passwordHash) {
+  const row = await lookupAuthLink(raw);
+  if (!row) {
     return {
       error: 'This link is invalid or has already been used. If you already verified, sign in.',
       status: 400,
     };
   }
-  if (new Date(p.expiresAt).getTime() < Date.now()) {
+
+  if (row.purpose === 'reset') {
+    return { redirect: `/reset-password?token=${raw}` };
+  }
+
+  if (row.usedAt) {
+    return { ok: true, email: normalizeEmail(row.email) };
+  }
+  if (new Date(row.expiresAt).getTime() < Date.now()) {
     return { error: 'This verification link expired. Sign up again to get a new one.', status: 400 };
   }
 
-  const email = normalizeEmail(p.email);
-  const { account: existingCred } = await loadAccount(email);
-  if (existingCred?.emailVerified) {
+  const email = normalizeEmail(row.email);
+  const pending = await pendingCol();
+  const p = (await pending.findOne({ email })) as PendingSignup | null;
+  const { account } = await loadAccount(email);
+
+  if (account?.emailVerified) {
+    await markLinkUsed(row);
     await pending.deleteOne({ email }).catch(() => {});
     return { ok: true, email };
   }
 
-  const now = new Date();
-  const prismaUser = await syncPrismaUser({
-    email,
-    name: p.name,
-    passwordHash: p.passwordHash,
-    emailVerified: now,
-    touchLogin: false,
-  });
-  const userId = prismaUser?.id || existingCred?.userId || newLocalUserId();
+  const passwordHash = p?.passwordHash || account?.passwordHash;
+  const name = p?.name || account?.name || email.split('@')[0];
+  if (!passwordHash) {
+    return { error: 'Signup expired. Start again.', status: 400 };
+  }
 
-  await persistAccount({
+  await activateVerifiedAccount({
     email,
-    passwordHash: p.passwordHash,
-    userId,
-    name: p.name,
-    emailVerified: now,
-    createdAt: existingCred?.createdAt || now,
-    updatedAt: now,
+    name,
+    passwordHash,
+    existingUserId: account?.userId,
   });
-  await upsertLearnerLocal({ id: userId, email, name: p.name });
-  await pending.deleteOne({ email });
+  await markLinkUsed(row);
   return { ok: true, email };
 }
 
@@ -547,45 +714,28 @@ export async function requestPasswordReset(opts: {
   if (!email.includes('@') || !opts.origin) return { ok: true };
 
   const { account } = await loadAccount(email);
-  if (!account?.passwordHash) {
-    const pending = await pendingCol();
-    const p = (await pending.findOne({ email })) as PendingSignup | null;
-    if (p?.passwordHash) {
-      await sendVerificationForPending({ pending: p, origin: opts.origin }).catch(() => {});
-    }
-    return { ok: true };
-  }
-  if (!account.emailVerified) {
-    await resendVerification({ email, origin: opts.origin }).catch(() => {});
-    return { ok: true };
-  }
+  const pending = await pendingCol();
+  const p = (await pending.findOne({ email })) as PendingSignup | null;
+  const hasPassword = Boolean(account?.passwordHash || p?.passwordHash);
+  if (!hasPassword) return { ok: true };
 
-  const resets = await resetsCol();
-  const recent = await resets.findOne({ email });
-  if (
-    recent?.createdAt &&
-    Date.now() - new Date(recent.createdAt).getTime() < AUTH_LINK.resendMs
-  ) {
-    return { ok: true };
-  }
-
-  const token = generateLinkToken();
-  const tokenHash = hashLinkToken(token);
-  const now = new Date();
-  await resets.deleteMany({ email }).catch(() => {});
-  await resets.insertOne({
+  const issued = await issueAuthLink({
     email,
-    tokenHash,
-    createdAt: now,
-    expiresAt: new Date(now.getTime() + AUTH_LINK.resetTtlMs),
+    purpose: 'reset',
+    ttlMs: AUTH_LINK.resetTtlMs,
   });
+  if ('error' in issued) {
+    // Throttle: still report success so the form cannot probe accounts.
+    return { ok: true };
+  }
 
-  const resetUrl = `${opts.origin.replace(/\/$/, '')}/reset-password?token=${encodeURIComponent(token)}`;
+  const resetUrl = `${opts.origin.replace(/\/$/, '')}/reset-password?token=${issued.token}`;
   try {
     await sendLearnerPasswordResetEmail({ to: email, resetUrl });
   } catch (err) {
     console.error('password reset email failed:', err);
-    await resets.deleteMany({ email }).catch(() => {});
+    const col = await linksCol();
+    await col.deleteOne({ tokenHash: hashLinkToken(issued.token) }).catch(() => {});
   }
   return { ok: true };
 }
@@ -594,46 +744,41 @@ export async function resetPassword(opts: {
   token: string;
   password: string;
 }): Promise<{ ok: true } | AuthError> {
-  const raw = String(opts.token || '').trim();
+  const raw = normalizeToken(opts.token);
   if (!raw) return { error: 'Missing reset link.', status: 400 };
   if (opts.password.length < 8) {
     return { error: 'Password must be at least 8 characters.', status: 400 };
   }
 
-  const tokenHash = hashLinkToken(raw);
-  const resets = await resetsCol();
-  const row = await resets.findOne({ tokenHash });
-  if (!row?.email) {
+  const row = await lookupAuthLink(raw);
+  if (!row || row.purpose !== 'reset') {
     return { error: 'This reset link is invalid or has already been used.', status: 400 };
   }
+  if (row.usedAt) {
+    return { error: 'This reset link has already been used. Sign in, or request a new one.', status: 400 };
+  }
   if (new Date(row.expiresAt).getTime() < Date.now()) {
-    await resets.deleteOne({ tokenHash }).catch(() => {});
     return { error: 'This reset link expired. Request a new one.', status: 400 };
   }
 
-  const email = normalizeEmail(String(row.email));
+  const email = normalizeEmail(row.email);
   const loaded = await loadAccount(email);
-  if (!loaded.account?.passwordHash) {
-    await resets.deleteOne({ tokenHash }).catch(() => {});
+  const pending = await pendingCol();
+  const p = (await pending.findOne({ email })) as PendingSignup | null;
+  if (!loaded.account?.passwordHash && !p?.passwordHash) {
     return { error: 'No account found for this reset link.', status: 400 };
   }
 
   const passwordHash = await hashPassword(opts.password);
-  const account = loaded.account;
-  const prismaUser = await syncPrismaUser({
+  const name = loaded.account?.name || p?.name || email.split('@')[0];
+  await activateVerifiedAccount({
     email,
-    name: account.name,
+    name,
     passwordHash,
-    emailVerified: account.emailVerified || new Date(),
-    touchLogin: false,
+    existingUserId: loaded.account?.userId,
   });
-  const userId = prismaUser?.id || account.userId;
-  await persistAccount({
-    ...account,
-    userId,
-    passwordHash,
-    updatedAt: new Date(),
-  });
+  await markLinkUsed(row);
+  const resets = await resetsCol();
   await resets.deleteMany({ email }).catch(() => {});
   return { ok: true };
 }

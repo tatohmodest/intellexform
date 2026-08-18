@@ -138,7 +138,7 @@ export async function sendLearnerPasswordResetEmail(opts: {
     intro: 'Use this link to choose a new password for your InTelleX account.',
     buttonLabel: 'Choose a new password',
     url: opts.resetUrl,
-    expireLabel: 'This link expires in 1 hour.',
+    expireLabel: 'This link expires in 24 hours.',
   });
   await sendMail({
     from: `InTelleX <${from}>`,

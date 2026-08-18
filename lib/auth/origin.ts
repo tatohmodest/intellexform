@@ -2,10 +2,14 @@ import type { NextRequest } from 'next/server';
 
 /** Origin for auth emails — use the incoming request so local/dev links work. */
 export function requestOrigin(req: NextRequest): string {
-  const host =
+  const host = (
     req.headers.get('x-forwarded-host') ||
     req.headers.get('host') ||
-    req.nextUrl.host;
+    req.nextUrl.host ||
+    ''
+  )
+    .split(',')[0]
+    .trim();
   if (!host) return req.nextUrl.origin;
   const proto =
     req.headers.get('x-forwarded-proto') ||

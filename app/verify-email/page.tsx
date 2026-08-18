@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { verifyEmailToken } from '@/lib/auth/credentials';
 import VerifyEmailResult from '@/components/auth/VerifyEmailResult';
 
@@ -8,12 +9,19 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic';
 
+function tokenFromParams(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return String(raw || '')
+    .trim()
+    .replace(/\s+/g, '');
+}
+
 export default async function VerifyEmailPage({
   searchParams,
 }: {
-  searchParams?: { token?: string };
+  searchParams?: { token?: string | string[] };
 }) {
-  const token = String(searchParams?.token || '').trim();
+  const token = tokenFromParams(searchParams?.token);
   if (!token) {
     return (
       <VerifyEmailResult
@@ -24,12 +32,9 @@ export default async function VerifyEmailPage({
     );
   }
 
+  let result: Awaited<ReturnType<typeof verifyEmailToken>>;
   try {
-    const result = await verifyEmailToken(token);
-    if ('error' in result) {
-      return <VerifyEmailResult ok={false} error={result.error} email={null} />;
-    }
-    return <VerifyEmailResult ok email={result.email} error={null} />;
+    result = await verifyEmailToken(token);
   } catch (err) {
     console.error('verify-email page failed:', err);
     return (
@@ -40,4 +45,12 @@ export default async function VerifyEmailPage({
       />
     );
   }
+
+  if ('redirect' in result) {
+    redirect(result.redirect);
+  }
+  if ('error' in result) {
+    return <VerifyEmailResult ok={false} error={result.error} email={null} />;
+  }
+  return <VerifyEmailResult ok email={result.email} error={null} />;
 }

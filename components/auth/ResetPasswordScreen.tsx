@@ -2,23 +2,27 @@
 
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import AuthChrome, { AuthAlert, AuthSubmit } from '@/components/auth/AuthChrome';
 
-export default function ResetPasswordScreen() {
-  const params = useSearchParams();
+export default function ResetPasswordScreen({
+  token,
+  linkError,
+}: {
+  token: string;
+  linkError: string | null;
+}) {
   const router = useRouter();
-  const token = params.get('token') || '';
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [error, setError] = useState<string | null>(
-    token ? null : 'This reset link is missing. Request a new one from Forgot password.',
-  );
+  const [error, setError] = useState<string | null>(linkError);
   const [busy, setBusy] = useState(false);
+  const blocked = Boolean(linkError);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (blocked) return;
     setError(null);
     if (password.length < 8) {
       setError('Password must be at least 8 characters.');
@@ -59,6 +63,7 @@ export default function ResetPasswordScreen() {
     >
       {error && <AuthAlert kind="error">{error}</AuthAlert>}
 
+      {!blocked && (
       <form onSubmit={submit} className="mt-8 space-y-4">
         <label className="block">
           <span className="mb-1.5 block text-[12.5px] font-semibold">New password</span>
@@ -88,6 +93,7 @@ export default function ResetPasswordScreen() {
         </label>
         <AuthSubmit busy={busy} label="Update password" busyLabel="Saving…" />
       </form>
+      )}
 
       <p className="mt-6 text-center text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
         <Link href="/forgot-password" className="font-semibold" style={{ color: 'var(--green-deep)' }}>
