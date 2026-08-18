@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isPlatformHostname } from '@/lib/platformHosts';
+import { localeFromAcceptLanguage, LOCALE_COOKIE } from '@/lib/i18n/locale';
 
 const SESSION_COOKIE = 'intellex_session';
+
+function withLocale(req: NextRequest, res: NextResponse) {
+  const locale = localeFromAcceptLanguage(req.headers.get('accept-language'));
+  res.cookies.set(LOCALE_COOKIE, locale, {
+    path: '/',
+    maxAge: 60 * 60 * 24 * 400,
+    sameSite: 'lax',
+  });
+  return res;
+}
 
 function hostnameOf(req: NextRequest): string {
   const raw =
@@ -41,36 +52,37 @@ export function middleware(req: NextRequest) {
   ) {
     const url = req.nextUrl.clone();
     url.pathname = '/campus-gateway';
-    return NextResponse.rewrite(url, {
-      request: { headers: requestHeaders },
-    });
+    return withLocale(
+      req,
+      NextResponse.rewrite(url, {
+        request: { headers: requestHeaders },
+      }),
+    );
   }
 
   // Platform marketing home is for guests only.
   if (pathname === '/' && hasSession && !customHost) {
-    return NextResponse.redirect(new URL('/dashboard', req.url));
+    return withLocale(req, NextResponse.redirect(new URL('/dashboard', req.url)));
   }
 
   if (pathname.startsWith('/dashboard')) {
     if (!hasSession) {
       const login = new URL('/login', req.url);
       login.searchParams.set('next', pathname);
-      return NextResponse.redirect(login);
+      return withLocale(req, NextResponse.redirect(login));
     }
   }
 
-  return NextResponse.next({
-    request: { headers: requestHeaders },
-  });
+  return withLocale(
+    req,
+    NextResponse.next({
+      request: { headers: requestHeaders },
+    }),
+  );
 }
 
 export const config = {
   matcher: [
-    '/',
-    '/courses',
-    '/about',
-    '/dashboard/:path*',
-    '/campus-gateway',
-    '/site/:path*',
+    '/((?!_next/static|_next/image|favicon.ico|pwa/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|xml|txt|json|woff2?)$).*)',
   ],
 };

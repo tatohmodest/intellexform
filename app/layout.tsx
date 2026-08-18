@@ -8,6 +8,8 @@ import { BRAND_LOGO_MARK } from '@/lib/brand';
 import { organizationJsonLd, websiteJsonLd } from '@/lib/seo/schema';
 import { absoluteUrl, cameroonGeoMeta, getSiteUrl } from '@/lib/seo/share';
 import { SITE_KEYWORDS } from '@/lib/seo/keywords';
+import I18nRoot from '@/components/i18n/I18nRoot';
+import { getRequestLocale } from '@/lib/i18n/server';
 
 const SITE = getSiteUrl();
 const TITLE = 'InTelleX Cameroon - Online learning & professional training';
@@ -86,7 +88,10 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     images: [absoluteUrl('/way_selfpaced.webp')],
   },
-  other: cameroonGeoMeta(),
+  other: {
+    ...cameroonGeoMeta(),
+    google: 'notranslate',
+  },
 };
 
 export const viewport: Viewport = {
@@ -99,14 +104,22 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const locale = getRequestLocale();
   return (
-    <html lang="en" className="scroll-smooth">
+    <html
+      lang={locale}
+      translate="no"
+      className="notranslate scroll-smooth"
+      suppressHydrationWarning
+    >
       <body className="bg-paper text-ink font-body antialiased">
-        <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
-        {children}
-        <CookieConsent />
-        <PwaRegister />
-        <PwaInstallPrompt />
+        <I18nRoot initialLocale={locale}>
+          <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
+          {children}
+          <CookieConsent />
+          <PwaRegister />
+          <PwaInstallPrompt />
+        </I18nRoot>
       </body>
     </html>
   );

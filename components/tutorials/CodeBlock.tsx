@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
 import HighlightedCode from '@/components/HighlightedCode';
+import { useT } from '@/components/i18n/I18nRoot';
 
 export default function CodeBlock({
   code,
@@ -13,6 +14,7 @@ export default function CodeBlock({
   title?: string;
   language?: string;
 }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
 
   async function copy() {
@@ -26,7 +28,7 @@ export default function CodeBlock({
   }
 
   return (
-    <div className="tutorial-code my-5 overflow-hidden rounded-xl border" style={{ borderColor: 'var(--line)' }}>
+    <div className="tutorial-code my-5 overflow-hidden rounded-xl border" data-no-i18n style={{ borderColor: 'var(--line)' }}>
       <div
         className="flex items-center justify-between gap-3 border-b px-4 py-2.5"
         style={{ background: 'var(--paper-dim)', borderColor: 'var(--line)' }}
@@ -49,10 +51,10 @@ export default function CodeBlock({
           onClick={copy}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium transition-opacity hover:opacity-80"
           style={{ background: 'var(--paper)', color: 'var(--ink-soft)', border: '1px solid var(--line)' }}
-          aria-label="Copy code"
+          aria-label={t('Copy code')}
         >
           {copied ? <Check size={13} style={{ color: 'var(--green-deep)' }} /> : <Copy size={13} />}
-          {copied ? 'Copied' : 'Copy'}
+          {copied ? t('Copied') : t('Copy')}
         </button>
       </div>
       <pre

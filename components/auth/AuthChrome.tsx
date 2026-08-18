@@ -4,6 +4,7 @@ import { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { Video, Bot, BookOpen, ShieldCheck, Flame } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
+import { useT } from '@/components/i18n/I18nRoot';
 
 export default function AuthChrome({
   campus,
@@ -20,6 +21,7 @@ export default function AuthChrome({
   children: ReactNode;
   footer?: ReactNode;
 }) {
+  const t = useT();
   return (
     <div className="flex min-h-screen">
       <div
@@ -32,7 +34,7 @@ export default function AuthChrome({
         <div className="flex items-center gap-2.5">
           <BrandLogo href="/" height={30} className="brightness-0 invert" />
           <span className="mono rounded-full border border-white/20 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.14em] text-white/70">
-            Learning
+            {t('Learning')}
           </span>
         </div>
 
@@ -43,25 +45,25 @@ export default function AuthChrome({
             transition={{ duration: 0.5 }}
             className="font-display text-[40px] leading-[1.15] text-white"
           >
-            Learn like the world is
+            {t('Learn like the world is')}
             <span className="italic" style={{ color: '#1ED77E' }}>
               {' '}
-              watching you win.
+              {t('watching you win.')}
             </span>
           </motion.h1>
           <p className="mt-4 max-w-md text-[15.5px] leading-relaxed text-white/70">
             {campus
-              ? 'One InTelleX account. After you sign in, you will continue into your campus dashboard when you have access.'
-              : 'Self-paced courses with real curricula, live mentorship, and an AI tutor. Create your account once — then join any campus that invites you.'}
+              ? t('One InTelleX account. After you sign in, you will continue into your campus dashboard when you have access.')
+              : t('Self-paced courses with real curricula, live mentorship, and an AI tutor. Create your account once — then join any campus that invites you.')}
           </p>
 
           {!campus && (
             <div className="mt-8 space-y-3.5">
               {[
-                { icon: <BookOpen size={16} />, text: '17 course tracks · 500+ hands-on lessons' },
-                { icon: <Video size={16} />, text: '1-on-1 mentorship & live classes (HD video)' },
-                { icon: <Bot size={16} />, text: 'AI tutor that knows InTelleX + your catalogue' },
-                { icon: <Flame size={16} />, text: 'Streaks, XP and certificates that keep you going' },
+                { icon: <BookOpen size={16} />, text: t('17 course tracks · 500+ hands-on lessons') },
+                { icon: <Video size={16} />, text: t('1-on-1 mentorship & live classes (HD video)') },
+                { icon: <Bot size={16} />, text: t('AI tutor that knows InTelleX + your catalogue') },
+                { icon: <Flame size={16} />, text: t('Streaks, XP and certificates that keep you going') },
               ].map((f, i) => (
                 <motion.div
                   key={f.text}
@@ -85,7 +87,7 @@ export default function AuthChrome({
 
         <div className="flex items-center gap-2 text-[12.5px] text-white/50">
           <ShieldCheck size={14} />
-          Verify your email with a link, then sign in with your password.
+          {t('Verify your email with a link, then sign in with your password.')}
         </div>
       </div>
 
@@ -100,10 +102,10 @@ export default function AuthChrome({
             <BrandLogo href="/" height={28} />
           </div>
 
-          <div className="tab mb-4 inline-flex items-center gap-1.5">{tab}</div>
-          <h2 className="font-display text-[30px] leading-tight">{title}</h2>
+          <div className="tab mb-4 inline-flex items-center gap-1.5">{t(tab)}</div>
+          <h2 className="font-display text-[30px] leading-tight">{t(title)}</h2>
           <p className="mt-2 text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-            {subtitle}
+            {typeof subtitle === 'string' ? t(subtitle) : subtitle}
           </p>
           {children}
           {footer}
