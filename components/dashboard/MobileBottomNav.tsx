@@ -8,6 +8,7 @@ import {
   Building2,
   ClipboardList,
   LayoutDashboard,
+  Megaphone,
   Menu,
   MessageSquare,
   Briefcase,
@@ -60,11 +61,13 @@ const TABS: Tab[] = [
     match: (p) =>
       p.startsWith('/dashboard/community') ||
       p.startsWith('/dashboard/messages') ||
-      p.startsWith('/dashboard/study-groups'),
+      p.startsWith('/dashboard/study-groups') ||
+      p.startsWith('/dashboard/announcements'),
   },
 ];
 
 const MORE_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: '/dashboard/announcements', label: 'Announcements', icon: Megaphone },
   { href: '/dashboard/messages', label: 'Messages', icon: MessageSquare },
   { href: '/dashboard/academic', label: 'Academic', icon: GraduationCap },
   { href: '/dashboard/fees', label: 'Fees', icon: Briefcase },

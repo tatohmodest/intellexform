@@ -34,6 +34,7 @@ import {
   MessageSquare,
   Briefcase,
   Wallet,
+  Megaphone,
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 import MobileBottomNav from '@/components/dashboard/MobileBottomNav';
@@ -73,7 +74,10 @@ type NavGroup = { label: string; items: NavItem[] };
 const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Home',
-    items: [{ href: '/dashboard', label: 'Today', icon: LayoutDashboard, exact: true }],
+    items: [
+      { href: '/dashboard', label: 'Today', icon: LayoutDashboard, exact: true },
+      { href: '/dashboard/announcements', label: 'Announcements', icon: Megaphone },
+    ],
   },
   {
     label: 'Learn',

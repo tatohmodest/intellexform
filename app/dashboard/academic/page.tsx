@@ -37,8 +37,20 @@ export default async function AcademicOverviewPage() {
         <p className="mt-2 max-w-[640px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
           Program journey, cohort, GPA, and credits — when your campus enables them, or soft
           fields you maintain yourself.{' '}
-          <Link href="/dashboard/fees" className="font-semibold" style={{ color: 'var(--green-deep)' }}>
+          <Link
+            href="/dashboard/fees"
+            className="inline-flex items-center border px-3 py-1.5 text-[13px] font-semibold"
+            style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
+          >
             View school fees
+          </Link>
+          {' '}
+          <Link
+            href="/dashboard/announcements"
+            className="inline-flex items-center border px-3 py-1.5 text-[13px] font-semibold"
+            style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
+          >
+            Announcements
           </Link>
         </p>
       </header>

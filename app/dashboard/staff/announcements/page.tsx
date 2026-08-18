@@ -17,7 +17,8 @@ export default async function StaffAnnouncementsPage() {
         </div>
         <h1 className="font-display text-[28px] leading-tight sm:text-[32px]">Announcements</h1>
         <p className="mt-2 max-w-[620px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Institutional notices for students and staff. Publishing is limited to authorized desks.
+          Publish public notices for everyone signed in, or institution notices for official
+          students. Students read them on their dashboard under Announcements. An image is optional.
         </p>
       </header>
       <AnnouncementsDesk

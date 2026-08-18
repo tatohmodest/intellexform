@@ -2,11 +2,13 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import {
   ArrowRight,
+  Bell,
   BookOpen,
   Bot,
   CheckSquare,
   ClipboardList,
   Flame,
+  Megaphone,
   Sparkles,
   Trophy,
   Zap,
@@ -21,7 +23,10 @@ import { getMyApplication } from '@/lib/learn/applications';
 import { interestLabels } from '@/lib/learn/interests';
 import BecomeStudentBanner from '@/components/dashboard/BecomeStudentBanner';
 import InstitutionForms from '@/components/dashboard/InstitutionForms';
+import AnnouncementCard from '@/components/dashboard/AnnouncementCard';
 import { listFillableDatasetsForUser } from '@/lib/staff/dataWorkspace';
+import { listVisibleAnnouncements } from '@/lib/staff/store';
+import { listNotifications } from '@/lib/learn/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,20 +46,21 @@ export default async function DashboardOverview() {
   if (!session) redirect('/login?next=/dashboard');
 
   const learner = await getLearner(session.uid);
-  const [cc, staffPost, org, membership, application] = await Promise.all([
+  const [cc, staffPost, org, membership, application, recentNotes] = await Promise.all([
     getStudentCommandCenter(session.uid),
     getStaffPost(session.uid).catch(() => null),
     getOrgConfig(),
     getStudentMembership(session.uid),
     getMyApplication(session.uid),
+    listNotifications(session.uid, 4).catch(() => []),
   ]);
   const name = firstName(cc.learner?.name ?? session.name);
   const interests = interestLabels(learner?.preferences?.interests || []);
   const isStudent = membership.isStudent;
-  const forms = await listFillableDatasetsForUser({
-    userId: session.uid,
-    isStudent,
-  }).catch(() => []);
+  const [forms, visibleAnnouncements] = await Promise.all([
+    listFillableDatasetsForUser({ userId: session.uid, isStudent }).catch(() => []),
+    listVisibleAnnouncements({ isStudent }).catch(() => []),
+  ]);
 
   return (
     <div className="mx-auto max-w-[1080px] overflow-x-hidden">
@@ -79,6 +85,13 @@ export default async function DashboardOverview() {
           )}
         </p>
         <div className="mt-5 flex flex-wrap gap-2 text-[12.5px] font-semibold">
+          <Link
+            href="/dashboard/announcements"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-white"
+            style={{ background: 'var(--green)' }}
+          >
+            <Megaphone size={13} /> Announcements
+          </Link>
           <Link href="/dashboard/calendar" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
             Calendar
           </Link>
@@ -88,11 +101,11 @@ export default async function DashboardOverview() {
           <Link href="/dashboard/my-learning" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
             My Learning
           </Link>
-          <Link href="/dashboard/tutor" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
-            AI Tutor
-          </Link>
           <Link href="/dashboard/community" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
             Community
+          </Link>
+          <Link href="/dashboard/notifications" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
+            Notifications
           </Link>
           {isStudent ? (
             <Link href="/dashboard/fees" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
@@ -112,6 +125,87 @@ export default async function DashboardOverview() {
       </header>
 
       {!isStudent ? <BecomeStudentBanner institutionName={org.name} /> : null}
+
+      {visibleAnnouncements.length > 0 ? (
+        <section className="mb-10">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: 'var(--green-deep)' }}>
+                From {org.name}
+              </p>
+              <h2 className="font-display text-[22px]">Announcements</h2>
+            </div>
+            <Link
+              href="/dashboard/announcements"
+              className="inline-flex items-center gap-1.5 border px-3 py-1.5 text-[13px] font-semibold"
+              style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
+            >
+              All announcements
+            </Link>
+          </div>
+          <ul className="space-y-3">
+            {visibleAnnouncements.slice(0, 3).map((item) => (
+              <li key={item.id}>
+                <AnnouncementCard item={item} compact />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : (
+        <section
+          className="mb-10 border p-5"
+          style={{ borderColor: 'rgba(0,179,105,0.28)', background: 'rgba(0,179,105,0.05)' }}
+        >
+          <p className="inline-flex items-center gap-2 font-semibold">
+            <Megaphone size={16} style={{ color: 'var(--green-deep)' }} /> Announcements
+          </p>
+          <p className="mt-1 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
+            Public and institution notices from {org.name} show up here after staff publish them.
+          </p>
+          <Link
+            href="/dashboard/announcements"
+            className="mt-3 inline-flex items-center border px-3 py-1.5 text-[13px] font-semibold"
+            style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
+          >
+            Open announcements
+          </Link>
+        </section>
+      )}
+
+      {recentNotes.length > 0 ? (
+        <section className="mb-10">
+          <div className="mb-4 flex items-end justify-between gap-3">
+            <h2 className="font-display text-[22px]">Recent activity</h2>
+            <Link
+              href="/dashboard/notifications"
+              className="inline-flex items-center gap-1.5 border px-3 py-1.5 text-[13px] font-semibold"
+              style={{ borderColor: 'var(--line)', color: 'var(--blue-ink)' }}
+            >
+              <Bell size={13} /> Notifications
+            </Link>
+          </div>
+          <ul className="divide-y border" style={{ borderColor: 'var(--line)' }}>
+            {recentNotes.map((n) => (
+              <li key={n.id}>
+                <Link
+                  href={n.href || '/dashboard/notifications'}
+                  className="flex items-start justify-between gap-3 px-4 py-3"
+                  style={{ background: n.readAt ? 'transparent' : 'var(--amber-soft)' }}
+                >
+                  <span>
+                    <span className="block font-semibold">{n.title}</span>
+                    <span className="mt-0.5 block text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+                      {n.body}
+                    </span>
+                  </span>
+                  <ArrowRight size={14} className="mt-1 shrink-0" style={{ color: 'var(--ink-soft)' }} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <InstitutionForms forms={forms} />
       {!isStudent && application && application.status !== 'draft' ? (
         <Link
@@ -261,8 +355,11 @@ export default async function DashboardOverview() {
                         {row.nextTitle}
                       </p>
                     </div>
-                    <span className="text-[13px] font-semibold" style={{ color: 'var(--green-deep)' }}>
-                      Continue →
+                    <span
+                      className="inline-flex shrink-0 items-center border px-3 py-1.5 text-[13px] font-semibold"
+                      style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
+                    >
+                      Continue
                     </span>
                   </div>
                   <div className="mt-3 h-1.5 w-full" style={{ background: 'var(--paper-dim)' }}>
@@ -341,6 +438,13 @@ export default async function DashboardOverview() {
             <h2 className="font-display text-[18px]">Quick actions</h2>
           </div>
           <div className="flex flex-col gap-2">
+            <Link
+              href="/dashboard/announcements"
+              className="inline-flex items-center gap-2 px-3 py-2 text-[13.5px] font-semibold text-white"
+              style={{ background: 'var(--green)' }}
+            >
+              <Megaphone size={15} /> Announcements
+            </Link>
             <Link
               href="/dashboard/todos"
               className="inline-flex items-center gap-2 border px-3 py-2 text-[13.5px] font-semibold"

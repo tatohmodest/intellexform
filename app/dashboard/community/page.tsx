@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { FileText, MessageSquare, Sparkles, Users } from 'lucide-react';
+import { FileText, Megaphone, MessageSquare, Sparkles, Users } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { isOfficialStudent } from '@/lib/learn/studentAccess';
 import { getOrgConfig } from '@/lib/org/config';
-import { listAnnouncements } from '@/lib/staff/store';
+import { listVisibleAnnouncements } from '@/lib/staff/store';
+import AnnouncementCard from '@/components/dashboard/AnnouncementCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,11 +17,11 @@ export default async function CommunityPage({
   const session = getSessionUser();
   if (!session) redirect('/login?next=/dashboard/community');
 
-  const [isStudent, org, announcements] = await Promise.all([
+  const [isStudent, org] = await Promise.all([
     isOfficialStudent(session.uid),
     getOrgConfig(),
-    listAnnouncements().catch(() => [] as Awaited<ReturnType<typeof listAnnouncements>>),
   ]);
+  const visible = await listVisibleAnnouncements({ isStudent }).catch(() => []);
 
   const tabs = isStudent
     ? ['for-you', 'public', 'institution', 'campus', 'class']
@@ -29,9 +30,13 @@ export default async function CommunityPage({
     ? String(searchParams?.tab)
     : 'for-you';
 
-  const official = announcements.filter((a) => a.audience !== 'staff');
-  const showOfficial = isStudent && (tab === 'institution' || tab === 'for-you' || tab === 'campus' || tab === 'class');
+  const official = visible.filter((a) => a.audience !== 'staff');
+  const publicPosts = official.filter((a) => a.audience === 'everyone');
+  const institutionPosts = official.filter((a) => a.audience === 'students');
+  const showOfficial =
+    isStudent && (tab === 'institution' || tab === 'for-you' || tab === 'campus' || tab === 'class');
   const showPublic = tab === 'public' || tab === 'for-you';
+  const feed = tab === 'public' ? publicPosts : tab === 'institution' ? institutionPosts : official;
 
   return (
     <div className="mx-auto max-w-[800px]">
@@ -45,6 +50,13 @@ export default async function CommunityPage({
             ? 'Public conversation plus official campus, department, and class rooms.'
             : `Public articles, discussions, and news. Official ${org.name} channels unlock when you become a student.`}
         </p>
+        <Link
+          href="/dashboard/announcements"
+          className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold text-white"
+          style={{ background: 'var(--green)' }}
+        >
+          <Megaphone size={14} /> Open announcements
+        </Link>
         <div className="mt-5 flex flex-wrap gap-2">
           {tabs.map((id) => (
             <Link
@@ -79,26 +91,29 @@ export default async function CommunityPage({
         </section>
       ) : null}
 
-      {showOfficial ? (
+      {showOfficial || showPublic ? (
         <section className="mb-10">
-          <h2 className="mb-3 font-display text-[20px]">Official announcements</h2>
-          {official.length === 0 ? (
+          <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+            <h2 className="font-display text-[20px]">
+              {tab === 'public' ? 'Public announcements' : tab === 'institution' ? 'Institution announcements' : 'Official announcements'}
+            </h2>
+            <Link
+              href="/dashboard/announcements"
+              className="inline-flex items-center border px-3 py-1.5 text-[12.5px] font-semibold"
+              style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
+            >
+              All announcements
+            </Link>
+          </div>
+          {feed.length === 0 ? (
             <p className="border border-dashed p-6 text-[14px]" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
-              No official posts yet. Authorized staff publish here.
+              No posts in this feed yet. Authorized staff publish from Announcements.
             </p>
           ) : (
             <ul className="space-y-3">
-              {official.slice(0, 12).map((a) => (
-                <li key={a.id} className="border p-4" style={{ borderColor: 'var(--line)' }}>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: 'var(--green-deep)' }}>
-                    Official announcement
-                  </p>
-                  <h3 className="mt-1 font-display text-[20px] leading-tight">{a.title}</h3>
-                  <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                    Published by {a.authorName || 'Administration'}
-                    {a.campusSlug ? ` · ${a.campusSlug}` : ''}
-                  </p>
-                  <p className="mt-2 text-[14.5px] leading-relaxed">{a.body}</p>
+              {feed.slice(0, 8).map((a) => (
+                <li key={a.id}>
+                  <AnnouncementCard item={a} compact />
                 </li>
               ))}
             </ul>

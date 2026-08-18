@@ -1157,9 +1157,35 @@ export async function deleteAdmission(actor: StaffActor, id: string) {
   return { ok: true };
 }
 
+export type AnnouncementAudience = 'everyone' | 'students' | 'staff';
+
+export type AnnouncementView = {
+  id: string;
+  title: string;
+  body: string;
+  audience: AnnouncementAudience;
+  campusSlug: string;
+  authorName: string;
+  imageUrl: string | null;
+  createdAt: string;
+};
+
+function sanitizeAnnouncementImage(raw: unknown): string | null {
+  const url = String(raw || '').trim();
+  if (!url) return null;
+  if (!/^https:\/\//i.test(url)) return null;
+  return url.slice(0, 800);
+}
+
 export async function publishAnnouncement(
   actor: StaffActor,
-  opts: { title: string; body: string; audience: 'everyone' | 'students' | 'staff'; campusSlug?: string },
+  opts: {
+    title: string;
+    body: string;
+    audience: AnnouncementAudience;
+    campusSlug?: string;
+    imageUrl?: string | null;
+  },
 ) {
   const title = opts.title.trim().slice(0, 160);
   const body = opts.body.trim().slice(0, 4000);
@@ -1171,12 +1197,14 @@ export async function publishAnnouncement(
     }
     if (!campusSlug) campusSlug = actor.post.campusSlugs[0];
   }
+  const imageUrl = sanitizeAnnouncementImage(opts.imageUrl);
   const db = await getDb();
   await db.collection('staff_announcements').insertOne({
     title,
     body,
     audience: opts.audience,
     campusSlug,
+    imageUrl,
     authorId: actor.userId,
     authorName: actor.name,
     createdAt: new Date(),
@@ -1192,7 +1220,7 @@ export async function publishAnnouncement(
     await createNotificationsForUsers(ids, {
       title,
       body,
-      href: '/dashboard/community',
+      href: '/dashboard/announcements',
       kind: 'institution',
     }).catch(() => 0);
   }
@@ -1208,6 +1236,20 @@ export async function publishAnnouncement(
   return { ok: true };
 }
 
+function announcementView(r: Record<string, unknown>): AnnouncementView {
+  const audience = r.audience === 'students' || r.audience === 'staff' ? r.audience : 'everyone';
+  return {
+    id: String(r._id),
+    title: String(r.title),
+    body: String(r.body),
+    audience,
+    campusSlug: String(r.campusSlug || ''),
+    authorName: String(r.authorName || ''),
+    imageUrl: sanitizeAnnouncementImage(r.imageUrl),
+    createdAt: r.createdAt ? new Date(r.createdAt as Date).toISOString() : new Date().toISOString(),
+  };
+}
+
 export async function listAnnouncements() {
   const db = await getDb();
   const rows = await db
@@ -1216,15 +1258,17 @@ export async function listAnnouncements() {
     .sort({ createdAt: -1 })
     .limit(40)
     .toArray();
-  return rows.map((r) => ({
-    id: String(r._id),
-    title: String(r.title),
-    body: String(r.body),
-    audience: String(r.audience || 'everyone'),
-    campusSlug: String(r.campusSlug || ''),
-    authorName: String(r.authorName || ''),
-    createdAt: r.createdAt,
-  }));
+  return rows.map((r) => announcementView(r as Record<string, unknown>));
+}
+
+/** Learner-facing list: public posts for everyone signed in, institution posts for official students. */
+export async function listVisibleAnnouncements(opts: { isStudent: boolean }) {
+  const all = await listAnnouncements();
+  return all.filter((a) => {
+    if (a.audience === 'staff') return false;
+    if (a.audience === 'students') return opts.isStudent;
+    return true;
+  });
 }
 
 export async function staffHomeStats() {
