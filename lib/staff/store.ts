@@ -7,7 +7,7 @@ import { ObjectId } from 'mongodb';
 import { getDb } from '@/lib/repo';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getLearner } from '@/lib/learn/repo';
-import { createNotificationsForUsers } from '@/lib/learn/notifications';
+import { createNotification, createNotificationsForUsers } from '@/lib/learn/notifications';
 import {
   HOME_ORGANIZATION,
   STUDENT_STATUSES,
@@ -718,6 +718,12 @@ export async function chargeFee(
     createdAt: now,
   }));
   if (docs.length) await ch.insertMany(docs);
+  await createNotificationsForUsers(targets, {
+    title: `Fee charged: ${title}`,
+    body: `${amountXAF.toLocaleString()} XAF has been added to your account.`,
+    href: '/dashboard/fees',
+    kind: 'institution',
+  }).catch(() => 0);
   await writeStaffAudit({
     actorId: actor.userId,
     actorName: actor.name,
@@ -772,6 +778,13 @@ export async function recordFeePayment(
     createdAt: new Date(),
   };
   const res = await pay.insertOne(doc);
+  await createNotification({
+    userId: opts.studentUserId,
+    title: 'Payment recorded',
+    body: `${applied.toLocaleString()} XAF received for ${String(charge.title || 'fees')} (${receiptCode}).`,
+    href: '/dashboard/fees',
+    kind: 'institution',
+  }).catch(() => null);
   await writeStaffAudit({
     actorId: actor.userId,
     actorName: actor.name,
@@ -898,12 +911,12 @@ export async function decideAdmission(
       },
     },
   );
-  if (decision === 'admitted' && row.email) {
+  if (row.email) {
     const db = await getDb();
     const learner = await db.collection('learners').findOne({
       email: { $regex: new RegExp(`^${String(row.email).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
     });
-    if (learner?.lbId) {
+    if (decision === 'admitted' && learner?.lbId) {
       await ensureStudentRecord(String(learner.lbId), {
         name: String(learner.name || row.name),
         email: String(learner.email || row.email),
@@ -912,6 +925,17 @@ export async function decideAdmission(
         { userId: String(learner.lbId) },
         { $set: { status: 'admitted', program: row.program || '', updatedAt: new Date() } },
       );
+    }
+    if (learner?.lbId) {
+      const decisionLabel =
+        decision === 'admitted' ? 'accepted' : decision === 'waitlisted' ? 'waitlisted' : 'not accepted';
+      await createNotification({
+        userId: String(learner.lbId),
+        title: `Admission ${decisionLabel}`,
+        body: `Your application${row.program ? ` for ${row.program}` : ''} was ${decisionLabel}.`,
+        href: '/dashboard',
+        kind: 'institution',
+      }).catch(() => null);
     }
   }
   await writeStaffAudit({
@@ -964,7 +988,7 @@ export async function publishAnnouncement(
       title,
       body,
       href: '/dashboard/notifications',
-      kind: 'system',
+      kind: 'institution',
     }).catch(() => 0);
   }
   await writeStaffAudit({

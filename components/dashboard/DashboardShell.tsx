@@ -40,6 +40,7 @@ import MobileBottomNav from '@/components/dashboard/MobileBottomNav';
 import CampusReturnBanner from '@/components/dashboard/CampusReturnBanner';
 import NotificationBell from '@/components/dashboard/NotificationBell';
 import OngoingClassBanner from '@/components/dashboard/OngoingClassBanner';
+import PushAlertsBanner from '@/components/dashboard/PushAlertsBanner';
 import type { ActiveContext, Affiliation, CampusBrand, PrimaryIntent } from '@/lib/learn/identity';
 import { campusNavItems, type ModuleId } from '@/lib/eduos/capabilities';
 import { staffNavFor } from '@/lib/staff/nav';
@@ -867,6 +868,7 @@ export default function DashboardShell({
           </Link>
         </div>
       </header>
+      <PushAlertsBanner accent={accent} />
 
       <main className="px-4 pb-28 pt-6 sm:px-6 lg:pb-16 lg:pl-[268px] lg:pr-10">
         <OngoingClassBanner accent={accent} />

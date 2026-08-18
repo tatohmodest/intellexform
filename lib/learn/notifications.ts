@@ -93,18 +93,32 @@ export async function createNotification(opts: {
 
   await ensureNotificationCollections();
   const db = await getDb();
+  const title = opts.title.slice(0, 160);
+  const body = opts.body.slice(0, 1000);
+  const href = opts.href || null;
   const res = await db.collection('notifications').insertOne({
     userId: opts.userId,
-    title: opts.title.slice(0, 160),
-    body: opts.body.slice(0, 1000),
-    href: opts.href || null,
+    title,
+    body,
+    href,
     kind,
     category,
     data: opts.data || {},
     readAt: null,
     createdAt: new Date(),
   });
-  return res.insertedId.toString();
+  const id = res.insertedId.toString();
+  const { dispatchNotificationPush } = await import('@/lib/push/webPush');
+  void dispatchNotificationPush({
+    userId: opts.userId,
+    notificationId: id,
+    title,
+    body,
+    href,
+    kind,
+    category,
+  });
+  return id;
 }
 
 export async function createNotificationsForUsers(
@@ -136,6 +150,17 @@ export async function createNotificationsForUsers(
   }
   if (!docs.length) return 0;
   const res = await db.collection('notifications').insertMany(docs);
+  const { dispatchNotificationPushToUsers } = await import('@/lib/push/webPush');
+  void dispatchNotificationPushToUsers(
+    docs.map((d) => String(d.userId)),
+    {
+      title: payload.title,
+      body: payload.body,
+      href: payload.href,
+      kind,
+      category,
+    },
+  );
   return res.insertedCount;
 }
 

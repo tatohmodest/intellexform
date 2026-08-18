@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { CheckCircle2, Loader2, LogOut, Save, Upload } from 'lucide-react';
 import { uploadMediaAsset } from '@/lib/mediaUpload';
 import { MAX_IMAGE_UPLOAD_BYTES } from '@/lib/compressImage';
+import { PushAlertsSettings } from '@/components/dashboard/PushAlertsBanner';
 
 type Prefs = {
   locale: string;
@@ -259,6 +260,7 @@ export default function SettingsForm({
             </label>
           ))}
         </div>
+        <PushAlertsSettings />
       </section>
 
       {error ? (
