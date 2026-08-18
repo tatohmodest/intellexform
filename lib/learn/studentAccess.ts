@@ -13,6 +13,7 @@ export type StudentMembership = {
   year: string | null;
   campusSlug: string | null;
   cohort: string | null;
+  classHead: boolean;
 };
 
 function emptyMembership(): StudentMembership {
@@ -25,6 +26,7 @@ function emptyMembership(): StudentMembership {
     year: null,
     campusSlug: null,
     cohort: null,
+    classHead: false,
   };
 }
 
@@ -59,10 +61,16 @@ export async function getStudentMembership(userId: string): Promise<StudentMembe
       year: String(rec?.year || '') || null,
       campusSlug: String(rec?.campusSlug || '') || null,
       cohort: String(rec?.cohort || learner?.preferences?.academicCohort || '') || null,
+      classHead: Boolean(rec?.classHead) && isStudent,
     };
   } catch {
     return emptyMembership();
   }
+}
+
+export async function isClassHead(userId: string): Promise<boolean> {
+  const m = await getStudentMembership(userId);
+  return m.classHead;
 }
 
 export async function isOfficialStudent(userId: string): Promise<boolean> {

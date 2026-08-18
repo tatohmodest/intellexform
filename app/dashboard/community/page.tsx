@@ -42,7 +42,7 @@ export default async function CommunityPage({
         <h1 className="font-display text-[32px] leading-tight">{org.name} community</h1>
         <p className="mt-2 text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
           {isStudent
-            ? 'Public conversation plus official campus, department, and class announcements.'
+            ? 'Public conversation plus official campus, department, and class rooms.'
             : `Public articles, discussions, and news. Official ${org.name} channels unlock when you become a student.`}
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
@@ -62,6 +62,22 @@ export default async function CommunityPage({
           ))}
         </div>
       </header>
+
+      {isStudent && tab === 'class' ? (
+        <section className="mb-8 border p-5" style={{ borderColor: 'var(--line)' }}>
+          <h2 className="font-display text-[22px]">Class rooms</h2>
+          <p className="mt-1 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
+            Channels for chat, notes, and ideas. Class heads create the room and add course mates.
+          </p>
+          <Link
+            href="/dashboard/study-groups"
+            className="mt-3 inline-block px-4 py-2 text-[13px] font-semibold text-white"
+            style={{ background: '#00B369' }}
+          >
+            Open groups
+          </Link>
+        </section>
+      ) : null}
 
       {showOfficial ? (
         <section className="mb-10">
@@ -93,7 +109,7 @@ export default async function CommunityPage({
       {showPublic ? (
         <section className="grid gap-3 sm:grid-cols-2">
           {[
-            ['Study groups', '/dashboard/study-groups', 'Public discussions and cohorts'],
+            ['Groups', '/dashboard/study-groups', 'Class rooms — chat, notes, ideas'],
             ['Opportunities', '/dashboard/opportunities', 'Jobs, internships, and calls'],
             ['Messages', '/dashboard/messages', 'Direct conversations'],
             ['Notes', '/dashboard/notes', 'Educational resources'],

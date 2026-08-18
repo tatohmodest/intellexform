@@ -38,6 +38,7 @@ export async function PATCH(
       phone: typeof body.phone === 'string' ? body.phone : undefined,
       notes: typeof body.notes === 'string' ? body.notes : undefined,
       campusSlug: typeof body.campusSlug === 'string' ? body.campusSlug : undefined,
+      classHead: typeof body.classHead === 'boolean' ? body.classHead : undefined,
     });
     return NextResponse.json({ student });
   } catch (err) {

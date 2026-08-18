@@ -99,7 +99,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/dashboard/messages', label: 'Messages', icon: MessageSquare },
       { href: '/dashboard/community', label: 'Community', icon: Users },
-      { href: '/dashboard/study-groups', label: 'Study groups', icon: Users },
+      { href: '/dashboard/study-groups', label: 'Groups', icon: Users },
       { href: '/dashboard/mentorship', label: 'Mentorship', icon: Users },
       { href: '/dashboard/notes', label: 'Notes', icon: FileText },
     ],
