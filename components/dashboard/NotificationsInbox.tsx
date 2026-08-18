@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Bell, Loader2 } from 'lucide-react';
 import type { NotificationCategory, NotificationView } from '@/lib/learn/notificationTypes';
 import { CATEGORY_LABELS } from '@/lib/learn/notificationTypes';
+import { subscribeToPush } from '@/lib/push/browser';
 
 const FILTERS: Array<NotificationCategory | 'all'> = [
   'all',
@@ -20,6 +21,8 @@ export default function NotificationsInbox() {
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
   const [category, setCategory] = useState<NotificationCategory | 'all'>('all');
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushLabel, setPushLabel] = useState('Enable push alerts');
 
   const pageSize = 15;
 
@@ -67,8 +70,15 @@ export default function NotificationsInbox() {
   }
 
   async function enablePush() {
-    if (typeof window === 'undefined' || !('Notification' in window)) return;
-    await Notification.requestPermission();
+    setPushBusy(true);
+    const result = await subscribeToPush();
+    if (result.ok) {
+      setPushLabel('Alerts are on');
+      await fetch('/api/push/test', { method: 'POST' }).catch(() => undefined);
+    } else {
+      setPushLabel(result.error || 'Enable push alerts');
+    }
+    setPushBusy(false);
   }
 
   return (
@@ -92,14 +102,17 @@ export default function NotificationsInbox() {
         >
           Mark all read
         </button>
-        {typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted' ? (
+        {typeof window !== 'undefined' &&
+        'Notification' in window &&
+        Notification.permission !== 'granted' ? (
           <button
             type="button"
             onClick={enablePush}
-            className="border px-3 py-2 text-[13px] font-semibold"
+            disabled={pushBusy}
+            className="border px-3 py-2 text-[13px] font-semibold disabled:opacity-60"
             style={{ borderColor: 'var(--line)' }}
           >
-            Enable push alerts
+            {pushBusy ? 'Turning on…' : pushLabel}
           </button>
         ) : null}
       </div>

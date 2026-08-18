@@ -1,18 +1,33 @@
 'use client';
 
 import { useEffect } from 'react';
+import { ensureServiceWorker } from '@/lib/push/browser';
 
-/** Registers the service worker so Chrome/Android can offer Install. */
+/** Registers the PWA service worker (needed for install + Web Push). */
 export default function PwaRegister() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!('serviceWorker' in navigator)) return;
-    if (process.env.NODE_ENV === 'development') return;
 
     const register = () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {
-        /* ignore registration failures */
-      });
+      ensureServiceWorker()
+        .then((reg) => {
+          if (!reg) return;
+          if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+          reg.addEventListener('updatefound', () => {
+            const installing = reg.installing;
+            installing?.addEventListener('statechange', () => {
+              if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+                installing.postMessage({ type: 'SKIP_WAITING' });
+              }
+            });
+          });
+        })
+        .catch(() => {
+          /* ignore registration failures */
+        });
     };
 
     if (document.readyState === 'complete') {

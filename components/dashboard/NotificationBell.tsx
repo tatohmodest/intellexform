@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Bell } from 'lucide-react';
 import type { NotificationView } from '@/lib/learn/notificationTypes';
+import { showDeviceNotification } from '@/lib/push/browser';
 
 export default function NotificationBell({ accent = '#00b369' }: { accent?: string }) {
   const [open, setOpen] = useState(false);
@@ -27,21 +28,17 @@ export default function NotificationBell({ accent = '#00b369' }: { accent?: stri
         latestSeenRef.current = next[0].createdAt;
       }
 
-      if (
-        typeof window !== 'undefined' &&
-        'Notification' in window &&
-        Notification.permission === 'granted'
-      ) {
+      if (latestSeenRef.current) {
         const newUnread = next
           .filter((n) => !n.readAt)
-          .filter((n) => !latestSeenRef.current || n.createdAt > latestSeenRef.current)
-          .slice(0, 3);
+          .filter((n) => n.createdAt > latestSeenRef.current)
+          .slice(0, 5);
         for (const n of newUnread) {
-          new Notification(n.title, {
+          void showDeviceNotification({
+            title: n.title,
             body: n.body,
             tag: `intellex-${n.id}`,
-            data: { url: n.href || '/dashboard/notifications' },
-            icon: '/pwa/icon-192.png',
+            url: n.href || '/dashboard/notifications',
           });
         }
       }
@@ -56,8 +53,17 @@ export default function NotificationBell({ accent = '#00b369' }: { accent?: stri
 
   useEffect(() => {
     load();
-    const id = setInterval(load, 60_000);
-    return () => clearInterval(id);
+    const id = setInterval(load, 15_000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void load();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
   }, [load]);
 
   useEffect(() => {

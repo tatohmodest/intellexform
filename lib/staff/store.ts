@@ -7,7 +7,7 @@ import { ObjectId } from 'mongodb';
 import { getDb } from '@/lib/repo';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getLearner } from '@/lib/learn/repo';
-import { createNotificationsForUsers } from '@/lib/learn/notifications';
+import { createNotification, createNotificationsForUsers } from '@/lib/learn/notifications';
 import {
   HOME_ORGANIZATION,
   STUDENT_STATUSES,
@@ -884,7 +884,6 @@ export async function recordFeePayment(
     createdAt: new Date(),
   };
   const res = await pay.insertOne(doc);
-  const { createNotification } = await import('@/lib/learn/notifications');
   await createNotification({
     userId: opts.studentUserId,
     title: 'Payment recorded',
@@ -1043,7 +1042,6 @@ export async function decideAdmission(
   );
   const { syncApplicationDecision } = await import('@/lib/learn/applications');
   const { activateStudentMembership } = await import('@/lib/learn/studentAccess');
-  const { createNotification } = await import('@/lib/learn/notifications');
   await syncApplicationDecision({
     sourceId: String(row.sourceId || ''),
     email: String(row.email || ''),
