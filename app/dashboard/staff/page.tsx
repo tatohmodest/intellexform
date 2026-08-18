@@ -47,8 +47,8 @@ export default async function StaffHomePage() {
           What needs handling today, {name}?
         </h1>
         <p className="mt-2 max-w-[640px] text-[15px]" style={{ color: 'var(--ink-soft)' }}>
-          This is the InTelleX staff workspace. Desks are granted by platform administrators.
-          You only see what your post allows.
+          This is your institutional workspace. Navigation is built from the permissions your
+          Director assigned — not from a fixed list of school jobs.
         </p>
       </header>
 

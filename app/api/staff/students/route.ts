@@ -6,12 +6,13 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
-    await requireStaff('students.read');
+    const actor = await requireStaff('students.read');
     const url = new URL(req.url);
     const data = await listStudents({
       q: url.searchParams.get('q') || undefined,
       status: url.searchParams.get('status') || undefined,
       page: Number(url.searchParams.get('page') || '1'),
+      campusSlugs: actor.post.campusSlugs.length ? actor.post.campusSlugs : undefined,
     });
     return NextResponse.json(data);
   } catch (err) {

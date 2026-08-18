@@ -28,7 +28,7 @@ const NAV = [
   { href: '/admin/institutions', label: 'Organizations', icon: Building2 },
   { href: '/admin/intellex-institution', label: 'Intellex Institution', icon: GraduationCap },
   { href: '/admin/personnel', label: 'Personnel', icon: Users },
-  { href: '/admin/staff', label: 'Staff posts', icon: Users },
+  { href: '/admin/staff', label: 'Directors', icon: Users },
   { href: '/admin/finance', label: 'Finance', icon: Wallet },
   { href: '/admin/applications', label: 'Applications', icon: ClipboardCheck },
   { href: '/admin/onboarding', label: 'Onboarding', icon: ClipboardCheck },

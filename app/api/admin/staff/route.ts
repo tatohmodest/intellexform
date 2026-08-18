@@ -35,10 +35,12 @@ export async function POST(req: NextRequest) {
   ) as StaffPermission[];
   const result = await upsertStaffPost({
     email: String(body.email || ''),
-    desks,
+    desks: desks.length ? desks : ['director'],
     extraPermissions,
+    campusSlugs: Array.isArray(body.campusSlugs) ? body.campusSlugs.map(String) : [],
     active: body.active !== false,
     grantedBy: access.email,
+    grantedByKind: 'platform',
   });
   if ('error' in result) {
     return NextResponse.json({ error: result.error }, { status: result.status });

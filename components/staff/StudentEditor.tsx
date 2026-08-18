@@ -9,6 +9,7 @@ export default function StudentEditor({
   canWrite,
   canStatus,
   record,
+  campuses,
 }: {
   userId: string;
   canWrite: boolean;
@@ -21,7 +22,9 @@ export default function StudentEditor({
     year: string;
     phone: string;
     notes: string;
+    campusSlug: string;
   };
+  campuses: { slug: string; name: string }[];
 }) {
   const router = useRouter();
   const [form, setForm] = useState(record);
@@ -73,6 +76,24 @@ export default function StudentEditor({
             </select>
           </label>
         ) : null}
+        <label className="text-[13px]">
+          <span className="mb-1 block" style={{ color: 'var(--ink-soft)' }}>
+            Campus
+          </span>
+          <select
+            value={form.campusSlug || ''}
+            onChange={(e) => setForm((f) => ({ ...f, campusSlug: e.target.value }))}
+            className="w-full border px-3 py-2"
+            style={{ borderColor: 'var(--line)', background: 'transparent' }}
+          >
+            <option value="">Unassigned</option>
+            {campuses.map((c) => (
+              <option key={c.slug} value={c.slug}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
         {[
           ['program', 'Program'],
           ['department', 'Department'],

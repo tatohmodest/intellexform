@@ -25,7 +25,7 @@ type Post = {
 export default function AdminStaffDesk() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [email, setEmail] = useState('');
-  const [desks, setDesks] = useState<StaffDesk[]>(['secretary']);
+  const [desks, setDesks] = useState<StaffDesk[]>(['director']);
   const [extra, setExtra] = useState<StaffPermission[]>([]);
   const [showExtra, setShowExtra] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -102,11 +102,11 @@ export default function AdminStaffDesk() {
         <p className="font-mono text-[11px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
           Platform admin
         </p>
-        <h1 className="mt-1 font-display text-[32px] leading-tight">Staff posts</h1>
+        <h1 className="mt-1 font-display text-[32px] leading-tight">Institution directors</h1>
         <p className="mt-2 max-w-[640px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Only platform administrators can designate staff. People cannot assign themselves a desk.
-          The person must already have an InTelleX account. After you grant a post, they see Staff on
-          the normal dashboard — not in /admin.
+          Platform administration appoints the institution Director. The Director then appoints staff,
+          campuses, and permissions from the staff workspace — not from this console. Emergency
+          bootstrap of other desks is still possible below.
         </p>
       </header>
 
@@ -118,7 +118,10 @@ export default function AdminStaffDesk() {
           grant();
         }}
       >
-        <h2 className="mb-3 font-display text-[20px]">Grant staff access</h2>
+        <h2 className="mb-3 font-display text-[20px]">Appoint a Director</h2>
+        <p className="mb-3 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+          Default is Director (institution-wide). They must already have an InTelleX account.
+        </p>
         <input
           type="email"
           required
@@ -166,7 +169,7 @@ export default function AdminStaffDesk() {
             className="px-4 py-2 text-[13px] font-semibold text-white"
             style={{ background: '#00B369' }}
           >
-            {busy ? 'Saving…' : 'Grant staff post'}
+            {busy ? 'Saving…' : 'Appoint'}
           </button>
           {msg ? (
             <span className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
@@ -182,9 +185,9 @@ export default function AdminStaffDesk() {
           <p style={{ color: 'var(--ink-soft)' }}>Loading…</p>
         ) : posts.length === 0 ? (
           <div className="rounded-2xl border border-dashed px-4 py-8 text-center" style={{ borderColor: 'var(--line)' }}>
-            <p className="font-display text-[18px]">No staff designated yet</p>
+            <p className="font-display text-[18px]">No director appointed yet</p>
             <p className="mt-1 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-              Grant a secretary, finance, or director desk to someone who already has an account.
+              Appoint a Director. They will manage staff, campuses, and school operations from /dashboard/staff.
             </p>
           </div>
         ) : (

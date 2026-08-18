@@ -16,7 +16,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
 
   return (
     <div className="mx-auto w-full max-w-[1080px]">
-      <StaffSubnav desks={post.desks} permissions={permissionsOf(post)} />
+      <StaffSubnav desks={post.desks} permissions={permissionsOf(post)} campusSlugs={post.campusSlugs} />
       {children}
     </div>
   );

@@ -9,24 +9,29 @@ import { getSessionUser } from '@/lib/auth/getUser';
 import { getLearner } from '@/lib/learn/repo';
 import { createNotificationsForUsers } from '@/lib/learn/notifications';
 import {
-  DESK_PERMISSIONS,
+  HOME_ORGANIZATION,
   STUDENT_STATUSES,
   isStaffDesk,
   isStaffPermission,
   permissionsForDesks,
+  slugifyCampus,
   type StaffDesk,
   type StaffPermission,
   type StudentStatus,
 } from '@/lib/staff/permissions';
+import { listCampuses, saveCampus } from '@/lib/staff/org';
 
 export type StaffPost = {
   userId: string;
   email: string;
   name: string;
+  organizationSlug: string;
+  campusSlugs: string[];
   desks: StaffDesk[];
   extraPermissions: StaffPermission[];
   active: boolean;
   grantedBy: string;
+  grantedByKind: 'director' | 'platform';
   grantedAt: Date;
   updatedAt: Date;
 };
@@ -59,6 +64,7 @@ async function recordsCol() {
   await db.collection('student_records').createIndex({ userId: 1 }, { unique: true }).catch(() => {});
   await db.collection('student_records').createIndex({ studentCode: 1 }, { unique: true }).catch(() => {});
   await db.collection('student_records').createIndex({ status: 1 }).catch(() => {});
+  await db.collection('student_records').createIndex({ campusSlug: 1 }).catch(() => {});
   return db.collection('student_records');
 }
 
@@ -96,6 +102,37 @@ async function admissionsCol() {
   return db.collection('staff_admissions');
 }
 
+export function mapStaffPost(doc: Record<string, unknown>): StaffPost {
+  return {
+    userId: String(doc.userId),
+    email: String(doc.email || ''),
+    name: String(doc.name || ''),
+    organizationSlug: String(doc.organizationSlug || HOME_ORGANIZATION.slug),
+    campusSlugs: Array.isArray(doc.campusSlugs) ? doc.campusSlugs.map(String) : [],
+    desks: Array.isArray(doc.desks) ? (doc.desks as StaffDesk[]) : [],
+    extraPermissions: Array.isArray(doc.extraPermissions)
+      ? (doc.extraPermissions as StaffPermission[])
+      : [],
+    active: doc.active !== false,
+    grantedBy: String(doc.grantedBy || ''),
+    grantedByKind: doc.grantedByKind === 'director' ? 'director' : 'platform',
+    grantedAt: new Date((doc.grantedAt as Date) || Date.now()),
+    updatedAt: new Date((doc.updatedAt as Date) || Date.now()),
+  };
+}
+
+export function campusInScope(post: StaffPost, campusSlug?: string | null) {
+  const scoped = post.campusSlugs || [];
+  if (!scoped.length) return true;
+  if (!campusSlug) return false;
+  return scoped.includes(campusSlug);
+}
+
+export function scopeLabel(post: StaffPost) {
+  if (!post.campusSlugs?.length) return 'Entire institution';
+  return post.campusSlugs.join(', ');
+}
+
 export function permissionsOf(post: StaffPost): StaffPermission[] {
   const fromDesks = permissionsForDesks(post.desks || []);
   return Array.from(new Set([...fromDesks, ...(post.extraPermissions || [])]));
@@ -128,19 +165,7 @@ export async function getStaffPost(userId: string): Promise<StaffPost | null> {
   const col = await postsCol();
   const doc = await col.findOne({ userId, active: true });
   if (!doc) return null;
-  return {
-    userId: String(doc.userId),
-    email: String(doc.email || ''),
-    name: String(doc.name || ''),
-    desks: Array.isArray(doc.desks) ? (doc.desks as StaffDesk[]) : [],
-    extraPermissions: Array.isArray(doc.extraPermissions)
-      ? (doc.extraPermissions as StaffPermission[])
-      : [],
-    active: doc.active !== false,
-    grantedBy: String(doc.grantedBy || ''),
-    grantedAt: new Date(doc.grantedAt || Date.now()),
-    updatedAt: new Date(doc.updatedAt || Date.now()),
-  };
+  return mapStaffPost(doc as Record<string, unknown>);
 }
 
 export async function requireStaff(permission: StaffPermission): Promise<StaffActor> {
@@ -162,33 +187,54 @@ export async function requireStaff(permission: StaffPermission): Promise<StaffAc
 export async function listStaffPosts(): Promise<StaffPost[]> {
   const col = await postsCol();
   const rows = await col.find({}).sort({ updatedAt: -1 }).limit(200).toArray();
-  return rows.map((doc) => ({
-    userId: String(doc.userId),
-    email: String(doc.email || ''),
-    name: String(doc.name || ''),
-    desks: Array.isArray(doc.desks) ? (doc.desks as StaffDesk[]) : [],
-    extraPermissions: Array.isArray(doc.extraPermissions)
-      ? (doc.extraPermissions as StaffPermission[])
-      : [],
-    active: doc.active !== false,
-    grantedBy: String(doc.grantedBy || ''),
-    grantedAt: new Date(doc.grantedAt || Date.now()),
-    updatedAt: new Date(doc.updatedAt || Date.now()),
-  }));
+  return rows.map((doc) => mapStaffPost(doc as Record<string, unknown>));
 }
 
 export async function upsertStaffPost(opts: {
   email: string;
-  desks: StaffDesk[];
+  desks?: StaffDesk[];
   extraPermissions?: StaffPermission[];
+  campusSlugs?: string[];
   active?: boolean;
   grantedBy: string;
+  grantedByUserId?: string;
+  grantedByKind?: 'director' | 'platform';
+  actorPermissions?: StaffPermission[];
+  actorCampusSlugs?: string[];
 }): Promise<StaffPost | { error: string; status: number }> {
   const email = opts.email.trim().toLowerCase();
   if (!email.includes('@')) return { error: 'Enter a valid email.', status: 400 };
-  const desks = opts.desks.filter(isStaffDesk);
-  if (!desks.length) return { error: 'Choose at least one desk.', status: 400 };
+  const desks = (opts.desks || []).filter(isStaffDesk);
   const extraPermissions = (opts.extraPermissions || []).filter(isStaffPermission);
+  const resulting = Array.from(new Set([...permissionsForDesks(desks), ...extraPermissions]));
+  if (!resulting.includes('staff.access')) {
+    return { error: 'Staff access must be included. Pick a preset or permissions.', status: 400 };
+  }
+
+  const kind = opts.grantedByKind || 'platform';
+  if (kind === 'director') {
+    const actorPerms = opts.actorPermissions || [];
+    const isDirector = actorPerms.includes('director.view');
+    if (!isDirector) {
+      const allowed = new Set(actorPerms);
+      for (const p of resulting) {
+        if (!allowed.has(p)) {
+          return { error: `You cannot grant ${p} because you do not have it.`, status: 403 };
+        }
+      }
+    }
+  }
+
+  let campusSlugs = (opts.campusSlugs || []).map(String).filter(Boolean);
+  const actorScope = opts.actorCampusSlugs || [];
+  if (kind === 'director' && actorScope.length) {
+    if (!campusSlugs.length) {
+      return { error: 'Your post is campus-scoped. Assign this person to your campus.', status: 403 };
+    }
+    if (campusSlugs.some((c) => !actorScope.includes(c))) {
+      return { error: 'You can only assign campuses you manage.', status: 403 };
+    }
+  }
 
   const db = await getDb();
   const learner = await db.collection('learners').findOne({
@@ -211,10 +257,14 @@ export async function upsertStaffPost(opts: {
         userId: String(learner.lbId),
         email: String(learner.email || email),
         name: String(learner.name || email.split('@')[0]),
+        organizationSlug: HOME_ORGANIZATION.slug,
+        campusSlugs,
         desks,
         extraPermissions,
         active: opts.active !== false,
         grantedBy: opts.grantedBy,
+        grantedByUserId: opts.grantedByUserId || '',
+        grantedByKind: kind,
         updatedAt: now,
       },
       $setOnInsert: { grantedAt: now },
@@ -223,46 +273,43 @@ export async function upsertStaffPost(opts: {
   );
 
   await writeStaffAudit({
-    actorId: 'platform-admin',
+    actorId: opts.grantedByUserId || kind,
     actorName: opts.grantedBy,
     actorEmail: opts.grantedBy,
     action: existing ? 'staff.post.update' : 'staff.post.grant',
     entityType: 'staff_post',
     entityId: String(learner.lbId),
-    summary: `${opts.grantedBy} ${existing ? 'updated' : 'granted'} staff desks (${desks.join(', ')}) for ${email}`,
-    before: existing
-      ? { desks: existing.desks, active: existing.active }
-      : null,
-    after: { desks, extraPermissions, active: opts.active !== false },
+    summary: `${opts.grantedBy} ${existing ? 'updated' : 'appointed'} ${email} (${resulting.join(', ')})`,
+    before: existing ? { desks: existing.desks, campusSlugs: existing.campusSlugs, active: existing.active } : null,
+    after: { desks, extraPermissions, campusSlugs, active: opts.active !== false },
   });
 
   const post = await getStaffPost(String(learner.lbId));
   if (!post) {
     const all = await col.findOne({ userId: learner.lbId });
-    return {
-      userId: String(learner.lbId),
-      email: String(learner.email || email),
-      name: String(learner.name || ''),
-      desks,
-      extraPermissions,
-      active: opts.active !== false,
-      grantedBy: opts.grantedBy,
-      grantedAt: new Date(all?.grantedAt || now),
-      updatedAt: now,
-    };
+    return mapStaffPost((all || {}) as Record<string, unknown>);
   }
   return post;
 }
 
-export async function revokeStaffPost(userId: string, grantedBy: string) {
+export async function revokeStaffPost(
+  userId: string,
+  grantedBy: string,
+  opts?: { actorId?: string; actorCampusSlugs?: string[] },
+) {
   const col = await postsCol();
   const existing = await col.findOne({ userId });
-  await col.updateOne(
-    { userId },
-    { $set: { active: false, updatedAt: new Date() } },
-  );
+  if (!existing) return;
+  const existingSlugs: string[] = Array.isArray(existing.campusSlugs) ? existing.campusSlugs.map(String) : [];
+  const actorScope = opts?.actorCampusSlugs || [];
+  if (actorScope.length) {
+    if (!existingSlugs.length || existingSlugs.some((c) => !actorScope.includes(c))) {
+      throw new StaffAuthError('You can only revoke staff within your campus.', 403);
+    }
+  }
+  await col.updateOne({ userId }, { $set: { active: false, updatedAt: new Date() } });
   await writeStaffAudit({
-    actorId: 'platform-admin',
+    actorId: opts?.actorId || 'platform-admin',
     actorName: grantedBy,
     actorEmail: grantedBy,
     action: 'staff.post.revoke',
@@ -273,6 +320,38 @@ export async function revokeStaffPost(userId: string, grantedBy: string) {
     after: { active: false },
   });
 }
+
+export async function createOrUpdateCampus(
+  actor: StaffActor,
+  opts: { name: string; city?: string; address?: string; color?: string; slug?: string },
+) {
+  const name = opts.name.trim().slice(0, 80);
+  if (name.length < 2) throw new StaffAuthError('Enter a campus name.', 400);
+  const slug = (opts.slug || slugifyCampus(name)).slice(0, 48);
+  const { campus, created } = await saveCampus({
+    organizationSlug: HOME_ORGANIZATION.slug,
+    slug,
+    name,
+    city: String(opts.city || '').slice(0, 80),
+    address: String(opts.address || '').slice(0, 160),
+    color: String(opts.color || '#00B369').slice(0, 16),
+    active: true,
+    actorId: actor.userId,
+  });
+  await writeStaffAudit({
+    actorId: actor.userId,
+    actorName: actor.name,
+    actorEmail: actor.email,
+    action: created ? 'campus.create' : 'campus.update',
+    entityType: 'org_campus',
+    entityId: slug,
+    summary: `${actor.name} ${created ? 'created' : 'updated'} campus ${name}`,
+    after: campus,
+  });
+  return campus;
+}
+
+export { listCampuses };
 
 function newStudentCode() {
   const year = new Date().getFullYear();
@@ -301,6 +380,7 @@ async function ensureStudentRecord(userId: string, fallback?: { name?: string; e
     year: '',
     phone: '',
     notes: '',
+    campusSlug: '',
     name: learner?.name || fallback?.name || '',
     email: learner?.email || fallback?.email || '',
     createdAt: now,
@@ -314,12 +394,21 @@ export async function listStudents(opts: {
   q?: string;
   status?: string;
   page?: number;
+  campusSlugs?: string[];
 }) {
   const db = await getDb();
   const page = Math.max(1, opts.page || 1);
   const pageSize = 40;
   const query: Record<string, unknown> = {};
   const recCol = await recordsCol();
+  if (opts.campusSlugs?.length) {
+    const scoped = await recCol
+      .find({ campusSlug: { $in: opts.campusSlugs } })
+      .project({ userId: 1 })
+      .toArray();
+    const scopedIds = scoped.map((r) => String(r.userId));
+    query.lbId = { $in: scopedIds.length ? scopedIds : ['__none__'] };
+  }
   if (opts.q?.trim()) {
     const q = opts.q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const recHits = await recCol
@@ -389,6 +478,7 @@ export async function listStudents(opts: {
       program: String(rec.program || ''),
       department: String(rec.department || ''),
       year: String(rec.year || ''),
+      campusSlug: String(rec.campusSlug || ''),
       lastLoginAt: l.lastLoginAt || null,
       outstandingXAF: Math.max(0, Number(bal?.charged || 0) - Number(bal?.paid || 0)),
     });
@@ -397,10 +487,13 @@ export async function listStudents(opts: {
   return { students: rows, total, page, pageSize };
 }
 
-export async function getStudentDetail(userId: string) {
+export async function getStudentDetail(userId: string, actor?: StaffActor) {
   const learner = await getLearner(userId);
   if (!learner) return null;
   const rec = await ensureStudentRecord(userId, { name: learner.name, email: learner.email });
+  if (actor && !campusInScope(actor.post, String(rec.campusSlug || '') || null)) {
+    throw new StaffAuthError('This student is outside your campus.', 403);
+  }
   const db = await getDb();
   const enrollments = await db
     .collection('course_enrollments')
@@ -441,6 +534,7 @@ export async function getStudentDetail(userId: string) {
       year: String(rec.year || ''),
       phone: String(rec.phone || ''),
       notes: String(rec.notes || ''),
+      campusSlug: String(rec.campusSlug || ''),
     },
     courses: [
       ...enrollments.map((e) => ({
@@ -486,6 +580,7 @@ export async function updateStudentRecord(
     year: string;
     phone: string;
     notes: string;
+    campusSlug: string;
   }>,
 ) {
   if (patch.status && !STUDENT_STATUSES.includes(patch.status)) {
@@ -495,6 +590,12 @@ export async function updateStudentRecord(
     throw new StaffAuthError('You cannot change student status.', 403);
   }
   const rec = await ensureStudentRecord(userId);
+  if (!campusInScope(actor.post, String(rec.campusSlug || '') || null)) {
+    throw new StaffAuthError('This student is outside your campus.', 403);
+  }
+  if (patch.campusSlug && actor.post.campusSlugs.length && !actor.post.campusSlugs.includes(patch.campusSlug)) {
+    throw new StaffAuthError('You cannot move this student to a campus you do not manage.', 403);
+  }
   const col = await recordsCol();
   const next = {
     ...(patch.program !== undefined ? { program: String(patch.program).slice(0, 120) } : {}),
@@ -503,6 +604,7 @@ export async function updateStudentRecord(
     ...(patch.year !== undefined ? { year: String(patch.year).slice(0, 40) } : {}),
     ...(patch.phone !== undefined ? { phone: String(patch.phone).slice(0, 40) } : {}),
     ...(patch.notes !== undefined ? { notes: String(patch.notes).slice(0, 2000) } : {}),
+    ...(patch.campusSlug !== undefined ? { campusSlug: String(patch.campusSlug).slice(0, 48) } : {}),
     ...(patch.status ? { status: patch.status } : {}),
     updatedAt: new Date(),
   };
@@ -524,7 +626,7 @@ export async function updateStudentRecord(
     },
     after: next,
   });
-  return getStudentDetail(userId);
+  return getStudentDetail(userId, actor);
 }
 
 export async function listFeeStructures() {
@@ -590,20 +692,15 @@ export async function chargeFee(
   const targets: string[] = [];
   if (opts.allActive) {
     const db = await getDb();
-    const learners = await db
-      .collection('learners')
-      .find({})
-      .project({ lbId: 1, name: 1, email: 1 })
-      .limit(500)
-      .toArray();
-    for (const l of learners) {
-      const id = String(l.lbId);
-      await ensureStudentRecord(id, { name: String(l.name || ''), email: String(l.email || '') });
-      const rec = await (await recordsCol()).findOne({ userId: id });
-      if (!rec || rec.status === 'active' || rec.status === 'admitted') targets.push(id);
-    }
+    const recQuery: Record<string, unknown> = { status: { $in: ['active', 'admitted'] } };
+    if (actor.post.campusSlugs.length) recQuery.campusSlug = { $in: actor.post.campusSlugs };
+    const recs = await (await recordsCol()).find(recQuery).project({ userId: 1 }).limit(500).toArray();
+    targets.push(...recs.map((r) => String(r.userId)));
   } else if (opts.studentUserId) {
-    await ensureStudentRecord(opts.studentUserId);
+    const rec = await ensureStudentRecord(opts.studentUserId);
+    if (!campusInScope(actor.post, String(rec.campusSlug || '') || null)) {
+      throw new StaffAuthError('This student is outside your campus.', 403);
+    }
     targets.push(opts.studentUserId);
   }
   if (!targets.length) throw new StaffAuthError('Choose a student or charge all active students.', 400);
@@ -833,22 +930,36 @@ export async function decideAdmission(
 
 export async function publishAnnouncement(
   actor: StaffActor,
-  opts: { title: string; body: string; audience: 'everyone' | 'students' | 'staff' },
+  opts: { title: string; body: string; audience: 'everyone' | 'students' | 'staff'; campusSlug?: string },
 ) {
   const title = opts.title.trim().slice(0, 160);
   const body = opts.body.trim().slice(0, 4000);
   if (!title || !body) throw new StaffAuthError('Title and body are required.', 400);
+  let campusSlug = String(opts.campusSlug || '');
+  if (actor.post.campusSlugs.length) {
+    if (campusSlug && !actor.post.campusSlugs.includes(campusSlug)) {
+      throw new StaffAuthError('You can only announce to your campus.', 403);
+    }
+    if (!campusSlug) campusSlug = actor.post.campusSlugs[0];
+  }
   const db = await getDb();
   await db.collection('staff_announcements').insertOne({
     title,
     body,
     audience: opts.audience,
+    campusSlug,
     authorId: actor.userId,
     authorName: actor.name,
     createdAt: new Date(),
   });
   if (opts.audience !== 'staff') {
-    const ids = (await db.collection('learners').distinct('lbId')).map(String).slice(0, 400);
+    let ids: string[] = [];
+    if (campusSlug) {
+      const recs = await (await recordsCol()).find({ campusSlug }).project({ userId: 1 }).limit(400).toArray();
+      ids = recs.map((r) => String(r.userId));
+    } else {
+      ids = (await db.collection('learners').distinct('lbId')).map(String).slice(0, 400);
+    }
     await createNotificationsForUsers(ids, {
       title,
       body,
@@ -863,7 +974,7 @@ export async function publishAnnouncement(
     action: 'announcement.publish',
     entityType: 'staff_announcement',
     summary: `${actor.name} published “${title}”`,
-    after: { title, audience: opts.audience },
+    after: { title, audience: opts.audience, campusSlug },
   });
   return { ok: true };
 }
@@ -881,6 +992,7 @@ export async function listAnnouncements() {
     title: String(r.title),
     body: String(r.body),
     audience: String(r.audience || 'everyone'),
+    campusSlug: String(r.campusSlug || ''),
     authorName: String(r.authorName || ''),
     createdAt: r.createdAt,
   }));
@@ -942,12 +1054,24 @@ export async function directorSnapshot() {
       { $group: { _id: null, xaf: { $sum: '$amountXAF' } } },
     ])
     .toArray();
+  const campuses = await listCampuses();
+  const recCol = await recordsCol();
+  const campusRows = [];
+  for (const c of campuses) {
+    const n = await recCol.countDocuments({ campusSlug: c.slug });
+    campusRows.push({ slug: c.slug, name: c.name, students: n, city: c.city, color: c.color });
+  }
+  const unassigned = await recCol.countDocuments({
+    $or: [{ campusSlug: '' }, { campusSlug: { $exists: false } }],
+  });
   return {
     ...home,
     newLearners7d: newLearners,
     mentors,
     collected7dXAF: Number(paidWeek[0]?.xaf || 0),
-    desks: Object.keys(DESK_PERMISSIONS),
+    campuses: campusRows,
+    unassignedStudents: unassigned,
+    organization: HOME_ORGANIZATION,
   };
 }
 
@@ -1026,7 +1150,15 @@ export function answerDirectorQuestion(
     return `Approved instructors/mentors: ${snap.mentors}. Staff posts currently active: ${snap.staffCount}.`;
   }
   if (q.includes('staff')) {
-    return `Active staff posts: ${snap.staffCount}. Only platform administrators can grant or revoke staff desks.`;
+    return `Active staff posts: ${snap.staffCount}. The Director appoints staff and assigns permissions. Platform administrators only appoint Directors.`;
+  }
+  if (q.includes('campus') || q.includes('buea') || q.includes('douala') || q.includes('branch')) {
+    const lines = (snap.campuses || [])
+      .map((c) => `${c.name}: ${c.students} students`)
+      .join('; ');
+    return lines
+      ? `Campus enrollment — ${lines}. Unassigned students: ${snap.unassignedStudents}.`
+      : `No campuses yet. Create campuses in the Director workspace, then assign students.`;
   }
   if (q.includes('new') || q.includes('this week') || q.includes('trend') || q.includes('enroll')) {
     return `Enrollment: ${snap.students} learners in InTelleX. ${snap.newLearners7d} joined in the last 7 days. Active student records: ${active}.`;
@@ -1047,5 +1179,3 @@ export function answerDirectorQuestion(
 
   return `InTelleX currently has ${snap.students} learners, ${snap.pendingAdmissions} pending applications, ${snap.staffCount} staff, and ${xaf(snap.outstandingXAF)} in outstanding fees. Ask about students, fees, admissions, or this week’s activity.`;
 }
-
-export { DESK_PERMISSIONS };

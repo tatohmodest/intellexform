@@ -1,7 +1,14 @@
 /**
- * InTelleX staff desks and permissions.
- * Posts are granted only by platform administrators. Users cannot self-assign.
+ * Institutional permissions, optional role presets, and scope.
+ *
+ * Desks are presets — not created automatically for every organization.
+ * Access comes from permissions + campus scope. Users cannot self-assign.
  */
+
+export const HOME_ORGANIZATION = {
+  slug: 'intellex',
+  name: 'InTelleX',
+} as const;
 
 export const STAFF_DESKS = [
   'director',
@@ -17,6 +24,8 @@ export type StaffDesk = (typeof STAFF_DESKS)[number];
 
 export const STAFF_PERMISSIONS = [
   'staff.access',
+  'staff.manage',
+  'campuses.manage',
   'students.read',
   'students.write',
   'students.status',
@@ -28,6 +37,7 @@ export const STAFF_PERMISSIONS = [
   'announcements.write',
   'reports.read',
   'director.view',
+  'hr.read',
 ] as const;
 
 export type StaffPermission = (typeof STAFF_PERMISSIONS)[number];
@@ -35,25 +45,27 @@ export type StaffPermission = (typeof STAFF_PERMISSIONS)[number];
 export const DESK_LABELS: Record<StaffDesk, string> = {
   director: 'Director',
   secretary: 'Secretary',
-  finance: 'Finance',
+  finance: 'Finance officer',
   academic: 'Academic',
-  admissions: 'Admissions',
+  admissions: 'Admissions officer',
   student_services: 'Student services',
-  hr: 'Human resources',
+  hr: 'HR officer',
 };
 
 export const DESK_BLURBS: Record<StaffDesk, string> = {
-  director: 'Institution health, enrollment, fees, and alerts.',
+  director: 'Institution health, campuses, and appointing staff.',
   secretary: 'Students, requests, announcements, and daily operations.',
   finance: 'Fee structures, payments, receipts, and outstanding balances.',
   academic: 'Programs, student records, and academic reports.',
   admissions: 'Applications, document checks, and admission decisions.',
   student_services: 'Student support, requests, and campus communication.',
-  hr: 'Staff directory and operational reports.',
+  hr: 'Staff directory. Only appears if the Director assigns it.',
 };
 
 export const PERMISSION_LABELS: Record<StaffPermission, string> = {
   'staff.access': 'Open the staff workspace',
+  'staff.manage': 'Appoint and revoke staff',
+  'campuses.manage': 'Create and edit campuses',
   'students.read': 'View students',
   'students.write': 'Edit student records',
   'students.status': 'Change student status',
@@ -65,17 +77,22 @@ export const PERMISSION_LABELS: Record<StaffPermission, string> = {
   'announcements.write': 'Publish announcements',
   'reports.read': 'View operational reports',
   'director.view': 'View the director dashboard',
+  'hr.read': 'View HR / staff directory',
 };
 
+/** Optional presets. Organizations only get a module when someone is granted it. */
 export const DESK_PERMISSIONS: Record<StaffDesk, StaffPermission[]> = {
   director: [
     'staff.access',
+    'staff.manage',
+    'campuses.manage',
     'students.read',
     'admissions.read',
     'fees.read',
     'reports.read',
     'director.view',
     'announcements.write',
+    'hr.read',
   ],
   secretary: [
     'staff.access',
@@ -114,7 +131,7 @@ export const DESK_PERMISSIONS: Record<StaffDesk, StaffPermission[]> = {
     'announcements.write',
     'reports.read',
   ],
-  hr: ['staff.access', 'students.read', 'reports.read'],
+  hr: ['staff.access', 'students.read', 'hr.read', 'reports.read'],
 };
 
 export function permissionsForDesks(desks: StaffDesk[]): StaffPermission[] {
@@ -150,3 +167,13 @@ export const STUDENT_STATUSES = [
 ] as const;
 
 export type StudentStatus = (typeof STUDENT_STATUSES)[number];
+
+export function slugifyCampus(name: string): string {
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48);
+  return slug || 'campus';
+}

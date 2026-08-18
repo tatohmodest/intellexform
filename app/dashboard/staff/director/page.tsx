@@ -29,7 +29,8 @@ export default async function DirectorPage() {
         </div>
         <h1 className="font-display text-[28px] leading-tight sm:text-[32px]">Institution health</h1>
         <p className="mt-2 max-w-[640px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          A director view of InTelleX — enrollment, fees, admissions, and alerts — not a secretary desk.
+          A Director view of the institution — enrollment, campuses, fees, and alerts. Platform
+          administration is a separate console.
         </p>
       </header>
 
@@ -47,6 +48,47 @@ export default async function DirectorPage() {
       <div className="mb-8">
         <DirectorAsk />
       </div>
+
+      <section className="mb-8">
+        <h2 className="mb-3 font-display text-[20px]">Campuses</h2>
+        {snap.campuses.length === 0 ? (
+          <div className="rounded-2xl border border-dashed px-4 py-8 text-center" style={{ borderColor: 'var(--line)' }}>
+            <p className="font-display text-[18px]">Single-site for now</p>
+            <p className="mt-1 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
+              Add Buea, Douala, or other campuses when the institution grows. {snap.unassignedStudents} student
+              records are not assigned to a campus yet.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto border" style={{ borderColor: 'var(--line)' }}>
+            <table className="w-full text-left text-[14px]">
+              <thead>
+                <tr className="border-b text-[11px] uppercase tracking-wide" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
+                  <th className="px-3 py-2 font-medium">Campus</th>
+                  <th className="px-3 py-2 font-medium">City</th>
+                  <th className="px-3 py-2 font-medium">Students</th>
+                </tr>
+              </thead>
+              <tbody>
+                {snap.campuses.map((c) => (
+                  <tr key={c.slug} className="border-b last:border-0" style={{ borderColor: 'var(--line)' }}>
+                    <td className="px-3 py-2.5 font-semibold">{c.name}</td>
+                    <td className="px-3 py-2.5">{c.city || '—'}</td>
+                    <td className="px-3 py-2.5">{c.students}</td>
+                  </tr>
+                ))}
+                <tr>
+                  <td className="px-3 py-2.5" style={{ color: 'var(--ink-soft)' }}>
+                    Unassigned
+                  </td>
+                  <td className="px-3 py-2.5">—</td>
+                  <td className="px-3 py-2.5">{snap.unassignedStudents}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       <section>
         <h2 className="mb-3 font-display text-[20px]">Alerts</h2>

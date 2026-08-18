@@ -14,6 +14,7 @@ type Row = {
   program: string;
   department: string;
   year: string;
+  campusSlug: string;
   outstandingXAF: number;
 };
 
@@ -107,6 +108,7 @@ export default function StudentDesk() {
                 <th className="px-3 py-2.5 font-medium">Student</th>
                 <th className="px-3 py-2.5 font-medium">ID</th>
                 <th className="px-3 py-2.5 font-medium">Program</th>
+                <th className="px-3 py-2.5 font-medium">Campus</th>
                 <th className="px-3 py-2.5 font-medium">Status</th>
                 <th className="px-3 py-2.5 font-medium">Fees due</th>
               </tr>
@@ -131,6 +133,7 @@ export default function StudentDesk() {
                       </div>
                     ) : null}
                   </td>
+                  <td className="px-3 py-3">{row.campusSlug || '—'}</td>
                   <td className="px-3 py-3 capitalize">{row.status.replace(/_/g, ' ')}</td>
                   <td className="px-3 py-3">{row.outstandingXAF > 0 ? formatXAF(row.outstandingXAF) : '—'}</td>
                 </tr>

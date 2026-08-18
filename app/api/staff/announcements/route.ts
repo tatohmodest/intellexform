@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
       title: String(body.title || ''),
       body: String(body.body || ''),
       audience,
+      campusSlug: typeof body.campusSlug === 'string' ? body.campusSlug : undefined,
     });
     return NextResponse.json(result);
   } catch (err) {

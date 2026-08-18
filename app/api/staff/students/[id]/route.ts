@@ -10,8 +10,8 @@ export async function GET(
   { params }: { params: { id: string } },
 ) {
   try {
-    await requireStaff('students.read');
-    const student = await getStudentDetail(params.id);
+    const actor = await requireStaff('students.read');
+    const student = await getStudentDetail(params.id, actor);
     if (!student) return NextResponse.json({ error: 'Student not found.' }, { status: 404 });
     return NextResponse.json({ student });
   } catch (err) {
@@ -37,6 +37,7 @@ export async function PATCH(
       year: typeof body.year === 'string' ? body.year : undefined,
       phone: typeof body.phone === 'string' ? body.phone : undefined,
       notes: typeof body.notes === 'string' ? body.notes : undefined,
+      campusSlug: typeof body.campusSlug === 'string' ? body.campusSlug : undefined,
     });
     return NextResponse.json({ student });
   } catch (err) {

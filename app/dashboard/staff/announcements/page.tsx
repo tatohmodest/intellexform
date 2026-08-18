@@ -1,13 +1,13 @@
 import { Megaphone } from 'lucide-react';
 import AnnouncementsDesk from '@/components/staff/AnnouncementsDesk';
 import { requireStaffPage } from '@/lib/staff/guard';
-import { listAnnouncements } from '@/lib/staff/store';
+import { listAnnouncements, listCampuses } from '@/lib/staff/store';
 
 export const dynamic = 'force-dynamic';
 
 export default async function StaffAnnouncementsPage() {
   const actor = await requireStaffPage('staff.access');
-  const items = await listAnnouncements();
+  const [items, campuses] = await Promise.all([listAnnouncements(), listCampuses()]);
 
   return (
     <div>
@@ -20,7 +20,11 @@ export default async function StaffAnnouncementsPage() {
           Institutional notices for students and staff. Publishing is limited to authorized desks.
         </p>
       </header>
-      <AnnouncementsDesk items={items} canWrite={actor.permissions.includes('announcements.write')} />
+      <AnnouncementsDesk
+        items={items}
+        canWrite={actor.permissions.includes('announcements.write')}
+        campuses={campuses}
+      />
     </div>
   );
 }

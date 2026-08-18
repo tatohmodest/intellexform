@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { formatXAF } from '@/lib/staff/permissions';
 import { requireStaffPage } from '@/lib/staff/guard';
-import { getStudentDetail, listFeeStructures } from '@/lib/staff/store';
+import { getStudentDetail, listFeeStructures, listCampuses } from '@/lib/staff/store';
 import StudentEditor from '@/components/staff/StudentEditor';
 import ChargeStudent from '@/components/staff/ChargeStudent';
 
@@ -10,14 +10,17 @@ export const dynamic = 'force-dynamic';
 
 export default async function StaffStudentDetailPage({ params }: { params: { id: string } }) {
   const actor = await requireStaffPage('students.read');
-  const student = await getStudentDetail(params.id);
+  const student = await getStudentDetail(params.id, actor);
   if (!student) notFound();
 
   const canWrite = actor.permissions.includes('students.write');
   const canStatus = actor.permissions.includes('students.status');
   const canFees = actor.permissions.includes('fees.read');
   const canCharge = actor.permissions.includes('fees.write');
-  const structures = canCharge ? await listFeeStructures() : [];
+  const [structures, campuses] = await Promise.all([
+    canCharge ? listFeeStructures() : Promise.resolve([] as Awaited<ReturnType<typeof listFeeStructures>>),
+    listCampuses(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -51,6 +54,7 @@ export default async function StaffStudentDetailPage({ params }: { params: { id:
         canWrite={canWrite}
         canStatus={canStatus}
         record={student.record}
+        campuses={campuses}
       />
 
       {canCharge ? <ChargeStudent userId={student.userId} structures={structures} /> : null}

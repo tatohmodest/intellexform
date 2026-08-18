@@ -10,19 +10,23 @@ type Item = {
   audience: string;
   authorName: string;
   createdAt: string | Date;
+  campusSlug?: string;
 };
 
 export default function AnnouncementsDesk({
   items,
   canWrite,
+  campuses,
 }: {
   items: Item[];
   canWrite: boolean;
+  campuses: { slug: string; name: string }[];
 }) {
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [audience, setAudience] = useState('everyone');
+  const [campusSlug, setCampusSlug] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
 
@@ -33,7 +37,7 @@ export default function AnnouncementsDesk({
       const res = await fetch('/api/staff/announcements', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, body, audience }),
+        body: JSON.stringify({ title, body, audience, campusSlug }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Could not publish');
@@ -79,6 +83,21 @@ export default function AnnouncementsDesk({
               <option value="students">Students</option>
               <option value="staff">Staff only</option>
             </select>
+            {campuses.length > 0 ? (
+              <select
+                value={campusSlug}
+                onChange={(e) => setCampusSlug(e.target.value)}
+                className="border px-3 py-2 text-[13px]"
+                style={{ borderColor: 'var(--line)', background: 'transparent' }}
+              >
+                <option value="">Entire institution</option>
+                {campuses.map((c) => (
+                  <option key={c.slug} value={c.slug}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            ) : null}
             <button
               type="button"
               onClick={publish}
@@ -113,7 +132,8 @@ export default function AnnouncementsDesk({
               <p className="font-semibold">{item.title}</p>
               <p className="mt-1 whitespace-pre-wrap text-[14px]">{item.body}</p>
               <p className="mt-2 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-                {item.authorName} · {item.audience} ·{' '}
+                {item.authorName} · {item.audience}
+                {item.campusSlug ? ` · ${item.campusSlug}` : ''} ·{' '}
                 {new Date(item.createdAt).toLocaleString()}
               </p>
             </article>
