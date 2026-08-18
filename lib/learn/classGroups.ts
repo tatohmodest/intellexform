@@ -454,7 +454,7 @@ export async function removeMember(actor: { userId: string }, opts: { groupId: s
   if (target === String(group.ownerId)) throw new ClassGroupError('The class head stays with the group.');
   await db.collection('class_groups').updateOne(
     { _id: group._id },
-    { $pull: { memberIds: target }, $set: { updatedAt: new Date() } },
+    { $pull: { memberIds: target }, $set: { updatedAt: new Date() } } as Record<string, unknown>,
   );
   return { ok: true };
 }

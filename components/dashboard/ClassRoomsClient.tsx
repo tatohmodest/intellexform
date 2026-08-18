@@ -232,7 +232,8 @@ export default function ClassRoomsClient({
     setError('');
     try {
       const uploaded = await uploadMentorAsset('note', file, file.name);
-      const kind = file.type.startsWith('image/') || isImageName(file.name, uploaded.url) ? 'image' : 'file';
+      const kind: Attachment['kind'] =
+        file.type.startsWith('image/') || isImageName(file.name, uploaded.url) ? 'image' : 'file';
       setPendingFiles((f) => [...f, { name: file.name, url: uploaded.url, kind }].slice(0, 4));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not upload file');

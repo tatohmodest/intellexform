@@ -107,7 +107,7 @@ export default function StudentEditor({
               {label}
             </span>
             <input
-              value={(form as Record<string, string>)[key] || ''}
+              value={String((form as Record<string, unknown>)[key] || '')}
               onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
               className="w-full border px-3 py-2"
               style={{ borderColor: 'var(--line)', background: 'transparent' }}

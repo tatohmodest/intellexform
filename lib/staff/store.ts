@@ -381,6 +381,7 @@ async function ensureStudentRecord(userId: string, fallback?: { name?: string; e
     phone: '',
     notes: '',
     campusSlug: '',
+    classHead: false,
     name: learner?.name || fallback?.name || '',
     email: learner?.email || fallback?.email || '',
     createdAt: now,
@@ -493,9 +494,9 @@ export async function listStudents(opts: {
       program: String(rec.program || ''),
       department: String(rec.department || ''),
       year: String(rec.year || ''),
-            campusSlug: String(rec.campusSlug || ''),
-            classHead: Boolean(rec.classHead),
-            lastLoginAt: l.lastLoginAt || null,
+      campusSlug: String(rec.campusSlug || ''),
+      classHead: Boolean((rec as { classHead?: boolean }).classHead),
+      lastLoginAt: l.lastLoginAt || null,
       outstandingXAF: Math.max(0, Number(bal?.charged || 0) - Number(bal?.paid || 0)),
     });
   }
@@ -551,7 +552,7 @@ export async function getStudentDetail(userId: string, actor?: StaffActor) {
       phone: String(rec.phone || ''),
       notes: String(rec.notes || ''),
       campusSlug: String(rec.campusSlug || ''),
-      classHead: Boolean(rec.classHead),
+      classHead: Boolean((rec as { classHead?: boolean }).classHead),
     },
     courses: [
       ...enrollments.map((e) => ({
