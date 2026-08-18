@@ -97,6 +97,9 @@ export default function VideoLibrary({ isAdmin = false }: { isAdmin?: boolean })
   const [searching, setSearching] = useState(false);
   const [searchHits, setSearchHits] = useState<VideoTutorial[] | null>(null);
   const [searchSource, setSearchSource] = useState<'youtube' | 'local' | null>(null);
+  const [searchError, setSearchError] = useState('');
+  const [nextPageToken, setNextPageToken] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [adminError, setAdminError] = useState('');
@@ -141,14 +144,49 @@ export default function VideoLibrary({ isAdmin = false }: { isAdmin?: boolean })
       return;
     }
     setSearching(true);
+    setSearchError('');
+    setNextPageToken(null);
     try {
       const res = await fetch(`/api/learn/videos/search?q=${encodeURIComponent(q)}`);
-      if (!res.ok) return;
+      if (!res.ok) {
+        setSearchHits([]);
+        setSearchError('Could not search YouTube. Try again.');
+        return;
+      }
       const data = await res.json();
       setSearchHits((data.videos || []) as VideoTutorial[]);
       setSearchSource(data.source === 'youtube' ? 'youtube' : 'local');
+      setNextPageToken(typeof data.nextPageToken === 'string' && data.nextPageToken ? data.nextPageToken : null);
+      if (data.error === 'unconfigured') {
+        setSearchError('YouTube search is not configured yet. Showing Video Hall matches.');
+      } else if (data.error === 'quota') {
+        setSearchError('YouTube search quota for today is used up. Showing Video Hall matches.');
+      } else if (data.error === 'failed') {
+        setSearchError('Could not search YouTube. Try again.');
+      }
     } finally {
       setSearching(false);
+    }
+  }
+
+  async function loadMore() {
+    const q = query.trim();
+    if (!q || !nextPageToken) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(
+        `/api/learn/videos/search?q=${encodeURIComponent(q)}&pageToken=${encodeURIComponent(nextPageToken)}`,
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      const extra = (data.videos || []) as VideoTutorial[];
+      setSearchHits((prev) => {
+        const seen = new Set((prev || []).map((v) => v.youtubeId));
+        return [...(prev || []), ...extra.filter((v) => !seen.has(v.youtubeId))];
+      });
+      setNextPageToken(typeof data.nextPageToken === 'string' && data.nextPageToken ? data.nextPageToken : null);
+    } finally {
+      setLoadingMore(false);
     }
   }
 
@@ -226,6 +264,8 @@ export default function VideoLibrary({ isAdmin = false }: { isAdmin?: boolean })
               setQuery('');
               setSearchHits(null);
               setSearchSource(null);
+              setSearchError('');
+              setNextPageToken(null);
             }}
             className="border px-4 py-2.5 text-[13px] font-semibold"
             style={{ borderColor: 'var(--line)' }}
@@ -343,7 +383,25 @@ export default function VideoLibrary({ isAdmin = false }: { isAdmin?: boolean })
           <p className="mb-4 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
             Click a result to watch it here. You stay on InTelleX.
           </p>
+          {searchError ? (
+            <p className="mb-4 text-[13px]" style={{ color: '#b42318' }}>
+              {searchError}
+            </p>
+          ) : null}
           <VideoGrid videos={searchHits} onPlay={setPlaying} />
+          {nextPageToken ? (
+            <div className="mt-5 flex justify-center">
+              <button
+                type="button"
+                onClick={() => void loadMore()}
+                disabled={loadingMore}
+                className="border px-4 py-2.5 text-[13px] font-semibold"
+                style={{ borderColor: 'var(--line)' }}
+              >
+                {loadingMore ? 'Loading…' : 'Load more'}
+              </button>
+            </div>
+          ) : null}
         </section>
       ) : (
         <>

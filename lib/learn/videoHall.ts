@@ -13,6 +13,7 @@ import {
   type VideoLevel,
   type VideoTutorial,
 } from '@/lib/learn/videos';
+import { youtubeSearchList, type YoutubeSearchError } from '@/lib/youtube/search';
 
 function toHallView(d: Record<string, unknown>): VideoTutorial {
   const id = String((d._id as ObjectId).toString());
@@ -146,65 +147,56 @@ async function oembedVideo(youtubeId: string): Promise<VideoTutorial | null> {
   }
 }
 
-async function youtubeDataSearch(query: string): Promise<VideoTutorial[]> {
-  const key = process.env.YOUTUBE_API_KEY?.trim();
-  if (!key) return [];
-  const url = new URL('https://www.googleapis.com/youtube/v3/search');
-  url.searchParams.set('part', 'snippet');
-  url.searchParams.set('type', 'video');
-  url.searchParams.set('maxResults', '12');
-  url.searchParams.set('q', query.slice(0, 120));
-  url.searchParams.set('safeSearch', 'moderate');
-  url.searchParams.set('key', key);
-  const res = await fetch(url.toString());
-  if (!res.ok) return [];
-  const data = (await res.json()) as {
-    items?: Array<{
-      id?: { videoId?: string };
-      snippet?: {
-        title?: string;
-        channelTitle?: string;
-        description?: string;
-      };
-    }>;
-  };
-  return (data.items || [])
-    .map((item) => {
-      const youtubeId = String(item.id?.videoId || '');
-      if (!isYoutubeId(youtubeId)) return null;
-      const video = stubSearchVideo(
-        youtubeId,
-        item.snippet?.title,
-        item.snippet?.channelTitle,
-      );
-      video.description = String(item.snippet?.description || video.description).slice(0, 400);
-      return video;
-    })
-    .filter((v): v is VideoTutorial => Boolean(v));
-}
-
-export async function searchVideoHall(query: string): Promise<{
+export async function searchVideoHall(
+  query: string,
+  opts?: { pageToken?: string; locale?: 'en' | 'fr' },
+): Promise<{
   videos: VideoTutorial[];
   source: 'youtube' | 'local';
+  nextPageToken: string | null;
+  error?: YoutubeSearchError;
 }> {
   const q = query.trim().slice(0, 160);
-  if (!q) return { videos: [], source: 'local' };
+  if (!q) return { videos: [], source: 'local', nextPageToken: null };
 
   const hall = await listVideoHall();
   const directId = extractYoutubeId(q);
   if (directId) {
     const local = hall.find((v) => v.youtubeId === directId);
-    if (local) return { videos: [local], source: 'local' };
+    if (local) return { videos: [local], source: 'local', nextPageToken: null };
     const remote = await oembedVideo(directId);
-    return { videos: remote ? [remote] : [], source: 'youtube' };
+    return { videos: remote ? [remote] : [], source: 'youtube', nextPageToken: null };
   }
 
   const localHits = matchLocal(q, hall);
-  const remote = await youtubeDataSearch(q);
-  if (remote.length) {
-    const seen = new Set(remote.map((v) => v.youtubeId));
-    const merged = [...remote, ...localHits.filter((v) => !seen.has(v.youtubeId))];
-    return { videos: merged.slice(0, 18), source: 'youtube' };
+  const remote = await youtubeSearchList({
+    q,
+    pageToken: opts?.pageToken,
+    relevanceLanguage: opts?.locale === 'fr' ? 'fr' : 'en',
+    maxResults: 24,
+  });
+
+  if (remote.videos.length) {
+    if (opts?.pageToken) {
+      return {
+        videos: remote.videos,
+        source: 'youtube',
+        nextPageToken: remote.nextPageToken,
+      };
+    }
+    const seen = new Set(remote.videos.map((v) => v.youtubeId));
+    const merged = [...remote.videos, ...localHits.filter((v) => !seen.has(v.youtubeId))];
+    return {
+      videos: merged.slice(0, 30),
+      source: 'youtube',
+      nextPageToken: remote.nextPageToken,
+    };
   }
-  return { videos: localHits.slice(0, 18), source: 'local' };
+
+  return {
+    videos: opts?.pageToken ? [] : localHits.slice(0, 18),
+    source: localHits.length && !opts?.pageToken ? 'local' : 'youtube',
+    nextPageToken: remote.nextPageToken,
+    error: remote.error,
+  };
 }

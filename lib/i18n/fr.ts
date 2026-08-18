@@ -389,6 +389,20 @@ export const FR_UI: Record<string, string> = {
   'Type a message': 'Écrire un message',
   'No messages yet': 'Pas encore de messages',
   'Load more': 'Charger plus',
+  'YouTube results in InTelleX': 'Résultats YouTube dans InTelleX',
+  'Matching videos': 'Vidéos correspondantes',
+  'Could not search YouTube. Try again.': 'Impossible de rechercher sur YouTube. Réessayez.',
+  'YouTube search is not configured yet. Showing Video Hall matches.':
+    'La recherche YouTube n’est pas encore configurée. Affichage des vidéos de la salle.',
+  'YouTube search quota for today is used up. Showing Video Hall matches.':
+    'Le quota YouTube du jour est épuisé. Affichage des vidéos de la salle.',
+  'Click a result to watch it here. You stay on InTelleX.':
+    'Cliquez un résultat pour le regarder ici. Vous restez sur InTelleX.',
+  'Search YouTube — results play here in InTelleX':
+    'Rechercher sur YouTube — lecture ici dans InTelleX',
+  Searching: 'Recherche',
+  'Searching…': 'Recherche…',
+  'Loading…': 'Chargement…',
   Refresh: 'Actualiser',
   'Install app': 'Installer l’application',
   'Add to Home Screen': 'Ajouter à l’écran d’accueil',
