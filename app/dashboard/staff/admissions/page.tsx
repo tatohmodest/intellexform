@@ -17,7 +17,7 @@ export default async function StaffAdmissionsPage() {
         </div>
         <h1 className="font-display text-[28px] leading-tight sm:text-[32px]">Admissions</h1>
         <p className="mt-2 max-w-[620px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Review join requests and registrations. Admitting someone links their existing InTelleX account when it exists.
+          Review join requests and registrations. Admit upgrades the same account. You can also delete a request.
         </p>
       </header>
       <AdmissionsDesk

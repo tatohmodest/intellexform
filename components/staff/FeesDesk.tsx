@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatXAF } from '@/lib/staff/permissions';
 
@@ -15,17 +15,96 @@ type Outstanding = {
   paidXAF: number;
   outstandingXAF: number;
 };
+type Course = { id: string; title: string; students: number; source: string };
+type StudentHit = { userId: string; name: string; email: string; studentCode: string; status: string };
 
 const METHODS = ['MTN Mobile Money', 'Orange Money', 'Bank transfer', 'Card', 'Cash', 'Other'];
+
+function localNowInput() {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function StudentSearch({
+  value,
+  onPick,
+}: {
+  value: StudentHit | null;
+  onPick: (s: StudentHit | null) => void;
+}) {
+  const [q, setQ] = useState(value ? `${value.name} · ${value.email}` : '');
+  const [hits, setHits] = useState<StudentHit[]>([]);
+
+  useEffect(() => {
+    if (value) setQ(`${value.name} · ${value.email}`);
+  }, [value]);
+
+  useEffect(() => {
+    if (q.trim().length < 2 || value) {
+      setHits([]);
+      return;
+    }
+    const t = setTimeout(() => {
+      fetch(`/api/staff/students?q=${encodeURIComponent(q.trim())}`)
+        .then((r) => r.json())
+        .then((d) => setHits((d.students || []).slice(0, 8)))
+        .catch(() => setHits([]));
+    }, 220);
+    return () => clearTimeout(t);
+  }, [q, value]);
+
+  return (
+    <div className="relative">
+      <input
+        value={q}
+        onChange={(e) => {
+          setQ(e.target.value);
+          if (value) onPick(null);
+        }}
+        placeholder="Search name, email, or matricule"
+        className="w-full border px-3 py-2 text-[14px]"
+        style={{ borderColor: 'var(--line)', background: 'transparent' }}
+      />
+      {hits.length > 0 ? (
+        <ul
+          className="absolute z-20 mt-1 max-h-56 w-full overflow-auto border bg-paper shadow"
+          style={{ borderColor: 'var(--line)' }}
+        >
+          {hits.map((s) => (
+            <li key={s.userId}>
+              <button
+                type="button"
+                className="block w-full px-3 py-2 text-left text-[13px] hover:bg-black/[0.04]"
+                onClick={() => {
+                  onPick(s);
+                  setHits([]);
+                }}
+              >
+                <span className="font-semibold">{s.name}</span>
+                <span className="mt-0.5 block" style={{ color: 'var(--ink-soft)' }}>
+                  {s.email}
+                  {s.studentCode ? ` · ${s.studentCode}` : ''}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
 
 export default function FeesDesk({
   structures,
   outstanding,
+  courses,
   canWrite,
   canPay,
 }: {
   structures: Structure[];
   outstanding: Outstanding[];
+  courses: Course[];
   canWrite: boolean;
   canPay: boolean;
 }) {
@@ -34,10 +113,20 @@ export default function FeesDesk({
   const [amount, setAmount] = useState('');
   const [program, setProgram] = useState('');
   const [structureId, setStructureId] = useState('');
-  const [payAmt, setPayAmt] = useState<Record<string, string>>({});
-  const [method, setMethod] = useState(METHODS[0]);
+  const [target, setTarget] = useState<'one' | 'course' | 'all'>('one');
+  const [student, setStudent] = useState<StudentHit | null>(null);
+  const [courseId, setCourseId] = useState('');
+  const [payStudent, setPayStudent] = useState<StudentHit | null>(null);
+  const [payAmount, setPayAmount] = useState('');
+  const [payAt, setPayAt] = useState(localNowInput());
+  const [payMethod, setPayMethod] = useState(METHODS[0]);
+  const [payRef, setPayRef] = useState('');
+  const [payNote, setPayNote] = useState('');
+  const [payChargeId, setPayChargeId] = useState('');
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState('');
+
+  const payCharges = outstanding.filter((o) => o.studentUserId === payStudent?.userId);
 
   async function post(body: Record<string, unknown>, key: string) {
     setBusy(key);
@@ -50,7 +139,13 @@ export default function FeesDesk({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Request failed');
-      setMsg(data.title ? `Charged ${data.charged} student(s).` : 'Saved.');
+      setMsg(
+        data.charged
+          ? `Charged ${data.charged} student${data.charged === 1 ? '' : 's'}.`
+          : data.payment
+            ? `Recorded ${formatXAF(Number(data.payment.amountXAF || 0))} (${data.payment.receiptCode}).`
+            : 'Saved.',
+      );
       setTitle('');
       setAmount('');
       router.refresh();
@@ -130,19 +225,201 @@ export default function FeesDesk({
                 </option>
               ))}
             </select>
+            <div className="mb-3 flex flex-wrap gap-2 text-[12.5px] font-semibold">
+              {(
+                [
+                  ['one', 'One person'],
+                  ['course', 'One course'],
+                  ['all', 'All official students'],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setTarget(id)}
+                  className="border px-3 py-1.5"
+                  style={{
+                    borderColor: target === id ? 'var(--ink)' : 'var(--line)',
+                    background: target === id ? 'var(--ink)' : 'transparent',
+                    color: target === id ? '#fff' : 'var(--ink)',
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {target === 'one' ? (
+              <div className="mb-3">
+                <StudentSearch value={student} onPick={setStudent} />
+              </div>
+            ) : null}
+            {target === 'course' ? (
+              <select
+                value={courseId}
+                onChange={(e) => setCourseId(e.target.value)}
+                className="mb-3 w-full border px-3 py-2 text-[14px]"
+                style={{ borderColor: 'var(--line)', background: 'transparent' }}
+              >
+                <option value="">Choose a course</option>
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title} · {c.students} student{c.students === 1 ? '' : 's'}
+                  </option>
+                ))}
+              </select>
+            ) : null}
             <button
               type="button"
-              disabled={!structureId || busy === 'charge'}
-              onClick={() => post({ action: 'charge', structureId, allActive: true }, 'charge')}
+              disabled={
+                !structureId ||
+                busy === 'charge' ||
+                (target === 'one' && !student) ||
+                (target === 'course' && !courseId)
+              }
+              onClick={() =>
+                post(
+                  {
+                    action: 'charge',
+                    structureId,
+                    studentUserId: target === 'one' ? student?.userId : undefined,
+                    courseId: target === 'course' ? courseId : undefined,
+                    allActive: target === 'all',
+                  },
+                  'charge',
+                )
+              }
               className="border px-4 py-2 text-[13px] font-semibold"
               style={{ borderColor: 'var(--line)' }}
             >
-              {busy === 'charge' ? 'Charging…' : 'Charge all active students'}
+              {busy === 'charge'
+                ? 'Charging…'
+                : target === 'one'
+                  ? 'Charge this person'
+                  : target === 'course'
+                    ? 'Charge this course'
+                    : 'Charge official students'}
             </button>
             <p className="mt-2 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
-              Applies this fee to active and admitted student records. Individual charges can also be recorded on a student profile.
+              “All official students” only includes admitted/active student records — not every InTelleX user.
             </p>
           </div>
+        </section>
+      ) : null}
+
+      {canPay ? (
+        <section className="border p-4" style={{ borderColor: 'var(--line)' }}>
+          <h2 className="mb-1 font-display text-[20px]">Record a payment</h2>
+          <p className="mb-4 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+            Staff can log that a student paid a specific amount at a specific time (cash, MoMo, transfer).
+          </p>
+          <form
+            className="grid gap-3 sm:grid-cols-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!payStudent) return;
+              post(
+                {
+                  action: 'pay',
+                  studentUserId: payStudent.userId,
+                  chargeId: payChargeId || undefined,
+                  amountXAF: Number(payAmount),
+                  method: payMethod,
+                  reference: payRef,
+                  note: payNote,
+                  paidAt: payAt ? new Date(payAt).toISOString() : undefined,
+                },
+                'pay-manual',
+              );
+            }}
+          >
+            <label className="block text-[13px] font-semibold sm:col-span-2">
+              Student
+              <div className="mt-1.5 font-normal">
+                <StudentSearch value={payStudent} onPick={setPayStudent} />
+              </div>
+            </label>
+            <label className="block text-[13px] font-semibold">
+              Amount (XAF)
+              <input
+                required
+                type="number"
+                min={1}
+                value={payAmount}
+                onChange={(e) => setPayAmount(e.target.value)}
+                placeholder="50000"
+                className="mt-1.5 w-full border px-3 py-2 font-normal"
+                style={{ borderColor: 'var(--line)', background: 'transparent' }}
+              />
+            </label>
+            <label className="block text-[13px] font-semibold">
+              Paid at
+              <input
+                required
+                type="datetime-local"
+                value={payAt}
+                onChange={(e) => setPayAt(e.target.value)}
+                className="mt-1.5 w-full border px-3 py-2 font-normal"
+                style={{ borderColor: 'var(--line)', background: 'transparent' }}
+              />
+            </label>
+            <label className="block text-[13px] font-semibold">
+              Method
+              <select
+                value={payMethod}
+                onChange={(e) => setPayMethod(e.target.value)}
+                className="mt-1.5 w-full border px-3 py-2 font-normal"
+                style={{ borderColor: 'var(--line)', background: 'transparent' }}
+              >
+                {METHODS.map((m) => (
+                  <option key={m}>{m}</option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-[13px] font-semibold">
+              Reference / receipt no. (optional)
+              <input
+                value={payRef}
+                onChange={(e) => setPayRef(e.target.value)}
+                className="mt-1.5 w-full border px-3 py-2 font-normal"
+                style={{ borderColor: 'var(--line)', background: 'transparent' }}
+              />
+            </label>
+            <label className="block text-[13px] font-semibold sm:col-span-2">
+              Apply to charge (optional)
+              <select
+                value={payChargeId}
+                onChange={(e) => setPayChargeId(e.target.value)}
+                className="mt-1.5 w-full border px-3 py-2 font-normal"
+                style={{ borderColor: 'var(--line)', background: 'transparent' }}
+              >
+                <option value="">Oldest open charge, or create one</option>
+                {payCharges.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title} · {formatXAF(c.outstandingXAF)} due
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-[13px] font-semibold sm:col-span-2">
+              Note (optional)
+              <input
+                value={payNote}
+                onChange={(e) => setPayNote(e.target.value)}
+                className="mt-1.5 w-full border px-3 py-2 font-normal"
+                style={{ borderColor: 'var(--line)', background: 'transparent' }}
+              />
+            </label>
+            <div>
+              <button
+                type="submit"
+                disabled={busy === 'pay-manual' || !payStudent}
+                className="px-4 py-2 text-[13px] font-semibold text-white"
+                style={{ background: '#00B369' }}
+              >
+                {busy === 'pay-manual' ? 'Saving…' : 'Record payment'}
+              </button>
+            </div>
+          </form>
         </section>
       ) : null}
 
@@ -169,51 +446,43 @@ export default function FeesDesk({
                       {formatXAF(row.outstandingXAF)} due of {formatXAF(row.amountXAF)}
                     </p>
                   </div>
-                  {canPay ? (
-                    <form
-                      className="flex flex-wrap items-center gap-2"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        post(
-                          {
-                            action: 'pay',
-                            studentUserId: row.studentUserId,
-                            chargeId: row.id,
-                            amountXAF: Number(payAmt[row.id] || row.outstandingXAF),
-                            method,
-                          },
-                          `pay-${row.id}`,
-                        );
-                      }}
-                    >
-                      <input
-                        type="number"
-                        min={1}
-                        value={payAmt[row.id] ?? String(row.outstandingXAF)}
-                        onChange={(e) => setPayAmt((m) => ({ ...m, [row.id]: e.target.value }))}
-                        className="w-28 border px-2 py-1.5 text-[13px]"
-                        style={{ borderColor: 'var(--line)', background: 'transparent' }}
-                      />
-                      <select
-                        value={method}
-                        onChange={(e) => setMethod(e.target.value)}
-                        className="border px-2 py-1.5 text-[13px]"
-                        style={{ borderColor: 'var(--line)', background: 'transparent' }}
-                      >
-                        {METHODS.map((m) => (
-                          <option key={m}>{m}</option>
-                        ))}
-                      </select>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {canPay ? (
                       <button
-                        type="submit"
-                        disabled={busy === `pay-${row.id}`}
+                        type="button"
                         className="px-3 py-1.5 text-[12.5px] font-semibold text-white"
                         style={{ background: '#00B369' }}
+                        onClick={() => {
+                          setPayStudent({
+                            userId: row.studentUserId,
+                            name: row.name,
+                            email: row.email,
+                            studentCode: '',
+                            status: 'active',
+                          });
+                          setPayAmount(String(row.outstandingXAF));
+                          setPayChargeId(row.id);
+                          setPayAt(localNowInput());
+                        }}
                       >
-                        Record payment
+                        Fill payment form
                       </button>
-                    </form>
-                  ) : null}
+                    ) : null}
+                    {canWrite ? (
+                      <button
+                        type="button"
+                        disabled={busy === `del-${row.id}`}
+                        onClick={() => {
+                          if (!confirm(`Delete this fee charge for ${row.name}?`)) return;
+                          post({ action: 'delete_charge', chargeId: row.id }, `del-${row.id}`);
+                        }}
+                        className="border px-3 py-1.5 text-[12.5px] font-semibold"
+                        style={{ borderColor: 'var(--line)', color: '#b91c1c' }}
+                      >
+                        {busy === `del-${row.id}` ? '…' : 'Delete'}
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               </article>
             ))}

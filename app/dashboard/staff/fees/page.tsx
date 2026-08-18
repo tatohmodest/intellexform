@@ -1,13 +1,17 @@
 import { Wallet } from 'lucide-react';
 import FeesDesk from '@/components/staff/FeesDesk';
 import { requireStaffPage } from '@/lib/staff/guard';
-import { listFeeStructures, listOutstandingFees } from '@/lib/staff/store';
+import { listBillableCourses, listFeeStructures, listOutstandingFees } from '@/lib/staff/store';
 
 export const dynamic = 'force-dynamic';
 
 export default async function StaffFeesPage() {
   const actor = await requireStaffPage('fees.read');
-  const [structures, outstanding] = await Promise.all([listFeeStructures(), listOutstandingFees()]);
+  const [structures, outstanding, courses] = await Promise.all([
+    listFeeStructures(),
+    listOutstandingFees(),
+    listBillableCourses(),
+  ]);
 
   return (
     <div>
@@ -17,12 +21,13 @@ export default async function StaffFeesPage() {
         </div>
         <h1 className="font-display text-[28px] leading-tight sm:text-[32px]">School fees</h1>
         <p className="mt-2 max-w-[620px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Create fee structures, charge students, and record MTN, Orange Money, bank, or card payments with receipts.
+          Charge one person, everyone in a course, or official students. Record a cash/MoMo payment with amount and time, or delete a charge.
         </p>
       </header>
       <FeesDesk
         structures={structures}
         outstanding={outstanding}
+        courses={courses}
         canWrite={actor.permissions.includes('fees.write')}
         canPay={actor.permissions.includes('fees.record_payment')}
       />

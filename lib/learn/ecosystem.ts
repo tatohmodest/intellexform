@@ -102,6 +102,8 @@ export async function ensureLearnCollections() {
       .createIndex({ institutionSlug: 1, userId: 1 }, { unique: true }),
     db.collection('institution_posts').createIndex({ institutionSlug: 1, createdAt: -1 }),
   ]).catch(() => {});
+  const { ensureUniqueLearnerEmails } = await import('@/lib/learn/repo');
+  await ensureUniqueLearnerEmails().catch(() => {});
   await seedBooks(db);
   await seedIntellexInstitution(db);
   ensured = true;

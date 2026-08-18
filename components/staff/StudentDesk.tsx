@@ -76,6 +76,7 @@ export default function StudentDesk() {
           style={{ borderColor: 'var(--line)', background: 'transparent' }}
         >
           <option value="">All statuses</option>
+          <option value="user">user (not yet a student)</option>
           {STUDENT_STATUSES.map((s) => (
             <option key={s} value={s}>
               {s.replace(/_/g, ' ')}

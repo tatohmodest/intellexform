@@ -139,17 +139,21 @@ export async function upsertLearnerFromOAuth(profile: LBProfile): Promise<Learne
     const db = await getDb();
     const col = db.collection('learners');
     await col.createIndex({ lbId: 1 }, { unique: true }).catch(() => {});
+    await ensureUniqueLearnerEmails().catch(() => {});
+    const email = (profile.email ?? '').trim().toLowerCase();
+    const existingByEmail = email ? await findLearnerByEmail(email) : null;
+    const lbId = existingByEmail?.lbId || profile.sub;
     await col.updateOne(
-      { lbId: profile.sub },
+      { lbId },
       {
         $set: {
-          email: base.email,
-          name: base.name,
-          avatar: base.avatar,
+          email: email || existingByEmail?.email || '',
+          name: profile.name ?? existingByEmail?.name ?? 'Learner',
+          avatar: profile.picture,
           lastLoginAt: new Date(),
         },
         $setOnInsert: {
-          lbId: profile.sub,
+          lbId,
           roles: ['student'],
           onboardingComplete: false,
           primaryIntent: null,
@@ -165,8 +169,8 @@ export async function upsertLearnerFromOAuth(profile: LBProfile): Promise<Learne
       },
       { upsert: true },
     );
-    const doc = await col.findOne({ lbId: profile.sub }, { projection: { _id: 0 } });
-    return (doc as unknown as LearnerDoc) ?? base;
+    const doc = await col.findOne({ lbId }, { projection: { _id: 0 } });
+    return (doc as unknown as LearnerDoc) ?? { ...base, lbId, email };
   } catch (err) {
     console.error('upsertLearnerFromOAuth: DB unavailable, using session-only profile', err);
     return base;
@@ -183,6 +187,82 @@ export async function getLearner(lbId: string): Promise<LearnerDoc | null> {
   } catch {
     return null;
   }
+}
+
+export async function findLearnerByEmail(email: string): Promise<LearnerDoc | null> {
+  const normalized = String(email || '').trim().toLowerCase();
+  if (!normalized.includes('@')) return null;
+  try {
+    const db = await getDb();
+    const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const doc = await db.collection('learners').findOne(
+      { email: { $regex: `^${escaped}$`, $options: 'i' } },
+      { projection: { _id: 0, passwordHash: 0 } },
+    );
+    return (doc as unknown as LearnerDoc) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** One email = one learner profile. Collapse extras so a unique index can be applied. */
+export async function ensureUniqueLearnerEmails(): Promise<void> {
+  const db = await getDb();
+  const col = db.collection('learners');
+  const creds = db.collection('auth_credentials');
+
+  await col
+    .updateMany({ email: { $in: ['', null] } }, { $unset: { email: '' } })
+    .catch(() => {});
+  await col
+    .updateMany({ email: { $type: 'string' } }, [
+      { $set: { email: { $toLower: { $trim: { input: '$email' } } } } },
+    ])
+    .catch(() => {});
+
+  const grouped = await col
+    .aggregate<{ _id: string; ids: string[]; n: number }>([
+      { $match: { email: { $type: 'string', $nin: ['', null] } } },
+      {
+        $group: {
+          _id: { $toLower: '$email' },
+          ids: { $addToSet: '$lbId' },
+          n: { $sum: 1 },
+        },
+      },
+      { $match: { n: { $gt: 1 } } },
+    ])
+    .toArray()
+    .catch(() => []);
+
+  for (const g of grouped) {
+    const email = String(g._id || '').toLowerCase();
+    const cred = await creds.findOne({ email });
+    const keep =
+      (cred?.userId && g.ids.includes(String(cred.userId)) ? String(cred.userId) : null) ||
+      String(g.ids[0] || '');
+    if (!keep) continue;
+    await col.updateOne({ lbId: keep }, { $set: { email } });
+    await col.updateMany(
+      {
+        email: { $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' },
+        lbId: { $ne: keep },
+      },
+      { $unset: { email: '' }, $set: { duplicateOfUserId: keep, updatedAt: new Date() } },
+    );
+    if (cred && String(cred.userId) !== keep) {
+      await creds.updateOne({ email }, { $set: { userId: keep, updatedAt: new Date() } }).catch(() => {});
+    }
+  }
+
+  const indexes = await col.indexes().catch(() => [] as Array<{ name?: string; key?: Record<string, number>; unique?: boolean; sparse?: boolean }>);
+  for (const idx of indexes) {
+    const keys = Object.keys(idx.key || {});
+    if (keys.length === 1 && keys[0] === 'email' && idx.name && (!idx.unique || !idx.sparse)) {
+      await col.dropIndex(idx.name).catch(() => {});
+    }
+  }
+  await col.createIndex({ email: 1 }, { unique: true, sparse: true, name: 'learners_email_unique' }).catch(() => {});
 }
 
 export async function updateLearnerSettings(
