@@ -13,20 +13,29 @@ export default async function StaffHomePage() {
   const links = staffNavFor(actor.permissions).filter((l) => l.href !== '/dashboard/staff');
   const name = actor.name.split(/\s+/)[0] || 'there';
 
-  const cards = [
-    actor.permissions.includes('students.read')
-      ? (['Students', String(stats.students), '/dashboard/staff/students'] as const)
-      : null,
-    actor.permissions.includes('admissions.read')
-      ? (['Pending applications', String(stats.pendingAdmissions), '/dashboard/staff/admissions'] as const)
-      : null,
-    actor.permissions.includes('fees.read')
-      ? (['Outstanding fees', String(stats.outstandingCount), '/dashboard/staff/fees'] as const)
-      : null,
-    actor.permissions.includes('fees.read')
-      ? (['Balance due', formatXAF(stats.outstandingXAF), '/dashboard/staff/fees'] as const)
-      : null,
-  ].filter((row): row is readonly [string, string, string] => Boolean(row));
+  const cards: { label: string; value: string; href: string }[] = [];
+  if (actor.permissions.includes('students.read')) {
+    cards.push({ label: 'Students', value: String(stats.students), href: '/dashboard/staff/students' });
+  }
+  if (actor.permissions.includes('admissions.read')) {
+    cards.push({
+      label: 'Pending applications',
+      value: String(stats.pendingAdmissions),
+      href: '/dashboard/staff/admissions',
+    });
+  }
+  if (actor.permissions.includes('fees.read')) {
+    cards.push({
+      label: 'Outstanding fees',
+      value: String(stats.outstandingCount),
+      href: '/dashboard/staff/fees',
+    });
+    cards.push({
+      label: 'Balance due',
+      value: formatXAF(stats.outstandingXAF),
+      href: '/dashboard/staff/fees',
+    });
+  }
 
   return (
     <div>
@@ -44,11 +53,11 @@ export default async function StaffHomePage() {
       </header>
 
       <section className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map(([label, value, href]) => (
-          <Link key={label} href={href} className="border p-4" style={{ borderColor: 'var(--line)' }}>
-            <p className="font-display text-[26px] leading-none">{value}</p>
+        {cards.map((card) => (
+          <Link key={card.label} href={card.href} className="border p-4" style={{ borderColor: 'var(--line)' }}>
+            <p className="font-display text-[26px] leading-none">{card.value}</p>
             <p className="mt-2 font-mono text-[10px] uppercase tracking-wide" style={{ color: 'var(--ink-soft)' }}>
-              {label}
+              {card.label}
             </p>
           </Link>
         ))}

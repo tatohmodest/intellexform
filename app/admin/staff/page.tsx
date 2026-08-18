@@ -1,3 +1,5 @@
+'use client';
+
 import AdminGate from '@/components/admin/AdminGate';
 import AdminShell from '@/components/admin/AdminShell';
 import AdminStaffDesk from '@/components/admin/AdminStaffDesk';

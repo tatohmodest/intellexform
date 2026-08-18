@@ -291,6 +291,7 @@ async function ensureStudentRecord(userId: string, fallback?: { name?: string; e
     code = newStudentCode();
   }
   const doc = {
+    _id: new ObjectId(),
     userId,
     studentCode: code,
     status: 'active' as StudentStatus,
