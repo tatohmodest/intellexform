@@ -20,6 +20,7 @@ import { isOnboardingComplete } from '@/lib/learn/identity';
 import {
   ensureUniqueLearnerEmails,
   findLearnerByEmail,
+  getLearner,
   type LearnerDoc,
 } from '@/lib/learn/repo';
 import { PERSONAL_CONTEXT } from '@/lib/learn/identity';
