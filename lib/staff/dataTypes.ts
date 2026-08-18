@@ -136,7 +136,9 @@ export function makeField(partial: Partial<DataField> & { label: string; type: D
     label: partial.label,
     description: partial.description || '',
     placeholder: partial.placeholder || '',
-    type: partial.type,
+    type: (DATA_FIELD_TYPES as readonly string[]).includes(String(partial.type))
+      ? partial.type
+      : 'short_text',
     required: Boolean(partial.required),
     options: partial.options || [],
     min: partial.min ?? null,
@@ -149,6 +151,58 @@ export function makeField(partial: Partial<DataField> & { label: string; type: D
     formula: partial.formula || null,
     sensitive: Boolean(partial.sensitive),
   };
+}
+
+export function isDataFieldType(value: string): value is DataFieldType {
+  return (DATA_FIELD_TYPES as readonly string[]).includes(value);
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const URL_RE = /^https?:\/\//i;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}(?:[ T].*)?$|^\d{1,2}[/. -]\d{1,2}[/. -]\d{2,4}$/;
+const YES_NO_RE = /^(yes|no|true|false|y|n|oui|non)$/i;
+
+export function inferDropdownOptions(samples: string[]): string[] {
+  const unique: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of samples) {
+    const v = raw.trim();
+    if (!v) continue;
+    const key = v.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(v);
+    if (unique.length >= 24) break;
+  }
+  return unique;
+}
+
+/** Guess a column type from its header and sample cells (CSV import). */
+export function inferFieldType(header: string, samples: string[]): DataFieldType {
+  const label = header.toLowerCase();
+  if (/e-?mail/.test(label)) return 'email';
+  if (/phone|mobile|whatsapp|\btel\b/.test(label)) return 'phone';
+  if (/\burl\b|website|\blink\b/.test(label)) return 'url';
+  if (/\bdate\b|dob|birthday|born/.test(label)) return 'date';
+  if (/\btime\b/.test(label) && !/date/.test(label)) return 'time';
+  const vals = samples.map((s) => s.trim()).filter(Boolean);
+  if (!vals.length) return 'short_text';
+  if (vals.every((v) => EMAIL_RE.test(v))) return 'email';
+  if (vals.every((v) => URL_RE.test(v))) return 'url';
+  if (vals.every((v) => YES_NO_RE.test(v))) return 'yes_no';
+  if (vals.every((v) => DATE_RE.test(v))) return 'date';
+  const numeric = vals.every((v) => {
+    const cleaned = v.replace(/[, ]/g, '');
+    return cleaned !== '' && !Number.isNaN(Number(cleaned)) && /^-?[0-9]*\.?[0-9]+$/.test(cleaned);
+  });
+  if (numeric) return 'number';
+  const avg = vals.reduce((n, v) => n + v.length, 0) / vals.length;
+  if (avg > 90) return 'long_text';
+  const unique = new Set(vals.map((v) => v.toLowerCase()));
+  if (vals.length >= 8 && unique.size >= 2 && unique.size <= 8 && unique.size <= vals.length * 0.45) {
+    return 'dropdown';
+  }
+  return 'short_text';
 }
 
 export type DatasetTemplate = {
@@ -309,9 +363,9 @@ export const DATASET_TEMPLATES: DatasetTemplate[] = [
   {
     id: 'blank',
     name: 'Blank dataset',
-    description: 'Start empty and add your own fields.',
+    description: 'Start empty. Import a CSV or add your own columns.',
     category: 'Custom',
     statuses: ['New', 'In progress', 'Done'],
-    fields: [{ label: 'Name', type: 'short_text', required: true }],
+    fields: [],
   },
 ];

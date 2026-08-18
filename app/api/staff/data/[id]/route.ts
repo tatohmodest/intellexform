@@ -116,8 +116,26 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json(previewCsv(dataset, String(body.csv || '')));
     }
     if (action === 'import') {
-      const result = await importCsv(actor, params.id, String(body.csv || ''), body.mapping);
+      const result = await importCsv(
+        actor,
+        params.id,
+        String(body.csv || ''),
+        body.mapping,
+        Array.isArray(body.columns) ? body.columns : undefined,
+      );
       return NextResponse.json(result);
+    }
+    if (action === 'save_template') {
+      const { saveDatasetTemplate } = await import('@/lib/staff/dataWorkspace');
+      const template = await saveDatasetTemplate(actor, {
+        name: String(body.name || ''),
+        description: body.description,
+        category: body.category,
+        statuses: body.statuses,
+        fields: body.fields || [],
+        datasetId: params.id,
+      });
+      return NextResponse.json({ ok: true, template });
     }
     if (action === 'delete_dataset') {
       const result = await deleteDataset(actor, params.id);

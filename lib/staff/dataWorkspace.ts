@@ -12,8 +12,14 @@ import { StaffAuthError, type StaffActor } from '@/lib/staff/store';
 import { listCampuses } from '@/lib/staff/org';
 import {
   DATASET_TEMPLATES,
+  inferDropdownOptions,
+  inferFieldType,
+  isDataFieldType,
   makeField,
+  fieldKey,
   type DataField,
+  type DataFieldType,
+  type DatasetTemplate,
   type DatasetVisibility,
   type SubmitAccess,
 } from '@/lib/staff/dataTypes';
@@ -30,11 +36,13 @@ async function cols() {
     db.collection('data_records').createIndex({ datasetId: 1, status: 1 }).catch(() => {}),
     db.collection('data_audit').createIndex({ datasetId: 1, createdAt: -1 }).catch(() => {}),
     db.collection('data_audit').createIndex({ recordId: 1, createdAt: -1 }).catch(() => {}),
+    db.collection('data_templates').createIndex({ ownerId: 1, updatedAt: -1 }).catch(() => {}),
   ]);
   return {
     datasets: db.collection('data_datasets'),
     records: db.collection('data_records'),
     audit: db.collection('data_audit'),
+    templates: db.collection('data_templates'),
   };
 }
 
@@ -46,6 +54,117 @@ function slugify(name: string) {
     .replace(/^-+|-+$/g, '')
     .slice(0, 40) || 'dataset';
   return `${base}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+function savedTemplateId(id: string) {
+  return id.startsWith('saved:') ? id.slice(6) : '';
+}
+
+function viewSavedTemplate(d: Record<string, unknown>): DatasetTemplate & { saved: true; ownerName: string } {
+  const fields = Array.isArray(d.fields)
+    ? (d.fields as DataField[]).map((f) => ({
+        label: f.label,
+        type: f.type,
+        required: f.required,
+        options: f.options,
+      }))
+    : [];
+  return {
+    id: `saved:${String(d._id)}`,
+    name: String(d.name || 'Saved template'),
+    description: String(d.description || ''),
+    category: String(d.category || 'Custom'),
+    statuses: Array.isArray(d.statuses) && d.statuses.length ? (d.statuses as string[]) : ['New'],
+    fields,
+    saved: true,
+    ownerName: String(d.ownerName || ''),
+  };
+}
+
+export async function listTemplates(actor: StaffActor): Promise<Array<DatasetTemplate & { saved?: boolean; ownerName?: string }>> {
+  const { templates } = await cols();
+  const docs = await templates
+    .find({ deletedAt: { $in: [null, undefined] } })
+    .sort({ updatedAt: -1 })
+    .limit(80)
+    .toArray();
+  const saved = docs
+    .filter((d) => {
+      if (actor.permissions.includes('data.manage')) return true;
+      return String(d.ownerId) === actor.userId;
+    })
+    .map((d) => viewSavedTemplate(d as Record<string, unknown>));
+  return [...DATASET_TEMPLATES, ...saved];
+}
+
+async function resolveTemplate(actor: StaffActor, templateId?: string): Promise<DatasetTemplate> {
+  const id = String(templateId || 'blank');
+  const builtin = DATASET_TEMPLATES.find((t) => t.id === id);
+  if (builtin) return builtin;
+  const oid = savedTemplateId(id);
+  if (!oid || !ObjectId.isValid(oid)) {
+    return DATASET_TEMPLATES.find((t) => t.id === 'blank')!;
+  }
+  const { templates } = await cols();
+  const d = await templates.findOne({ _id: new ObjectId(oid), deletedAt: { $in: [null, undefined] } });
+  if (!d) return DATASET_TEMPLATES.find((t) => t.id === 'blank')!;
+  if (!actor.permissions.includes('data.manage') && String(d.ownerId) !== actor.userId) {
+    throw new StaffAuthError('You cannot use this template.', 403);
+  }
+  return viewSavedTemplate(d as Record<string, unknown>);
+}
+
+export async function saveDatasetTemplate(
+  actor: StaffActor,
+  opts: {
+    name: string;
+    description?: string;
+    category?: string;
+    statuses?: string[];
+    fields: Array<Partial<DataField> & { label: string; type: DataFieldType }>;
+    datasetId?: string;
+  },
+) {
+  if (!actor.permissions.includes('data.write') && !actor.permissions.includes('data.manage')) {
+    throw new StaffAuthError('You cannot save templates.', 403);
+  }
+  const name = opts.name.trim().slice(0, 120);
+  if (name.length < 2) throw new StaffAuthError('Give the template a name.', 400);
+  const fields = (opts.fields || [])
+    .filter((f) => String(f.label || '').trim())
+    .slice(0, 80)
+    .map((f) => makeField(f));
+  if (!fields.length) throw new StaffAuthError('Add at least one column before saving a template.', 400);
+  const now = new Date();
+  const { templates } = await cols();
+  const doc = {
+    name,
+    description: String(opts.description || '').slice(0, 400),
+    category: String(opts.category || 'Custom').slice(0, 60),
+    statuses: (opts.statuses || ['New']).map((s) => String(s).trim()).filter(Boolean).slice(0, 12),
+    fields,
+    ownerId: actor.userId,
+    ownerName: actor.name,
+    sourceDatasetId: opts.datasetId || null,
+    createdAt: now,
+    updatedAt: now,
+    deletedAt: null,
+  };
+  const res = await templates.insertOne(doc);
+  return viewSavedTemplate({ ...doc, _id: res.insertedId });
+}
+
+export async function deleteSavedTemplate(actor: StaffActor, id: string) {
+  const oid = savedTemplateId(id) || id;
+  if (!ObjectId.isValid(oid)) throw new StaffAuthError('Template not found.', 404);
+  const { templates } = await cols();
+  const d = await templates.findOne({ _id: new ObjectId(oid), deletedAt: { $in: [null, undefined] } });
+  if (!d) throw new StaffAuthError('Template not found.', 404);
+  if (!actor.permissions.includes('data.manage') && String(d.ownerId) !== actor.userId) {
+    throw new StaffAuthError('Only the owner can delete this template.', 403);
+  }
+  await templates.updateOne({ _id: d._id }, { $set: { deletedAt: new Date() } });
+  return { ok: true };
 }
 
 export type DatasetDoc = {
@@ -195,6 +314,7 @@ export async function createDataset(
     description?: string;
     category?: string;
     templateId?: string;
+    fields?: Array<Partial<DataField> & { label: string; type: DataFieldType }>;
     visibility?: DatasetVisibility;
     submitAccess?: SubmitAccess;
     accessDesks?: StaffDesk[];
@@ -206,9 +326,15 @@ export async function createDataset(
   }
   const name = opts.name.trim().slice(0, 120);
   if (name.length < 2) throw new StaffAuthError('Give the dataset a name.', 400);
-  const tmpl = DATASET_TEMPLATES.find((t) => t.id === opts.templateId) || DATASET_TEMPLATES.find((t) => t.id === 'blank')!;
-  const fields = tmpl.fields.map((f) => makeField(f));
-  const statuses = (opts.statuses && opts.statuses.length ? opts.statuses : tmpl.statuses).map((s) => s.trim()).filter(Boolean);
+  const tmpl = await resolveTemplate(actor, opts.templateId);
+  const incoming = Array.isArray(opts.fields) ? opts.fields : tmpl.fields;
+  const fields = incoming
+    .filter((f) => String(f.label || '').trim())
+    .slice(0, 80)
+    .map((f) => makeField(f));
+  const statuses = (opts.statuses && opts.statuses.length ? opts.statuses : tmpl.statuses)
+    .map((s) => s.trim())
+    .filter(Boolean);
   const now = new Date();
   const { datasets } = await cols();
   const doc = {
@@ -284,7 +410,7 @@ export async function updateDataset(actor: StaffActor, id: string, patch: Record
   if (patch.openAt !== undefined) next.openAt = patch.openAt ? new Date(String(patch.openAt)) : null;
   if (patch.closeAt !== undefined) next.closeAt = patch.closeAt ? new Date(String(patch.closeAt)) : null;
   if (Array.isArray(patch.fields)) {
-    next.fields = (patch.fields as DataField[]).slice(0, 60).map((f) =>
+    next.fields = (patch.fields as DataField[]).slice(0, 80).map((f) =>
       makeField({
         ...f,
         label: String(f.label || 'Field'),
@@ -523,7 +649,7 @@ export async function upsertRecord(
     const row = await records.findOne({ _id: existing._id });
     return recordView(row as Record<string, unknown>, dataset.fields);
   }
-  const values = validateValues(dataset.fields, opts.values);
+  const values = validateValues(dataset.fields, opts.values, opts.source === 'import');
   const status = opts.status || dataset.defaultStatus;
   const tags = opts.tags || [];
   const doc = {
@@ -721,29 +847,53 @@ function normHeader(h: string) {
   return h.trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
-function guessMap(header: string[], fields: DataField[]) {
-  const used = new Set<string>();
-  const mapped = header.map((h) => {
-    const n = normHeader(h);
-    if (!n || SYSTEM_HEADERS.test(h.trim()) || SYSTEM_HEADERS.test(n)) return '';
-    const hit = fields.find((f) => {
+function guessExistingField(header: string, fields: DataField[], used: Set<string>) {
+  const n = normHeader(header);
+  if (!n || SYSTEM_HEADERS.test(header.trim()) || SYSTEM_HEADERS.test(n)) return null;
+  return (
+    fields.find((f) => {
       if (used.has(f.id)) return false;
       const lab = normHeader(f.label);
       const key = f.key.replace(/_/g, ' ');
       return lab === n || key === n || (n.length > 2 && (lab.includes(n) || n.includes(lab)));
-    });
-    if (hit) {
-      used.add(hit.id);
-      return hit.id;
+    }) || null
+  );
+}
+
+export type CsvColumnPlan = {
+  header: string;
+  type: DataFieldType;
+  required: boolean;
+  skip: boolean;
+  fieldId: string;
+  options: string[];
+};
+
+function planFromTable(header: string[], body: string[][], fields: DataField[]): CsvColumnPlan[] {
+  const used = new Set<string>();
+  return header.map((h, i) => {
+    const title = (h || `Column ${i + 1}`).trim() || `Column ${i + 1}`;
+    const samples = body.slice(0, 40).map((row) => String(row[i] ?? ''));
+    if (SYSTEM_HEADERS.test(h.trim()) || SYSTEM_HEADERS.test(normHeader(h))) {
+      return { header: title, type: 'short_text' as DataFieldType, required: false, skip: true, fieldId: '', options: [] };
     }
-    return '';
-  });
-  if (mapped.some(Boolean)) return mapped;
-  let i = 0;
-  return header.map((h) => {
-    if (SYSTEM_HEADERS.test(h.trim()) || SYSTEM_HEADERS.test(normHeader(h))) return '';
-    const f = fields[i++];
-    return f?.id || '';
+    const existing = guessExistingField(title, fields, used);
+    if (existing) used.add(existing.id);
+    const type = existing?.type || inferFieldType(title, samples);
+    const options =
+      existing?.options?.length
+        ? existing.options
+        : type === 'dropdown'
+          ? inferDropdownOptions(samples)
+          : [];
+    return {
+      header: title,
+      type,
+      required: Boolean(existing?.required),
+      skip: false,
+      fieldId: existing?.id || '',
+      options,
+    };
   });
 }
 
@@ -756,41 +906,126 @@ export function previewCsv(dataset: DatasetDoc, csvText: string) {
     );
   }
   const header = table[0];
-  const suggested = guessMap(header, dataset.fields);
-  const previewRows = table.slice(1, 8).map((row) => {
+  const body = table.slice(1);
+  const columns = planFromTable(header, body, dataset.fields);
+  const previewRows = body.slice(0, 8).map((row) => {
     const values: Record<string, string> = {};
-    suggested.forEach((fieldId, idx) => {
-      if (fieldId) values[fieldId] = String(row[idx] ?? '').trim();
+    columns.forEach((col, idx) => {
+      if (!col.skip) values[String(idx)] = String(row[idx] ?? '').trim();
     });
     return values;
   });
-  const missingRequired = dataset.fields
-    .filter((f) => f.required && !suggested.includes(f.id))
-    .map((f) => f.label);
   return {
     header,
-    suggested,
-    fields: dataset.fields.map((f) => ({ id: f.id, label: f.label, required: f.required })),
-    sample: table.slice(1, 8),
+    columns,
+    suggested: columns.map((c) => (c.skip ? '' : c.fieldId)),
+    fields: dataset.fields.map((f) => ({ id: f.id, label: f.label, required: f.required, type: f.type })),
+    sample: body.slice(0, 8),
     previewRows,
-    rowCount: table.length - 1,
-    missingRequired,
+    rowCount: body.length,
+    missingRequired: [] as string[],
     csv: csvText,
   };
 }
 
-export async function importCsv(actor: StaffActor, datasetId: string, csvText: string, mapping?: string[]) {
+function normalizeColumnPlans(raw: unknown, header: string[], fields: DataField[], body: string[][]): CsvColumnPlan[] {
+  if (!Array.isArray(raw) || raw.length !== header.length) {
+    return planFromTable(header, body, fields);
+  }
+  return raw.map((item, i) => {
+    const col = item && typeof item === 'object' ? (item as Record<string, unknown>) : {};
+    const type = isDataFieldType(String(col.type || '')) ? (col.type as DataFieldType) : inferFieldType(header[i], body.slice(0, 20).map((r) => String(r[i] ?? '')));
+    const options = Array.isArray(col.options) ? col.options.map(String).filter(Boolean).slice(0, 24) : [];
+    return {
+      header: String(col.header || header[i] || `Column ${i + 1}`).trim() || `Column ${i + 1}`,
+      type,
+      required: Boolean(col.required),
+      skip: Boolean(col.skip),
+      fieldId: String(col.fieldId || ''),
+      options,
+    };
+  });
+}
+
+async function applyCsvColumns(
+  actor: StaffActor,
+  dataset: DatasetDoc,
+  plans: CsvColumnPlan[],
+): Promise<{ dataset: DatasetDoc; fieldIds: string[] }> {
+  const usedKeys = new Set(dataset.fields.map((f) => f.key));
+  const nextFields = [...dataset.fields];
+  const fieldIds: string[] = [];
+  for (const plan of plans) {
+    if (plan.skip) {
+      fieldIds.push('');
+      continue;
+    }
+    const existing = plan.fieldId ? nextFields.find((f) => f.id === plan.fieldId) : null;
+    if (existing) {
+      existing.type = plan.type;
+      existing.required = plan.required;
+      if (plan.options.length) existing.options = plan.options;
+      if (plan.header && plan.header !== existing.label) existing.label = plan.header.slice(0, 80);
+      fieldIds.push(existing.id);
+      continue;
+    }
+    let key = fieldKey(plan.header);
+    let n = 2;
+    while (usedKeys.has(key)) {
+      key = `${fieldKey(plan.header)}_${n++}`.slice(0, 40);
+    }
+    usedKeys.add(key);
+    const created = makeField({
+      label: plan.header.slice(0, 80),
+      type: plan.type,
+      required: plan.required,
+      key,
+      options: plan.options,
+    });
+    nextFields.push(created);
+    fieldIds.push(created.id);
+  }
+  if (nextFields.length > 80) {
+    throw new StaffAuthError('A dataset can have at most 80 columns.', 400);
+  }
+  const updated = await updateDataset(actor, dataset.id, { fields: nextFields });
+  return { dataset: updated, fieldIds };
+}
+
+export async function importCsv(
+  actor: StaffActor,
+  datasetId: string,
+  csvText: string,
+  mapping?: string[],
+  columns?: CsvColumnPlan[],
+) {
   const dataset = await getDataset(actor, datasetId);
   const table = parseCsv(csvText);
   if (table.length < 2) throw new StaffAuthError('The file has no data rows.', 400);
   const header = table[0];
-  const map = mapping && mapping.length === header.length ? mapping : guessMap(header, dataset.fields);
-  const emailField = dataset.fields.find((f) => f.type === 'email');
+  const body = table.slice(1);
+  const plans = columns?.length
+    ? normalizeColumnPlans(columns, header, dataset.fields, body)
+    : mapping && mapping.length === header.length
+      ? header.map((h, i) => ({
+          header: h || `Column ${i + 1}`,
+          type: 'short_text' as DataFieldType,
+          required: false,
+          skip: !mapping[i],
+          fieldId: mapping[i] || '',
+          options: [] as string[],
+        }))
+      : planFromTable(header, body, dataset.fields);
+
+  const applied = await applyCsvColumns(actor, dataset, plans);
+  const map = applied.fieldIds;
+  const live = applied.dataset;
+  const emailField = live.fields.find((f) => f.type === 'email');
   const { records } = await cols();
   const errors: string[] = [];
   let imported = 0;
-  for (let i = 1; i < table.length; i++) {
-    const row = table[i];
+  for (let i = 0; i < body.length; i++) {
+    const row = body[i];
     const values: Record<string, unknown> = {};
     map.forEach((fieldId, idx) => {
       if (fieldId && row[idx] != null) values[fieldId] = row[idx];
@@ -807,12 +1042,19 @@ export async function importCsv(actor: StaffActor, datasetId: string, csvText: s
       await upsertRecord(actor, datasetId, { values, source: 'import' });
       imported += 1;
     } catch (err) {
-      errors.push(`Row ${i + 1}: ${err instanceof Error ? err.message : 'invalid'}`);
+      errors.push(`Row ${i + 2}: ${err instanceof Error ? err.message : 'invalid'}`);
       if (errors.length > 40) break;
     }
   }
-  await audit(actor, { datasetId, action: 'dataset.import', after: { imported, errors: errors.length } });
-  return { imported, errors, header, suggested: guessMap(header, dataset.fields), fields: dataset.fields };
+  await audit(actor, { datasetId, action: 'dataset.import', after: { imported, errors: errors.length, columns: map.filter(Boolean).length } });
+  return {
+    imported,
+    errors,
+    header,
+    columns: plans,
+    fields: live.fields,
+    dataset: live,
+  };
 }
 
 export async function listAudit(actor: StaffActor, datasetId: string, recordId?: string) {

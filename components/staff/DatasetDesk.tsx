@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FIELD_TYPE_LABELS, SUBMIT_ACCESS_OPTIONS, makeField, type DataField, type DataFieldType } from '@/lib/staff/dataTypes';
 import { FormFields } from '@/components/staff/FormFields';
@@ -33,8 +33,16 @@ type Dataset = {
 
 type ImportPreview = {
   header: string[];
+  columns?: Array<{
+    header: string;
+    type: DataFieldType;
+    required?: boolean;
+    skip?: boolean;
+    fieldId?: string;
+    options?: string[];
+  }>;
   suggested: string[];
-  fields: Array<{ id: string; label: string; required?: boolean }>;
+  fields: Array<{ id: string; label: string; required?: boolean; type?: string }>;
   sample: string[][];
   previewRows: Array<Record<string, string>>;
   rowCount: number;
@@ -100,8 +108,8 @@ export default function DatasetDesk({
   const [busy, setBusy] = useState('');
   const [shareCopied, setShareCopied] = useState(false);
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
-  const [importMap, setImportMap] = useState<string[]>([]);
-  const [importAdjust, setImportAdjust] = useState(false);
+  const [importColumns, setImportColumns] = useState<NonNullable<ImportPreview['columns']>>([]);
+  const [newCol, setNewCol] = useState({ open: false, label: '', type: 'short_text' as DataFieldType, required: false });
   const [settings, setSettings] = useState({
     name: '',
     description: '',
@@ -283,20 +291,72 @@ export default function DatasetDesk({
     const data = await post({ action: 'importPreview', csv: text });
     if (data?.header) {
       setImportPreview({ ...data, csv: text, previewRows: data.previewRows || [] });
-      setImportMap(data.suggested || []);
-      setImportAdjust(false);
+      setImportColumns(
+        Array.isArray(data.columns) && data.columns.length
+          ? data.columns
+          : (data.header as string[]).map((h: string, i: number) => ({
+              header: h || `Column ${i + 1}`,
+              type: 'short_text' as DataFieldType,
+              required: false,
+              skip: false,
+              fieldId: '',
+              options: [],
+            })),
+      );
     }
   }
 
   async function confirmImport() {
     if (!importPreview) return;
-    const data = await post({ action: 'import', csv: importPreview.csv, mapping: importMap });
+    const data = await post({ action: 'import', csv: importPreview.csv, columns: importColumns });
     if (data) {
       const skipped = data.errors?.length ? ` ${data.errors.length} row(s) skipped.` : '';
       setMsg(`Saved ${data.imported} row${data.imported === 1 ? '' : 's'} to this dataset.${skipped}`);
+      if (Array.isArray(data.dataset?.fields)) setFields(data.dataset.fields);
+      else if (Array.isArray(data.fields)) setFields(data.fields);
       setImportPreview(null);
+      setImportColumns([]);
       await load();
     }
+  }
+
+  async function addColumn(e: React.FormEvent) {
+    e.preventDefault();
+    const label = newCol.label.trim();
+    if (!label) return;
+    const next = [...fields, makeField({ label, type: newCol.type, required: newCol.required })];
+    setFields(next);
+    setBusy('column');
+    try {
+      const res = await fetch(`/api/staff/data/${datasetId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: next }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not add column');
+      setDataset(data.dataset);
+      setFields(data.dataset?.fields || next);
+      setNewCol({ open: false, label: '', type: 'short_text', required: false });
+      setMsg('Column added.');
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'Could not add column');
+    } finally {
+      setBusy('');
+    }
+  }
+
+  async function saveAsTemplate() {
+    const title = prompt('Template name', dataset?.name || '')?.trim();
+    if (!title) return;
+    const data = await post({
+      action: 'save_template',
+      name: title,
+      description: dataset?.description,
+      statuses: dataset?.statuses,
+      fields,
+    });
+    if (data?.template) setMsg(`Saved template “${data.template.name}”. You can pick it when creating a dataset.`);
   }
 
   async function destroyDataset() {
@@ -315,7 +375,7 @@ export default function DatasetDesk({
     }
   }
 
-  const displayFields = useMemo(() => fields.slice(0, 6), [fields]);
+  const displayFields = fields;
 
   return (
     <div>
@@ -404,16 +464,77 @@ export default function DatasetDesk({
               {trash ? 'Live records' : 'Trash'}
             </button>
             {canWrite ? (
-              <button
-                type="button"
-                className="px-3 py-2 text-[13px] font-semibold text-white"
-                style={{ background: '#00B369' }}
-                onClick={() => openEditor('new')}
-              >
-                Add row
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="border px-3 py-2 text-[13px] font-semibold"
+                  style={{ borderColor: 'var(--line)' }}
+                  onClick={() => setNewCol({ open: true, label: '', type: 'short_text', required: false })}
+                >
+                  Add column
+                </button>
+                <button
+                  type="button"
+                  className="px-3 py-2 text-[13px] font-semibold text-white"
+                  style={{ background: '#00B369' }}
+                  onClick={() => openEditor('new')}
+                >
+                  Add row
+                </button>
+              </>
             ) : null}
           </div>
+
+          {canWrite && !fields.length && !newCol.open ? (
+            <p className="mb-3 border border-dashed p-4 text-[13px]" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
+              This sheet has no columns yet. Add a column, or import a CSV — headers in the file become columns, with a type on each.
+            </p>
+          ) : null}
+
+          {canWrite && newCol.open ? (
+            <form className="mb-3 flex flex-wrap items-end gap-2 border p-3" style={{ borderColor: 'var(--line)' }} onSubmit={addColumn}>
+              <label className="text-[12px] font-semibold">
+                Column name
+                <input
+                  required
+                  value={newCol.label}
+                  onChange={(e) => setNewCol((c) => ({ ...c, label: e.target.value }))}
+                  placeholder="e.g. Department"
+                  className="mt-1 block w-48 border px-2 py-1.5 font-normal"
+                  style={{ borderColor: 'var(--line)' }}
+                />
+              </label>
+              <label className="text-[12px] font-semibold">
+                Type
+                <select
+                  value={newCol.type}
+                  onChange={(e) => setNewCol((c) => ({ ...c, type: e.target.value as DataFieldType }))}
+                  className="mt-1 block border px-2 py-1.5 font-normal"
+                  style={{ borderColor: 'var(--line)', background: 'transparent' }}
+                >
+                  {Object.entries(FIELD_TYPE_LABELS).map(([k, lab]) => (
+                    <option key={k} value={k}>
+                      {lab}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex items-center gap-2 text-[13px]">
+                <input
+                  type="checkbox"
+                  checked={newCol.required}
+                  onChange={(e) => setNewCol((c) => ({ ...c, required: e.target.checked }))}
+                />
+                Required
+              </label>
+              <button type="submit" disabled={busy === 'column'} className="px-3 py-2 text-[13px] font-semibold text-white" style={{ background: '#00B369' }}>
+                {busy === 'column' ? 'Adding…' : 'Add column'}
+              </button>
+              <button type="button" className="border px-3 py-2 text-[13px]" style={{ borderColor: 'var(--line)' }} onClick={() => setNewCol((c) => ({ ...c, open: false }))}>
+                Cancel
+              </button>
+            </form>
+          ) : null}
 
           <div className="mb-3 flex flex-wrap items-center gap-2 text-[13px]">
             <select
@@ -535,6 +656,18 @@ export default function DatasetDesk({
                       {f.label}
                     </th>
                   ))}
+                  {canWrite ? (
+                    <th className="px-2 py-2">
+                      <button
+                        type="button"
+                        className="text-[12px] font-semibold"
+                        style={{ color: 'var(--green-deep)' }}
+                        onClick={() => setNewCol({ open: true, label: '', type: 'short_text', required: false })}
+                      >
+                        + Column
+                      </button>
+                    </th>
+                  ) : null}
                   <th className="cursor-pointer px-2 py-2" onClick={() => toggleSort('createdAt')}>
                     Date
                   </th>
@@ -562,6 +695,7 @@ export default function DatasetDesk({
                         {cell(r.values[f.id]) || '—'}
                       </td>
                     ))}
+                    {canWrite ? <td className="px-2 py-2" /> : null}
                     <td className="whitespace-nowrap px-2 py-2" style={{ color: 'var(--ink-soft)' }}>
                       {new Date(r.createdAt).toLocaleDateString()}
                     </td>
@@ -615,7 +749,7 @@ export default function DatasetDesk({
       {tab === 'form' && canWrite ? (
         <div className="space-y-4">
           <p className="text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-            Add the questions people will answer. Then share the form link from the spreadsheet tab.
+            Add, remove, or change column types. Templates are a starting point — save your own if you want to reuse this layout.
           </p>
           {fields.map((f, idx) => (
             <div key={f.id} className="grid gap-2 border p-3 sm:grid-cols-4" style={{ borderColor: 'var(--line)' }}>
@@ -706,7 +840,7 @@ export default function DatasetDesk({
               </div>
             </div>
           ))}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               className="border px-3 py-2 text-[13px]"
@@ -714,6 +848,14 @@ export default function DatasetDesk({
               onClick={() => setFields((f) => [...f, makeField({ label: 'New field', type: 'short_text' })])}
             >
               Add field
+            </button>
+            <button
+              type="button"
+              className="border px-3 py-2 text-[13px]"
+              style={{ borderColor: 'var(--line)' }}
+              onClick={() => void saveAsTemplate()}
+            >
+              Save as template
             </button>
             <button type="button" onClick={saveFields} className="px-3 py-2 text-[13px] font-semibold text-white" style={{ background: '#00B369' }}>
               {busy === 'fields' ? 'Saving…' : 'Save form'}
@@ -901,6 +1043,14 @@ export default function DatasetDesk({
           <button type="submit" className="px-3 py-2 text-[13px] font-semibold text-white" style={{ background: '#00B369' }}>
             {busy === 'settings' ? 'Saving…' : 'Save settings'}
           </button>
+          <button
+            type="button"
+            onClick={() => void saveAsTemplate()}
+            className="ml-2 border px-3 py-2 text-[13px]"
+            style={{ borderColor: 'var(--line)' }}
+          >
+            Save columns as template
+          </button>
           <div className="border-t pt-4" style={{ borderColor: 'var(--line)' }}>
             <p className="text-[13px] font-semibold" style={{ color: '#b91c1c' }}>
               Delete this dataset
@@ -993,76 +1143,131 @@ export default function DatasetDesk({
           <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto border bg-white p-5" style={{ borderColor: 'var(--line)' }}>
             <h2 className="font-display text-[22px]">Review before saving</h2>
             <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-              {importPreview.rowCount} row{importPreview.rowCount === 1 ? '' : 's'} from your file. Nothing is saved until you confirm.
+              {importPreview.rowCount} row{importPreview.rowCount === 1 ? '' : 's'} · {importColumns.filter((c) => !c.skip).length} columns.
+              Headers that are not already on this table become new columns. Set a type for each, or skip it.
             </p>
-            {importPreview.missingRequired?.length ? (
-              <p className="mt-2 text-[13px]" style={{ color: '#b91c1c' }}>
-                Missing required columns: {importPreview.missingRequired.join(', ')}. Those rows may be skipped.
-              </p>
-            ) : null}
+            <ul className="mt-4 space-y-2">
+              {importColumns.map((col, i) => (
+                <li key={`${importPreview.header[i] || col.header}-${i}`} className="grid gap-2 sm:grid-cols-12">
+                  <input
+                    value={col.header}
+                    onChange={(e) =>
+                      setImportColumns((all) => all.map((x, idx) => (idx === i ? { ...x, header: e.target.value } : x)))
+                    }
+                    className="border px-2 py-1.5 text-[13px] sm:col-span-4"
+                    style={{ borderColor: 'var(--line)' }}
+                  />
+                  <select
+                    value={col.type}
+                    disabled={!!col.skip}
+                    onChange={(e) =>
+                      setImportColumns((all) =>
+                        all.map((x, idx) => (idx === i ? { ...x, type: e.target.value as DataFieldType } : x)),
+                      )
+                    }
+                    className="border px-2 py-1.5 text-[13px] sm:col-span-3"
+                    style={{ borderColor: 'var(--line)', background: 'transparent' }}
+                  >
+                    {Object.entries(FIELD_TYPE_LABELS).map(([k, lab]) => (
+                      <option key={k} value={k}>
+                        {lab}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={col.skip ? '' : col.fieldId || '__new__'}
+                    disabled={!!col.skip}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setImportColumns((all) =>
+                        all.map((x, idx) =>
+                          idx === i
+                            ? {
+                                ...x,
+                                skip: false,
+                                fieldId: v === '__new__' ? '' : v,
+                                type: v !== '__new__' ? fields.find((f) => f.id === v)?.type || x.type : x.type,
+                              }
+                            : x,
+                        ),
+                      );
+                    }}
+                    className="border px-2 py-1.5 text-[13px] sm:col-span-3"
+                    style={{ borderColor: 'var(--line)', background: 'transparent' }}
+                  >
+                    <option value="__new__">New column</option>
+                    {fields.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        Existing · {f.label}
+                      </option>
+                    ))}
+                  </select>
+                  <label className="flex items-center gap-2 text-[13px] sm:col-span-1">
+                    <input
+                      type="checkbox"
+                      checked={!!col.required}
+                      disabled={!!col.skip}
+                      onChange={(e) =>
+                        setImportColumns((all) => all.map((x, idx) => (idx === i ? { ...x, required: e.target.checked } : x)))
+                      }
+                    />
+                    Req.
+                  </label>
+                  <label className="flex items-center gap-2 text-[13px] sm:col-span-1">
+                    <input
+                      type="checkbox"
+                      checked={!!col.skip}
+                      onChange={(e) =>
+                        setImportColumns((all) => all.map((x, idx) => (idx === i ? { ...x, skip: e.target.checked } : x)))
+                      }
+                    />
+                    Skip
+                  </label>
+                </li>
+              ))}
+            </ul>
             <div className="mt-4 overflow-x-auto border" style={{ borderColor: 'var(--line)' }}>
               <table className="min-w-full text-left text-[12.5px]">
                 <thead style={{ background: 'var(--paper-dim)' }}>
                   <tr>
-                    {importPreview.fields
-                      .filter((f) => importMap.includes(f.id))
-                      .map((f) => (
-                        <th key={f.id} className="px-2 py-2 font-semibold">
-                          {f.label}
+                    {importColumns
+                      .map((c, i) => ({ c, i }))
+                      .filter(({ c }) => !c.skip)
+                      .slice(0, 8)
+                      .map(({ c, i }) => (
+                        <th key={`${c.header}-${i}`} className="px-2 py-2 font-semibold">
+                          {c.header}
                         </th>
                       ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {(importPreview.sample || []).map((row, i) => (
-                    <tr key={i} className="border-t" style={{ borderColor: 'var(--line)' }}>
-                      {importPreview.fields
-                        .filter((f) => importMap.includes(f.id))
-                        .map((f) => {
-                          const col = importMap.indexOf(f.id);
-                          return (
-                            <td key={f.id} className="max-w-[160px] truncate px-2 py-1.5">
-                              {(col >= 0 ? row[col] : '') || '—'}
-                            </td>
-                          );
-                        })}
+                  {(importPreview.sample || []).map((row, ri) => (
+                    <tr key={ri} className="border-t" style={{ borderColor: 'var(--line)' }}>
+                      {importColumns
+                        .map((c, i) => ({ c, i }))
+                        .filter(({ c }) => !c.skip)
+                        .slice(0, 8)
+                        .map(({ c, i }) => (
+                          <td key={`${c.header}-${i}`} className="max-w-[160px] truncate px-2 py-1.5">
+                            {String(row[i] ?? '') || '—'}
+                          </td>
+                        ))}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <button
-              type="button"
-              className="mt-3 text-[13px] font-semibold"
-              style={{ color: 'var(--green-deep)' }}
-              onClick={() => setImportAdjust((v) => !v)}
-            >
-              {importAdjust ? 'Hide column matching' : 'Adjust columns'}
-            </button>
-            {importAdjust ? (
-              <ul className="mt-3 space-y-2">
-                {importPreview.header.map((h, i) => (
-                  <li key={`${h}-${i}`} className="grid grid-cols-2 gap-2 text-[13px]">
-                    <span className="truncate py-2">{h || `Column ${i + 1}`}</span>
-                    <select
-                      value={importMap[i] || ''}
-                      onChange={(e) => setImportMap((m) => m.map((x, idx) => (idx === i ? e.target.value : x)))}
-                      className="border px-2 py-1.5"
-                      style={{ borderColor: 'var(--line)', background: 'transparent' }}
-                    >
-                      <option value="">Skip</option>
-                      {importPreview.fields.map((f) => (
-                        <option key={f.id} value={f.id}>
-                          {f.label}
-                        </option>
-                      ))}
-                    </select>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
             <div className="mt-4 flex justify-end gap-2">
-              <button type="button" className="border px-3 py-2 text-[13px]" style={{ borderColor: 'var(--line)' }} onClick={() => setImportPreview(null)}>
+              <button
+                type="button"
+                className="border px-3 py-2 text-[13px]"
+                style={{ borderColor: 'var(--line)' }}
+                onClick={() => {
+                  setImportPreview(null);
+                  setImportColumns([]);
+                }}
+              >
                 Cancel
               </button>
               <button type="button" className="px-3 py-2 text-[13px] font-semibold text-white" style={{ background: '#00B369' }} onClick={() => void confirmImport()}>
