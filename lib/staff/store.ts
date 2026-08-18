@@ -928,7 +928,18 @@ export async function deleteFeeCharge(actor: StaffActor, chargeId: string) {
     summary: `${actor.name} deleted fee charge “${charge.title}” for ${charge.studentUserId}`,
     before: charge,
   });
-  return { ok: true };
+  return { ok: true, deleted: 1 };
+}
+
+export async function deleteFeeCharges(actor: StaffActor, chargeIds: string[]) {
+  const ids = [...new Set(chargeIds.map(String).filter((id) => ObjectId.isValid(id)))];
+  if (!ids.length) throw new StaffAuthError('Select at least one charge.', 400);
+  let deleted = 0;
+  for (const id of ids) {
+    await deleteFeeCharge(actor, id);
+    deleted += 1;
+  }
+  return { ok: true, deleted };
 }
 
 export async function listOutstandingFees() {

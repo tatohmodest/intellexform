@@ -4,6 +4,7 @@ import {
   chargeFee,
   createFeeStructure,
   deleteFeeCharge,
+  deleteFeeCharges,
   listBillableCourses,
   listFeeStructures,
   listOutstandingFees,
@@ -72,6 +73,13 @@ export async function POST(req: NextRequest) {
     if (action === 'delete_charge') {
       const actor = await requireStaff('fees.write');
       const result = await deleteFeeCharge(actor, String(body.chargeId || body.id || ''));
+      return NextResponse.json(result);
+    }
+
+    if (action === 'delete_charges') {
+      const actor = await requireStaff('fees.write');
+      const ids = Array.isArray(body.chargeIds) ? body.chargeIds.map(String) : [];
+      const result = await deleteFeeCharges(actor, ids);
       return NextResponse.json(result);
     }
 

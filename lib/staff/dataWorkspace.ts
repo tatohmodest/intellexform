@@ -250,6 +250,34 @@ export async function updateDataset(actor: StaffActor, id: string, patch: Record
   return getDataset(actor, id);
 }
 
+export async function deleteDataset(actor: StaffActor, id: string) {
+  if (!actor.permissions.includes('data.write') && !actor.permissions.includes('data.manage')) {
+    throw new StaffAuthError('You cannot delete this dataset.', 403);
+  }
+  const current = await getDataset(actor, id);
+  if (!actor.permissions.includes('data.manage') && current.ownerId !== actor.userId) {
+    throw new StaffAuthError('Only the owner or a manager can delete this dataset.', 403);
+  }
+  const { datasets, records, audit: auditCol } = await cols();
+  const now = new Date();
+  await records.deleteMany({ datasetId: id });
+  await datasets.updateOne(
+    { _id: new ObjectId(id) },
+    { $set: { deletedAt: now, status: 'archived', updatedAt: now } },
+  );
+  await auditCol.insertOne({
+    datasetId: id,
+    recordId: null,
+    actorId: actor.userId,
+    actorName: actor.name,
+    action: 'dataset.delete',
+    before: { name: current.name, records: current.recordCount },
+    after: { deleted: true },
+    createdAt: now,
+  });
+  return { ok: true };
+}
+
 function searchBlob(values: Record<string, unknown>, tags: string[], status: string) {
   return [status, ...tags, ...Object.values(values).map((v) => (Array.isArray(v) ? v.join(' ') : String(v ?? '')))]
     .join(' ')
@@ -589,12 +617,31 @@ function csvCell(v: string) {
   return `"${String(v).replace(/"/g, '""')}"`;
 }
 
-export function parseCsv(text: string): string[][] {
+function detectDelim(s: string) {
+  const first = (s.split(/\r?\n/).find((line) => line.trim()) || '').slice(0, 4000);
+  const counts: Record<string, number> = { ',': 0, ';': 0, '\t': 0 };
+  let q = false;
+  for (const c of first) {
+    if (c === '"') q = !q;
+    else if (!q && c in counts) counts[c] += 1;
+  }
+  const ranked = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  return ranked[0][1] > 0 ? ranked[0][0] : ',';
+}
+
+export function parseCsv(text: string, delim?: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let cur = '';
   let q = false;
   const s = text.replace(/^\uFEFF/, '');
+  if (/^PK\x03\x04/.test(s) || s.startsWith('PK')) {
+    throw new StaffAuthError(
+      'This looks like an Excel workbook (.xlsx). In Excel choose File → Save As → CSV UTF-8, then import that CSV.',
+      400,
+    );
+  }
+  const sep = delim || detectDelim(s);
   for (let i = 0; i < s.length; i++) {
     const c = s[i];
     if (q) {
@@ -604,7 +651,7 @@ export function parseCsv(text: string): string[][] {
       } else if (c === '"') q = false;
       else cur += c;
     } else if (c === '"') q = true;
-    else if (c === ',') {
+    else if (c === sep) {
       row.push(cur);
       cur = '';
     } else if (c === '\n') {
@@ -621,25 +668,66 @@ export function parseCsv(text: string): string[][] {
   return rows.filter((r) => r.some((c) => c.trim()));
 }
 
+const SYSTEM_HEADERS = /^(id|_id|status|tags|created|created at|updated|updated at|source)$/i;
+
+function normHeader(h: string) {
+  return h.trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
 function guessMap(header: string[], fields: DataField[]) {
+  const used = new Set<string>();
+  const mapped = header.map((h) => {
+    const n = normHeader(h);
+    if (!n || SYSTEM_HEADERS.test(h.trim()) || SYSTEM_HEADERS.test(n)) return '';
+    const hit = fields.find((f) => {
+      if (used.has(f.id)) return false;
+      const lab = normHeader(f.label);
+      const key = f.key.replace(/_/g, ' ');
+      return lab === n || key === n || (n.length > 2 && (lab.includes(n) || n.includes(lab)));
+    });
+    if (hit) {
+      used.add(hit.id);
+      return hit.id;
+    }
+    return '';
+  });
+  if (mapped.some(Boolean)) return mapped;
+  let i = 0;
   return header.map((h) => {
-    const n = h.trim().toLowerCase();
-    const hit = fields.find((f) => f.label.toLowerCase() === n || f.key === n.replace(/\s+/g, '_'));
-    return hit?.id || '';
+    if (SYSTEM_HEADERS.test(h.trim()) || SYSTEM_HEADERS.test(normHeader(h))) return '';
+    const f = fields[i++];
+    return f?.id || '';
   });
 }
 
 export function previewCsv(dataset: DatasetDoc, csvText: string) {
   const table = parseCsv(csvText);
-  if (table.length < 2) throw new StaffAuthError('The file has no data rows.', 400);
+  if (table.length < 2) {
+    throw new StaffAuthError(
+      'No data rows found. Use a CSV with a header row, then one row per person. Excel: File → Save As → CSV UTF-8.',
+      400,
+    );
+  }
   const header = table[0];
   const suggested = guessMap(header, dataset.fields);
+  const previewRows = table.slice(1, 8).map((row) => {
+    const values: Record<string, string> = {};
+    suggested.forEach((fieldId, idx) => {
+      if (fieldId) values[fieldId] = String(row[idx] ?? '').trim();
+    });
+    return values;
+  });
+  const missingRequired = dataset.fields
+    .filter((f) => f.required && !suggested.includes(f.id))
+    .map((f) => f.label);
   return {
     header,
     suggested,
-    fields: dataset.fields.map((f) => ({ id: f.id, label: f.label })),
-    sample: table.slice(1, 6),
+    fields: dataset.fields.map((f) => ({ id: f.id, label: f.label, required: f.required })),
+    sample: table.slice(1, 8),
+    previewRows,
     rowCount: table.length - 1,
+    missingRequired,
     csv: csvText,
   };
 }

@@ -53,6 +53,12 @@ export default function SettingsForm({
   const [uploadPct, setUploadPct] = useState(0);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwSaved, setPwSaved] = useState(false);
+  const [pwError, setPwError] = useState('');
 
   async function onPickAvatar(file: File | null) {
     if (!file) return;
@@ -119,6 +125,35 @@ export default function SettingsForm({
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/');
     router.refresh();
+  }
+
+  async function changePassword() {
+    setPwBusy(true);
+    setPwSaved(false);
+    setPwError('');
+    if (newPassword !== confirmPassword) {
+      setPwError('New password and confirmation do not match.');
+      setPwBusy(false);
+      return;
+    }
+    try {
+      const res = await fetch('/api/auth/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPwError(data.error || 'Could not change password.');
+        return;
+      }
+      setPwSaved(true);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } finally {
+      setPwBusy(false);
+    }
   }
 
   return (
@@ -292,6 +327,63 @@ export default function SettingsForm({
           ))}
         </div>
         <PushAlertsSettings />
+      </section>
+
+      <section className="border-t pt-6" style={{ borderColor: 'var(--line)' }}>
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
+          Security
+        </p>
+        <h2 className="mb-2 font-display text-[22px]">Change password</h2>
+        <p className="mb-5 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+          Enter your current password, then the new one twice to confirm.
+        </p>
+        <label className="mb-1.5 block text-[13px] font-semibold">Current password</label>
+        <input
+          type="password"
+          autoComplete="current-password"
+          className="form-input mb-4 max-w-sm !rounded-none"
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+        />
+        <label className="mb-1.5 block text-[13px] font-semibold">New password</label>
+        <input
+          type="password"
+          autoComplete="new-password"
+          className="form-input mb-4 max-w-sm !rounded-none"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          placeholder="At least 8 characters"
+        />
+        <label className="mb-1.5 block text-[13px] font-semibold">Confirm new password</label>
+        <input
+          type="password"
+          autoComplete="new-password"
+          className="form-input mb-4 max-w-sm !rounded-none"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+        />
+        {pwError ? (
+          <p className="mb-3 text-sm" style={{ color: '#b91c1c' }}>
+            {pwError}
+          </p>
+        ) : null}
+        {pwSaved ? (
+          <p className="mb-3 inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--green-deep)' }}>
+            <CheckCircle2 size={15} /> Password updated
+          </p>
+        ) : null}
+        <div>
+          <button
+            type="button"
+            onClick={() => void changePassword()}
+            disabled={pwBusy || !currentPassword || !newPassword || !confirmPassword}
+            className="inline-flex items-center gap-2 px-6 py-3 text-[13.5px] font-semibold text-white disabled:opacity-50"
+            style={{ background: 'var(--green)' }}
+          >
+            {pwBusy ? <Loader2 size={15} className="animate-spin" /> : null}
+            {pwBusy ? 'Updating…' : 'Update password'}
+          </button>
+        </div>
       </section>
 
       {error ? (
