@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { CheckCircle2, Loader2, LogOut, Save, Upload } from 'lucide-react';
 import { uploadMediaAsset } from '@/lib/mediaUpload';
 import { MAX_IMAGE_UPLOAD_BYTES } from '@/lib/compressImage';
+import { INTERESTS } from '@/lib/learn/interests';
 
 type Prefs = {
   locale: string;
@@ -27,7 +28,7 @@ export default function SettingsForm({
   initialName: string;
   initialWeeklyGoal: number;
   initialAvatar?: string | null;
-  initialPreferences?: Partial<Prefs> | null;
+  initialPreferences?: (Partial<Prefs> & { interests?: string[] }) | null;
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -45,6 +46,7 @@ export default function SettingsForm({
     notifyInstitution: initialPreferences?.notifyInstitution ?? true,
     notifySystem: initialPreferences?.notifySystem ?? true,
   });
+  const [interests, setInterests] = useState<string[]>(initialPreferences?.interests || []);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
@@ -93,7 +95,7 @@ export default function SettingsForm({
           name,
           weeklyGoalMinutes: goal,
           avatar,
-          preferences: prefs,
+          preferences: { ...prefs, interests },
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -233,6 +235,35 @@ export default function SettingsForm({
               <span>{label}</span>
             </label>
           ))}
+        </div>
+
+        <h3 className="mb-3 mt-8 font-display text-[18px]">Interests</h3>
+        <p className="mb-3 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+          Used to recommend courses, events, and resources on your home page.
+        </p>
+        <div className="mb-6 flex flex-wrap gap-2">
+          {INTERESTS.map((item) => {
+            const on = interests.includes(item.id);
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() =>
+                  setInterests((prev) =>
+                    on ? prev.filter((x) => x !== item.id) : [...prev, item.id],
+                  )
+                }
+                className="rounded-full border px-3 py-1.5 text-[12.5px] font-semibold"
+                style={{
+                  borderColor: on ? 'var(--ink)' : 'var(--line)',
+                  background: on ? 'var(--ink)' : 'transparent',
+                  color: on ? '#fff' : 'var(--ink)',
+                }}
+              >
+                {item.label}
+              </button>
+            );
+          })}
         </div>
 
         <h3 className="mb-3 mt-8 font-display text-[18px]">Notification categories</h3>

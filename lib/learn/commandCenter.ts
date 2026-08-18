@@ -18,6 +18,7 @@ import {
 } from '@/lib/learn/courseClassSessions';
 import { getMyCourseSections, type MyCourseCard } from '@/lib/learn/myCourses';
 import { listPersonalTasks } from '@/lib/learn/personalTasks';
+import { catalogSlugsForInterests } from '@/lib/learn/interests';
 import { getMentorBookings, listBooksByAuthor } from '@/lib/learn/ecosystem';
 import { unreadNotificationCount } from '@/lib/learn/notifications';
 
@@ -345,9 +346,15 @@ export async function getStudentCommandCenter(userId: string) {
     });
   }
 
+  const interestSlugs = catalogSlugsForInterests(learner?.preferences?.interests || []);
   const recommended = getCatalog()
     .filter((t) => !enrollments.some((e) => e.courseSlug === t.slug))
-    .slice(0, 4)
+    .sort((a, b) => {
+      const as = interestSlugs.includes(a.slug) ? 0 : 1;
+      const bs = interestSlugs.includes(b.slug) ? 0 : 1;
+      return as - bs;
+    })
+    .slice(0, 6)
     .map((t) => ({
       slug: t.slug,
       title: t.title,

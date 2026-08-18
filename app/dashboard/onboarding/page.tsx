@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getLearner } from '@/lib/learn/repo';
 import { isOnboardingComplete } from '@/lib/learn/identity';
+import { getOrgConfig } from '@/lib/org/config';
 import IdentityOnboarding from '@/components/dashboard/IdentityOnboarding';
 
 export const dynamic = 'force-dynamic';
@@ -35,6 +36,14 @@ export default async function OnboardingPage({
 
   const firstName =
     (learner?.name || session.name || 'there').split(/\s+/)[0] || 'there';
+  const org = await getOrgConfig();
 
-  return <IdentityOnboarding firstName={firstName} continueTo={after} />;
+  return (
+    <IdentityOnboarding
+      firstName={firstName}
+      institutionName={org.name}
+      tagline={org.tagline}
+      continueTo={after}
+    />
+  );
 }

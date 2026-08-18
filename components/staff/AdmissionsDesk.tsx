@@ -12,6 +12,7 @@ type AppRow = {
   status: string;
   notes: string;
   source: string;
+  applicationCode?: string;
 };
 
 export default function AdmissionsDesk({
@@ -44,12 +45,34 @@ export default function AdmissionsDesk({
     }
   }
 
+  async function remove(app: AppRow) {
+    const label = app.name || app.email || 'this request';
+    if (!confirm(`Delete the request from ${label}? This cannot be undone.`)) return;
+    setBusy(app.id + 'delete');
+    setError('');
+    try {
+      const res = await fetch('/api/staff/admissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', id: app.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not delete request');
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete request');
+    } finally {
+      setBusy(null);
+    }
+  }
+
   if (!applications.length) {
     return (
       <div className="rounded-2xl border border-dashed px-4 py-10 text-center" style={{ borderColor: 'var(--line)' }}>
         <p className="font-display text-[20px]">No applications yet</p>
         <p className="mt-1 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-          Public join requests and registrations appear here for review.
+          Public join requests, registrations, and in-app student applications appear here. Admit
+          upgrades the same account — it never creates a second login.
         </p>
       </div>
     );
@@ -72,6 +95,7 @@ export default function AdmissionsDesk({
                 {app.phone ? ` · ${app.phone}` : ''}
               </p>
               <p className="mt-1 text-[13px]">
+                {app.applicationCode ? `${app.applicationCode} · ` : ''}
                 {app.program || 'Program not specified'} · {app.source} ·{' '}
                 <span className="capitalize">{app.status}</span>
               </p>
@@ -81,34 +105,47 @@ export default function AdmissionsDesk({
                 </p>
               ) : null}
             </div>
-            {canDecide && app.status === 'pending' ? (
+            {canDecide ? (
               <div className="flex flex-wrap gap-2">
+                {app.status === 'pending' ? (
+                  <>
+                    <button
+                      type="button"
+                      disabled={Boolean(busy)}
+                      onClick={() => decide(app.id, 'admitted')}
+                      className="px-3 py-1.5 text-[12.5px] font-semibold text-white"
+                      style={{ background: '#00B369' }}
+                    >
+                      {busy === `${app.id}admitted` ? '…' : 'Admit'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={Boolean(busy)}
+                      onClick={() => decide(app.id, 'waitlisted')}
+                      className="border px-3 py-1.5 text-[12.5px] font-semibold"
+                      style={{ borderColor: 'var(--line)' }}
+                    >
+                      Waitlist
+                    </button>
+                    <button
+                      type="button"
+                      disabled={Boolean(busy)}
+                      onClick={() => decide(app.id, 'rejected')}
+                      className="border px-3 py-1.5 text-[12.5px] font-semibold"
+                      style={{ borderColor: 'var(--line)', color: '#b91c1c' }}
+                    >
+                      Reject
+                    </button>
+                  </>
+                ) : null}
                 <button
                   type="button"
                   disabled={Boolean(busy)}
-                  onClick={() => decide(app.id, 'admitted')}
-                  className="px-3 py-1.5 text-[12.5px] font-semibold text-white"
-                  style={{ background: '#00B369' }}
-                >
-                  {busy === `${app.id}admitted` ? '…' : 'Admit'}
-                </button>
-                <button
-                  type="button"
-                  disabled={Boolean(busy)}
-                  onClick={() => decide(app.id, 'waitlisted')}
-                  className="border px-3 py-1.5 text-[12.5px] font-semibold"
-                  style={{ borderColor: 'var(--line)' }}
-                >
-                  Waitlist
-                </button>
-                <button
-                  type="button"
-                  disabled={Boolean(busy)}
-                  onClick={() => decide(app.id, 'rejected')}
+                  onClick={() => remove(app)}
                   className="border px-3 py-1.5 text-[12.5px] font-semibold"
                   style={{ borderColor: 'var(--line)', color: '#b91c1c' }}
                 >
-                  Reject
+                  {busy === `${app.id}delete` ? '…' : 'Delete'}
                 </button>
               </div>
             ) : null}

@@ -399,7 +399,9 @@ export async function listStudents(opts: {
   const db = await getDb();
   const page = Math.max(1, opts.page || 1);
   const pageSize = 40;
-  const query: Record<string, unknown> = {};
+  const query: Record<string, unknown> = {
+    duplicateOfUserId: { $exists: false },
+  };
   const recCol = await recordsCol();
   if (opts.campusSlugs?.length) {
     const scoped = await recCol
@@ -460,18 +462,30 @@ export async function listStudents(opts: {
   const rows = [];
   for (const l of learners) {
     const id = String(l.lbId);
-    let rec = recById.get(id);
+    const rec = recById.get(id);
     if (!rec) {
-      rec = await ensureStudentRecord(id, {
+      if (opts.status && opts.status !== 'user') continue;
+      const bal = balById.get(id);
+      rows.push({
+        userId: id,
+        studentCode: '',
         name: String(l.name || ''),
         email: String(l.email || ''),
+        status: 'user',
+        program: '',
+        department: '',
+        year: '',
+        campusSlug: '',
+        lastLoginAt: l.lastLoginAt || null,
+        outstandingXAF: Math.max(0, Number(bal?.charged || 0) - Number(bal?.paid || 0)),
       });
+      continue;
     }
     if (opts.status && rec.status !== opts.status) continue;
     const bal = balById.get(id);
     rows.push({
       userId: id,
-      studentCode: String(rec.studentCode || ''),
+      studentCode: String(rec.studentCode || rec.matricule || ''),
       name: String(l.name || rec.name || ''),
       email: String(l.email || rec.email || ''),
       status: String(rec.status || 'active'),
@@ -673,9 +687,61 @@ export async function createFeeStructure(
   return { id: res.insertedId.toString(), ...doc };
 }
 
+export async function listBillableCourses() {
+  const db = await getDb();
+  const teacher = await db
+    .collection('teacher_courses')
+    .find({}, { projection: { title: 1, name: 1 } })
+    .limit(80)
+    .toArray();
+  const instructorCounts = await db
+    .collection('course_enrollments')
+    .aggregate<{ _id: string; n: number }>([{ $group: { _id: '$courseId', n: { $sum: 1 } } }])
+    .toArray()
+    .catch(() => []);
+  const catalogCounts = await db
+    .collection('enrollments')
+    .aggregate<{ _id: string; n: number }>([{ $group: { _id: '$courseSlug', n: { $sum: 1 } } }])
+    .toArray()
+    .catch(() => []);
+  const countBy = new Map<string, number>();
+  for (const r of instructorCounts) countBy.set(String(r._id), Number(r.n || 0));
+  for (const r of catalogCounts) {
+    countBy.set(String(r._id), (countBy.get(String(r._id)) || 0) + Number(r.n || 0));
+  }
+  const courses: Array<{ id: string; title: string; students: number; source: string }> = [];
+  for (const t of teacher) {
+    const id = String(t._id);
+    courses.push({
+      id,
+      title: String(t.title || t.name || 'Course'),
+      students: countBy.get(id) || 0,
+      source: 'instructor',
+    });
+  }
+  for (const row of catalogCounts) {
+    const id = String(row._id || '');
+    if (!id || courses.some((c) => c.id === id)) continue;
+    courses.push({
+      id,
+      title: id.replace(/-/g, ' '),
+      students: Number(row.n || 0),
+      source: 'catalogue',
+    });
+  }
+  return courses.filter((c) => c.students > 0 || c.source === 'instructor').slice(0, 80);
+}
+
 export async function chargeFee(
   actor: StaffActor,
-  opts: { structureId?: string; studentUserId?: string; title?: string; amountXAF?: number; allActive?: boolean },
+  opts: {
+    structureId?: string;
+    studentUserId?: string;
+    courseId?: string;
+    title?: string;
+    amountXAF?: number;
+    allActive?: boolean;
+  },
 ) {
   const structures = await feesCol();
   let title = opts.title?.trim() || '';
@@ -690,20 +756,32 @@ export async function chargeFee(
   if (!title || amountXAF < 1) throw new StaffAuthError('Choose a fee structure or enter title and amount.', 400);
 
   const targets: string[] = [];
-  if (opts.allActive) {
+  if (opts.studentUserId) {
+    const rec = await (await recordsCol()).findOne({ userId: opts.studentUserId });
+    if (rec && !campusInScope(actor.post, String(rec.campusSlug || '') || null)) {
+      throw new StaffAuthError('This student is outside your campus.', 403);
+    }
+    targets.push(opts.studentUserId);
+  } else if (opts.courseId) {
+    const db = await getDb();
+    const courseId = String(opts.courseId);
+    const [fromLive, fromCatalog] = await Promise.all([
+      db.collection('course_enrollments').distinct('studentId', { courseId }).catch(() => [] as string[]),
+      db.collection('enrollments').distinct('userId', { courseSlug: courseId }).catch(() => [] as string[]),
+    ]);
+    targets.push(
+      ...Array.from(new Set([...(fromLive as string[]), ...(fromCatalog as string[])].map(String).filter(Boolean))),
+    );
+  } else if (opts.allActive) {
     const db = await getDb();
     const recQuery: Record<string, unknown> = { status: { $in: ['active', 'admitted'] } };
     if (actor.post.campusSlugs.length) recQuery.campusSlug = { $in: actor.post.campusSlugs };
     const recs = await (await recordsCol()).find(recQuery).project({ userId: 1 }).limit(500).toArray();
     targets.push(...recs.map((r) => String(r.userId)));
-  } else if (opts.studentUserId) {
-    const rec = await ensureStudentRecord(opts.studentUserId);
-    if (!campusInScope(actor.post, String(rec.campusSlug || '') || null)) {
-      throw new StaffAuthError('This student is outside your campus.', 403);
-    }
-    targets.push(opts.studentUserId);
   }
-  if (!targets.length) throw new StaffAuthError('Choose a student or charge all active students.', 400);
+  if (!targets.length) {
+    throw new StaffAuthError('Choose one student, a course, or official students only.', 400);
+  }
 
   const ch = await chargesCol();
   const now = new Date();
@@ -714,10 +792,17 @@ export async function chargeFee(
     amountXAF,
     paidXAF: 0,
     status: 'open',
+    courseId: opts.courseId || null,
     createdBy: actor.userId,
     createdAt: now,
   }));
   if (docs.length) await ch.insertMany(docs);
+  await createNotificationsForUsers(targets, {
+    title: `Fee charged: ${title}`,
+    body: `${amountXAF.toLocaleString()} XAF has been added to your account.`,
+    href: '/dashboard/fees',
+    kind: 'institution',
+  }).catch(() => 0);
   await writeStaffAudit({
     actorId: actor.userId,
     actorName: actor.name,
@@ -725,7 +810,7 @@ export async function chargeFee(
     action: 'fees.charge.create',
     entityType: 'fee_charge',
     summary: `${actor.name} charged “${title}” to ${docs.length} student${docs.length === 1 ? '' : 's'}`,
-    after: { title, amountXAF, count: docs.length },
+    after: { title, amountXAF, count: docs.length, courseId: opts.courseId || null },
   });
   return { charged: docs.length, title, amountXAF };
 }
@@ -734,34 +819,60 @@ export async function recordFeePayment(
   actor: StaffActor,
   opts: {
     studentUserId: string;
-    chargeId: string;
+    chargeId?: string;
     amountXAF: number;
     method: string;
     reference?: string;
     note?: string;
+    paidAt?: string | Date;
   },
 ) {
   const amountXAF = Math.round(Number(opts.amountXAF) || 0);
   if (amountXAF < 1) throw new StaffAuthError('Enter a payment amount.', 400);
-  if (!ObjectId.isValid(opts.chargeId)) throw new StaffAuthError('Invalid charge.', 400);
+  if (!opts.studentUserId) throw new StaffAuthError('Choose the student who paid.', 400);
+
+  const paidAtRaw = opts.paidAt ? new Date(opts.paidAt) : new Date();
+  const paidAt = Number.isNaN(paidAtRaw.getTime()) ? new Date() : paidAtRaw;
+
   const ch = await chargesCol();
-  const charge = await ch.findOne({
-    _id: new ObjectId(opts.chargeId),
-    studentUserId: opts.studentUserId,
-  });
-  if (!charge) throw new StaffAuthError('Charge not found.', 404);
+  let charge = opts.chargeId && ObjectId.isValid(opts.chargeId)
+    ? await ch.findOne({ _id: new ObjectId(opts.chargeId), studentUserId: opts.studentUserId })
+    : null;
+  if (opts.chargeId && !charge) throw new StaffAuthError('Charge not found.', 404);
+
+  if (!charge) {
+    charge = await ch.findOne(
+      { studentUserId: opts.studentUserId, $expr: { $gt: ['$amountXAF', '$paidXAF'] } },
+      { sort: { createdAt: 1 } },
+    );
+  }
+  if (!charge) {
+    const inserted = await ch.insertOne({
+      studentUserId: opts.studentUserId,
+      structureId: null,
+      title: 'Recorded payment',
+      amountXAF,
+      paidXAF: 0,
+      status: 'open',
+      createdBy: actor.userId,
+      createdAt: paidAt,
+    });
+    charge = await ch.findOne({ _id: inserted.insertedId });
+  }
+  if (!charge) throw new StaffAuthError('Could not record payment against a charge.', 500);
+
   const due = Math.max(0, Number(charge.amountXAF || 0) - Number(charge.paidXAF || 0));
   const applied = Math.min(amountXAF, due || amountXAF);
   const paidXAF = Number(charge.paidXAF || 0) + applied;
   const status = paidXAF >= Number(charge.amountXAF || 0) ? 'paid' : 'partial';
-  await ch.updateOne({ _id: charge._id }, { $set: { paidXAF, status, updatedAt: new Date() } });
+  await ch.updateOne({ _id: charge._id }, { $set: { paidXAF, status, updatedAt: paidAt } });
   const pay = await paymentsCol();
   const method = String(opts.method || 'other').slice(0, 40);
   const year = new Date().getFullYear();
   const receiptCode = `RCP-${year}-${Math.floor(100000 + Math.random() * 900000)}`;
   const doc = {
     studentUserId: opts.studentUserId,
-    chargeId: opts.chargeId,
+    chargeId: String(charge._id),
     amountXAF: applied,
     method,
     receiptCode,
@@ -769,9 +880,18 @@ export async function recordFeePayment(
     note: String(opts.note || '').slice(0, 400),
     recordedBy: actor.userId,
     recordedByName: actor.name,
+    paidAt,
     createdAt: new Date(),
   };
   const res = await pay.insertOne(doc);
+  const { createNotification } = await import('@/lib/learn/notifications');
+  await createNotification({
+    userId: opts.studentUserId,
+    title: 'Payment recorded',
+    body: `${applied.toLocaleString()} XAF received (${receiptCode}) on ${paidAt.toLocaleString()}.`,
+    href: '/dashboard/fees',
+    kind: 'institution',
+  }).catch(() => null);
   await writeStaffAudit({
     actorId: actor.userId,
     actorName: actor.name,
@@ -779,10 +899,31 @@ export async function recordFeePayment(
     action: 'fees.payment.record',
     entityType: 'fee_payment',
     entityId: res.insertedId.toString(),
-    summary: `${actor.name} recorded ${applied} XAF (${method}) for student ${opts.studentUserId}`,
+    summary: `${actor.name} recorded ${applied} XAF (${method}) at ${paidAt.toISOString()} for student ${opts.studentUserId}`,
     after: doc,
   });
   return { id: res.insertedId.toString(), ...doc, chargeStatus: status };
+}
+
+export async function deleteFeeCharge(actor: StaffActor, chargeId: string) {
+  if (!ObjectId.isValid(chargeId)) throw new StaffAuthError('Invalid charge.', 400);
+  const ch = await chargesCol();
+  const charge = await ch.findOne({ _id: new ObjectId(chargeId) });
+  if (!charge) throw new StaffAuthError('Charge not found.', 404);
+  await ch.deleteOne({ _id: charge._id });
+  const pay = await paymentsCol();
+  await pay.deleteMany({ chargeId: String(charge._id) });
+  await writeStaffAudit({
+    actorId: actor.userId,
+    actorName: actor.name,
+    actorEmail: actor.email,
+    action: 'fees.charge.delete',
+    entityType: 'fee_charge',
+    entityId: chargeId,
+    summary: `${actor.name} deleted fee charge “${charge.title}” for ${charge.studentUserId}`,
+    before: charge,
+  });
+  return { ok: true };
 }
 
 export async function listOutstandingFees() {
@@ -872,6 +1013,8 @@ export async function listAdmissions() {
     status: String(r.status || 'pending'),
     notes: String(r.notes || ''),
     source: String(r.source || ''),
+    applicationCode: String(r.applicationCode || ''),
+    userId: r.userId ? String(r.userId) : null,
     createdAt: r.createdAt,
   }));
 }
@@ -898,20 +1041,58 @@ export async function decideAdmission(
       },
     },
   );
-  if (decision === 'admitted' && row.email) {
+  const { syncApplicationDecision } = await import('@/lib/learn/applications');
+  const { activateStudentMembership } = await import('@/lib/learn/studentAccess');
+  const { createNotification } = await import('@/lib/learn/notifications');
+  await syncApplicationDecision({
+    sourceId: String(row.sourceId || ''),
+    email: String(row.email || ''),
+    userId: String(row.userId || ''),
+    decision,
+    program: String(row.program || ''),
+  }).catch(() => null);
+
+  if (decision === 'admitted') {
+    let userId = String(row.userId || '');
+    if (!userId && row.email) {
+      const db = await getDb();
+      const learner = await db.collection('learners').findOne({
+        email: { $regex: new RegExp(`^${String(row.email).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+      });
+      if (learner?.lbId) userId = String(learner.lbId);
+    }
+    if (userId) {
+      const membership = await activateStudentMembership({
+        userId,
+        program: String(row.program || ''),
+        email: String(row.email || ''),
+        name: String(row.name || ''),
+        status: 'active',
+      });
+      await createNotification({
+        userId,
+        title: 'Welcome — you are now a student',
+        body: membership.matricule
+          ? `Your place is confirmed. Matricule: ${membership.matricule}. Academic access is unlocked on this account.`
+          : 'Your place is confirmed. Academic access is unlocked on this account.',
+        href: '/dashboard',
+        kind: 'institution',
+      }).catch(() => null);
+    }
+  } else if (row.email) {
     const db = await getDb();
     const learner = await db.collection('learners').findOne({
       email: { $regex: new RegExp(`^${String(row.email).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
     });
     if (learner?.lbId) {
-      await ensureStudentRecord(String(learner.lbId), {
-        name: String(learner.name || row.name),
-        email: String(learner.email || row.email),
-      });
-      await (await recordsCol()).updateOne(
-        { userId: String(learner.lbId) },
-        { $set: { status: 'admitted', program: row.program || '', updatedAt: new Date() } },
-      );
+      const decisionLabel = decision === 'waitlisted' ? 'waitlisted' : 'not accepted';
+      await createNotification({
+        userId: String(learner.lbId),
+        title: `Admission ${decisionLabel}`,
+        body: `Your application${row.program ? ` for ${row.program}` : ''} was ${decisionLabel}.`,
+        href: '/dashboard/application',
+        kind: 'institution',
+      }).catch(() => null);
     }
   }
   await writeStaffAudit({
@@ -926,6 +1107,39 @@ export async function decideAdmission(
     after: { status: decision },
   });
   return { ok: true, status: decision };
+}
+
+export async function deleteAdmission(actor: StaffActor, id: string) {
+  if (!ObjectId.isValid(id)) throw new StaffAuthError('Invalid application.', 400);
+  const col = await admissionsCol();
+  const row = await col.findOne({ _id: new ObjectId(id) });
+  if (!row) throw new StaffAuthError('Application not found.', 404);
+  await col.deleteOne({ _id: row._id });
+  const sourceId = String(row.sourceId || '');
+  if (sourceId) {
+    const db = await getDb();
+    const byObjectId = ObjectId.isValid(sourceId) ? { _id: new ObjectId(sourceId) } : null;
+    if (row.source === 'in_app' && byObjectId) {
+      await db.collection('student_applications').deleteOne(byObjectId).catch(() => {});
+    }
+    if (row.source === 'request' && byObjectId) {
+      await db.collection('requests').deleteOne(byObjectId).catch(() => {});
+    }
+    if (row.source === 'registration' && byObjectId) {
+      await db.collection('registrations').deleteOne(byObjectId).catch(() => {});
+    }
+  }
+  await writeStaffAudit({
+    actorId: actor.userId,
+    actorName: actor.name,
+    actorEmail: actor.email,
+    action: 'admissions.delete',
+    entityType: 'staff_admission',
+    entityId: id,
+    summary: `${actor.name} deleted application ${row.email || row.applicationCode || id}`,
+    before: { email: row.email, status: row.status, source: row.source },
+  });
+  return { ok: true };
 }
 
 export async function publishAnnouncement(
@@ -963,8 +1177,8 @@ export async function publishAnnouncement(
     await createNotificationsForUsers(ids, {
       title,
       body,
-      href: '/dashboard/notifications',
-      kind: 'system',
+      href: '/dashboard/community',
+      kind: 'institution',
     }).catch(() => 0);
   }
   await writeStaffAudit({
@@ -1095,16 +1309,22 @@ export async function listStaffAudit(limit = 80) {
 }
 
 export async function getOwnFinance(userId: string) {
-  const rec = await ensureStudentRecord(userId);
+  const col = await recordsCol();
+  const rec = await col.findOne({ userId });
   const chCol = await chargesCol();
-  const charges = await chCol.find({ studentUserId: userId }).sort({ createdAt: -1 }).limit(50).toArray();
+  const charges = rec
+    ? await chCol.find({ studentUserId: userId }).sort({ createdAt: -1 }).limit(50).toArray()
+    : [];
   const payCol = await paymentsCol();
-  const payments = await payCol.find({ studentUserId: userId }).sort({ createdAt: -1 }).limit(50).toArray();
+  const payments = rec
+    ? await payCol.find({ studentUserId: userId }).sort({ createdAt: -1 }).limit(50).toArray()
+    : [];
   const totalXAF = charges.reduce((sum, c) => sum + Number(c.amountXAF || 0), 0);
   const paidXAF = charges.reduce((sum, c) => sum + Number(c.paidXAF || 0), 0);
   return {
-    studentCode: String(rec.studentCode || ''),
-    status: String(rec.status || 'active'),
+    isStudent: Boolean(rec && ['active', 'admitted'].includes(String(rec.status))),
+    studentCode: String(rec?.matricule || rec?.studentCode || ''),
+    status: String(rec?.status || ''),
     totalXAF,
     paidXAF,
     outstandingXAF: Math.max(0, totalXAF - paidXAF),

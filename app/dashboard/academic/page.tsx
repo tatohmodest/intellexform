@@ -5,6 +5,7 @@ import { getSessionUser } from '@/lib/auth/getUser';
 import { getLearner } from '@/lib/learn/repo';
 import { getAcademicOverview } from '@/lib/learn/academicOverview';
 import AcademicPrefsEditor from '@/components/dashboard/AcademicPrefsEditor';
+import StudentGate from '@/components/dashboard/StudentGate';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,7 @@ export default async function AcademicOverviewPage() {
   const creditsRequired = primary?.creditsRequired;
 
   return (
+    <StudentGate userId={session.uid}>
     <div className="mx-auto max-w-[920px]">
       <header className="mb-8 border-b pb-6" style={{ borderColor: 'var(--line)' }}>
         <div className="tab mb-2 inline-flex items-center gap-1.5">
@@ -127,5 +129,6 @@ export default async function AcademicOverviewPage() {
         initialCohort={prefs?.academicCohort || primary?.cohort || ''}
       />
     </div>
+    </StudentGate>
   );
 }

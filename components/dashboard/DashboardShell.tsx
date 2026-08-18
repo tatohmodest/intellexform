@@ -56,6 +56,8 @@ export interface ShellUser {
   affiliations?: Affiliation[];
   activeContext?: ActiveContext;
   onboardingComplete?: boolean;
+  isStudent?: boolean;
+  matricule?: string | null;
 }
 
 type NavItem = {
@@ -95,10 +97,10 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Community',
     items: [
       { href: '/dashboard/messages', label: 'Messages', icon: MessageSquare },
+      { href: '/dashboard/community', label: 'Community', icon: Users },
       { href: '/dashboard/study-groups', label: 'Study groups', icon: Users },
       { href: '/dashboard/mentorship', label: 'Mentorship', icon: Users },
       { href: '/dashboard/notes', label: 'Notes', icon: FileText },
-      { href: '/dashboard/institutions', label: 'Institutions', icon: Building2 },
     ],
   },
   {
@@ -199,7 +201,7 @@ function NavLinks({
           style={{ color: 'var(--ink-soft)' }}
         >
           <Home size={17} />
-          Personal InTelleX
+          Home
         </Link>
         {staffPermissions?.includes('staff.access') ? (
           <Link
@@ -216,20 +218,6 @@ function NavLinks({
             Staff
           </Link>
         ) : null}
-        <div className="mt-4 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
-          <div className="mono mb-1.5 px-3.5 text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
-            Network
-          </div>
-          <Link
-            href="/dashboard/institutions"
-            onClick={onNavigate}
-            className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
-            style={{ color: 'var(--ink-soft)' }}
-          >
-            <Sparkles size={17} />
-            All institutions
-          </Link>
-        </div>
       </nav>
     );
   }
@@ -570,12 +558,13 @@ function ContextSwitcher({
             onClick={() => switchTo({ kind: 'teaching', institutionSlug: null })}
           />
           <Link
-            href="/dashboard/institutions"
+            href={user.isStudent ? '/dashboard/academic' : '/dashboard/apply'}
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 border-t px-3 py-2.5 text-[12.5px] font-semibold"
             style={{ borderColor: 'var(--line)', color: accent }}
           >
-            <Building2 size={14} /> Find more institutions
+            <GraduationCap size={14} />
+            {user.isStudent ? 'Academic record' : 'Become a student'}
           </Link>
         </div>
       )}

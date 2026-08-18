@@ -1,11 +1,10 @@
 /**
  * InTelleX identity architecture
  *
- * Identity is global. Permissions are contextual. Data is local.
- *
- * Users belong to InTelleX - not to universities.
- * Institutions are affiliations on one passport, like GitHub orgs.
- * Institutions are never self-created - Platform Team onboards them.
+ * One deployment is one institution. Anyone may create an account and use
+ * public learning, community, and services. Becoming a student is a separate
+ * admissions process that upgrades the SAME account (matricule + academic
+ * records) — never a second login.
  */
 
 export type PrimaryIntent = 'learn' | 'teach';

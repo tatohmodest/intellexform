@@ -17,7 +17,12 @@ import {
 } from '@/lib/email';
 import { createSession, type SessionUser } from '@/lib/auth/session';
 import { isOnboardingComplete } from '@/lib/learn/identity';
-import type { LearnerDoc } from '@/lib/learn/repo';
+import {
+  ensureUniqueLearnerEmails,
+  findLearnerByEmail,
+  getLearner,
+  type LearnerDoc,
+} from '@/lib/learn/repo';
 import { PERSONAL_CONTEXT } from '@/lib/learn/identity';
 import { withTimeout } from '@/lib/withTimeout';
 
@@ -115,6 +120,7 @@ async function credentialsCol() {
   const db = await getDb();
   await db.collection('auth_credentials').createIndex({ email: 1 }, { unique: true }).catch(() => {});
   await db.collection('auth_credentials').createIndex({ userId: 1 }).catch(() => {});
+  await ensureUniqueLearnerEmails().catch(() => {});
   return db.collection('auth_credentials');
 }
 
@@ -339,32 +345,62 @@ export async function upsertLearnerLocal(opts: {
     const db = await getDb();
     const col = db.collection('learners');
     await col.createIndex({ lbId: 1 }, { unique: true }).catch(() => {});
-    await col.createIndex({ email: 1 }).catch(() => {});
-    await col.updateOne(
-      { lbId: opts.id },
-      {
-        $set: {
-          email: opts.email,
-          name: opts.name,
-          lastLoginAt: new Date(),
+    await ensureUniqueLearnerEmails().catch(() => {});
+    const email = opts.email.trim().toLowerCase();
+    const existing = await findLearnerByEmail(email);
+    if (existing && existing.lbId !== opts.id) {
+      await col.updateOne(
+        { lbId: existing.lbId },
+        {
+          $set: {
+            email,
+            name: opts.name || existing.name,
+            lastLoginAt: new Date(),
+          },
         },
-        $setOnInsert: {
-          lbId: opts.id,
-          roles: ['student'],
-          onboardingComplete: false,
-          primaryIntent: null,
-          joinPath: null,
-          affiliations: [],
-          activeContext: PERSONAL_CONTEXT,
-          xp: 0,
-          streakCount: 0,
-          lastActiveDay: null,
-          weeklyGoalMinutes: 150,
-          createdAt: new Date(),
+      );
+      return (await getLearner(existing.lbId)) ?? existing;
+    }
+    try {
+      await col.updateOne(
+        { lbId: opts.id },
+        {
+          $set: {
+            email,
+            name: opts.name,
+            lastLoginAt: new Date(),
+          },
+          $setOnInsert: {
+            lbId: opts.id,
+            roles: ['student'],
+            onboardingComplete: false,
+            primaryIntent: null,
+            joinPath: null,
+            affiliations: [],
+            activeContext: PERSONAL_CONTEXT,
+            xp: 0,
+            streakCount: 0,
+            lastActiveDay: null,
+            weeklyGoalMinutes: 150,
+            createdAt: new Date(),
+          },
         },
-      },
-      { upsert: true },
-    );
+        { upsert: true },
+      );
+    } catch (err) {
+      const code = err && typeof err === 'object' && 'code' in err ? Number((err as { code?: number }).code) : 0;
+      if (code === 11000) {
+        const raced = await findLearnerByEmail(email);
+        if (raced) {
+          await col.updateOne(
+            { lbId: raced.lbId },
+            { $set: { email, name: opts.name || raced.name, lastLoginAt: new Date() } },
+          );
+          return (await getLearner(raced.lbId)) ?? raced;
+        }
+      }
+      throw err;
+    }
     const doc = await col.findOne(
       { lbId: opts.id },
       { projection: { _id: 0, passwordHash: 0 } },
@@ -455,7 +491,13 @@ async function activateVerifiedAccount(opts: {
     emailVerified: now,
     touchLogin: false,
   });
-  const userId = existingCred?.userId || opts.existingUserId || prismaUser?.id || newLocalUserId();
+  const existingLearner = await findLearnerByEmail(email);
+  const userId =
+    existingLearner?.lbId ||
+    existingCred?.userId ||
+    opts.existingUserId ||
+    prismaUser?.id ||
+    newLocalUserId();
   await persistAccount({
     email,
     passwordHash: opts.passwordHash,
@@ -527,8 +569,15 @@ export async function startSignup(opts: {
   if (!opts.origin) return { error: 'Could not build a verification link.', status: 500 };
 
   const { account } = await loadAccount(email);
-  if (account?.passwordHash && account.emailVerified) {
+  if (account?.passwordHash) {
     return { error: 'An account with this email already exists. Sign in instead.', status: 409 };
+  }
+  const existingLearner = await findLearnerByEmail(email);
+  if (existingLearner?.lbId) {
+    const prismaLookup = await prismaUserByEmail(email);
+    if (prismaLookup.user?.passwordHash) {
+      return { error: 'An account with this email already exists. Sign in instead.', status: 409 };
+    }
   }
 
   const passwordHash = await hashPassword(password);
@@ -654,9 +703,17 @@ export async function completeLogin(opts: {
   | { ok: true; session: string; nextPath: string; user: Omit<SessionUser, 'iat'> }
   | AuthError
 > {
-  const email = normalizeEmail(opts.email);
-  if (!email.includes('@')) return { error: 'Enter a valid email.', status: 400 };
+  const identifier = String(opts.email || '').trim();
+  if (!identifier) return { error: 'Enter your email or matricule.', status: 400 };
   if (!opts.password) return { error: 'Enter your password.', status: 400 };
+
+  let email = identifier.includes('@') ? normalizeEmail(identifier) : '';
+  if (!email) {
+    const { findAccountByMatricule } = await import('@/lib/learn/studentAccess');
+    const byMatricule = await findAccountByMatricule(identifier);
+    if (!byMatricule) return { error: 'Invalid matricule or password.', status: 401 };
+    email = normalizeEmail(byMatricule.email);
+  }
 
   const loaded = await loadAccount(email);
   if (!loaded.account?.passwordHash) {
@@ -695,9 +752,13 @@ export async function completeLogin(opts: {
     email,
     name: account.name || email.split('@')[0],
   });
+  const canonicalId = learner.lbId || userId;
+  if (canonicalId !== account.userId) {
+    await persistAccount({ ...account, userId: canonicalId, updatedAt: new Date() }).catch(() => {});
+  }
 
   const sessionUser = {
-    uid: userId,
+    uid: canonicalId,
     name: learner.name || account.name || 'Learner',
     email,
   };

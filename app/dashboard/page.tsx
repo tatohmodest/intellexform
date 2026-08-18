@@ -15,6 +15,11 @@ import { getSessionUser } from '@/lib/auth/getUser';
 import { getStudentCommandCenter } from '@/lib/learn/commandCenter';
 import { getLearner } from '@/lib/learn/repo';
 import { getStaffPost } from '@/lib/staff/store';
+import { getOrgConfig } from '@/lib/org/config';
+import { getStudentMembership } from '@/lib/learn/studentAccess';
+import { getMyApplication } from '@/lib/learn/applications';
+import { interestLabels } from '@/lib/learn/interests';
+import BecomeStudentBanner from '@/components/dashboard/BecomeStudentBanner';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,16 +38,17 @@ export default async function DashboardOverview() {
   const session = getSessionUser();
   if (!session) redirect('/login?next=/dashboard');
 
-  // Campus students land on their institution dashboard (tier features), not personal Today.
   const learner = await getLearner(session.uid);
-  const ctx = learner?.activeContext;
-  if (ctx?.kind === 'institution' && ctx.institutionSlug) {
-    redirect(`/dashboard/institutions/${ctx.institutionSlug}`);
-  }
-
-  const cc = await getStudentCommandCenter(session.uid);
-  const staffPost = await getStaffPost(session.uid).catch(() => null);
+  const [cc, staffPost, org, membership, application] = await Promise.all([
+    getStudentCommandCenter(session.uid),
+    getStaffPost(session.uid).catch(() => null),
+    getOrgConfig(),
+    getStudentMembership(session.uid),
+    getMyApplication(session.uid),
+  ]);
   const name = firstName(cc.learner?.name ?? session.name);
+  const interests = interestLabels(learner?.preferences?.interests || []);
+  const isStudent = membership.isStudent;
 
   return (
     <div className="mx-auto max-w-[1080px] overflow-x-hidden">
@@ -54,13 +60,16 @@ export default async function DashboardOverview() {
           {greeting()}, {name}.
         </h1>
         <p className="mt-3 text-[16px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-          {cc.focusCount > 0 ? (
+          {isStudent ? (
             <>
-              You have <span style={{ color: 'var(--ink)', fontWeight: 600 }}>{cc.focusCount} things</span> to
-              focus on today.
+              {membership.program || 'Student'}
+              {membership.year ? ` · Year ${membership.year}` : ''}
+              {membership.matricule ? ` · ${membership.matricule}` : ''}
             </>
+          ) : interests.length ? (
+            <>Based on your interests: {interests.join(' · ')}</>
           ) : (
-            <>You&apos;re clear for now — keep the streak alive with a short lesson.</>
+            <>Explore {org.name} — learn, book services, and join the public community.</>
           )}
         </p>
         <div className="mt-5 flex flex-wrap gap-2 text-[12.5px] font-semibold">
@@ -76,9 +85,18 @@ export default async function DashboardOverview() {
           <Link href="/dashboard/tutor" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
             AI Tutor
           </Link>
-          <Link href="/dashboard/fees" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
-            School fees
+          <Link href="/dashboard/community" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
+            Community
           </Link>
+          {isStudent ? (
+            <Link href="/dashboard/fees" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
+              School fees
+            </Link>
+          ) : (
+            <Link href="/dashboard/apply" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
+              Become a student
+            </Link>
+          )}
           {staffPost ? (
             <Link href="/dashboard/staff" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
               Staff
@@ -86,6 +104,23 @@ export default async function DashboardOverview() {
           ) : null}
         </div>
       </header>
+
+      {!isStudent ? <BecomeStudentBanner institutionName={org.name} /> : null}
+      {!isStudent && application && application.status !== 'draft' ? (
+        <Link
+          href="/dashboard/application"
+          className="mb-8 flex items-center justify-between border p-4"
+          style={{ borderColor: 'var(--line)' }}
+        >
+          <div>
+            <p className="font-semibold">My application {application.applicationCode}</p>
+            <p className="mt-0.5 text-[13px] capitalize" style={{ color: 'var(--ink-soft)' }}>
+              {application.programName || 'Program'} · {application.status.replace(/_/g, ' ')}
+            </p>
+          </div>
+          <ArrowRight size={16} style={{ color: 'var(--ink-soft)' }} />
+        </Link>
+      ) : null}
 
       {cc.attention.length > 0 ? (
         <section className="mb-10">
@@ -304,7 +339,9 @@ export default async function DashboardOverview() {
 
       {cc.recommended.length > 0 ? (
         <section className="mb-8">
-          <h2 className="mb-4 font-display text-[22px]">Recommended for you</h2>
+          <h2 className="mb-4 font-display text-[22px]">
+            {interests.length ? 'Recommended for you' : 'Explore'}
+          </h2>
           <div className="grid gap-3 sm:grid-cols-2">
             {cc.recommended.map((r) => (
               <Link

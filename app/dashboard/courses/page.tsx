@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getMyCourseSections } from '@/lib/learn/myCourses';
+import { getLearner } from '@/lib/learn/repo';
+import { interestLabels } from '@/lib/learn/interests';
 import CoursesBrowser from '@/components/dashboard/CoursesBrowser';
 
 export const dynamic = 'force-dynamic';
@@ -9,6 +11,9 @@ export const dynamic = 'force-dynamic';
 export default async function CoursesPage() {
   const session = getSessionUser();
   if (!session) redirect('/login?next=/dashboard/courses');
+
+  const learner = await getLearner(session.uid);
+  const interestText = interestLabels(learner?.preferences?.interests || []).join(' · ');
 
   let sections: Awaited<ReturnType<typeof getMyCourseSections>>['sections'] = [];
   let total = 0;
@@ -35,8 +40,10 @@ export default async function CoursesPage() {
           courses
         </h1>
         <p className="mt-4 max-w-[420px] text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-          Courses you are enrolled in come first. Filter by live, self-paced, free, or tutoring —
-          swipe sideways on mobile, or tap Show more for the full list.
+          Courses you are enrolled in come first.
+          {interestText
+            ? ` Recommended for you because you selected ${interestText}.`
+            : ' Filter by live, self-paced, free, or tutoring.'}
         </p>
         <div className="mt-5 flex flex-wrap gap-2 text-[12.5px] font-semibold">
           {[

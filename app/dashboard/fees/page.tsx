@@ -3,6 +3,7 @@ import { Wallet } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { formatXAF } from '@/lib/staff/permissions';
 import { getOwnFinance } from '@/lib/staff/store';
+import StudentGate from '@/components/dashboard/StudentGate';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,7 @@ export default async function StudentFeesPage() {
   const finance = await getOwnFinance(session.uid);
 
   return (
+    <StudentGate userId={session.uid}>
     <div className="mx-auto max-w-[720px]">
       <header className="mb-8 border-b pb-6" style={{ borderColor: 'var(--line)' }}>
         <div className="tab mb-2 inline-flex items-center gap-1.5">
@@ -82,5 +84,6 @@ export default async function StudentFeesPage() {
         )}
       </section>
     </div>
+    </StudentGate>
   );
 }

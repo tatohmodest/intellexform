@@ -138,7 +138,7 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
           ? `We sent a verification link to ${email || 'you'}. Open it to confirm your account, then sign in.`
           : isSignup
             ? 'Email and password — we will send a link so you can verify, then come back and sign in.'
-            : 'Use the email and password you created after verifying your inbox.'
+            : 'Email or matricule, plus the password for this same account.'
       }
       footer={
         <p
@@ -214,15 +214,17 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
             </label>
           )}
           <label className="block">
-            <span className="mb-1.5 block text-[12.5px] font-semibold">Email</span>
+            <span className="mb-1.5 block text-[12.5px] font-semibold">
+              {isSignup ? 'Email' : 'Email or matricule'}
+            </span>
             <input
               className="form-input"
-              type="email"
-              autoComplete="email"
+              type={isSignup ? 'email' : 'text'}
+              autoComplete={isSignup ? 'email' : 'username'}
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="example@example.com"
+              placeholder={isSignup ? 'example@example.com' : 'you@email.com or INT-2026-00421'}
             />
           </label>
           <label className="block">

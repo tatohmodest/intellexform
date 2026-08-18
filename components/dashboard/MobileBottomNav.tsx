@@ -13,6 +13,7 @@ import {
   Briefcase,
   GraduationCap,
   Settings,
+  Users,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -53,10 +54,13 @@ const TABS: Tab[] = [
       p.startsWith('/dashboard/academic'),
   },
   {
-    href: '/dashboard/institutions',
-    label: 'Campus',
-    icon: Building2,
-    match: (p) => p.startsWith('/dashboard/institutions'),
+    href: '/dashboard/community',
+    label: 'Community',
+    icon: Users,
+    match: (p) =>
+      p.startsWith('/dashboard/community') ||
+      p.startsWith('/dashboard/messages') ||
+      p.startsWith('/dashboard/study-groups'),
   },
 ];
 

@@ -8,6 +8,7 @@ import { isOnboardingComplete, type CampusBrand } from '@/lib/learn/identity';
 import { type ModuleId } from '@/lib/eduos/capabilities';
 import { getCampusTierInfo } from '@/lib/campus/tier';
 import { getStaffPost, permissionsOf } from '@/lib/staff/store';
+import { getStudentMembership } from '@/lib/learn/studentAccess';
 import DashboardShell from '@/components/dashboard/DashboardShell';
 
 export const metadata: Metadata = {
@@ -63,6 +64,7 @@ export default async function DashboardLayout({
   }));
 
   const staffPost = await getStaffPost(session.uid).catch(() => null);
+  const membership = await getStudentMembership(session.uid).catch(() => null);
   const staff =
     staffPost && staffPost.active
       ? {
@@ -84,6 +86,8 @@ export default async function DashboardLayout({
         affiliations,
         activeContext: ctx,
         onboardingComplete: isOnboardingComplete(learner),
+        isStudent: Boolean(membership?.isStudent),
+        matricule: membership?.matricule ?? null,
       }}
       campusBrand={campusBrand}
       staff={staff}
