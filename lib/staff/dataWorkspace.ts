@@ -897,7 +897,7 @@ function planFromTable(header: string[], body: string[][], fields: DataField[]):
   });
 }
 
-export function previewCsv(dataset: DatasetDoc, csvText: string) {
+export function previewCsv(dataset: { fields: DataField[] }, csvText: string) {
   const table = parseCsv(csvText);
   if (table.length < 2) {
     throw new StaffAuthError(
