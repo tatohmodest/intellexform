@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Database, Plus } from 'lucide-react';
-import { DATASET_TEMPLATES } from '@/lib/staff/dataTypes';
+import { DATASET_TEMPLATES, SUBMIT_ACCESS_OPTIONS, submitAccessLabel } from '@/lib/staff/dataTypes';
 
 type Dataset = {
   id: string;
@@ -97,8 +97,14 @@ export default function DataHomeClient({ canWrite }: { canWrite: boolean }) {
                 <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
                   {d.description || d.category}
                 </p>
-                <p className="mt-2 font-mono text-[10px] uppercase tracking-wide" style={{ color: 'var(--ink-soft)' }}>
-                  {d.recordCount} records · {d.fieldCount} fields · {d.submitAccess}
+                <p className="mt-2 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+                  Created by {d.ownerName || 'staff'}
+                </p>
+                <p className="mt-1 font-mono text-[10px] uppercase tracking-wide" style={{ color: 'var(--ink-soft)' }}>
+                  {d.recordCount} records · {d.fieldCount} fields
+                </p>
+                <p className="mt-1 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                  {submitAccessLabel(d.submitAccess)}
                 </p>
               </button>
             </li>
@@ -149,18 +155,26 @@ export default function DataHomeClient({ canWrite }: { canWrite: boolean }) {
               </select>
             </label>
             <label className="mt-3 block text-[13px] font-semibold">
-              Who can submit
+              Who can fill this form
+              <p className="mt-0.5 font-normal text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+                This is not who can see the table. Institution members still see the dataset on
+                their dashboard, with your name as the person who created it.
+              </p>
               <select
                 value={submitAccess}
                 onChange={(e) => setSubmitAccess(e.target.value)}
                 className="mt-1 w-full border px-3 py-2 font-normal"
                 style={{ borderColor: 'var(--line)', background: 'transparent' }}
               >
-                <option value="staff">Staff only (type into the table)</option>
-                <option value="students">Official students</option>
-                <option value="authenticated">Anyone signed in</option>
-                <option value="public">Anyone with the link (no account needed)</option>
+                {SUBMIT_ACCESS_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
               </select>
+              <span className="mt-1 block font-normal text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                {SUBMIT_ACCESS_OPTIONS.find((o) => o.value === submitAccess)?.hint}
+              </span>
             </label>
             {error ? (
               <p className="mt-2 text-[13px]" style={{ color: '#b91c1c' }}>

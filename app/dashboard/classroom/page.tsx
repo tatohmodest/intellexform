@@ -19,15 +19,15 @@ export default async function ClassroomPage() {
       <div className="mb-6 flex flex-wrap items-center gap-4">
         <Link
           href="/dashboard/courses"
-          className="inline-flex items-center gap-1.5 text-[13px] font-semibold"
-          style={{ color: 'var(--ink-soft)' }}
+          className="inline-flex items-center gap-1.5 border px-3 py-1.5 text-[13px] font-semibold"
+          style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
         >
           <ArrowLeft size={14} /> My Courses
         </Link>
         <Link
           href="/dashboard/students"
-          className="inline-flex items-center gap-1.5 text-[13px] font-semibold"
-          style={{ color: 'var(--ink-soft)' }}
+          className="inline-flex items-center gap-1.5 border px-3 py-1.5 text-[13px] font-semibold"
+          style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
         >
           My Students
         </Link>

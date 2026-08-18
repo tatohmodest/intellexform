@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FIELD_TYPE_LABELS, makeField, type DataField, type DataFieldType } from '@/lib/staff/dataTypes';
+import { FIELD_TYPE_LABELS, SUBMIT_ACCESS_OPTIONS, makeField, type DataField, type DataFieldType } from '@/lib/staff/dataTypes';
 import { FormFields } from '@/components/staff/FormFields';
 
 type RecordRow = {
@@ -25,6 +25,7 @@ type Dataset = {
   submitAccess: string;
   visibility: string;
   recordCount: number;
+  ownerName?: string;
   maxSubmissions: number | null;
   openAt: string | null;
   closeAt: string | null;
@@ -320,13 +321,18 @@ export default function DatasetDesk({
     <div>
       <header className="mb-4">
         <p className="text-[13px] font-semibold">
-          <a href="/dashboard/staff/data" style={{ color: 'var(--green-deep)' }}>
-            ← Data Workspace
+          <a
+            href="/dashboard/staff/data"
+            className="inline-flex items-center border px-3 py-1.5"
+            style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
+          >
+            Data Workspace
           </a>
         </p>
         <h1 className="mt-2 font-display text-[28px] leading-tight">{dataset?.name || 'Dataset'}</h1>
         <p className="mt-1 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
           {dataset?.description} · {total} records
+          {dataset?.ownerName ? ` · Created by ${dataset.ownerName}` : ''}
         </p>
       </header>
 
@@ -460,25 +466,24 @@ export default function DatasetDesk({
           </div>
 
           {shareUrl && dataset?.submitAccess !== 'staff' ? (
-            <p className="mb-3 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-              Share form:{' '}
+            <p className="mb-3 flex flex-wrap items-center gap-2 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+              Share form
               <button
                 type="button"
-                className="font-semibold"
-                style={{ color: 'var(--green-deep)' }}
+                className="inline-flex items-center border px-3 py-1.5 text-[12.5px] font-semibold"
+                style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
                 onClick={() => {
                   void navigator.clipboard.writeText(shareUrl);
                   setShareCopied(true);
                 }}
               >
-                {shareUrl}
+                {shareCopied ? 'Copied link' : 'Copy form link'}
               </button>
-              {shareCopied ? ' · copied' : ''}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 alt="QR"
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(shareUrl)}`}
-                className="ml-3 inline-block align-middle"
+                className="inline-block align-middle"
                 width={40}
                 height={40}
               />
@@ -816,18 +821,26 @@ export default function DatasetDesk({
             />
           </label>
           <label className="block text-[13px] font-semibold">
-            Who can submit
+            Who can fill this form
+            <p className="mt-0.5 font-normal text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+              People who can fill still see this dataset on their dashboard, marked as created by
+              you. This does not hide it from the institution.
+            </p>
             <select
               value={settings.submitAccess}
               onChange={(e) => setSettings((s) => ({ ...s, submitAccess: e.target.value }))}
               className="mt-1 w-full border px-3 py-2 font-normal"
               style={{ borderColor: 'var(--line)', background: 'transparent' }}
             >
-              <option value="staff">Staff only</option>
-              <option value="students">Official students</option>
-              <option value="authenticated">Anyone signed in</option>
-              <option value="public">Anyone with the link</option>
+              {SUBMIT_ACCESS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
             </select>
+            <span className="mt-1 block font-normal text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+              {SUBMIT_ACCESS_OPTIONS.find((o) => o.value === settings.submitAccess)?.hint}
+            </span>
           </label>
           <label className="block text-[13px] font-semibold">
             Visibility

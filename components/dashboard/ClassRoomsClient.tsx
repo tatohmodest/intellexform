@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
+  ChevronRight,
   FileText,
   Hash,
   Loader2,
@@ -96,6 +97,7 @@ export default function ClassRoomsClient({
   const [newChannel, setNewChannel] = useState('');
   const [mobilePane, setMobilePane] = useState<'groups' | 'channels' | 'chat'>('groups');
   const [pickMates, setPickMates] = useState<string[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const stickBottom = useRef(true);
@@ -134,14 +136,17 @@ export default function ClassRoomsClient({
     }
   }, []);
 
+  const wantedGroup = search.get('group');
+
   useEffect(() => {
     loadGroups()
-      .then((list) => {
-        const wanted = search.get('group') || list[0]?.id || null;
-        if (wanted) setGroupId(wanted);
+      .then(() => {
+        if (wantedGroup) setGroupId(wantedGroup);
+        else setGroupId(null);
       })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Could not load'));
-  }, [loadGroups, search]);
+      .catch((err) => setError(err instanceof Error ? err.message : 'Could not load'))
+      .finally(() => setLoaded(true));
+  }, [loadGroups, wantedGroup]);
 
   useEffect(() => {
     if (!groupId) return;
@@ -209,8 +214,26 @@ export default function ClassRoomsClient({
     setCreateOpen(false);
     setNewTitle('');
     setNewDesc('');
-    const list = await loadGroups();
-    setGroupId(data.id || list[0]?.id);
+    await loadGroups();
+    const id = String(data.id || '');
+    if (id) enterGroup(id);
+  }
+
+  function enterGroup(id: string) {
+    setGroupId(id);
+    setMobilePane('channels');
+    router.replace(`/dashboard/study-groups?group=${encodeURIComponent(id)}`, { scroll: false });
+  }
+
+  function leaveToList() {
+    setGroupId(null);
+    setChannelId(null);
+    setChannels([]);
+    setMembers([]);
+    setMessages([]);
+    setGroupMeta(null);
+    setMobilePane('groups');
+    router.replace('/dashboard/study-groups', { scroll: false });
   }
 
   async function send(e?: React.FormEvent) {
@@ -272,6 +295,180 @@ export default function ClassRoomsClient({
     return rows;
   }, [messages]);
 
+  if (!loaded) {
+    return (
+      <div className="mx-auto max-w-[720px] py-16 text-center text-[14px]" style={{ color: 'var(--ink-soft)' }}>
+        Loading your groups…
+      </div>
+    );
+  }
+
+  if (!groupId) {
+    return (
+      <div className="mx-auto max-w-[720px] py-4">
+        <header className="mb-6 border-b pb-6" style={{ borderColor: 'var(--line)' }}>
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: 'var(--ink-soft)' }}>
+            Community · Groups
+          </p>
+          <h1 className="mt-2 font-display text-[36px] leading-[0.95] tracking-tight sm:text-[44px]">
+            Your
+            <br />
+            groups
+          </h1>
+          <p className="mt-3 max-w-[440px] text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+            See the class groups you belong to, then open one to chat. The room does not open until
+            you choose a group.
+          </p>
+          {classHead ? (
+            <button
+              type="button"
+              onClick={() => setCreateOpen(true)}
+              className="mt-5 inline-flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-semibold text-white"
+              style={{ background: '#00B369' }}
+            >
+              <Plus size={15} /> New group
+            </button>
+          ) : (
+            <p className="mt-4 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+              Instructors assign class advocates, who can create groups for a course.
+            </p>
+          )}
+        </header>
+
+        {error ? (
+          <p className="mb-4 text-[13px]" style={{ color: '#b91c1c' }}>
+            {error}
+          </p>
+        ) : null}
+
+        {groups.length === 0 ? (
+          <div className="border border-dashed px-6 py-14 text-center" style={{ borderColor: 'var(--line)' }}>
+            <Users size={26} className="mx-auto mb-4" style={{ color: 'var(--green-deep)' }} />
+            <h2 className="font-display text-[22px]">You’re not in any group</h2>
+            <p className="mx-auto mt-2 max-w-md text-[14px]" style={{ color: 'var(--ink-soft)' }}>
+              When a class advocate adds you to a course group, it will show up here. Open a group
+              to enter the chat.
+            </p>
+          </div>
+        ) : (
+          <ul className="space-y-3">
+            {groups.map((g) => (
+              <li key={g.id}>
+                <button
+                  type="button"
+                  onClick={() => enterGroup(g.id)}
+                  className="flex w-full items-center gap-3 border p-4 text-left"
+                  style={{ borderColor: 'var(--line)' }}
+                >
+                  <span
+                    className="flex h-11 w-11 shrink-0 items-center justify-center text-[13px] font-bold text-white"
+                    style={{ background: 'var(--ink)' }}
+                  >
+                    {initials(g.title)}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold">{g.title}</span>
+                    <span className="mt-0.5 block text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+                      {g.courseTitle || 'Course group'}
+                      {' · '}
+                      {g.memberCount} member{g.memberCount === 1 ? '' : 's'}
+                      {g.lastPreview ? ` · ${g.lastPreview}` : ''}
+                    </span>
+                  </span>
+                  {g.unread > 0 ? (
+                    <span
+                      className="shrink-0 px-2 py-0.5 text-[11px] font-bold text-white"
+                      style={{ background: '#00B369' }}
+                    >
+                      {g.unread > 9 ? '9+' : g.unread}
+                    </span>
+                  ) : null}
+                  <span
+                    className="inline-flex shrink-0 items-center gap-1 border px-3 py-1.5 text-[12.5px] font-semibold"
+                    style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+                  >
+                    Open <ChevronRight size={14} />
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {createOpen ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <form
+              className="w-full max-w-md border bg-white p-5"
+              style={{ borderColor: 'var(--line)' }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                void create();
+              }}
+            >
+              <h2 className="font-display text-[22px]">New class group</h2>
+              <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+                Class advocates open a room for one course, then add course mates.
+              </p>
+              <input
+                required
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="e.g. SE 2026 · Cohort A"
+                className="mt-4 w-full border px-3 py-2 text-[14px]"
+                style={{ borderColor: 'var(--line)' }}
+              />
+              <textarea
+                value={newDesc}
+                onChange={(e) => setNewDesc(e.target.value)}
+                placeholder="What is this room for?"
+                className="mt-2 w-full border px-3 py-2 text-[14px]"
+                style={{ borderColor: 'var(--line)' }}
+                rows={2}
+              />
+              <select
+                required
+                value={newCourse}
+                onChange={(e) => setNewCourse(e.target.value)}
+                className="mt-2 w-full border px-3 py-2 text-[14px]"
+                style={{ borderColor: 'var(--line)', background: 'transparent' }}
+              >
+                <option value="">Course this group belongs to</option>
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title}
+                  </option>
+                ))}
+              </select>
+              {courses.length === 0 ? (
+                <p className="mt-2 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+                  Enrol in a course first so classmates can be added.
+                </p>
+              ) : null}
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCreateOpen(false)}
+                  className="border px-3 py-2 text-[13px]"
+                  style={{ borderColor: 'var(--line)' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={busy === 'create'}
+                  className="px-3 py-2 text-[13px] font-semibold text-white"
+                  style={{ background: '#00B369' }}
+                >
+                  {busy === 'create' ? 'Creating…' : 'Create group'}
+                </button>
+              </div>
+            </form>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="-mx-4 -mt-6 mb-[-7rem] flex h-[calc(100dvh-64px)] min-h-[520px] overflow-hidden border-t sm:-mx-6 lg:-mr-10 lg:mb-[-4rem]" style={{ borderColor: 'var(--line)' }}>
       <aside
@@ -283,11 +480,7 @@ export default function ClassRoomsClient({
             key={g.id}
             type="button"
             title={g.title}
-            onClick={() => {
-              setGroupId(g.id);
-              setMobilePane('channels');
-              router.replace(`/dashboard/study-groups?group=${g.id}`, { scroll: false });
-            }}
+            onClick={() => enterGroup(g.id)}
             className="relative flex h-12 w-12 items-center justify-center text-[13px] font-bold text-white"
             style={{
               background: groupId === g.id ? '#00B369' : '#1c2430',
@@ -320,6 +513,14 @@ export default function ClassRoomsClient({
         style={{ background: '#141b24', color: '#e8edf3' }}
       >
         <div className="border-b px-4 py-3" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+          <button
+            type="button"
+            onClick={leaveToList}
+            className="mb-2 inline-flex items-center border px-2.5 py-1 text-[11px] font-semibold"
+            style={{ borderColor: 'rgba(255,255,255,0.2)', color: '#e8edf3' }}
+          >
+            All groups
+          </button>
           <p className="truncate font-semibold">{groupMeta?.title || 'Class rooms'}</p>
           <p className="truncate text-[11.5px]" style={{ color: '#8b97a8' }}>
             {groupMeta?.courseTitle || 'Pick a group to start talking'}
@@ -358,8 +559,8 @@ export default function ClassRoomsClient({
             <button
               type="button"
               onClick={() => setChannelOpen(true)}
-              className="mt-2 flex w-full items-center gap-2 px-2 py-1.5 text-left text-[12.5px]"
-              style={{ color: '#8b97a8' }}
+              className="mt-2 flex w-full items-center gap-2 border px-2 py-1.5 text-left text-[12.5px] font-semibold"
+              style={{ borderColor: 'rgba(255,255,255,0.2)', color: '#e8edf3' }}
             >
               <Plus size={13} /> New channel
             </button>
@@ -367,10 +568,10 @@ export default function ClassRoomsClient({
         </div>
         <div className="border-t p-3 text-[12px]" style={{ borderColor: 'rgba(255,255,255,0.08)', color: '#8b97a8' }}>
           {owner
-            ? 'You are class head. Add course mates from the member list.'
+            ? 'You are class advocate. Add course mates from the member list.'
             : classHead
               ? 'Create a group for your course, then add classmates.'
-              : 'Only class heads can create groups. Staff allocate that privilege.'}
+              : 'Only class advocates can create groups. Instructors assign that from My Students.'}
         </div>
       </aside>
 
@@ -560,8 +761,14 @@ export default function ClassRoomsClient({
         <div className="flex items-center justify-between border-b px-3 py-3" style={{ borderColor: 'var(--line)' }}>
           <p className="text-[12px] font-semibold uppercase tracking-wide">Members — {members.length}</p>
           {owner ? (
-            <button type="button" onClick={() => setAddOpen(true)} title="Add course mates">
-              <UserPlus size={15} />
+            <button
+              type="button"
+              onClick={() => setAddOpen(true)}
+              title="Add course mates"
+              className="inline-flex items-center border px-2 py-1 text-[11px] font-semibold"
+              style={{ borderColor: 'var(--line)' }}
+            >
+              <UserPlus size={13} />
             </button>
           ) : null}
         </div>
@@ -599,7 +806,7 @@ export default function ClassRoomsClient({
             onClick={() =>
               post({ action: 'remove_member', groupId, userId }, 'leave').then((ok) => {
                 if (ok) {
-                  setGroupId(null);
+                  leaveToList();
                   void loadGroups();
                 }
               })
@@ -617,7 +824,7 @@ export default function ClassRoomsClient({
               if (!confirm('Delete this group and all messages?')) return;
               post({ action: 'delete_group', groupId }, 'delg').then((ok) => {
                 if (ok) {
-                  setGroupId(null);
+                  leaveToList();
                   void loadGroups();
                 }
               });
@@ -640,7 +847,7 @@ export default function ClassRoomsClient({
           >
             <h2 className="font-display text-[22px]">New class group</h2>
             <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-              Class heads open a room for one course, then add course mates.
+              Class advocates open a room for one course, then add course mates.
             </p>
             <input
               required

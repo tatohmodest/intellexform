@@ -28,8 +28,8 @@ export default async function MyStudentsPage() {
     <div className="mx-auto max-w-[1080px] overflow-x-hidden">
       <Link
         href="/dashboard/mentor"
-        className="mb-6 inline-flex items-center gap-1.5 text-[13px] font-semibold"
-        style={{ color: 'var(--ink-soft)' }}
+        className="mb-6 inline-flex items-center gap-1.5 border px-3 py-1.5 text-[13px] font-semibold"
+        style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
       >
         <ArrowLeft size={14} /> Mentor Studio
       </Link>
@@ -52,10 +52,10 @@ export default async function MyStudentsPage() {
         </p>
         <Link
           href="/dashboard/classroom"
-          className="mt-5 inline-flex text-[13.5px] font-semibold"
-          style={{ color: 'var(--green-deep)' }}
+          className="mt-5 inline-flex border px-3 py-1.5 text-[13.5px] font-semibold"
+          style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
         >
-          Open My Classroom for live & past classes →
+          Open My Classroom
         </Link>
       </header>
 

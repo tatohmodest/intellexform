@@ -119,7 +119,11 @@ export default function StudentDesk() {
               {rows.map((row) => (
                 <tr key={row.userId} className="border-b last:border-0" style={{ borderColor: 'var(--line)' }}>
                   <td className="px-3 py-3">
-                    <Link href={`/dashboard/staff/students/${row.userId}`} className="font-semibold hover:underline">
+                    <Link
+                      href={`/dashboard/staff/students/${row.userId}`}
+                      className="inline-flex items-center border px-2.5 py-1 text-[12.5px] font-semibold"
+                      style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+                    >
                       {row.name || 'Unnamed'}
                     </Link>
                     <div className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
@@ -140,7 +144,7 @@ export default function StudentDesk() {
                     {row.status.replace(/_/g, ' ')}
                     {row.classHead ? (
                       <span className="ml-2 text-[10px] font-semibold uppercase" style={{ color: '#00B369' }}>
-                        class head
+                        class advocate
                       </span>
                     ) : null}
                   </td>

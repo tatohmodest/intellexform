@@ -28,12 +28,18 @@ export default function MyStudentsPanel({
 }) {
   const router = useRouter();
   const [query, setQuery] = useState('');
+  const [rows, setRows] = useState(groups);
   const [openCourseId, setOpenCourseId] = useState<string | null>(
     groups.find((g) => g.studentCount > 0)?.courseId ?? groups[0]?.courseId ?? null,
   );
   const [liveByCourse, setLiveByCourse] = useState<Record<string, CourseClassSessionView>>({});
   const [classBusy, setClassBusy] = useState(false);
   const [classError, setClassError] = useState('');
+  const [advocateBusy, setAdvocateBusy] = useState<string | null>(null);
+
+  useEffect(() => {
+    setRows(groups);
+  }, [groups]);
 
   const refreshLive = useCallback(async () => {
     try {
@@ -58,8 +64,8 @@ export default function MyStudentsPanel({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return groups;
-    return groups
+    if (!q) return rows;
+    return rows
       .map((g) => ({
         ...g,
         students: g.students.filter((s) =>
@@ -67,10 +73,39 @@ export default function MyStudentsPanel({
         ),
       }))
       .filter((g) => g.students.length > 0 || g.courseTitle.toLowerCase().includes(q));
-  }, [groups, query]);
+  }, [rows, query]);
 
   const active = filtered.find((g) => g.courseId === openCourseId) || filtered[0] || null;
   const activeLive = active ? liveByCourse[active.courseId] : null;
+
+  async function setAdvocate(studentId: string, classHead: boolean) {
+    setAdvocateBusy(studentId);
+    setClassError('');
+    try {
+      const res = await fetch('/api/learn/class-advocates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, classHead }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setClassError(data.error || 'Could not update class advocate');
+        return;
+      }
+      setRows((prev) =>
+        prev.map((g) => ({
+          ...g,
+          students: g.students.map((s) =>
+            s.studentId === studentId ? { ...s, classHead } : s,
+          ),
+        })),
+      );
+    } catch {
+      setClassError('Network error');
+    } finally {
+      setAdvocateBusy(null);
+    }
+  }
 
   async function startClass(courseId: string) {
     setClassBusy(true);
@@ -136,7 +171,7 @@ export default function MyStudentsPanel({
           </p>
           <p className="mt-2 text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
             See who is in each of your courses. Start class, set weekly school or call times on
-            their calendar, or assign an exam or assignment to everyone enrolled.
+            their calendar, assign an exam, or make a student the class advocate for course groups.
           </p>
         </div>
         <div
@@ -209,14 +244,15 @@ export default function MyStudentsPanel({
                     <button
                       type="button"
                       onClick={() => setOpenCourseId(g.courseId)}
-                      className="flex w-full items-start justify-between gap-2 px-3 py-3 text-left transition-colors"
+                      className="flex w-full items-start justify-between gap-2 border px-3 py-3 text-left transition-colors"
                       style={
                         selected
                           ? {
                               background: 'rgba(0,179,105,0.1)',
                               color: 'var(--green-deep)',
+                              borderColor: 'var(--green-deep)',
                             }
-                          : { color: 'var(--ink)' }
+                          : { color: 'var(--ink)', borderColor: 'var(--line)' }
                       }
                     >
                       <span className="min-w-0">
@@ -362,10 +398,10 @@ export default function MyStudentsPanel({
                 <div className="mb-4 flex flex-wrap gap-2">
                   <Link
                     href={`/dashboard/teach/courses`}
-                    className="text-[13px] font-semibold"
-                    style={{ color: 'var(--green-deep)' }}
+                    className="inline-flex items-center border px-3 py-1.5 text-[13px] font-semibold"
+                    style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
                   >
-                    Manage roster in Course Studio →
+                    Manage roster in Course Studio
                   </Link>
                 </div>
 
@@ -395,8 +431,18 @@ export default function MyStudentsPanel({
                           {(s.studentName || '?').slice(0, 1).toUpperCase()}
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[14.5px] font-semibold">
-                            {s.studentName}
+                          <span className="flex flex-wrap items-center gap-2">
+                            <span className="block truncate text-[14.5px] font-semibold">
+                              {s.studentName}
+                            </span>
+                            {s.classHead ? (
+                              <span
+                                className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]"
+                                style={{ color: 'var(--green-deep)' }}
+                              >
+                                Class advocate
+                              </span>
+                            ) : null}
                           </span>
                           <span
                             className="block truncate text-[12.5px]"
@@ -417,6 +463,22 @@ export default function MyStudentsPanel({
                           {' · '}
                           {new Date(s.enrolledAt).toLocaleDateString()}
                         </span>
+                        <button
+                          type="button"
+                          disabled={advocateBusy === s.studentId}
+                          onClick={() => setAdvocate(s.studentId, !s.classHead)}
+                          className="inline-flex items-center border px-3 py-1.5 text-[12.5px] font-semibold disabled:opacity-50"
+                          style={{
+                            borderColor: s.classHead ? 'var(--green-deep)' : 'var(--line)',
+                            color: s.classHead ? 'var(--green-deep)' : 'var(--ink)',
+                          }}
+                        >
+                          {advocateBusy === s.studentId
+                            ? 'Saving…'
+                            : s.classHead
+                              ? 'Remove advocate'
+                              : 'Make class advocate'}
+                        </button>
                         <MentorScheduleButton
                           studentId={s.studentId}
                           studentName={s.studentName}

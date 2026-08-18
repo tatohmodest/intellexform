@@ -13,6 +13,7 @@ type Enrollment = {
   instructorXAF: number;
   isTrial: boolean;
   createdAt: string;
+  classHead?: boolean;
 };
 
 type StudentHit = {
@@ -36,6 +37,7 @@ export default function CourseRoster({
   const [searching, setSearching] = useState(false);
   const [addingId, setAddingId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [advocateBusy, setAdvocateBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -95,6 +97,27 @@ export default function CourseRoster({
       setError(e instanceof Error ? e.message : 'Could not add student');
     } finally {
       setAddingId(null);
+    }
+  }
+
+  async function setAdvocate(studentId: string, classHead: boolean) {
+    setAdvocateBusy(studentId);
+    setError('');
+    try {
+      const res = await fetch('/api/learn/class-advocates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, classHead }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not update class advocate');
+      setEnrollments((list) =>
+        list.map((e) => (e.studentId === studentId ? { ...e, classHead } : e)),
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not update class advocate');
+    } finally {
+      setAdvocateBusy(null);
     }
   }
 
@@ -211,7 +234,17 @@ export default function CourseRoster({
             {enrollments.map((e) => (
               <li key={e.id} className="flex flex-wrap items-center gap-3 py-3">
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[14px] font-semibold">{e.studentName}</span>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="block truncate text-[14px] font-semibold">{e.studentName}</span>
+                    {e.classHead ? (
+                      <span
+                        className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]"
+                        style={{ color: 'var(--green-deep)' }}
+                      >
+                        Class advocate
+                      </span>
+                    ) : null}
+                  </span>
                   <span
                     className="block font-mono text-[10px] uppercase tracking-[0.12em]"
                     style={{ color: 'var(--ink-soft)' }}
@@ -229,11 +262,27 @@ export default function CourseRoster({
                 </span>
                 <button
                   type="button"
-                  onClick={() => removeStudent(e.studentId)}
-                  aria-label={`Remove ${e.studentName}`}
-                  className="shrink-0"
+                  disabled={advocateBusy === e.studentId}
+                  onClick={() => setAdvocate(e.studentId, !e.classHead)}
+                  className="inline-flex shrink-0 items-center border px-2.5 py-1.5 text-[12px] font-semibold disabled:opacity-50"
+                  style={{
+                    borderColor: e.classHead ? 'var(--green-deep)' : 'var(--line)',
+                    color: e.classHead ? 'var(--green-deep)' : 'var(--ink)',
+                  }}
                 >
-                  <X size={15} style={{ color: 'var(--ink-soft)' }} />
+                  {advocateBusy === e.studentId
+                    ? 'Saving…'
+                    : e.classHead
+                      ? 'Remove advocate'
+                      : 'Make class advocate'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeStudent(e.studentId)}
+                  className="inline-flex shrink-0 items-center gap-1 border px-2.5 py-1.5 text-[12px] font-semibold"
+                  style={{ borderColor: 'var(--line)', color: '#b91c1c' }}
+                >
+                  <X size={13} /> Remove
                 </button>
               </li>
             ))}

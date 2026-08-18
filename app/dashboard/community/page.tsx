@@ -67,7 +67,7 @@ export default async function CommunityPage({
         <section className="mb-8 border p-5" style={{ borderColor: 'var(--line)' }}>
           <h2 className="font-display text-[22px]">Class rooms</h2>
           <p className="mt-1 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-            Channels for chat, notes, and ideas. Class heads create the room and add course mates.
+            Channels for chat, notes, and ideas. Class advocates create the room and add course mates.
           </p>
           <Link
             href="/dashboard/study-groups"

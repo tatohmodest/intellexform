@@ -75,10 +75,10 @@ function SessionRow({
       ) : (
         <Link
           href={`/dashboard/courses/instructor/${encodeURIComponent(session.courseId)}`}
-          className="text-[13px] font-semibold"
-          style={{ color: 'var(--green-deep)' }}
+          className="inline-flex items-center border px-3 py-1.5 text-[13px] font-semibold"
+          style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
         >
-          Open course →
+          Open course
         </Link>
       )}
     </li>
@@ -94,7 +94,9 @@ function CourseGroupCard({ group }: { group: ClassroomCourseGroup }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-start justify-between gap-3 text-left"
+        className="flex w-full items-start justify-between gap-3 border px-3 py-3 text-left"
+        style={{ borderColor: 'var(--line)' }}
+        aria-expanded={open}
       >
         <div className="min-w-0">
           <p
@@ -114,8 +116,12 @@ function CourseGroupCard({ group }: { group: ClassroomCourseGroup }) {
             {group.live ? ' · class in progress' : ''}
           </p>
         </div>
-        <span className="mt-2 shrink-0" style={{ color: 'var(--ink-soft)' }}>
-          {open ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+        <span
+          className="mt-1 inline-flex shrink-0 items-center gap-1 border px-2.5 py-1.5 text-[12px] font-semibold"
+          style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+        >
+          {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          {open ? 'Hide' : 'Sessions'}
         </span>
       </button>
 

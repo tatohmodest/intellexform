@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { getDb } from '@/lib/repo';
+import { classHeadFlags } from '@/lib/learn/studentAccess';
 import { type Mentor, type MentorSlot } from '@/lib/learn/mentors';
 import type { ContentVisibility, InstitutionAuthMethod } from '@/lib/learn/identity';
 import type {
@@ -1564,6 +1565,7 @@ export type InstructorStudentRow = {
   source: CourseEnrollmentSource;
   priceXAF: number;
   enrolledAt: string;
+  classHead: boolean;
 };
 
 export type InstructorCourseStudents = {
@@ -1595,6 +1597,9 @@ export async function listInstructorStudentGroups(
       })(),
     ]);
 
+    const headFlags = await classHeadFlags(
+      enrollments.map((raw) => String((raw as { studentId?: string }).studentId || '')),
+    );
     const byCourse = new Map<string, InstructorStudentRow[]>();
     for (const raw of enrollments) {
       const d = raw as unknown as CourseEnrollmentDoc & { _id: ObjectId };
@@ -1609,6 +1614,7 @@ export async function listInstructorStudentGroups(
           d.createdAt instanceof Date
             ? d.createdAt.toISOString()
             : new Date(d.createdAt).toISOString(),
+        classHead: headFlags.get(d.studentId) === true,
       });
       byCourse.set(d.courseId, list);
     }

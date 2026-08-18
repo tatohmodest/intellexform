@@ -78,6 +78,88 @@ export async function isOfficialStudent(userId: string): Promise<boolean> {
   return m.isStudent;
 }
 
+export class StudentAccessError extends Error {
+  status: number;
+  constructor(message: string, status = 400) {
+    super(message);
+    this.status = status;
+  }
+}
+
+/** classHead flags from student_records, keyed by userId. */
+export async function classHeadFlags(userIds: string[]): Promise<Map<string, boolean>> {
+  const map = new Map<string, boolean>();
+  const ids = [...new Set(userIds.filter(Boolean))];
+  if (!ids.length) return map;
+  try {
+    const db = await getDb();
+    const recs = await db
+      .collection('student_records')
+      .find({ userId: { $in: ids } })
+      .project({ userId: 1, classHead: 1 })
+      .toArray();
+    for (const rec of recs) {
+      map.set(String(rec.userId), Boolean(rec.classHead));
+    }
+  } catch {
+    /* ignore */
+  }
+  return map;
+}
+
+/**
+ * Instructors assign class advocates (class heads) for students enrolled
+ * in their courses. Staff can still set the same flag from the student record.
+ */
+export async function setClassAdvocateByInstructor(opts: {
+  instructorId: string;
+  studentId: string;
+  classHead: boolean;
+}) {
+  const studentId = String(opts.studentId || '').trim();
+  if (!studentId) throw new StudentAccessError('Pick a student.', 400);
+  if (studentId === opts.instructorId) {
+    throw new StudentAccessError('You cannot assign yourself as a class advocate.', 400);
+  }
+  const db = await getDb();
+  const enrolled = await db.collection('course_enrollments').findOne({
+    instructorId: opts.instructorId,
+    studentId,
+  });
+  if (!enrolled) {
+    throw new StudentAccessError('You can only assign advocates for students in your courses.', 403);
+  }
+  const col = await recordsCol();
+  const now = new Date();
+  const existing = await col.findOne({ userId: studentId });
+  if (existing) {
+    await col.updateOne(
+      { userId: studentId },
+      { $set: { classHead: Boolean(opts.classHead), updatedAt: now } },
+    );
+  } else {
+    const learner = await getLearner(studentId);
+    await col.insertOne({
+      userId: studentId,
+      studentCode: '',
+      status: String(learner?.studentStatus || 'user'),
+      program: '',
+      department: '',
+      faculty: '',
+      year: '',
+      phone: '',
+      notes: '',
+      campusSlug: '',
+      classHead: Boolean(opts.classHead),
+      name: learner?.name || String(enrolled.studentName || ''),
+      email: learner?.email || String(enrolled.studentEmail || ''),
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+  return { ok: true, studentId, classHead: Boolean(opts.classHead) };
+}
+
 function newMatricule(year = new Date().getFullYear()) {
   const n = Math.floor(10000 + Math.random() * 90000);
   return `INT-${year}-${n}`;

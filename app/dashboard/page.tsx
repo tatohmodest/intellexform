@@ -20,6 +20,8 @@ import { getStudentMembership } from '@/lib/learn/studentAccess';
 import { getMyApplication } from '@/lib/learn/applications';
 import { interestLabels } from '@/lib/learn/interests';
 import BecomeStudentBanner from '@/components/dashboard/BecomeStudentBanner';
+import InstitutionForms from '@/components/dashboard/InstitutionForms';
+import { listFillableDatasetsForUser } from '@/lib/staff/dataWorkspace';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,6 +51,10 @@ export default async function DashboardOverview() {
   const name = firstName(cc.learner?.name ?? session.name);
   const interests = interestLabels(learner?.preferences?.interests || []);
   const isStudent = membership.isStudent;
+  const forms = await listFillableDatasetsForUser({
+    userId: session.uid,
+    isStudent,
+  }).catch(() => []);
 
   return (
     <div className="mx-auto max-w-[1080px] overflow-x-hidden">
@@ -106,6 +112,7 @@ export default async function DashboardOverview() {
       </header>
 
       {!isStudent ? <BecomeStudentBanner institutionName={org.name} /> : null}
+      <InstitutionForms forms={forms} />
       {!isStudent && application && application.status !== 'draft' ? (
         <Link
           href="/dashboard/application"
@@ -157,8 +164,12 @@ export default async function DashboardOverview() {
       <section className="mb-10">
         <div className="mb-4 flex items-end justify-between gap-3">
           <h2 className="font-display text-[22px]">Today</h2>
-          <Link href="/dashboard/calendar" className="text-[13px] font-semibold" style={{ color: 'var(--green-deep)' }}>
-            Full calendar →
+          <Link
+            href="/dashboard/calendar"
+            className="inline-flex items-center border px-3 py-1.5 text-[13px] font-semibold"
+            style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
+          >
+            Full calendar
           </Link>
         </div>
         {cc.today.length === 0 ? (
@@ -215,14 +226,22 @@ export default async function DashboardOverview() {
       <section className="mb-10">
         <div className="mb-4 flex items-end justify-between">
           <h2 className="font-display text-[22px]">Continue learning</h2>
-          <Link href="/dashboard/my-learning" className="text-[13px] font-semibold" style={{ color: 'var(--green-deep)' }}>
-            My Learning →
+          <Link
+            href="/dashboard/my-learning"
+            className="inline-flex items-center border px-3 py-1.5 text-[13px] font-semibold"
+            style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
+          >
+            My Learning
           </Link>
         </div>
         {cc.continueLearning.length === 0 ? (
           <div className="border border-dashed p-6" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
             Enroll in a course to see continue cards here.{' '}
-            <Link href="/dashboard/courses" className="font-semibold" style={{ color: 'var(--green-deep)' }}>
+            <Link
+              href="/dashboard/courses"
+              className="inline-flex items-center border px-2.5 py-1 font-semibold"
+              style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
+            >
               Browse courses
             </Link>
           </div>
@@ -290,8 +309,12 @@ export default async function DashboardOverview() {
         <div className="border p-5" style={{ borderColor: 'var(--line)' }}>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-display text-[18px]">Assignments</h2>
-            <Link href="/dashboard/assignments" className="text-[12.5px] font-semibold" style={{ color: 'var(--green-deep)' }}>
-              Center →
+            <Link
+              href="/dashboard/assignments"
+              className="inline-flex items-center border px-3 py-1.5 text-[12.5px] font-semibold"
+              style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
+            >
+              Center
             </Link>
           </div>
           <ul className="space-y-2 text-[13.5px]">
@@ -317,20 +340,40 @@ export default async function DashboardOverview() {
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-display text-[18px]">Quick actions</h2>
           </div>
-          <div className="flex flex-col gap-2 text-[13.5px] font-semibold">
-            <Link href="/dashboard/todos" className="inline-flex items-center gap-2" style={{ color: 'var(--ink)' }}>
+          <div className="flex flex-col gap-2">
+            <Link
+              href="/dashboard/todos"
+              className="inline-flex items-center gap-2 border px-3 py-2 text-[13.5px] font-semibold"
+              style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+            >
               <CheckSquare size={15} /> My tasks
             </Link>
-            <Link href="/dashboard/assignments" className="inline-flex items-center gap-2" style={{ color: 'var(--ink)' }}>
+            <Link
+              href="/dashboard/assignments"
+              className="inline-flex items-center gap-2 border px-3 py-2 text-[13.5px] font-semibold"
+              style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+            >
               <ClipboardList size={15} /> Assignment center
             </Link>
-            <Link href="/dashboard/achievements" className="inline-flex items-center gap-2" style={{ color: 'var(--ink)' }}>
+            <Link
+              href="/dashboard/achievements"
+              className="inline-flex items-center gap-2 border px-3 py-2 text-[13.5px] font-semibold"
+              style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+            >
               <Trophy size={15} /> Achievements
             </Link>
-            <Link href="/dashboard/tutor" className="inline-flex items-center gap-2" style={{ color: 'var(--ink)' }}>
+            <Link
+              href="/dashboard/tutor"
+              className="inline-flex items-center gap-2 border px-3 py-2 text-[13.5px] font-semibold"
+              style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+            >
               <Bot size={15} /> Ask AI Tutor
             </Link>
-            <Link href="/dashboard/courses" className="inline-flex items-center gap-2" style={{ color: 'var(--ink)' }}>
+            <Link
+              href="/dashboard/courses"
+              className="inline-flex items-center gap-2 border px-3 py-2 text-[13.5px] font-semibold"
+              style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+            >
               <Sparkles size={15} /> Explore courses
             </Link>
           </div>

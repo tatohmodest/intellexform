@@ -121,9 +121,9 @@ export default function StudentEditor({
             onChange={(e) => setForm((f) => ({ ...f, classHead: e.target.checked }))}
           />
           <span>
-            Class head
+            Class advocate
             <span className="mt-0.5 block text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-              Can create course groups and add classmates to the chat rooms.
+              Can create course groups. Instructors also assign this from My Students.
             </span>
           </span>
         </label>

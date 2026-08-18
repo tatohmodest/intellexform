@@ -54,6 +54,37 @@ export type DataField = {
 export type DatasetVisibility = 'private' | 'internal' | 'public';
 export type SubmitAccess = 'staff' | 'authenticated' | 'students' | 'public';
 
+export const SUBMIT_ACCESS_OPTIONS: Array<{
+  value: SubmitAccess;
+  label: string;
+  hint: string;
+}> = [
+  {
+    value: 'staff',
+    label: 'Staff type into the table',
+    hint: 'No public form. Your team adds rows in Data Workspace.',
+  },
+  {
+    value: 'students',
+    label: 'Official students fill the form',
+    hint: 'Students see this on their dashboard and can submit. You still own the table.',
+  },
+  {
+    value: 'authenticated',
+    label: 'Anyone signed in fills the form',
+    hint: 'Every signed-in account sees this on their dashboard, even if they did not create it.',
+  },
+  {
+    value: 'public',
+    label: 'Anyone with the link fills the form',
+    hint: 'Share the public form. Signed-in people also see it on their dashboard.',
+  },
+];
+
+export function submitAccessLabel(access: string): string {
+  return SUBMIT_ACCESS_OPTIONS.find((o) => o.value === access)?.label || access;
+}
+
 export const FIELD_TYPE_LABELS: Record<DataFieldType, string> = {
   short_text: 'Short text',
   long_text: 'Long text',

@@ -129,6 +129,53 @@ async function audit(
   });
 }
 
+export type FillableDatasetCard = {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  slug: string;
+  ownerName: string;
+  submitAccess: SubmitAccess;
+  updatedAt: string;
+};
+
+/**
+ * Datasets an institution member can fill from their own dashboard,
+ * including ones they did not create.
+ */
+export async function listFillableDatasetsForUser(opts: {
+  userId: string;
+  isStudent: boolean;
+}): Promise<FillableDatasetCard[]> {
+  void opts.userId;
+  const access: SubmitAccess[] = ['public', 'authenticated'];
+  if (opts.isStudent) access.push('students');
+  const { datasets } = await cols();
+  const docs = await datasets
+    .find({
+      deletedAt: { $in: [null, undefined] },
+      status: { $ne: 'archived' },
+      submitAccess: { $in: access },
+    })
+    .sort({ updatedAt: -1 })
+    .limit(40)
+    .toArray();
+  return docs.map((d) => {
+    const view = datasetView(d as Record<string, unknown>);
+    return {
+      id: view.id,
+      name: view.name,
+      description: view.description,
+      category: view.category,
+      slug: view.slug,
+      ownerName: view.ownerName || 'Staff',
+      submitAccess: view.submitAccess,
+      updatedAt: view.updatedAt,
+    };
+  });
+}
+
 export async function listDatasets(actor: StaffActor) {
   const { datasets, records } = await cols();
   const docs = await datasets.find({ deletedAt: { $in: [null, undefined] } }).sort({ updatedAt: -1 }).limit(80).toArray();

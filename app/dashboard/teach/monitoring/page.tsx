@@ -30,11 +30,19 @@ export default async function StudentMonitoringPage() {
           Early-warning signals: inactivity, missing assignments, and low progress. Treat this as a
           coaching tool, not a judgment.
         </p>
-        <div className="mt-4 flex flex-wrap gap-3 text-[13px] font-semibold">
-          <Link href="/dashboard/teach/grading" style={{ color: 'var(--green-deep)' }}>
-            Grading center →
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link
+            href="/dashboard/teach/grading"
+            className="inline-flex items-center border px-3 py-1.5 text-[13px] font-semibold"
+            style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
+          >
+            Grading center
           </Link>
-          <Link href="/dashboard/students" style={{ color: 'var(--ink-soft)' }}>
+          <Link
+            href="/dashboard/students"
+            className="inline-flex items-center border px-3 py-1.5 text-[13px] font-semibold"
+            style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+          >
             Full roster
           </Link>
         </div>

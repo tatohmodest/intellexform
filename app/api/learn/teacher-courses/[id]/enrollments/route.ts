@@ -7,6 +7,7 @@ import {
   removeCourseEnrollment,
   searchLearners,
 } from '@/lib/learn/ecosystem';
+import { classHeadFlags } from '@/lib/learn/studentAccess';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,15 @@ function canManage(
   uid: string,
 ): boolean {
   return course.authorId === uid || course.instructorId === uid;
+}
+
+async function rosterPayload(courseId: string) {
+  const enrollments = await listCourseEnrollments(courseId);
+  const flags = await classHeadFlags(enrollments.map((e) => e.studentId));
+  return enrollments.map((e) => ({
+    ...e,
+    classHead: flags.get(e.studentId) === true,
+  }));
 }
 
 /** GET - roster for the instructor. */
@@ -31,7 +41,7 @@ export async function GET(
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
 
-  const enrollments = await listCourseEnrollments(params.id);
+  const enrollments = await rosterPayload(params.id);
   return NextResponse.json({ enrollments });
 }
 
@@ -98,7 +108,7 @@ export async function POST(
     }
   }
 
-  const enrollments = await listCourseEnrollments(params.id);
+  const enrollments = await rosterPayload(params.id);
   return NextResponse.json({ ok: true, created: result.created, enrollments });
 }
 
@@ -120,6 +130,6 @@ export async function DELETE(
   if (!studentId) return NextResponse.json({ error: 'student_required' }, { status: 400 });
 
   await removeCourseEnrollment(params.id, studentId);
-  const enrollments = await listCourseEnrollments(params.id);
+  const enrollments = await rosterPayload(params.id);
   return NextResponse.json({ ok: true, enrollments });
 }

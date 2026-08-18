@@ -47,8 +47,8 @@ export default function MessageStudentButton({
       type="button"
       onClick={start}
       disabled={busy}
-      className="inline-flex items-center gap-1 text-[12px] font-semibold"
-      style={{ color: accent }}
+      className="inline-flex items-center gap-1.5 border px-3 py-1.5 text-[12.5px] font-semibold disabled:opacity-50"
+      style={{ borderColor: 'var(--line)', color: accent }}
     >
       {busy ? <Loader2 size={12} className="animate-spin" /> : <MessageSquare size={12} />}
       Message
