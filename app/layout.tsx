@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import CookieConsent from '@/components/CookieConsent';
-import ChatWithUsFab from '@/components/ChatWithUsFab';
 import PwaInstallPrompt from '@/components/PwaInstallPrompt';
 import PwaRegister from '@/components/PwaRegister';
 import JsonLd from '@/components/seo/JsonLd';
@@ -105,7 +104,6 @@ export default function RootLayout({
       <body className="bg-paper text-ink font-body antialiased">
         <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
         {children}
-        <ChatWithUsFab />
         <CookieConsent />
         <PwaRegister />
         <PwaInstallPrompt />
