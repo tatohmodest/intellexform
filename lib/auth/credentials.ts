@@ -654,9 +654,17 @@ export async function completeLogin(opts: {
   | { ok: true; session: string; nextPath: string; user: Omit<SessionUser, 'iat'> }
   | AuthError
 > {
-  const email = normalizeEmail(opts.email);
-  if (!email.includes('@')) return { error: 'Enter a valid email.', status: 400 };
+  const identifier = String(opts.email || '').trim();
+  if (!identifier) return { error: 'Enter your email or matricule.', status: 400 };
   if (!opts.password) return { error: 'Enter your password.', status: 400 };
+
+  let email = identifier.includes('@') ? normalizeEmail(identifier) : '';
+  if (!email) {
+    const { findAccountByMatricule } = await import('@/lib/learn/studentAccess');
+    const byMatricule = await findAccountByMatricule(identifier);
+    if (!byMatricule) return { error: 'Invalid matricule or password.', status: 401 };
+    email = normalizeEmail(byMatricule.email);
+  }
 
   const loaded = await loadAccount(email);
   if (!loaded.account?.passwordHash) {

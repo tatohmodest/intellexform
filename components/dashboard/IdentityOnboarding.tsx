@@ -1,266 +1,65 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import {
-  ArrowRight,
-  BookOpen,
-  CheckCircle2,
-  Compass,
-  GraduationCap,
-  Loader2,
-  Search,
-  Sparkles,
-  Users,
-} from 'lucide-react';
-
-type Intent = 'learn' | 'teach';
-type JoinPath = 'intellex' | 'institution' | 'both';
-
-type InstitutionHit = {
-  slug: string;
-  name: string;
-  tagline: string;
-  color: string;
-  authMethod?: string;
-  country?: string | null;
-  memberCount: number;
-  logoUrl?: string | null;
-};
-
-const INTENTS: {
-  id: Intent;
-  title: string;
-  body: string;
-  icon: typeof BookOpen;
-}[] = [
-  {
-    id: 'learn',
-    title: 'Learn',
-    body: 'Courses, mentors, AI tutor, and certificates - your personal InTelleX passport.',
-    icon: BookOpen,
-  },
-  {
-    id: 'teach',
-    title: 'Teach',
-    body: 'Guide learners as a mentor or instructor. Privileges are earned after review.',
-    icon: Users,
-  },
-];
-
-const JOIN_PATHS: {
-  id: JoinPath;
-  title: string;
-  body: string;
-  icon: typeof Compass;
-}[] = [
-  {
-    id: 'intellex',
-    title: 'Continue with InTelleX',
-    body: 'Enter the InTelleX learning platform - courses, mentorship, and AI.',
-    icon: Compass,
-  },
-  {
-    id: 'institution',
-    title: 'Join my institution',
-    body: 'Search your campus, verify with matricule, then open that digital campus.',
-    icon: GraduationCap,
-  },
-  {
-    id: 'both',
-    title: 'Both',
-    body: 'Access InTelleX and your institution - switch workspaces anytime.',
-    icon: Sparkles,
-  },
-];
+import { ArrowRight, Check, Loader2 } from 'lucide-react';
+import { INTERESTS, type InterestId } from '@/lib/learn/interests';
 
 export default function IdentityOnboarding({
   firstName,
+  institutionName,
+  tagline,
   continueTo = '/dashboard',
 }: {
   firstName: string;
-  /** Where to land after onboarding when not joining a campus from search. */
+  institutionName: string;
+  tagline?: string;
   continueTo?: string;
 }) {
   const router = useRouter();
-  const [step, setStep] = useState<'intent' | 'path' | 'search' | 'verify'>('intent');
-  const [intent, setIntent] = useState<Intent | null>(null);
-  const [joinPath, setJoinPath] = useState<JoinPath | null>(null);
-  const [query, setQuery] = useState('');
-  const [hits, setHits] = useState<InstitutionHit[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [selected, setSelected] = useState<InstitutionHit | null>(null);
-  const [matricule, setMatricule] = useState('');
-  const [password, setPassword] = useState('');
+  const [selected, setSelected] = useState<InterestId[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (step !== 'search') return;
-    const t = setTimeout(async () => {
-      setSearching(true);
-      try {
-        const res = await fetch(
-          `/api/learn/institutions?q=${encodeURIComponent(query)}`,
-        );
-        if (res.ok) {
-          const data = await res.json();
-          setHits(data.institutions ?? []);
-        }
-      } finally {
-        setSearching(false);
-      }
-    }, 220);
-    return () => clearTimeout(t);
-  }, [query, step]);
+  const title = useMemo(
+    () => `Welcome to ${institutionName}, ${firstName}`,
+    [firstName, institutionName],
+  );
 
-  const title = useMemo(() => {
-    if (step === 'intent') return `Welcome to InTelleX, ${firstName}`;
-    if (step === 'path') {
-      return intent === 'teach'
-        ? 'How will you teach on InTelleX?'
-        : 'How are you joining today?';
+  function toggle(id: InterestId) {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  async function finish() {
+    if (!selected.length) {
+      setError('Pick at least one interest so we can personalize your home.');
+      return;
     }
-    if (step === 'search') return 'Search your institution';
-    return `Verify with ${selected?.name ?? 'your campus'}`;
-  }, [step, firstName, selected, intent]);
-
-  async function finishOnboarding(opts: {
-    primaryIntent: Intent;
-    joinPath?: JoinPath | null;
-    next?: string;
-    continueToSearch?: boolean;
-  }) {
     setBusy(true);
     setError('');
     try {
       const res = await fetch('/api/learn/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          primaryIntent: opts.primaryIntent,
-          joinPath: opts.joinPath ?? null,
-        }),
+        body: JSON.stringify({ primaryIntent: 'learn', interests: selected }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error ?? 'Could not save your profile');
+        setError(data.error === 'interests_required' ? 'Pick at least one interest.' : 'Could not save. Try again.');
+        setBusy(false);
         return;
       }
-      if (opts.continueToSearch) {
-        setStep('search');
-        return;
-      }
-      router.replace(opts.next ?? '/dashboard');
+      router.replace(continueTo);
       router.refresh();
     } catch {
-      setError('Could not connect. Please try again.');
-    } finally {
+      setError('Could not connect.');
       setBusy(false);
     }
-  }
-
-  function chooseIntent(id: Intent) {
-    setIntent(id);
-    setError('');
-    setStep('path');
-  }
-
-  async function choosePath(id: JoinPath) {
-    if (!intent) return;
-    setJoinPath(id);
-    if (id === 'intellex') {
-      await finishOnboarding({
-        primaryIntent: intent,
-        joinPath: id,
-        next:
-          intent === 'teach'
-            ? '/dashboard/mentor'
-            : continueTo.startsWith('/dashboard')
-              ? continueTo
-              : '/dashboard',
-      });
-      return;
-    }
-    await finishOnboarding({
-      primaryIntent: intent,
-      joinPath: id,
-      continueToSearch: true,
-    });
-  }
-
-  async function affiliate() {
-    if (!selected) return;
-    setBusy(true);
-    setError('');
-    try {
-      const res = await fetch(`/api/learn/institutions/${selected.slug}/affiliate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          matricule,
-          password,
-          role: intent === 'teach' ? 'instructor' : 'student',
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(
-          data.error === 'password_required'
-            ? 'Enter your campus password / PIN.'
-            : data.error === 'invalid_matricule'
-              ? 'Check your matricule and try again.'
-              : 'Campus could not verify those credentials.',
-        );
-        return;
-      }
-      const dest =
-        data.needsProfileComplete
-          ? `${data.redirectTo || `/dashboard/institutions/${selected.slug}`}?complete=1`
-          : data.redirectTo || `/dashboard/institutions/${selected.slug}`;
-      router.replace(dest);
-      router.refresh();
-    } catch {
-      setError('Could not connect. Please try again.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function pickInstitution(inst: InstitutionHit) {
-    setSelected(inst);
-    if ((inst.authMethod ?? 'open') === 'open') {
-      setBusy(true);
-      fetch(`/api/learn/institutions/${inst.slug}/affiliate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          role: intent === 'teach' ? 'instructor' : 'student',
-        }),
-      })
-        .then(async (res) => {
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok) {
-            setError('Could not join this campus.');
-            return;
-          }
-          const dest =
-            data.needsProfileComplete
-              ? `${data.redirectTo || `/dashboard/institutions/${inst.slug}`}?complete=1`
-              : data.redirectTo || `/dashboard/institutions/${inst.slug}`;
-          router.replace(dest);
-          router.refresh();
-        })
-        .catch(() => setError('Could not connect.'))
-        .finally(() => setBusy(false));
-      return;
-    }
-    setStep('verify');
   }
 
   return (
-    <div className="relative mx-auto flex min-h-[70vh] max-w-[640px] flex-col justify-center px-1 py-8">
+    <div className="relative mx-auto flex min-h-[70vh] max-w-[720px] flex-col justify-center px-1 py-8">
       <div
         className="pointer-events-none absolute inset-x-0 -top-10 h-56 rounded-[40px] opacity-80"
         style={{
@@ -271,253 +70,64 @@ export default function IdentityOnboarding({
 
       <div className="relative">
         <p className="mono mb-2 text-[11px] uppercase tracking-[0.18em]" style={{ color: 'var(--ink-soft)' }}>
-          One identity · many campuses
+          {tagline || 'Learn. Connect. Grow.'}
         </p>
         <h1 className="font-display text-[32px] leading-tight sm:text-[36px]">{title}</h1>
         <p className="mt-2 max-w-lg text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-          {step === 'intent' &&
-            'You are creating an InTelleX identity - not a university account. Campuses become affiliations on this passport.'}
-          {step === 'path' &&
-            'This personalizes your home. You can switch between InTelleX and any campus you verify - same login.'}
-          {step === 'search' &&
-            'Find your campus on the network. Academic records stay with them - InTelleX only stores the affiliation.'}
-          {step === 'verify' &&
-            'Credentials are checked with your institution. InTelleX never keeps your campus password.'}
+          We want to know a little about you. These are personalization preferences — not enrollment.
+          You can become a student later.
+        </p>
+
+        <h2 className="mt-8 font-display text-[20px]">What are you interested in?</h2>
+        <p className="mt-1 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
+          Select as many as you like.
         </p>
 
         <AnimatePresence mode="wait">
           <motion.div
-            key={step}
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-            className="mt-8 space-y-3"
+            className="mt-5 grid gap-2 sm:grid-cols-2"
           >
-            {step === 'intent' &&
-              INTENTS.map((item) => (
-                <ChoiceCard
-                  key={item.id}
-                  title={item.title}
-                  body={item.body}
-                  icon={item.icon}
-                  disabled={busy}
-                  onClick={() => chooseIntent(item.id)}
-                />
-              ))}
-
-            {step === 'path' &&
-              JOIN_PATHS.map((item) => (
-                <ChoiceCard
-                  key={item.id}
-                  title={item.title}
-                  body={item.body}
-                  icon={item.icon}
-                  disabled={busy}
-                  onClick={() => choosePath(item.id)}
-                />
-              ))}
-
-            {step === 'search' && (
-              <div className="space-y-4">
-                <div className="relative">
-                  <Search
-                    size={16}
-                    className="absolute left-4 top-1/2 -translate-y-1/2"
-                    style={{ color: 'var(--ink-soft)' }}
-                  />
-                  <input
-                    className="form-input pl-11"
-                    placeholder="University of Buea, Saint Monica…"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    autoFocus
-                  />
-                </div>
-                <div className="max-h-[340px] space-y-2 overflow-y-auto pr-1">
-                  {searching && (
-                    <p className="flex items-center gap-2 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                      <Loader2 size={14} className="animate-spin" /> Searching…
-                    </p>
-                  )}
-                  {!searching && hits.length === 0 && (
-                    <p className="rounded-2xl border border-dashed px-4 py-6 text-[13.5px]" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
-                      No campuses matched. Try another name, or{' '}
-                      <button
-                        type="button"
-                        className="font-semibold underline"
-                        style={{ color: 'var(--green-deep)' }}
-                        onClick={() =>
-                          router.replace(intent === 'teach' ? '/dashboard/mentor' : '/dashboard')
-                        }
-                      >
-                        continue with InTelleX
-                      </button>
-                      .
-                    </p>
-                  )}
-                  {hits.map((inst) => (
-                    <button
-                      key={inst.slug}
-                      type="button"
-                      disabled={busy}
-                      onClick={() => pickInstitution(inst)}
-                      className="flex w-full items-center gap-3 rounded-2xl border px-4 py-3.5 text-left transition-colors hover:border-[var(--green-deep)]"
-                      style={{ borderColor: 'var(--line)' }}
-                    >
-                      <span
-                        className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl text-[13px] font-bold text-white"
-                        style={{ background: inst.color || '#00b369' }}
-                      >
-                        {inst.logoUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={inst.logoUrl} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                          inst.name.slice(0, 1)
-                        )}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate font-semibold">{inst.name}</span>
-                        <span className="block truncate text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
-                          {inst.tagline}
-                          {inst.country ? ` · ${inst.country}` : ''}
-                          {inst.authMethod === 'matricule' ? ' · Matricule login' : ''}
-                        </span>
-                      </span>
-                      <ArrowRight size={16} style={{ color: 'var(--ink-soft)' }} />
-                    </button>
-                  ))}
-                </div>
-                {joinPath === 'both' && (
-                  <button
-                    type="button"
-                    className="btn btn-ghost w-full !py-2.5 text-[13.5px]"
-                    onClick={() =>
-                      router.replace(intent === 'teach' ? '/dashboard/mentor' : '/dashboard')
-                    }
-                  >
-                    Skip for now - go to InTelleX
-                  </button>
-                )}
-              </div>
-            )}
-
-            {step === 'verify' && selected && (
-              <div className="space-y-4 rounded-3xl border p-5 sm:p-6" style={{ borderColor: 'var(--line)' }}>
-                <div className="flex items-center gap-3">
-                  <span
-                    className="flex h-11 w-11 items-center justify-center rounded-xl text-white font-bold"
-                    style={{ background: selected.color }}
-                  >
-                    {selected.name.slice(0, 1)}
-                  </span>
-                  <div>
-                    <div className="font-semibold">{selected.name}</div>
-                    <div className="text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
-                      {intent === 'teach' ? 'Instructor' : 'Student'} verification ·{' '}
-                      {selected.authMethod || 'campus auth'}
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-[13px] font-semibold">Matricule / staff ID</label>
-                  <input
-                    className="form-input"
-                    value={matricule}
-                    onChange={(e) => setMatricule(e.target.value)}
-                    placeholder="e.g. SMU/2024/0142"
-                    autoFocus
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-[13px] font-semibold">Campus password</label>
-                  <input
-                    type="password"
-                    className="form-input"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Checked by your institution - not stored here"
-                  />
-                </div>
+            {INTERESTS.map((item) => {
+              const on = selected.includes(item.id);
+              return (
                 <button
+                  key={item.id}
                   type="button"
-                  disabled={busy || !matricule || !password}
-                  onClick={affiliate}
-                  className="btn btn-primary w-full !py-3"
-                >
-                  {busy ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                  Enter campus workspace
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost w-full !py-2.5 text-[13px]"
-                  onClick={() => {
-                    setStep('search');
-                    setSelected(null);
-                    setPassword('');
+                  disabled={busy}
+                  onClick={() => toggle(item.id)}
+                  className="flex items-center justify-between gap-3 rounded-2xl border px-4 py-3.5 text-left"
+                  style={{
+                    borderColor: on ? 'var(--ink)' : 'var(--line)',
+                    background: on ? 'var(--ink)' : 'transparent',
+                    color: on ? '#fff' : 'var(--ink)',
                   }}
                 >
-                  Choose a different institution
+                  <span className="font-semibold">{item.label}</span>
+                  {on ? <Check size={16} /> : null}
                 </button>
-              </div>
-            )}
+              );
+            })}
           </motion.div>
         </AnimatePresence>
 
-        {error && (
+        {error ? (
           <p className="mt-5 rounded-xl px-4 py-3 text-[13px]" style={{ background: 'rgba(196,98,42,0.08)', color: '#a14d18' }}>
             {error}
           </p>
-        )}
+        ) : null}
 
-        {busy && step !== 'verify' && step !== 'search' && (
-          <p className="mt-4 flex items-center gap-2 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-            <Loader2 size={14} className="animate-spin" /> Setting up your identity…
-          </p>
-        )}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={finish}
+          className="btn btn-primary mt-8 w-full !py-3"
+        >
+          {busy ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
+          Continue to {institutionName}
+        </button>
       </div>
     </div>
-  );
-}
-
-function ChoiceCard({
-  title,
-  body,
-  icon: Icon,
-  onClick,
-  disabled,
-}: {
-  title: string;
-  body: string;
-  icon: typeof BookOpen;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className="group flex w-full items-start gap-4 rounded-3xl border px-5 py-4 text-left transition-all hover:-translate-y-0.5 hover:border-[var(--green-deep)] disabled:opacity-60"
-      style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}
-    >
-      <span
-        className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
-        style={{ background: 'rgba(0,179,105,0.12)', color: 'var(--green-deep)' }}
-      >
-        <Icon size={20} />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block font-display text-[18px] leading-tight">{title}</span>
-        <span className="mt-1 block text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-          {body}
-        </span>
-      </span>
-      <ArrowRight
-        size={18}
-        className="mt-2 shrink-0 opacity-40 transition-opacity group-hover:opacity-100"
-        style={{ color: 'var(--green-deep)' }}
-      />
-    </button>
   );
 }

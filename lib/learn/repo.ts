@@ -27,6 +27,10 @@ export interface LearnerDoc {
   onboardingComplete?: boolean;
   primaryIntent?: PrimaryIntent | null;
   joinPath?: JoinPath | null;
+  /** Official student identity on this same account (set after admission). */
+  studentStatus?: 'none' | 'applicant' | 'admitted' | 'active' | 'graduated' | 'alumni' | null;
+  /** Institutional identifier — resolves to this account, not a second login. */
+  matricule?: string | null;
   /** Campus / org affiliations on this global identity. */
   affiliations?: Affiliation[];
   /** Current workspace context (Personal / campus / teaching…). */
@@ -57,6 +61,7 @@ export interface LearnerDoc {
     academicCreditsEarned?: number | null;
     academicCreditsRequired?: number | null;
     academicCohort?: string;
+    interests?: string[];
   };
   /** Latest instructor badge label after mentor approval. */
   instructorBadge?: string | null;
@@ -200,31 +205,34 @@ export async function updateLearnerSettings(
   await db.collection('learners').updateOne({ lbId }, { $set });
 }
 
-/** Complete first-run onboarding - identity stays global; intent only personalizes. */
+/** Complete first-run onboarding — interests personalize; no institution join. */
 export async function completeLearnerOnboarding(
   lbId: string,
   opts: {
-    primaryIntent: PrimaryIntent;
+    primaryIntent?: PrimaryIntent;
     joinPath?: JoinPath | null;
+    interests?: string[];
   },
 ): Promise<LearnerDoc | null> {
   const db = await getDb();
-  const path = opts.joinPath === 'exploring' ? 'intellex' : opts.joinPath;
+  const path = opts.joinPath === 'exploring' ? 'intellex' : opts.joinPath || 'intellex';
+  const primaryIntent = opts.primaryIntent || 'learn';
   const activeContext: ActiveContext =
-    opts.primaryIntent === 'teach' && path === 'intellex'
-      ? { kind: 'teaching', institutionSlug: null }
-      : PERSONAL_CONTEXT;
+    primaryIntent === 'teach' ? { kind: 'teaching', institutionSlug: null } : PERSONAL_CONTEXT;
+
+  const $set: Record<string, unknown> = {
+    onboardingComplete: true,
+    primaryIntent,
+    joinPath: path,
+    activeContext,
+    updatedAt: new Date(),
+  };
+  if (opts.interests) $set['preferences.interests'] = opts.interests;
 
   await db.collection('learners').updateOne(
     { lbId },
     {
-      $set: {
-        onboardingComplete: true,
-        primaryIntent: opts.primaryIntent,
-        joinPath: path ?? null,
-        activeContext,
-        updatedAt: new Date(),
-      },
+      $set,
       $setOnInsert: {
         lbId,
         roles: ['student'],

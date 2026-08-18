@@ -1,53 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { completeLearnerOnboarding, getLearner } from '@/lib/learn/repo';
-import {
-  normalizeJoinPath,
-  type JoinPath,
-  type PrimaryIntent,
-} from '@/lib/learn/identity';
+import { sanitizeInterests } from '@/lib/learn/interests';
+import { type PrimaryIntent } from '@/lib/learn/identity';
 
 export const dynamic = 'force-dynamic';
 
 const INTENTS: PrimaryIntent[] = ['learn', 'teach'];
-const PATHS: JoinPath[] = ['intellex', 'institution', 'both', 'exploring'];
 
 /**
  * POST /api/learn/onboarding
- * Completes first-run identity onboarding (Learn/Teach + join path).
- * Institutions are never self-created from this flow.
+ * Completes first-run personalization (interests). Student registration is a
+ * separate application — never "join an institution" here.
  */
 export async function POST(req: NextRequest) {
   const user = getSessionUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
-  const primaryIntent = String(body.primaryIntent ?? '') as PrimaryIntent;
-  const joinPathRaw = body.joinPath != null ? String(body.joinPath) : null;
-  const joinPath = joinPathRaw && PATHS.includes(joinPathRaw as JoinPath)
-    ? normalizeJoinPath(joinPathRaw as JoinPath)
-    : null;
-
-  if (!INTENTS.includes(primaryIntent)) {
-    return NextResponse.json({ error: 'invalid_intent' }, { status: 400 });
-  }
-  if (!joinPath) {
-    return NextResponse.json({ error: 'join_path_required' }, { status: 400 });
+  const intentRaw = String(body.primaryIntent ?? 'learn');
+  const primaryIntent = INTENTS.includes(intentRaw as PrimaryIntent)
+    ? (intentRaw as PrimaryIntent)
+    : 'learn';
+  const interests = sanitizeInterests(body.interests);
+  if (!interests.length) {
+    return NextResponse.json({ error: 'interests_required' }, { status: 400 });
   }
 
   try {
     const learner = await completeLearnerOnboarding(user.uid, {
       primaryIntent,
-      joinPath,
+      joinPath: 'intellex',
+      interests,
     });
     return NextResponse.json({
       ok: true,
       onboardingComplete: true,
       primaryIntent: learner?.primaryIntent,
-      joinPath: learner?.joinPath,
-      activeContext: learner?.activeContext,
-      needsInstitutionSearch: joinPath === 'institution' || joinPath === 'both',
-      needsMentorApply: primaryIntent === 'teach' && joinPath === 'intellex',
+      interests: learner?.preferences?.interests ?? interests,
     });
   } catch (err) {
     console.error('onboarding failed:', err);
@@ -63,8 +53,8 @@ export async function GET() {
   return NextResponse.json({
     onboardingComplete: learner?.onboardingComplete !== false,
     primaryIntent: learner?.primaryIntent ?? null,
-    joinPath: learner?.joinPath ?? null,
-    affiliations: learner?.affiliations ?? [],
-    activeContext: learner?.activeContext ?? { kind: 'personal' },
+    interests: learner?.preferences?.interests ?? [],
+    studentStatus: learner?.studentStatus ?? null,
+    matricule: learner?.matricule ?? null,
   });
 }

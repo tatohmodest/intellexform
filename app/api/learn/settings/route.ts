@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
       academicCreditsEarned?: number | null;
       academicCreditsRequired?: number | null;
       academicCohort?: string;
+      interests?: string[];
     };
   } = {};
 
@@ -96,6 +97,10 @@ export async function POST(req: NextRequest) {
     }
     if (typeof p.academicCohort === 'string') {
       patch.preferences.academicCohort = p.academicCohort.slice(0, 80);
+    }
+    if (Array.isArray(p.interests)) {
+      const { sanitizeInterests } = await import('@/lib/learn/interests');
+      patch.preferences.interests = sanitizeInterests(p.interests);
     }
   }
 

@@ -12,6 +12,7 @@ type AppRow = {
   status: string;
   notes: string;
   source: string;
+  applicationCode?: string;
 };
 
 export default function AdmissionsDesk({
@@ -49,7 +50,8 @@ export default function AdmissionsDesk({
       <div className="rounded-2xl border border-dashed px-4 py-10 text-center" style={{ borderColor: 'var(--line)' }}>
         <p className="font-display text-[20px]">No applications yet</p>
         <p className="mt-1 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-          Public join requests and registrations appear here for review.
+          Public join requests, registrations, and in-app student applications appear here. Admit
+          upgrades the same account — it never creates a second login.
         </p>
       </div>
     );
@@ -72,6 +74,7 @@ export default function AdmissionsDesk({
                 {app.phone ? ` · ${app.phone}` : ''}
               </p>
               <p className="mt-1 text-[13px]">
+                {app.applicationCode ? `${app.applicationCode} · ` : ''}
                 {app.program || 'Program not specified'} · {app.source} ·{' '}
                 <span className="capitalize">{app.status}</span>
               </p>

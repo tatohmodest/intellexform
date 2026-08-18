@@ -872,6 +872,8 @@ export async function listAdmissions() {
     status: String(r.status || 'pending'),
     notes: String(r.notes || ''),
     source: String(r.source || ''),
+    applicationCode: String(r.applicationCode || ''),
+    userId: r.userId ? String(r.userId) : null,
     createdAt: r.createdAt,
   }));
 }
@@ -898,20 +900,58 @@ export async function decideAdmission(
       },
     },
   );
-  if (decision === 'admitted' && row.email) {
+  const { syncApplicationDecision } = await import('@/lib/learn/applications');
+  const { activateStudentMembership } = await import('@/lib/learn/studentAccess');
+  const { createNotification } = await import('@/lib/learn/notifications');
+  await syncApplicationDecision({
+    sourceId: String(row.sourceId || ''),
+    email: String(row.email || ''),
+    userId: String(row.userId || ''),
+    decision,
+    program: String(row.program || ''),
+  }).catch(() => null);
+
+  if (decision === 'admitted') {
+    let userId = String(row.userId || '');
+    if (!userId && row.email) {
+      const db = await getDb();
+      const learner = await db.collection('learners').findOne({
+        email: { $regex: new RegExp(`^${String(row.email).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+      });
+      if (learner?.lbId) userId = String(learner.lbId);
+    }
+    if (userId) {
+      const membership = await activateStudentMembership({
+        userId,
+        program: String(row.program || ''),
+        email: String(row.email || ''),
+        name: String(row.name || ''),
+        status: 'active',
+      });
+      await createNotification({
+        userId,
+        title: 'Welcome — you are now a student',
+        body: membership.matricule
+          ? `Your place is confirmed. Matricule: ${membership.matricule}. Academic access is unlocked on this account.`
+          : 'Your place is confirmed. Academic access is unlocked on this account.',
+        href: '/dashboard',
+        kind: 'institution',
+      }).catch(() => null);
+    }
+  } else if (row.email) {
     const db = await getDb();
     const learner = await db.collection('learners').findOne({
       email: { $regex: new RegExp(`^${String(row.email).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
     });
     if (learner?.lbId) {
-      await ensureStudentRecord(String(learner.lbId), {
-        name: String(learner.name || row.name),
-        email: String(learner.email || row.email),
-      });
-      await (await recordsCol()).updateOne(
-        { userId: String(learner.lbId) },
-        { $set: { status: 'admitted', program: row.program || '', updatedAt: new Date() } },
-      );
+      const decisionLabel = decision === 'waitlisted' ? 'waitlisted' : 'not accepted';
+      await createNotification({
+        userId: String(learner.lbId),
+        title: `Admission ${decisionLabel}`,
+        body: `Your application${row.program ? ` for ${row.program}` : ''} was ${decisionLabel}.`,
+        href: '/dashboard/application',
+        kind: 'institution',
+      }).catch(() => null);
     }
   }
   await writeStaffAudit({
@@ -963,8 +1003,8 @@ export async function publishAnnouncement(
     await createNotificationsForUsers(ids, {
       title,
       body,
-      href: '/dashboard/notifications',
-      kind: 'system',
+      href: '/dashboard/community',
+      kind: 'institution',
     }).catch(() => 0);
   }
   await writeStaffAudit({
@@ -1095,16 +1135,22 @@ export async function listStaffAudit(limit = 80) {
 }
 
 export async function getOwnFinance(userId: string) {
-  const rec = await ensureStudentRecord(userId);
+  const col = await recordsCol();
+  const rec = await col.findOne({ userId });
   const chCol = await chargesCol();
-  const charges = await chCol.find({ studentUserId: userId }).sort({ createdAt: -1 }).limit(50).toArray();
+  const charges = rec
+    ? await chCol.find({ studentUserId: userId }).sort({ createdAt: -1 }).limit(50).toArray()
+    : [];
   const payCol = await paymentsCol();
-  const payments = await payCol.find({ studentUserId: userId }).sort({ createdAt: -1 }).limit(50).toArray();
+  const payments = rec
+    ? await payCol.find({ studentUserId: userId }).sort({ createdAt: -1 }).limit(50).toArray()
+    : [];
   const totalXAF = charges.reduce((sum, c) => sum + Number(c.amountXAF || 0), 0);
   const paidXAF = charges.reduce((sum, c) => sum + Number(c.paidXAF || 0), 0);
   return {
-    studentCode: String(rec.studentCode || ''),
-    status: String(rec.status || 'active'),
+    isStudent: Boolean(rec && ['active', 'admitted'].includes(String(rec.status))),
+    studentCode: String(rec?.matricule || rec?.studentCode || ''),
+    status: String(rec?.status || ''),
     totalXAF,
     paidXAF,
     outstandingXAF: Math.max(0, totalXAF - paidXAF),
