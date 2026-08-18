@@ -23,6 +23,7 @@ export default function StudentEditor({
     phone: string;
     notes: string;
     campusSlug: string;
+    classHead?: boolean;
   };
   campuses: { slug: string; name: string }[];
 }) {
@@ -113,6 +114,19 @@ export default function StudentEditor({
             />
           </label>
         ))}
+        <label className="flex items-center gap-2 text-[13px] sm:col-span-2">
+          <input
+            type="checkbox"
+            checked={Boolean(form.classHead)}
+            onChange={(e) => setForm((f) => ({ ...f, classHead: e.target.checked }))}
+          />
+          <span>
+            Class head
+            <span className="mt-0.5 block text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+              Can create course groups and add classmates to the chat rooms.
+            </span>
+          </span>
+        </label>
       </div>
       <label className="mt-3 block text-[13px]">
         <span className="mb-1 block" style={{ color: 'var(--ink-soft)' }}>

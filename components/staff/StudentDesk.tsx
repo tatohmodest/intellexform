@@ -15,6 +15,7 @@ type Row = {
   department: string;
   year: string;
   campusSlug: string;
+  classHead?: boolean;
   outstandingXAF: number;
 };
 
@@ -135,7 +136,14 @@ export default function StudentDesk() {
                     ) : null}
                   </td>
                   <td className="px-3 py-3">{row.campusSlug || '—'}</td>
-                  <td className="px-3 py-3 capitalize">{row.status.replace(/_/g, ' ')}</td>
+                  <td className="px-3 py-3 capitalize">
+                    {row.status.replace(/_/g, ' ')}
+                    {row.classHead ? (
+                      <span className="ml-2 text-[10px] font-semibold uppercase" style={{ color: '#00B369' }}>
+                        class head
+                      </span>
+                    ) : null}
+                  </td>
                   <td className="px-3 py-3">{row.outstandingXAF > 0 ? formatXAF(row.outstandingXAF) : '—'}</td>
                 </tr>
               ))}

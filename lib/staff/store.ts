@@ -476,6 +476,7 @@ export async function listStudents(opts: {
         department: '',
         year: '',
         campusSlug: '',
+        classHead: false,
         lastLoginAt: l.lastLoginAt || null,
         outstandingXAF: Math.max(0, Number(bal?.charged || 0) - Number(bal?.paid || 0)),
       });
@@ -492,8 +493,9 @@ export async function listStudents(opts: {
       program: String(rec.program || ''),
       department: String(rec.department || ''),
       year: String(rec.year || ''),
-      campusSlug: String(rec.campusSlug || ''),
-      lastLoginAt: l.lastLoginAt || null,
+            campusSlug: String(rec.campusSlug || ''),
+            classHead: Boolean(rec.classHead),
+            lastLoginAt: l.lastLoginAt || null,
       outstandingXAF: Math.max(0, Number(bal?.charged || 0) - Number(bal?.paid || 0)),
     });
   }
@@ -549,6 +551,7 @@ export async function getStudentDetail(userId: string, actor?: StaffActor) {
       phone: String(rec.phone || ''),
       notes: String(rec.notes || ''),
       campusSlug: String(rec.campusSlug || ''),
+      classHead: Boolean(rec.classHead),
     },
     courses: [
       ...enrollments.map((e) => ({
@@ -595,6 +598,7 @@ export async function updateStudentRecord(
     phone: string;
     notes: string;
     campusSlug: string;
+    classHead?: boolean;
   }>,
 ) {
   if (patch.status && !STUDENT_STATUSES.includes(patch.status)) {
@@ -619,6 +623,7 @@ export async function updateStudentRecord(
     ...(patch.phone !== undefined ? { phone: String(patch.phone).slice(0, 40) } : {}),
     ...(patch.notes !== undefined ? { notes: String(patch.notes).slice(0, 2000) } : {}),
     ...(patch.campusSlug !== undefined ? { campusSlug: String(patch.campusSlug).slice(0, 48) } : {}),
+    ...(patch.classHead !== undefined ? { classHead: Boolean(patch.classHead) } : {}),
     ...(patch.status ? { status: patch.status } : {}),
     updatedAt: new Date(),
   };
