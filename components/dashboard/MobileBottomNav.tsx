@@ -19,6 +19,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { campusNavItems, type ModuleId } from '@/lib/eduos/capabilities';
+import NavCountBadge from '@/components/dashboard/NavCountBadge';
+import { ZERO_NAV_COUNTS, type NavCounts } from '@/lib/learn/navCountTypes';
 
 type Tab = {
   href: string;
@@ -85,6 +87,7 @@ export default function MobileBottomNav({
   campusSlug = null,
   campusModules = [],
   campusRole = 'student',
+  counts = ZERO_NAV_COUNTS,
 }: {
   accent?: string;
   isMentor?: boolean;
@@ -92,6 +95,7 @@ export default function MobileBottomNav({
   campusSlug?: string | null;
   campusModules?: string[];
   campusRole?: string;
+  counts?: NavCounts;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -126,6 +130,31 @@ export default function MobileBottomNav({
       })()
     : null;
 
+  const tabCount = (tab: Tab): number => {
+    if (tab.href === '/dashboard') return counts['/dashboard/notifications'];
+    if (tab.href === '/dashboard/my-learning') return counts['/dashboard/library'];
+    if (tab.href === '/dashboard/assignments') {
+      return (
+        counts['/dashboard/assignments'] +
+        counts['/dashboard/todos'] +
+        counts['/dashboard/calendar']
+      );
+    }
+    if (tab.href === '/dashboard/community') {
+      return (
+        counts['/dashboard/community'] +
+        counts['/dashboard/messages'] +
+        counts['/dashboard/study-groups']
+      );
+    }
+    return 0;
+  };
+
+  const moreCount =
+    counts['/dashboard/notifications'] +
+    counts['/dashboard/fees'] +
+    counts['/dashboard/notes'] +
+    counts['/dashboard/opportunities'];
   const tabs = campusTabs || TABS;
   const moreActive = MORE_LINKS.some((l) => pathname.startsWith(l.href));
   const links = MORE_LINKS.filter((l) => {
@@ -169,6 +198,14 @@ export default function MobileBottomNav({
             {links.map((l) => {
               const Icon = l.icon;
               const active = pathname.startsWith(l.href);
+              const badge =
+                l.href === '/dashboard/announcements'
+                  ? counts['/dashboard/announcements']
+                  : l.href === '/dashboard/messages'
+                    ? counts['/dashboard/messages']
+                    : l.href === '/dashboard/fees'
+                      ? counts['/dashboard/fees']
+                      : null;
               return (
                 <li key={l.href}>
                   <Link
@@ -181,7 +218,8 @@ export default function MobileBottomNav({
                     }}
                   >
                     <Icon size={16} />
-                    {l.label}
+                    <span className="min-w-0 flex-1 truncate">{l.label}</span>
+                    {badge !== null ? <NavCountBadge count={badge} /> : null}
                   </Link>
                 </li>
               );
@@ -204,6 +242,7 @@ export default function MobileBottomNav({
           {tabs.map((tab) => {
             const active = tab.match ? tab.match(pathname) : pathname.startsWith(tab.href);
             const Icon = tab.icon;
+            const n = campusTabs ? 0 : tabCount(tab);
             return (
               <li key={tab.href} className="min-w-0 flex-1">
                 <Link
@@ -213,10 +252,11 @@ export default function MobileBottomNav({
                   aria-current={active ? 'page' : undefined}
                 >
                   <span
-                    className="flex h-8 w-8 items-center justify-center rounded-xl"
+                    className="relative flex h-8 w-8 items-center justify-center rounded-xl"
                     style={active ? { background: `${accent}1a` } : undefined}
                   >
                     <Icon size={20} strokeWidth={active ? 2.25 : 1.75} />
+                    <NavCountBadge count={n} compact />
                   </span>
                   <span
                     className="max-w-full truncate text-[10px] font-semibold leading-tight"
@@ -237,10 +277,11 @@ export default function MobileBottomNav({
               aria-expanded={moreOpen}
             >
               <span
-                className="flex h-8 w-8 items-center justify-center rounded-xl"
+                className="relative flex h-8 w-8 items-center justify-center rounded-xl"
                 style={moreOpen || moreActive ? { background: `${accent}1a` } : undefined}
               >
                 <Menu size={20} strokeWidth={moreOpen || moreActive ? 2.25 : 1.75} />
+                <NavCountBadge count={moreCount} compact />
               </span>
               <span className="max-w-full truncate text-[10px] font-semibold leading-tight">More</span>
             </button>

@@ -6,6 +6,7 @@ import {
   unreadNotificationCount,
   type NotificationCategory,
 } from '@/lib/learn/notifications';
+import { dispatchCalendarReminders } from '@/lib/learn/calendarReminders';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,8 @@ export async function GET(req: NextRequest) {
     categoryParam === 'system'
       ? (categoryParam as NotificationCategory | 'all')
       : 'all';
+
+  await dispatchCalendarReminders(session.uid).catch(() => 0);
 
   const [notifications, unread] = await Promise.all([
     listNotifications(session.uid, pageSize, { page, category }),

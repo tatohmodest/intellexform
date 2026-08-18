@@ -1371,13 +1371,11 @@ export async function getOwnFinance(userId: string) {
   const col = await recordsCol();
   const rec = await col.findOne({ userId });
   const chCol = await chargesCol();
-  const charges = rec
-    ? await chCol.find({ studentUserId: userId }).sort({ createdAt: -1 }).limit(50).toArray()
-    : [];
   const payCol = await paymentsCol();
-  const payments = rec
-    ? await payCol.find({ studentUserId: userId }).sort({ createdAt: -1 }).limit(50).toArray()
-    : [];
+  const [charges, payments] = await Promise.all([
+    chCol.find({ studentUserId: userId }).sort({ createdAt: -1 }).limit(50).toArray(),
+    payCol.find({ studentUserId: userId }).sort({ createdAt: -1 }).limit(50).toArray(),
+  ]);
   const totalXAF = charges.reduce((sum, c) => sum + Number(c.amountXAF || 0), 0);
   const paidXAF = charges.reduce((sum, c) => sum + Number(c.paidXAF || 0), 0);
   return {
@@ -1393,7 +1391,9 @@ export async function getOwnFinance(userId: string) {
       amountXAF: Number(c.amountXAF || 0),
       paidXAF: Number(c.paidXAF || 0),
       status: String(c.status || 'open'),
-      createdAt: c.createdAt,
+      createdAt: c.createdAt
+        ? new Date(c.createdAt as string | Date).toISOString()
+        : new Date().toISOString(),
     })),
     payments: payments.map((p) => ({
       id: String(p._id),
@@ -1401,7 +1401,9 @@ export async function getOwnFinance(userId: string) {
       method: String(p.method || 'other'),
       receiptCode: String(p.receiptCode || ''),
       reference: String(p.reference || ''),
-      createdAt: p.createdAt,
+      createdAt: p.createdAt
+        ? new Date(p.createdAt as string | Date).toISOString()
+        : new Date().toISOString(),
     })),
   };
 }

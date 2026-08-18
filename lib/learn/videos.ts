@@ -3,6 +3,9 @@
  * courses that complement the Intellex tracks. Embedded with youtube-nocookie.
  */
 
+export type VideoLevel = 'Beginner' | 'Intermediate' | 'Advanced';
+export type VideoSource = 'curated' | 'admin' | 'search';
+
 export interface VideoTutorial {
   id: string;
   /** YouTube video id. */
@@ -11,8 +14,9 @@ export interface VideoTutorial {
   channel: string;
   category: string;
   duration: string;
-  level: 'Beginner' | 'Intermediate' | 'Advanced';
+  level: VideoLevel;
   description: string;
+  source?: VideoSource;
 }
 
 export const VIDEO_CATEGORIES = [
@@ -334,3 +338,38 @@ export const VIDEO_TUTORIALS: VideoTutorial[] = [
     description: 'Spreadsheets, pivots, charts, and analysis skills every digital professional needs.',
   },
 ];
+
+const YT_ID = /^[a-zA-Z0-9_-]{11}$/;
+
+export function isYoutubeId(value: string): boolean {
+  return YT_ID.test(value);
+}
+
+export function extractYoutubeId(input: string): string | null {
+  const s = String(input || '').trim();
+  if (!s) return null;
+  if (YT_ID.test(s)) return s;
+  try {
+    const u = new URL(s);
+    const host = u.hostname.replace(/^www\./, '');
+    if (host === 'youtu.be') {
+      const id = u.pathname.replace(/^\//, '').slice(0, 11);
+      return YT_ID.test(id) ? id : null;
+    }
+    if (host.endsWith('youtube.com') || host.endsWith('youtube-nocookie.com')) {
+      const v = u.searchParams.get('v');
+      if (v && YT_ID.test(v)) return v;
+      const embed = u.pathname.match(/\/embed\/([a-zA-Z0-9_-]{11})/);
+      if (embed) return embed[1];
+      const shorts = u.pathname.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);
+      if (shorts) return shorts[1];
+      const live = u.pathname.match(/\/live\/([a-zA-Z0-9_-]{11})/);
+      if (live) return live[1];
+    }
+  } catch {
+    /* not a URL */
+  }
+  return null;
+}
+
+

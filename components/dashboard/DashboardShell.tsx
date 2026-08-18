@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -46,6 +46,14 @@ import type { ActiveContext, Affiliation, CampusBrand, PrimaryIntent } from '@/l
 import { campusNavItems, type ModuleId } from '@/lib/eduos/capabilities';
 import { staffNavFor } from '@/lib/staff/nav';
 import type { StaffDesk, StaffPermission } from '@/lib/staff/permissions';
+import NavCountBadge from '@/components/dashboard/NavCountBadge';
+import {
+  NAV_SEEN_HREFS,
+  ZERO_NAV_COUNTS,
+  isNavBadgeHref,
+  isNavSeenHref,
+  type NavCounts,
+} from '@/lib/learn/navCountTypes';
 
 export interface ShellUser {
   name: string;
@@ -145,6 +153,7 @@ function NavLinks({
   campusBrand,
   campusRole,
   staffPermissions,
+  counts,
   onNavigate,
 }: {
   pathname: string;
@@ -154,6 +163,7 @@ function NavLinks({
   campusBrand?: CampusBrand | null;
   campusRole?: string;
   staffPermissions?: StaffPermission[] | null;
+  counts: NavCounts;
   onNavigate?: () => void;
 }) {
   const searchParams = useSearchParams();
@@ -260,7 +270,8 @@ function NavLinks({
                 }
               >
                 <Icon size={17} strokeWidth={active ? 2.4 : 2} />
-                {item.label}
+                <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                {isNavBadgeHref(item.href) ? <NavCountBadge count={counts[item.href]} /> : null}
               </Link>
             );
           })}
@@ -623,6 +634,50 @@ export default function DashboardShell({
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [navCounts, setNavCounts] = useState<NavCounts>(ZERO_NAV_COUNTS);
+
+  const loadNavCounts = useCallback(async () => {
+    try {
+      const res = await fetch('/api/learn/nav-counts');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.counts) setNavCounts({ ...ZERO_NAV_COUNTS, ...data.counts });
+    } catch {
+      /* keep zeros */
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadNavCounts();
+    const id = window.setInterval(() => void loadNavCounts(), 20_000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void loadNavCounts();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, [loadNavCounts]);
+
+  useEffect(() => {
+    const href = NAV_SEEN_HREFS.find(
+      (h) => pathname === h || pathname.startsWith(`${h}/`),
+    );
+    if (!href || !isNavSeenHref(href)) return;
+    void fetch('/api/learn/nav-counts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ href }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.counts) setNavCounts({ ...ZERO_NAV_COUNTS, ...data.counts });
+      })
+      .catch(() => undefined);
+  }, [pathname]);
 
   const inCampus =
     user.activeContext?.kind === 'institution' && Boolean(campusBrand);
@@ -704,6 +759,7 @@ export default function DashboardShell({
           campusBrand={campusBrand}
           campusRole={campusRole}
           staffPermissions={staff?.permissions || null}
+          counts={navCounts}
           onNavigate={() => setMobileOpen(false)}
         />
       </div>
@@ -875,6 +931,7 @@ export default function DashboardShell({
         campusSlug={inCampus && campusBrand ? campusBrand.slug : null}
         campusModules={(campusBrand?.enabledModules as string[]) || []}
         campusRole={campusRole || 'student'}
+        counts={navCounts}
       />
     </div>
   );
