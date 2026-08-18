@@ -8,6 +8,7 @@ import { buildWhatsappLink } from '@/lib/whatsapp';
 import { EXPLORE_NAV, LEARN_NAV, TUTORIAL_NAV } from '@/lib/tutorials/nav';
 import HeaderSearch from '@/components/landing/HeaderSearch';
 import BrandLogo from '@/components/BrandLogo';
+import { useT } from '@/components/i18n/I18nRoot';
 
 type NavItem = {
   href: string;
@@ -55,6 +56,7 @@ const FLAT_LINKS = [
 ];
 
 export default function TopNav() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [desktopMenu, setDesktopMenu] = useState<string | null>(null);
   const [mobileSection, setMobileSection] = useState<string | null>('tutorials');
@@ -127,7 +129,7 @@ export default function TopNav() {
                       aria-haspopup="true"
                       onClick={() => setDesktopMenu(isOpen ? null : group.id)}
                     >
-                      {group.label}
+                      {t(group.label)}
                       <ChevronDown
                         size={14}
                         className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}
@@ -154,7 +156,7 @@ export default function TopNav() {
                               style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
                               onClick={() => setDesktopMenu(null)}
                             >
-                              All {group.label} →
+                              {t(`All ${group.label} →`)}
                             </Link>
                             <ul
                               className={`grid gap-0.5 p-2 ${
@@ -168,10 +170,10 @@ export default function TopNav() {
                                     className="block rounded-xl px-3 py-2.5 transition-colors hover:bg-[var(--paper-dim)]"
                                     onClick={() => setDesktopMenu(null)}
                                   >
-                                    <span className="block text-sm font-medium">{item.label}</span>
+                                    <span className="block text-sm font-medium">{t(item.label)}</span>
                                     {item.desc || item.tag ? (
                                       <span className="mt-0.5 block text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-                                        {item.desc || item.tag}
+                                        {t(item.desc || item.tag || '')}
                                       </span>
                                     ) : null}
                                   </Link>
@@ -192,7 +194,7 @@ export default function TopNav() {
                   href={l.href}
                   className="rounded-full px-3 py-2 text-sm opacity-75 transition-opacity hover:opacity-100"
                 >
-                  {l.label}
+                  {t(l.label)}
                 </Link>
               ))}
             </div>
@@ -203,7 +205,7 @@ export default function TopNav() {
                 className="hidden whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-semibold text-white sm:inline-block"
                 style={{ background: 'var(--green)' }}
               >
-                Dashboard
+                {t('Dashboard')}
               </Link>
             ) : (
               <>
@@ -211,14 +213,14 @@ export default function TopNav() {
                   href="/login"
                   className="hidden whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold opacity-80 transition-opacity hover:opacity-100 sm:inline-block"
                 >
-                  Sign in
+                  {t('Sign in')}
                 </Link>
                 <Link
                   href="/signup"
                   className="hidden whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-semibold text-paper sm:inline-block"
                   style={{ background: 'var(--ink)' }}
                 >
-                  Sign up
+                  {t('Sign up')}
                 </Link>
               </>
             )}
@@ -226,7 +228,7 @@ export default function TopNav() {
               className="flex h-10 w-10 items-center justify-center rounded-full lg:hidden"
               style={{ background: 'var(--paper-dim)' }}
               onClick={() => setOpen((o) => !o)}
-              aria-label="Menu"
+              aria-label={t('Menu')}
             >
               <Menu size={20} />
             </button>
@@ -252,7 +254,7 @@ export default function TopNav() {
                 className="flex h-10 w-10 items-center justify-center rounded-full"
                 style={{ background: 'var(--paper-dim)' }}
                 onClick={() => setOpen(false)}
-                aria-label="Close menu"
+                aria-label={t('Close menu')}
               >
                 <X size={20} />
               </button>
@@ -276,7 +278,7 @@ export default function TopNav() {
                       aria-expanded={isOpen}
                       onClick={() => setMobileSection(isOpen ? null : group.id)}
                     >
-                      {group.label}
+                      {t(group.label)}
                       <ChevronDown
                         size={18}
                         className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}
@@ -291,7 +293,7 @@ export default function TopNav() {
                           className="block rounded-xl px-3 py-2.5 text-sm font-semibold"
                           style={{ color: 'var(--green-deep)' }}
                         >
-                          All {group.label} →
+                          {t(`All ${group.label} →`)}
                         </Link>
                         {group.items.map((item) => (
                           <Link
@@ -301,10 +303,10 @@ export default function TopNav() {
                             className="flex items-center justify-between rounded-xl px-3 py-2.5 text-[15px]"
                           >
                             <span>
-                              <span className="block">{item.label}</span>
+                              <span className="block">{t(item.label)}</span>
                               {item.desc || item.tag ? (
                                 <span className="block text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-                                  {item.desc || item.tag}
+                                  {t(item.desc || item.tag || '')}
                                 </span>
                               ) : null}
                             </span>
@@ -330,7 +332,7 @@ export default function TopNav() {
                     className="flex items-center justify-between border-b py-4 font-display text-[22px]"
                     style={{ borderColor: 'var(--line)' }}
                   >
-                    {l.label}
+                    {t(l.label)}
                     <ArrowRight size={18} style={{ color: 'var(--ink-soft)' }} />
                   </Link>
                 </motion.div>
@@ -340,15 +342,15 @@ export default function TopNav() {
             <div className="flex flex-col gap-3 border-t p-5" style={{ borderColor: 'var(--line)' }}>
               {authed ? (
                 <Link href="/dashboard" onClick={() => setOpen(false)} className="btn btn-primary w-full">
-                  Go to Dashboard <ArrowRight size={18} />
+                  {t('Go to Dashboard')} <ArrowRight size={18} />
                 </Link>
               ) : (
                 <>
                   <Link href="/signup" onClick={() => setOpen(false)} className="btn btn-primary w-full">
-                    Create account <ArrowRight size={18} />
+                    {t('Create account')} <ArrowRight size={18} />
                   </Link>
                   <Link href="/login" onClick={() => setOpen(false)} className="btn btn-ghost w-full">
-                    Sign in
+                    {t('Sign in')}
                   </Link>
                 </>
               )}
@@ -359,7 +361,7 @@ export default function TopNav() {
                 onClick={() => setOpen(false)}
                 className="btn btn-ghost w-full"
               >
-                <MessageCircle size={18} /> Chat on WhatsApp
+                <MessageCircle size={18} /> {t('Chat on WhatsApp')}
               </a>
             </div>
           </motion.div>

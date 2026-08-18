@@ -102,7 +102,12 @@ export default function SettingsForm({
           name,
           weeklyGoalMinutes: goal,
           avatar,
-          preferences: { ...prefs, interests },
+          preferences: {
+            ...prefs,
+            locale:
+              typeof document !== 'undefined' ? document.documentElement.lang || prefs.locale : prefs.locale,
+            interests,
+          },
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -242,15 +247,9 @@ export default function SettingsForm({
         </p>
         <h2 className="mb-5 font-display text-[22px]">Customize your experience</h2>
 
-        <label className="mb-1.5 block text-[13px] font-semibold">Language</label>
-        <select
-          className="form-input mb-5 max-w-xs !rounded-none"
-          value={prefs.locale}
-          onChange={(e) => setPrefs((p) => ({ ...p, locale: e.target.value }))}
-        >
-          <option value="en">English</option>
-          <option value="fr">Français</option>
-        </select>
+        <p className="mb-5 text-[13px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+          The app follows your phone language (English or French).
+        </p>
 
         <div className="space-y-3">
           {(

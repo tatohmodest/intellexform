@@ -21,6 +21,7 @@ import {
 import { campusNavItems, type ModuleId } from '@/lib/eduos/capabilities';
 import NavCountBadge from '@/components/dashboard/NavCountBadge';
 import { ZERO_NAV_COUNTS, type NavCounts } from '@/lib/learn/navCountTypes';
+import { useT } from '@/components/i18n/I18nRoot';
 
 type Tab = {
   href: string;
@@ -99,6 +100,7 @@ export default function MobileBottomNav({
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const t = useT();
   const currentTab = searchParams.get('tab');
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -189,8 +191,8 @@ export default function MobileBottomNav({
           }}
         >
           <div className="mb-2 flex items-center justify-between">
-            <p className="font-display text-[16px]">More</p>
-            <button type="button" onClick={() => setMoreOpen(false)} aria-label="Close">
+            <p className="font-display text-[16px]">{t('More')}</p>
+            <button type="button" onClick={() => setMoreOpen(false)} aria-label={t('Close')}>
               <X size={18} />
             </button>
           </div>
@@ -218,7 +220,7 @@ export default function MobileBottomNav({
                     }}
                   >
                     <Icon size={16} />
-                    <span className="min-w-0 flex-1 truncate">{l.label}</span>
+                    <span className="min-w-0 flex-1 truncate">{t(l.label)}</span>
                     {badge !== null ? <NavCountBadge count={badge} /> : null}
                   </Link>
                 </li>
@@ -236,7 +238,7 @@ export default function MobileBottomNav({
           backdropFilter: 'blur(10px)',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
-        aria-label="Primary mobile"
+        aria-label={t('Primary mobile')}
       >
         <ul className="mx-auto flex max-w-lg items-stretch justify-between px-1 pt-1.5 pb-1.5">
           {tabs.map((tab) => {
@@ -262,7 +264,7 @@ export default function MobileBottomNav({
                     className="max-w-full truncate text-[10px] font-semibold leading-tight"
                     style={{ fontWeight: active ? 700 : 500 }}
                   >
-                    {tab.label}
+                    {t(tab.label)}
                   </span>
                 </Link>
               </li>
@@ -283,7 +285,7 @@ export default function MobileBottomNav({
                 <Menu size={20} strokeWidth={moreOpen || moreActive ? 2.25 : 1.75} />
                 <NavCountBadge count={moreCount} compact />
               </span>
-              <span className="max-w-full truncate text-[10px] font-semibold leading-tight">More</span>
+              <span className="max-w-full truncate text-[10px] font-semibold leading-tight">{t('More')}</span>
             </button>
           </li>
         </ul>

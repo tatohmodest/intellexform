@@ -47,6 +47,7 @@ import { campusNavItems, type ModuleId } from '@/lib/eduos/capabilities';
 import { staffNavFor } from '@/lib/staff/nav';
 import type { StaffDesk, StaffPermission } from '@/lib/staff/permissions';
 import NavCountBadge from '@/components/dashboard/NavCountBadge';
+import { useT } from '@/components/i18n/I18nRoot';
 import {
   NAV_SEEN_HREFS,
   ZERO_NAV_COUNTS,
@@ -167,6 +168,7 @@ function NavLinks({
   onNavigate?: () => void;
 }) {
   const searchParams = useSearchParams();
+  const t = useT();
   const campusSlug =
     context?.kind === 'institution' ? context.institutionSlug : null;
   const mentorActive =
@@ -205,7 +207,7 @@ function NavLinks({
               }
             >
               <Building2 size={17} />
-              {item.label}
+              {t(item.label)}
             </Link>
           );
         })}
@@ -216,7 +218,7 @@ function NavLinks({
           style={{ color: 'var(--ink-soft)' }}
         >
           <Home size={17} />
-          Home
+          {t('Home')}
         </Link>
         {staffPermissions?.includes('staff.access') ? (
           <Link
@@ -230,7 +232,7 @@ function NavLinks({
             }
           >
             <Briefcase size={17} />
-            Staff
+            {t('Staff')}
           </Link>
         ) : null}
       </nav>
@@ -246,7 +248,7 @@ function NavLinks({
               className="mono mb-1.5 px-3.5 text-[10px] uppercase tracking-[0.16em]"
               style={{ color: 'var(--ink-soft)' }}
             >
-              {group.label}
+              {t(group.label)}
             </div>
           ) : null}
           {group.items.map((item) => {
@@ -270,7 +272,7 @@ function NavLinks({
                 }
               >
                 <Icon size={17} strokeWidth={active ? 2.4 : 2} />
-                <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                <span className="min-w-0 flex-1 truncate">{t(item.label)}</span>
                 {isNavBadgeHref(item.href) ? <NavCountBadge count={counts[item.href]} /> : null}
               </Link>
             );
@@ -280,7 +282,7 @@ function NavLinks({
 
       <div className="mt-4 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
         <div className="mono mb-1.5 px-3.5 text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
-          {isMentor ? 'Teaching' : 'Teach'}
+          {isMentor ? t('Teaching') : t('Teach')}
         </div>
         <Link
           href={isMentor ? '/dashboard/teach' : '/dashboard/mentor'}
@@ -296,7 +298,7 @@ function NavLinks({
             size={17}
             strokeWidth={mentorActive || pathname.startsWith('/dashboard/teach') ? 2.4 : 2}
           />
-          {isMentor ? 'Teaching home' : 'Apply to mentor'}
+          {isMentor ? t('Teaching home') : t('Apply to mentor')}
         </Link>
         {isMentor && (
           <>
@@ -314,7 +316,7 @@ function NavLinks({
                 size={17}
                 strokeWidth={pathname.startsWith('/dashboard/teach/courses') ? 2.4 : 2}
               />
-              Course studio
+              {t('Course studio')}
             </Link>
             <Link
               href="/dashboard/students"
@@ -330,7 +332,7 @@ function NavLinks({
                 size={17}
                 strokeWidth={pathname.startsWith('/dashboard/students') ? 2.4 : 2}
               />
-              My Students
+              {t('My Students')}
             </Link>
             <Link
               href="/dashboard/classroom"
@@ -346,7 +348,7 @@ function NavLinks({
                 size={17}
                 strokeWidth={pathname.startsWith('/dashboard/classroom') ? 2.4 : 2}
               />
-              My Classroom
+              {t('My Classroom')}
             </Link>
             <Link
               href="/dashboard/teach/grading"
@@ -362,7 +364,7 @@ function NavLinks({
                 size={17}
                 strokeWidth={pathname.startsWith('/dashboard/teach/grading') ? 2.4 : 2}
               />
-              Grading center
+              {t('Grading center')}
             </Link>
             <Link
               href="/dashboard/teach/monitoring"
@@ -378,7 +380,7 @@ function NavLinks({
                 size={17}
                 strokeWidth={pathname.startsWith('/dashboard/teach/monitoring') ? 2.4 : 2}
               />
-              Monitoring
+              {t('Monitoring')}
             </Link>
             <Link
               href="/dashboard/teach/assessments"
@@ -394,7 +396,7 @@ function NavLinks({
                 size={17}
                 strokeWidth={pathname.startsWith('/dashboard/teach/assessments') ? 2.4 : 2}
               />
-              Assessment Studio
+              {t('Assessment Studio')}
             </Link>
             <Link
               href="/dashboard/teach/notes"
@@ -410,7 +412,7 @@ function NavLinks({
                 size={17}
                 strokeWidth={pathname.startsWith('/dashboard/teach/notes') ? 2.4 : 2}
               />
-              Notes Studio
+              {t('Notes Studio')}
             </Link>
           </>
         )}
@@ -419,7 +421,7 @@ function NavLinks({
       {staffPermissions?.includes('staff.access') ? (
         <div className="mt-4 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
           <div className="mono mb-1.5 px-3.5 text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
-            Institution
+            {t('Institution')}
           </div>
           {staffNavFor(staffPermissions || []).map((item) => {
             const active = item.exact
@@ -442,7 +444,7 @@ function NavLinks({
                 ) : (
                   <Briefcase size={17} strokeWidth={active ? 2.4 : 2} />
                 )}
-                {item.label}
+                {t(item.label)}
               </Link>
             );
           })}
@@ -462,6 +464,7 @@ function ContextSwitcher({
   onSwitched?: () => void;
 }) {
   const router = useRouter();
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -529,9 +532,9 @@ function ContextSwitcher({
         </span>
         <span className="min-w-0 flex-1">
           <span className="mono block text-[9.5px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
-            Workspace
+            {t('Workspace')}
           </span>
-          <span className="block truncate text-[13.5px] font-semibold">{label}</span>
+          <span className="block truncate text-[13.5px] font-semibold">{t(label)}</span>
         </span>
         <ChevronDown size={15} style={{ color: 'var(--ink-soft)' }} />
       </button>
@@ -544,7 +547,7 @@ function ContextSwitcher({
           <ContextItem
             active={active.kind === 'personal' || active.kind === 'intellex'}
             title="InTelleX"
-            subtitle="Personal learning home"
+            subtitle={t('Personal learning home')}
             accent={accent}
             onClick={() => switchTo({ kind: 'personal', institutionSlug: null })}
           />
@@ -568,8 +571,8 @@ function ContextSwitcher({
           ))}
           <ContextItem
             active={active.kind === 'teaching'}
-            title="Teaching"
-            subtitle={user.roles?.includes('mentor') ? 'Mentor Studio' : 'Apply to teach'}
+            title={t('Teaching')}
+            subtitle={user.roles?.includes('mentor') ? t('Mentor Studio') : t('Apply to teach')}
             accent={accent}
             onClick={() => switchTo({ kind: 'teaching', institutionSlug: null })}
           />
@@ -580,7 +583,7 @@ function ContextSwitcher({
             style={{ borderColor: 'var(--line)', color: accent }}
           >
             <GraduationCap size={14} />
-            {user.isStudent ? 'Academic record' : 'Become a student'}
+            {user.isStudent ? t('Academic record') : t('Become a student')}
           </Link>
         </div>
       )}
@@ -633,6 +636,7 @@ export default function DashboardShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const t = useT();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [navCounts, setNavCounts] = useState<NavCounts>(ZERO_NAV_COUNTS);
 
@@ -733,7 +737,7 @@ export default function DashboardShell({
             <div className="min-w-0">
               <div className="truncate text-[14px] font-semibold leading-tight">{campusBrand.name}</div>
               <div className="mono text-[9px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
-                Powered by InTelleX
+                {t('Powered by InTelleX')}
               </div>
             </div>
           </Link>
@@ -770,7 +774,7 @@ export default function DashboardShell({
       >
         {inCampus && (
           <p className="mono px-3.5 pb-2 text-[9.5px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
-            Powered by InTelleX
+            {t('Powered by InTelleX')}
           </p>
         )}
         {inCampus && campusBrand ? (
@@ -780,7 +784,7 @@ export default function DashboardShell({
             style={{ color: 'var(--ink-soft)' }}
           >
             <Home size={17} />
-            Campus home
+            {t('Campus home')}
           </Link>
         ) : (
           <Link
@@ -789,7 +793,7 @@ export default function DashboardShell({
             style={{ color: 'var(--ink-soft)' }}
           >
             <Home size={17} />
-            Back to site
+            {t('Back to site')}
           </Link>
         )}
         <button
@@ -798,7 +802,7 @@ export default function DashboardShell({
           style={{ color: 'var(--ink-soft)' }}
         >
           <LogOut size={17} />
-          Sign out
+          {t('Sign out')}
         </button>
       </div>
     </div>
@@ -850,7 +854,7 @@ export default function DashboardShell({
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border lg:hidden"
           style={{ borderColor: 'var(--line)' }}
           onClick={() => setMobileOpen((v) => !v)}
-          aria-label="Toggle navigation"
+          aria-label={t('Toggle navigation')}
         >
           {mobileOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
@@ -867,7 +871,7 @@ export default function DashboardShell({
           <div className="hidden min-w-0 lg:block">
             <div className="truncate text-[14px] font-semibold">{campusBrand.name}</div>
             <div className="text-[11.5px]" style={{ color: 'var(--ink-soft)' }}>
-              {campusBrand.tagline || 'Digital campus'} · Powered by InTelleX
+              {t(campusBrand.tagline || 'Digital campus')} · {t('Powered by InTelleX')}
             </div>
           </div>
         )}
@@ -877,16 +881,16 @@ export default function DashboardShell({
           <div
             className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold"
             style={{ background: 'rgba(255,122,0,0.1)', color: '#c2570a' }}
-            title="Learning streak"
+            title={t('Learning streak')}
           >
             <Flame size={14} />
             {user.streakCount}
-            <span className="hidden sm:inline">day{user.streakCount === 1 ? '' : 's'}</span>
+            <span className="hidden sm:inline">{t(user.streakCount === 1 ? 'day' : 'days')}</span>
           </div>
           <div
             className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold"
             style={{ background: `${accent}1a`, color: accent }}
-            title="Experience points"
+            title={t('Experience points')}
           >
             <Zap size={14} />
             {user.xp.toLocaleString()} XP

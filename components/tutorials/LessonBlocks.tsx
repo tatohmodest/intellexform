@@ -39,7 +39,7 @@ function Callout({
 
 export default function LessonBlocks({ blocks }: { blocks: ContentBlock[] }) {
   return (
-    <div className="tutorial-prose">
+    <div className="tutorial-prose" data-no-i18n>
       {blocks.map((block, i) => {
         switch (block.type) {
           case 'p':

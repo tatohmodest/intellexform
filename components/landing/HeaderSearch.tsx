@@ -3,8 +3,10 @@
 import { useEffect } from 'react';
 import SiteSearch from '@/components/landing/SiteSearch';
 import { useSearchIndex } from '@/lib/search/useSearchIndex';
+import { useT } from '@/components/i18n/I18nRoot';
 
 export default function HeaderSearch() {
+  const t = useT();
   const { courses, tutorials, loading, ensureLoaded } = useSearchIndex();
 
   useEffect(() => {
@@ -22,7 +24,7 @@ export default function HeaderSearch() {
         onFocusSearch={() => {
           void ensureLoaded();
         }}
-        placeholder="Search courses & tutorials..."
+        placeholder={t('Search courses & tutorials...')}
         className="w-full"
       />
     </div>

@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { Cookie, X } from 'lucide-react';
+import { useT } from '@/components/i18n/I18nRoot';
 
 const STORAGE_KEY = 'intellex_cookie_consent';
 
 export default function CookieConsent() {
+  const tr = useT();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -41,19 +43,23 @@ export default function CookieConsent() {
             <Cookie size={18} />
           </span>
           <p className="text-[13.5px] leading-relaxed" style={{ color: 'rgba(251,248,240,0.82)' }}>
-            We use cookies to keep you signed in, remember your choices, and understand how the
-            academy is used - so we can keep making it better. See our{' '}
-            <a href="#" className="underline" style={{ color: 'var(--green)' }}>cookie policy</a>.
+            {tr(
+              'We use cookies to keep you signed in, remember your choices, and understand how the academy is used - so we can keep making it better. See our',
+            )}{' '}
+            <a href="#" className="underline" style={{ color: 'var(--green)' }}>
+              {tr('cookie policy')}
+            </a>
+            .
           </p>
         </div>
         <div className="flex items-center gap-2.5">
           <button onClick={() => decide('declined')} className="btn btn-ghost" style={{ padding: '10px 18px', color: 'var(--paper)', borderColor: 'rgba(251,248,240,0.3)' }}>
-            Decline
+            {tr('Decline')}
           </button>
           <button onClick={() => decide('accepted')} className="btn btn-primary" style={{ padding: '10px 20px' }}>
-            Accept all
+            {tr('Accept all')}
           </button>
-          <button onClick={() => decide('declined')} aria-label="Dismiss" className="flex h-9 w-9 items-center justify-center rounded-full sm:hidden" style={{ background: 'rgba(251,248,240,0.12)', color: 'var(--paper)' }}>
+          <button onClick={() => decide('declined')} aria-label={tr('Dismiss')} className="flex h-9 w-9 items-center justify-center rounded-full sm:hidden" style={{ background: 'rgba(251,248,240,0.12)', color: 'var(--paper)' }}>
             <X size={16} />
           </button>
         </div>
