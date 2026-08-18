@@ -14,6 +14,7 @@ import {
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getStudentCommandCenter } from '@/lib/learn/commandCenter';
 import { getLearner } from '@/lib/learn/repo';
+import { getStaffPost } from '@/lib/staff/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +41,7 @@ export default async function DashboardOverview() {
   }
 
   const cc = await getStudentCommandCenter(session.uid);
+  const staffPost = await getStaffPost(session.uid).catch(() => null);
   const name = firstName(cc.learner?.name ?? session.name);
 
   return (
@@ -74,6 +76,14 @@ export default async function DashboardOverview() {
           <Link href="/dashboard/tutor" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
             AI Tutor
           </Link>
+          <Link href="/dashboard/fees" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
+            School fees
+          </Link>
+          {staffPost ? (
+            <Link href="/dashboard/staff" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
+              Staff
+            </Link>
+          ) : null}
         </div>
       </header>
 

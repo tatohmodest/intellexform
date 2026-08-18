@@ -32,6 +32,8 @@ import {
   CalendarDays,
   CheckSquare,
   MessageSquare,
+  Briefcase,
+  Wallet,
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 import MobileBottomNav from '@/components/dashboard/MobileBottomNav';
@@ -40,6 +42,8 @@ import NotificationBell from '@/components/dashboard/NotificationBell';
 import OngoingClassBanner from '@/components/dashboard/OngoingClassBanner';
 import type { ActiveContext, Affiliation, CampusBrand, PrimaryIntent } from '@/lib/learn/identity';
 import { campusNavItems, type ModuleId } from '@/lib/eduos/capabilities';
+import { staffNavFor } from '@/lib/staff/nav';
+import type { StaffDesk, StaffPermission } from '@/lib/staff/permissions';
 
 export interface ShellUser {
   name: string;
@@ -84,6 +88,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/dashboard/calendar', label: 'Calendar', icon: CalendarDays },
       { href: '/dashboard/assignments', label: 'Assignments', icon: ClipboardList },
       { href: '/dashboard/todos', label: 'Tasks', icon: CheckSquare },
+      { href: '/dashboard/fees', label: 'School fees', icon: Wallet },
     ],
   },
   {
@@ -132,6 +137,7 @@ function NavLinks({
   accent,
   campusBrand,
   campusRole,
+  staffPermissions,
   onNavigate,
 }: {
   pathname: string;
@@ -140,6 +146,7 @@ function NavLinks({
   accent: string;
   campusBrand?: CampusBrand | null;
   campusRole?: string;
+  staffPermissions?: StaffPermission[] | null;
   onNavigate?: () => void;
 }) {
   const searchParams = useSearchParams();
@@ -194,6 +201,21 @@ function NavLinks({
           <Home size={17} />
           Personal InTelleX
         </Link>
+        {staffPermissions?.includes('staff.access') ? (
+          <Link
+            href="/dashboard/staff"
+            onClick={onNavigate}
+            className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
+            style={
+              pathname.startsWith('/dashboard/staff')
+                ? { background: activeBg, color: activeColor }
+                : { color: 'var(--ink-soft)' }
+            }
+          >
+            <Briefcase size={17} />
+            Staff
+          </Link>
+        ) : null}
         <div className="mt-4 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
           <div className="mono mb-1.5 px-3.5 text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
             Network
@@ -389,6 +411,39 @@ function NavLinks({
           </>
         )}
       </div>
+
+      {staffPermissions?.includes('staff.access') ? (
+        <div className="mt-4 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
+          <div className="mono mb-1.5 px-3.5 text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
+            Institution
+          </div>
+          {staffNavFor(staffPermissions || []).map((item) => {
+            const active = item.exact
+              ? pathname === item.href
+              : pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onNavigate}
+                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
+                style={
+                  active
+                    ? { background: activeBg, color: activeColor }
+                    : { color: 'var(--ink-soft)' }
+                }
+              >
+                {item.href.includes('/fees') ? (
+                  <Wallet size={17} strokeWidth={active ? 2.4 : 2} />
+                ) : (
+                  <Briefcase size={17} strokeWidth={active ? 2.4 : 2} />
+                )}
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
     </nav>
   );
 }
@@ -563,11 +618,13 @@ export default function DashboardShell({
   children,
   minimal = false,
   campusBrand = null,
+  staff = null,
 }: {
   user: ShellUser;
   children: React.ReactNode;
   minimal?: boolean;
   campusBrand?: CampusBrand | null;
+  staff?: { desks: StaffDesk[]; permissions: StaffPermission[] } | null;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -652,6 +709,7 @@ export default function DashboardShell({
           accent={accent}
           campusBrand={campusBrand}
           campusRole={campusRole}
+          staffPermissions={staff?.permissions || null}
           onNavigate={() => setMobileOpen(false)}
         />
       </div>
@@ -818,6 +876,7 @@ export default function DashboardShell({
       <MobileBottomNav
         accent={accent}
         isMentor={Boolean(user.roles?.includes('mentor'))}
+        isStaff={Boolean(staff?.permissions.includes('staff.access'))}
         campusSlug={inCampus && campusBrand ? campusBrand.slug : null}
         campusModules={(campusBrand?.enabledModules as string[]) || []}
         campusRole={campusRole || 'student'}

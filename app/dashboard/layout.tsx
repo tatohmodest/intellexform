@@ -7,6 +7,7 @@ import { getInstitution } from '@/lib/learn/ecosystem';
 import { isOnboardingComplete, type CampusBrand } from '@/lib/learn/identity';
 import { type ModuleId } from '@/lib/eduos/capabilities';
 import { getCampusTierInfo } from '@/lib/campus/tier';
+import { getStaffPost, permissionsOf } from '@/lib/staff/store';
 import DashboardShell from '@/components/dashboard/DashboardShell';
 
 export const metadata: Metadata = {
@@ -61,6 +62,15 @@ export default async function DashboardLayout({
     verifiedAt: a.verifiedAt ? new Date(a.verifiedAt).toISOString() : null,
   }));
 
+  const staffPost = await getStaffPost(session.uid).catch(() => null);
+  const staff =
+    staffPost && staffPost.active
+      ? {
+          desks: staffPost.desks,
+          permissions: permissionsOf(staffPost),
+        }
+      : null;
+
   return (
     <DashboardShell
       user={{
@@ -76,6 +86,7 @@ export default async function DashboardLayout({
         onboardingComplete: isOnboardingComplete(learner),
       }}
       campusBrand={campusBrand}
+      staff={staff}
       minimal={onOnboarding}
     >
       {children}

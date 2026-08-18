@@ -63,8 +63,10 @@ const TABS: Tab[] = [
 const MORE_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/dashboard/messages', label: 'Messages', icon: MessageSquare },
   { href: '/dashboard/academic', label: 'Academic', icon: GraduationCap },
+  { href: '/dashboard/fees', label: 'Fees', icon: Briefcase },
   { href: '/dashboard/portfolio', label: 'Portfolio', icon: Briefcase },
   { href: '/dashboard/teach', label: 'Teaching', icon: BookOpen },
+  { href: '/dashboard/staff', label: 'Staff', icon: Briefcase },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -72,12 +74,14 @@ const MORE_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
 export default function MobileBottomNav({
   accent = '#00b369',
   isMentor = false,
+  isStaff = false,
   campusSlug = null,
   campusModules = [],
   campusRole = 'student',
 }: {
   accent?: string;
   isMentor?: boolean;
+  isStaff?: boolean;
   campusSlug?: string | null;
   campusModules?: string[];
   campusRole?: string;
@@ -117,7 +121,11 @@ export default function MobileBottomNav({
 
   const tabs = campusTabs || TABS;
   const moreActive = MORE_LINKS.some((l) => pathname.startsWith(l.href));
-  const links = MORE_LINKS.filter((l) => (l.href === '/dashboard/teach' ? isMentor : true));
+  const links = MORE_LINKS.filter((l) => {
+    if (l.href === '/dashboard/teach') return isMentor;
+    if (l.href === '/dashboard/staff') return isStaff;
+    return true;
+  });
   if (campusSlug) {
     links.unshift({
       href: `/dashboard/institutions/${campusSlug}`,
