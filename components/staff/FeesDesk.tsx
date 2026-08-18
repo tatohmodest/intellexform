@@ -125,6 +125,7 @@ export default function FeesDesk({
   const [payChargeId, setPayChargeId] = useState('');
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState('');
+  const [selectedCharges, setSelectedCharges] = useState<string[]>([]);
 
   const payCharges = outstanding.filter((o) => o.studentUserId === payStudent?.userId);
 
@@ -142,12 +143,15 @@ export default function FeesDesk({
       setMsg(
         data.charged
           ? `Charged ${data.charged} student${data.charged === 1 ? '' : 's'}.`
+          : data.deleted
+            ? `Deleted ${data.deleted} fee request${data.deleted === 1 ? '' : 's'}.`
           : data.payment
             ? `Recorded ${formatXAF(Number(data.payment.amountXAF || 0))} (${data.payment.receiptCode}).`
             : 'Saved.',
       );
       setTitle('');
       setAmount('');
+      setSelectedCharges([]);
       router.refresh();
     } catch (err) {
       setMsg(err instanceof Error ? err.message : 'Request failed');
@@ -424,7 +428,37 @@ export default function FeesDesk({
       ) : null}
 
       <section>
-        <h2 className="mb-3 font-display text-[20px]">Outstanding fees</h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display text-[20px]">Outstanding fees</h2>
+          {canWrite && outstanding.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="border px-3 py-1.5 text-[12.5px]"
+                style={{ borderColor: 'var(--line)' }}
+                onClick={() =>
+                  setSelectedCharges(
+                    selectedCharges.length === outstanding.length ? [] : outstanding.map((r) => r.id),
+                  )
+                }
+              >
+                {selectedCharges.length === outstanding.length ? 'Clear selection' : 'Select all'}
+              </button>
+              <button
+                type="button"
+                disabled={!selectedCharges.length || busy === 'delete-selected'}
+                onClick={() => {
+                  if (!confirm(`Delete ${selectedCharges.length} selected fee request${selectedCharges.length === 1 ? '' : 's'}?`)) return;
+                  post({ action: 'delete_charges', chargeIds: selectedCharges }, 'delete-selected');
+                }}
+                className="border px-3 py-1.5 text-[12.5px] font-semibold disabled:opacity-40"
+                style={{ borderColor: 'var(--line)', color: '#b91c1c' }}
+              >
+                {busy === 'delete-selected' ? 'Deleting…' : `Delete selected (${selectedCharges.length})`}
+              </button>
+            </div>
+          ) : null}
+        </div>
         {outstanding.length === 0 ? (
           <div className="rounded-2xl border border-dashed px-4 py-8 text-center" style={{ borderColor: 'var(--line)' }}>
             <p className="font-display text-[18px]">No outstanding balances</p>
@@ -437,7 +471,20 @@ export default function FeesDesk({
             {outstanding.map((row) => (
               <article key={row.id} className="border p-4" style={{ borderColor: 'var(--line)' }}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
+                  <div className="flex min-w-0 items-start gap-3">
+                    {canWrite ? (
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={selectedCharges.includes(row.id)}
+                        onChange={(e) =>
+                          setSelectedCharges((ids) =>
+                            e.target.checked ? [...ids, row.id] : ids.filter((id) => id !== row.id),
+                          )
+                        }
+                      />
+                    ) : null}
+                    <div>
                     <p className="font-semibold">{row.name}</p>
                     <p className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
                       {row.email} · {row.title}
@@ -445,6 +492,7 @@ export default function FeesDesk({
                     <p className="mt-1 text-[13px]">
                       {formatXAF(row.outstandingXAF)} due of {formatXAF(row.amountXAF)}
                     </p>
+                    </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {canPay ? (

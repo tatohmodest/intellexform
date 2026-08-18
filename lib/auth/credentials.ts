@@ -767,6 +767,44 @@ export async function completeLogin(opts: {
   return { ok: true, session, nextPath, user: sessionUser };
 }
 
+export async function changePassword(opts: {
+  email: string;
+  currentPassword: string;
+  newPassword: string;
+}): Promise<{ ok: true } | AuthError> {
+  const email = normalizeEmail(opts.email);
+  if (!opts.currentPassword) return { error: 'Enter your current password.', status: 400 };
+  if (!opts.newPassword || opts.newPassword.length < 8) {
+    return { error: 'New password must be at least 8 characters.', status: 400 };
+  }
+  if (opts.currentPassword === opts.newPassword) {
+    return { error: 'Choose a different password from the current one.', status: 400 };
+  }
+
+  const loaded = await loadAccount(email);
+  if (!loaded.account?.passwordHash) {
+    return { error: 'Could not update password. Sign in again and retry.', status: 400 };
+  }
+  const ok = await verifyPassword(opts.currentPassword, loaded.account.passwordHash);
+  if (!ok) return { error: 'Current password is incorrect.', status: 401 };
+
+  const passwordHash = await hashPassword(opts.newPassword);
+  const account = loaded.account;
+  await persistAccount({
+    ...account,
+    passwordHash,
+    updatedAt: new Date(),
+  });
+  await syncPrismaUser({
+    email,
+    name: account.name,
+    passwordHash,
+    emailVerified: account.emailVerified,
+    touchLogin: false,
+  });
+  return { ok: true };
+}
+
 export async function requestPasswordReset(opts: {
   email: string;
   origin: string;

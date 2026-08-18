@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { FIELD_TYPE_LABELS, makeField, type DataField, type DataFieldType } from '@/lib/staff/dataTypes';
 import { FormFields } from '@/components/staff/FormFields';
 
@@ -32,9 +33,11 @@ type Dataset = {
 type ImportPreview = {
   header: string[];
   suggested: string[];
-  fields: Array<{ id: string; label: string }>;
+  fields: Array<{ id: string; label: string; required?: boolean }>;
   sample: string[][];
+  previewRows: Array<Record<string, string>>;
   rowCount: number;
+  missingRequired?: string[];
   csv: string;
 };
 
@@ -61,6 +64,7 @@ export default function DatasetDesk({
   canWrite: boolean;
   origin: string;
 }) {
+  const router = useRouter();
   const [tab, setTab] = useState<'table' | 'form' | 'analytics' | 'settings'>('table');
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [rows, setRows] = useState<RecordRow[]>([]);
@@ -96,6 +100,7 @@ export default function DatasetDesk({
   const [shareCopied, setShareCopied] = useState(false);
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
   const [importMap, setImportMap] = useState<string[]>([]);
+  const [importAdjust, setImportAdjust] = useState(false);
   const [settings, setSettings] = useState({
     name: '',
     description: '',
@@ -268,22 +273,37 @@ export default function DatasetDesk({
   }
 
   async function onPickCsv(file: File) {
+    const name = file.name.toLowerCase();
+    if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+      setMsg('Save the Excel file as CSV first (File → Save As → CSV UTF-8), then import that CSV.');
+      return;
+    }
     const text = await file.text();
     const data = await post({ action: 'importPreview', csv: text });
     if (data?.header) {
-      setImportPreview({ ...data, csv: text });
+      setImportPreview({ ...data, csv: text, previewRows: data.previewRows || [] });
       setImportMap(data.suggested || []);
+      setImportAdjust(false);
     }
   }
 
   async function confirmImport() {
-    const data = await post({ action: 'import', csv: importPreview?.csv, mapping: importMap });
+    if (!importPreview) return;
+    const data = await post({ action: 'import', csv: importPreview.csv, mapping: importMap });
     if (data) {
-      setMsg(`Imported ${data.imported}. ${data.errors?.length ? `${data.errors.length} row(s) skipped.` : ''}`);
-      if (data.errors?.length) setMsg((m) => `${m} ${data.errors.slice(0, 6).join(' ')}`);
+      const skipped = data.errors?.length ? ` ${data.errors.length} row(s) skipped.` : '';
+      setMsg(`Saved ${data.imported} row${data.imported === 1 ? '' : 's'} to this dataset.${skipped}`);
       setImportPreview(null);
       await load();
     }
+  }
+
+  async function destroyDataset() {
+    if (!dataset) return;
+    const typed = prompt(`This deletes “${dataset.name}” and every row inside it. Type DELETE to confirm.`);
+    if (typed !== 'DELETE') return;
+    const data = await post({ action: 'delete_dataset' });
+    if (data?.ok) router.push('/dashboard/staff/data');
   }
 
   function toggleSort(next: string) {
@@ -421,7 +441,7 @@ export default function DatasetDesk({
                 Import CSV
                 <input
                   type="file"
-                  accept=".csv,text/csv"
+                  accept=".csv,text/csv,.txt"
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -868,6 +888,22 @@ export default function DatasetDesk({
           <button type="submit" className="px-3 py-2 text-[13px] font-semibold text-white" style={{ background: '#00B369' }}>
             {busy === 'settings' ? 'Saving…' : 'Save settings'}
           </button>
+          <div className="border-t pt-4" style={{ borderColor: 'var(--line)' }}>
+            <p className="text-[13px] font-semibold" style={{ color: '#b91c1c' }}>
+              Delete this dataset
+            </p>
+            <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+              Removes the form and every row inside it. This cannot be undone.
+            </p>
+            <button
+              type="button"
+              onClick={() => void destroyDataset()}
+              className="mt-3 border px-3 py-2 text-[13px] font-semibold"
+              style={{ borderColor: 'var(--line)', color: '#b91c1c' }}
+            >
+              Delete dataset
+            </button>
+          </div>
         </form>
       ) : null}
 
@@ -941,37 +977,83 @@ export default function DatasetDesk({
 
       {importPreview ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto border bg-white p-5" style={{ borderColor: 'var(--line)' }}>
-            <h2 className="font-display text-[22px]">Map columns</h2>
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto border bg-white p-5" style={{ borderColor: 'var(--line)' }}>
+            <h2 className="font-display text-[22px]">Review before saving</h2>
             <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-              {importPreview.rowCount} rows ready. Match each Excel column to a field. Unmapped columns are skipped.
+              {importPreview.rowCount} row{importPreview.rowCount === 1 ? '' : 's'} from your file. Nothing is saved until you confirm.
             </p>
-            <ul className="mt-4 space-y-2">
-              {importPreview.header.map((h, i) => (
-                <li key={`${h}-${i}`} className="grid grid-cols-2 gap-2 text-[13px]">
-                  <span className="truncate py-2">{h || `Column ${i + 1}`}</span>
-                  <select
-                    value={importMap[i] || ''}
-                    onChange={(e) => setImportMap((m) => m.map((x, idx) => (idx === i ? e.target.value : x)))}
-                    className="border px-2 py-1.5"
-                    style={{ borderColor: 'var(--line)', background: 'transparent' }}
-                  >
-                    <option value="">Skip</option>
-                    {importPreview.fields.map((f) => (
-                      <option key={f.id} value={f.id}>
-                        {f.label}
-                      </option>
-                    ))}
-                  </select>
-                </li>
-              ))}
-            </ul>
+            {importPreview.missingRequired?.length ? (
+              <p className="mt-2 text-[13px]" style={{ color: '#b91c1c' }}>
+                Missing required columns: {importPreview.missingRequired.join(', ')}. Those rows may be skipped.
+              </p>
+            ) : null}
+            <div className="mt-4 overflow-x-auto border" style={{ borderColor: 'var(--line)' }}>
+              <table className="min-w-full text-left text-[12.5px]">
+                <thead style={{ background: 'var(--paper-dim)' }}>
+                  <tr>
+                    {importPreview.fields
+                      .filter((f) => importMap.includes(f.id))
+                      .map((f) => (
+                        <th key={f.id} className="px-2 py-2 font-semibold">
+                          {f.label}
+                        </th>
+                      ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(importPreview.sample || []).map((row, i) => (
+                    <tr key={i} className="border-t" style={{ borderColor: 'var(--line)' }}>
+                      {importPreview.fields
+                        .filter((f) => importMap.includes(f.id))
+                        .map((f) => {
+                          const col = importMap.indexOf(f.id);
+                          return (
+                            <td key={f.id} className="max-w-[160px] truncate px-2 py-1.5">
+                              {(col >= 0 ? row[col] : '') || '—'}
+                            </td>
+                          );
+                        })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <button
+              type="button"
+              className="mt-3 text-[13px] font-semibold"
+              style={{ color: 'var(--green-deep)' }}
+              onClick={() => setImportAdjust((v) => !v)}
+            >
+              {importAdjust ? 'Hide column matching' : 'Adjust columns'}
+            </button>
+            {importAdjust ? (
+              <ul className="mt-3 space-y-2">
+                {importPreview.header.map((h, i) => (
+                  <li key={`${h}-${i}`} className="grid grid-cols-2 gap-2 text-[13px]">
+                    <span className="truncate py-2">{h || `Column ${i + 1}`}</span>
+                    <select
+                      value={importMap[i] || ''}
+                      onChange={(e) => setImportMap((m) => m.map((x, idx) => (idx === i ? e.target.value : x)))}
+                      className="border px-2 py-1.5"
+                      style={{ borderColor: 'var(--line)', background: 'transparent' }}
+                    >
+                      <option value="">Skip</option>
+                      {importPreview.fields.map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.label}
+                        </option>
+                      ))}
+                    </select>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             <div className="mt-4 flex justify-end gap-2">
               <button type="button" className="border px-3 py-2 text-[13px]" style={{ borderColor: 'var(--line)' }} onClick={() => setImportPreview(null)}>
                 Cancel
               </button>
               <button type="button" className="px-3 py-2 text-[13px] font-semibold text-white" style={{ background: '#00B369' }} onClick={() => void confirmImport()}>
-                Import {importPreview.rowCount} rows
+                Save {importPreview.rowCount} rows
               </button>
             </div>
           </div>

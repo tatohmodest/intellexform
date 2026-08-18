@@ -12,6 +12,7 @@ import {
   listAudit,
   listRecords,
   previewCsv,
+  deleteDataset,
   updateDataset,
   upsertRecord,
 } from '@/lib/staff/dataWorkspace';
@@ -116,6 +117,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
     if (action === 'import') {
       const result = await importCsv(actor, params.id, String(body.csv || ''), body.mapping);
+      return NextResponse.json(result);
+    }
+    if (action === 'delete_dataset') {
+      const result = await deleteDataset(actor, params.id);
       return NextResponse.json(result);
     }
     return NextResponse.json({ error: 'Unknown action.' }, { status: 400 });
