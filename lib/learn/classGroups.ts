@@ -51,6 +51,7 @@ export type MemberView = {
   userId: string;
   name: string;
   email: string;
+  avatar: string | null;
   isOwner: boolean;
   isYou: boolean;
 };
@@ -68,6 +69,7 @@ export type GroupMessageView = {
   groupId: string;
   senderId: string;
   senderName: string;
+  senderAvatar: string | null;
   body: string;
   attachments: GroupAttachment[];
   createdAt: string;
@@ -298,7 +300,7 @@ export async function getGroupWorkspace(userId: string, groupId: string) {
   }
   const learners = await db
     .collection('learners')
-    .find({ lbId: { $in: memberIds } }, { projection: { lbId: 1, name: 1, email: 1 } })
+    .find({ lbId: { $in: memberIds } }, { projection: { lbId: 1, name: 1, email: 1, avatar: 1 } })
     .toArray();
   const byId = new Map(learners.map((l) => [String(l.lbId), l]));
   const names = (group.memberNames as Record<string, string>) || {};
@@ -306,6 +308,7 @@ export async function getGroupWorkspace(userId: string, groupId: string) {
     userId: id,
     name: String(byId.get(id)?.name || names[id] || 'Student'),
     email: String(byId.get(id)?.email || ''),
+    avatar: typeof byId.get(id)?.avatar === 'string' ? String(byId.get(id)?.avatar) : null,
     isOwner: id === String(group.ownerId),
     isYou: id === userId,
   }));
@@ -478,6 +481,7 @@ function messageView(d: Record<string, unknown>): GroupMessageView {
     groupId: String(d.groupId),
     senderId: String(d.senderId),
     senderName: String(d.senderName || 'Student'),
+    senderAvatar: d.senderAvatar ? String(d.senderAvatar) : null,
     body: String(d.body || ''),
     attachments: Array.isArray(d.attachments) ? (d.attachments as GroupAttachment[]) : [],
     createdAt: new Date(d.createdAt as Date).toISOString(),
@@ -533,11 +537,14 @@ export async function sendGroupMessage(
     }));
   if (!body && !attachments.length) throw new ClassGroupError('Write a message or attach a file.');
   const now = new Date();
+  const learner = await getLearner(actor.userId);
+  const senderAvatar = learner?.avatar || null;
   const doc = {
     channelId: opts.channelId,
     groupId: String(channel.groupId),
     senderId: actor.userId,
     senderName: actor.name,
+    senderAvatar,
     body,
     attachments,
     createdAt: now,

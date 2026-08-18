@@ -14,6 +14,7 @@ export const STAFF_NAV: {
   { href: '/dashboard/staff/admissions', label: 'Admissions', permission: 'admissions.read' },
   { href: '/dashboard/staff/fees', label: 'School fees', permission: 'fees.read' },
   { href: '/dashboard/staff/announcements', label: 'Announcements', permission: 'staff.access' },
+  { href: '/dashboard/staff/data', label: 'Data Workspace', permission: 'data.read' },
   { href: '/dashboard/staff/reports', label: 'Reports', permission: 'reports.read' },
 ];
 

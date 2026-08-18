@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { uploadMentorAsset } from '@/lib/learn/mentorUpload';
+import PersonAvatar from '@/components/ui/PersonAvatar';
 
 type Group = {
   id: string;
@@ -29,13 +30,14 @@ type Group = {
   isOwner: boolean;
 };
 type Channel = { id: string; name: string; topic: string; unread: number };
-type Member = { userId: string; name: string; email: string; isOwner: boolean; isYou: boolean };
+type Member = { userId: string; name: string; email: string; avatar?: string | null; isOwner: boolean; isYou: boolean };
 type Mate = { userId: string; name: string; email: string; alreadyMember: boolean };
 type Attachment = { name: string; url: string; kind: 'image' | 'file' };
 type Message = {
   id: string;
   senderId: string;
   senderName: string;
+  senderAvatar?: string | null;
   body: string;
   attachments: Attachment[];
   createdAt: string;
@@ -421,7 +423,17 @@ export default function ClassRoomsClient({
                   {row.label}
                 </p>
               ) : (
-                <article key={row.msg.id} className={`group relative ${row.showName ? 'mt-3' : 'mt-0.5'}`}>
+                <article key={row.msg.id} className={`group relative flex gap-2.5 ${row.showName ? 'mt-3' : 'mt-0.5'}`}>
+                  <div className="w-8 shrink-0">
+                    {row.showName ? (
+                      <PersonAvatar
+                        name={row.msg.senderName}
+                        src={row.msg.senderAvatar || members.find((m) => m.userId === row.msg.senderId)?.avatar}
+                        size={32}
+                      />
+                    ) : null}
+                  </div>
+                  <div className="min-w-0 flex-1">
                   {row.showName ? (
                     <div className="flex items-baseline gap-2">
                       <span className="font-semibold">{row.msg.senderName}</span>
@@ -466,6 +478,7 @@ export default function ClassRoomsClient({
                       Delete
                     </button>
                   ) : null}
+                  </div>
                 </article>
               ),
             )
@@ -555,9 +568,12 @@ export default function ClassRoomsClient({
         <ul className="flex-1 overflow-y-auto p-2">
           {members.map((m) => (
             <li key={m.userId} className="flex items-center justify-between gap-2 px-2 py-1.5 text-[13px]">
-              <span className="min-w-0 truncate">
+              <span className="flex min-w-0 items-center gap-2 truncate">
+                <PersonAvatar name={m.name} src={m.avatar} size={22} />
+                <span className="min-w-0 truncate">
                 {m.name}
                 {m.isOwner ? <span className="ml-1 text-[10px] font-semibold" style={{ color: '#00B369' }}>HEAD</span> : null}
+                </span>
               </span>
               {owner && !m.isOwner ? (
                 <button

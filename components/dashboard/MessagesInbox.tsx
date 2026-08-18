@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Loader2, Send } from 'lucide-react';
+import PersonAvatar from '@/components/ui/PersonAvatar';
 
 type Thread = {
   id: string;
@@ -18,6 +19,7 @@ type Message = {
   id: string;
   senderId: string;
   senderName: string;
+  senderAvatar?: string | null;
   body: string;
   createdAt: string;
   href?: string | null;
@@ -144,13 +146,20 @@ export default function MessagesInbox({
               {messages.map((m) => (
                 <div
                   key={m.id}
-                  className="max-w-[85%] border p-3"
+                  className="flex max-w-[85%] gap-2"
                   style={{
-                    borderColor: 'var(--line)',
                     marginLeft: m.senderId === userId ? 'auto' : 0,
-                    background: m.senderId === userId ? 'rgba(0,179,105,0.06)' : 'transparent',
+                    flexDirection: m.senderId === userId ? 'row-reverse' : 'row',
                   }}
                 >
+                  <PersonAvatar name={m.senderName} src={m.senderAvatar} size={32} />
+                  <div
+                    className="border p-3"
+                    style={{
+                      borderColor: 'var(--line)',
+                      background: m.senderId === userId ? 'rgba(0,179,105,0.06)' : 'transparent',
+                    }}
+                  >
                   <p className="text-[11px] font-semibold" style={{ color: 'var(--ink-soft)' }}>
                     {m.senderName} · {new Date(m.createdAt).toLocaleString()}
                   </p>
@@ -160,6 +169,7 @@ export default function MessagesInbox({
                       Open linked item →
                     </Link>
                   ) : null}
+                  </div>
                 </div>
               ))}
             </div>

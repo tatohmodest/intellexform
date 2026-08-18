@@ -36,6 +36,9 @@ export default async function StaffHomePage() {
       href: '/dashboard/staff/fees',
     });
   }
+  if (actor.permissions.includes('data.read')) {
+    cards.push({ label: 'Data Workspace', value: 'Forms', href: '/dashboard/staff/data' });
+  }
 
   return (
     <div>
