@@ -134,16 +134,23 @@ export async function PATCH(
     !existing.published
   ) {
     try {
-      const { createNotificationsForUsers, resolveAssignmentAudience } = await import(
-        '@/lib/learn/notifications'
-      );
-      const audience = await resolveAssignmentAudience({
+      const { createNotificationsForUsers, resolveAssignmentAudience, listInstitutionNotifyIds, uniqueUserIds } =
+        await import('@/lib/learn/notifications');
+      let audience = await resolveAssignmentAudience({
         authorId: session.uid,
         institutionSlug: assessment.institutionSlug,
         courseId: assessment.courseId,
         recipientMode: assessment.recipientMode,
         recipientStudentIds: assessment.recipientStudentIds || [],
       });
+      if (assessment.kind === 'exam') {
+        const extra = await listInstitutionNotifyIds({
+          institutionSlug: assessment.institutionSlug,
+          includeStaff: true,
+          exclude: session.uid,
+        });
+        audience = uniqueUserIds([...audience, ...extra], session.uid);
+      }
       const dueLabel = assessment.dueAt
         ? ` Deadline: ${new Date(assessment.dueAt).toLocaleString()}.`
         : '';

@@ -21,7 +21,13 @@ export default function NewBookButton({ className = '' }: { className?: string }
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.id) {
         router.push(`/dashboard/mentor/books/${data.id}`);
+        return;
       }
+      window.alert(
+        data.error === 'instructor_or_staff_required'
+          ? 'Only instructors and staff can upload books to the library.'
+          : 'Could not create the book.',
+      );
     } finally {
       setBusy(false);
     }
@@ -34,7 +40,7 @@ export default function NewBookButton({ className = '' }: { className?: string }
       className={`btn btn-primary !py-2.5 whitespace-nowrap text-[13.5px] ${className}`}
     >
       {busy ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
-      Write a book
+      Upload a book
     </button>
   );
 }

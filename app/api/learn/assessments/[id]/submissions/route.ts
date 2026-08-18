@@ -178,6 +178,19 @@ export async function POST(
       gradedAt: hasStructural ? null : new Date(),
     },
   });
+  if (!hasStructural) {
+    const { notifyGradePosted } = await import('@/lib/learn/notifications');
+    await notifyGradePosted({
+      studentId: session.uid,
+      studentName,
+      instructorId: assessment.authorId,
+      assessmentTitle: assessment.title,
+      kind: assessment.kind,
+      assessmentId: assessment.id,
+      score,
+      maxScore,
+    }).catch(() => undefined);
+  }
   return NextResponse.json({ submission });
 }
 
@@ -200,6 +213,7 @@ export async function PATCH(
   const existing = await getSubmission(params.id, studentId);
   if (!existing) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
+  const alreadyGraded = existing.status === 'graded';
   const submission = await upsertSubmission({
     assessmentId: params.id,
     studentId,
@@ -212,5 +226,18 @@ export async function PATCH(
       gradedAt: new Date(),
     },
   });
+  if (!alreadyGraded) {
+    const { notifyGradePosted } = await import('@/lib/learn/notifications');
+    await notifyGradePosted({
+      studentId,
+      studentName: existing.studentName,
+      instructorId: session.uid,
+      assessmentTitle: assessment.title,
+      kind: assessment.kind,
+      assessmentId: assessment.id,
+      score: submission?.score ?? existing.score,
+      maxScore: submission?.maxScore ?? existing.maxScore,
+    }).catch(() => undefined);
+  }
   return NextResponse.json({ submission });
 }

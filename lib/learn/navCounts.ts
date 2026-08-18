@@ -120,7 +120,7 @@ export async function getNavCounts(userId: string): Promise<NavCounts> {
     safe(unreadNotificationCount(userId), 0),
     safe(unreadMessageCount(userId), 0),
     safe(listVisibleAnnouncements({ isStudent }), []),
-    safe(listGroupsForUser(userId), { classHead: false, courses: [], groups: [] }),
+    safe(listGroupsForUser(userId), { classHead: false, isStaff: false, courses: [], groups: [] }),
     safe(listPersonalCalendarEvents(userId, { from: calFrom, to: calTo }), []),
     safe(listMentorWeeklySlotsForStudent(userId), []),
     safe(listPublishedForStudent({ studentId: userId, pageSize: 100 }), []),

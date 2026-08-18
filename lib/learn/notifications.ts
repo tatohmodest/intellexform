@@ -270,3 +270,138 @@ export async function resolveAssignmentAudience(opts: {
   const enrolled = await db.collection('enrollments').distinct('userId');
   return (enrolled as string[]).filter((id) => id && id !== opts.authorId);
 }
+
+export function uniqueUserIds(ids: string[], exclude?: string | null): string[] {
+  const skip = String(exclude || '').trim();
+  return Array.from(
+    new Set(ids.map((id) => String(id || '').trim()).filter((id) => id && id !== skip)),
+  ).slice(0, 500);
+}
+
+export async function listActiveStaffUserIds(): Promise<string[]> {
+  try {
+    const db = await getDb();
+    const rows = await db
+      .collection('staff_posts')
+      .find({ active: true })
+      .project({ userId: 1 })
+      .limit(200)
+      .toArray();
+    return rows.map((r) => String(r.userId || '')).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+export async function listInstitutionMemberIds(slug?: string | null): Promise<string[]> {
+  try {
+    const db = await getDb();
+    const query: Record<string, unknown> = {};
+    if (slug) query.institutionSlug = slug;
+    const rows = await db
+      .collection('institution_members')
+      .find(query)
+      .project({ userId: 1 })
+      .limit(500)
+      .toArray();
+    return rows.map((r) => String(r.userId || '')).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+export async function listOfficialStudentIds(campusSlug?: string | null): Promise<string[]> {
+  try {
+    const db = await getDb();
+    const query: Record<string, unknown> = { status: { $in: ['active', 'admitted'] } };
+    if (campusSlug) query.campusSlug = campusSlug;
+    const rows = await db
+      .collection('student_records')
+      .find(query)
+      .project({ userId: 1 })
+      .limit(500)
+      .toArray();
+    return rows.map((r) => String(r.userId || '')).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+/** Official students + campus affiliates + (optionally) staff. */
+export async function listInstitutionNotifyIds(opts?: {
+  campusSlug?: string | null;
+  institutionSlug?: string | null;
+  exclude?: string | null;
+  includeStaff?: boolean;
+}): Promise<string[]> {
+  const slug = opts?.institutionSlug || opts?.campusSlug || null;
+  const [members, students, staff] = await Promise.all([
+    listInstitutionMemberIds(slug),
+    listOfficialStudentIds(opts?.campusSlug || null),
+    opts?.includeStaff === false ? Promise.resolve([] as string[]) : listActiveStaffUserIds(),
+  ]);
+  return uniqueUserIds([...members, ...students, ...staff], opts?.exclude);
+}
+
+export async function resolveAnnouncementNotifyIds(opts: {
+  audience: 'everyone' | 'students' | 'staff';
+  campusSlug?: string | null;
+  authorId?: string | null;
+}): Promise<string[]> {
+  if (opts.audience === 'staff') {
+    return uniqueUserIds(await listActiveStaffUserIds(), opts.authorId);
+  }
+  if (opts.audience === 'students') {
+    const [students, members] = await Promise.all([
+      listOfficialStudentIds(opts.campusSlug || null),
+      listInstitutionMemberIds(opts.campusSlug || null),
+    ]);
+    return uniqueUserIds([...students, ...members], opts.authorId);
+  }
+  return listInstitutionNotifyIds({
+    campusSlug: opts.campusSlug,
+    includeStaff: true,
+    exclude: opts.authorId,
+  });
+}
+
+export async function notifyGradePosted(opts: {
+  studentId: string;
+  studentName?: string;
+  instructorId: string;
+  assessmentTitle: string;
+  kind: 'assignment' | 'exam';
+  assessmentId: string;
+  score?: number | null;
+  maxScore?: number | null;
+}): Promise<void> {
+  const href =
+    opts.kind === 'exam'
+      ? `/dashboard/exams/${opts.assessmentId}`
+      : `/dashboard/assignments/${opts.assessmentId}`;
+  const scoreLabel =
+    typeof opts.score === 'number' && typeof opts.maxScore === 'number'
+      ? ` Score: ${opts.score}/${opts.maxScore}.`
+      : '';
+  await createNotification({
+    userId: opts.studentId,
+    title: `Grade posted: ${opts.assessmentTitle}`,
+    body: `Your ${opts.kind} has been graded.${scoreLabel} Open it in your dashboard.`,
+    href,
+    kind: opts.kind,
+    data: { assessmentId: opts.assessmentId },
+  }).catch(() => null);
+  const staff = await listActiveStaffUserIds();
+  await createNotificationsForUsers(
+    uniqueUserIds(staff, opts.instructorId).filter((id) => id !== opts.studentId),
+    {
+      title: `Grade posted: ${opts.assessmentTitle}`,
+      body: `${opts.studentName || 'A student'} received a grade on ${
+        opts.kind === 'exam' ? 'an exam' : 'an assignment'
+      }.${scoreLabel}`,
+      href,
+      kind: 'institution',
+      data: { assessmentId: opts.assessmentId, studentId: opts.studentId },
+    },
+  ).catch(() => 0);
+}

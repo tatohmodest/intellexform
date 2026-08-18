@@ -12,6 +12,8 @@ import {
   listGroupsForUser,
   removeMember,
   sendGroupMessage,
+  setGroupBanned,
+  updateGroupSettings,
 } from '@/lib/learn/classGroups';
 
 export const dynamic = 'force-dynamic';
@@ -63,6 +65,9 @@ export async function POST(req: NextRequest) {
         title: String(body.title || ''),
         description: body.description,
         courseId: body.courseId,
+        rules: body.rules,
+        membersCanInvite: Boolean(body.membersCanInvite),
+        membersCanPost: body.membersCanPost !== false,
       });
       return NextResponse.json({ ok: true, ...created });
     }
@@ -90,6 +95,20 @@ export async function POST(req: NextRequest) {
     }
     if (action === 'delete_group') {
       const result = await deleteGroup(actor, String(body.groupId || ''));
+      return NextResponse.json(result);
+    }
+    if (action === 'update_group') {
+      const result = await updateGroupSettings(actor, {
+        groupId: String(body.groupId || ''),
+        rules: typeof body.rules === 'string' ? body.rules : undefined,
+        membersCanInvite: typeof body.membersCanInvite === 'boolean' ? body.membersCanInvite : undefined,
+        membersCanPost: typeof body.membersCanPost === 'boolean' ? body.membersCanPost : undefined,
+        description: typeof body.description === 'string' ? body.description : undefined,
+      });
+      return NextResponse.json(result);
+    }
+    if (action === 'ban_group' || action === 'unban_group') {
+      const result = await setGroupBanned(actor, String(body.groupId || ''), action === 'ban_group');
       return NextResponse.json(result);
     }
     if (action === 'send') {

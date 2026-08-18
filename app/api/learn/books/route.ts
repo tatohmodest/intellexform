@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { createBook, getRoles, listPublishedBooks } from '@/lib/learn/ecosystem';
+import { getStaffPost } from '@/lib/staff/store';
 
 export const dynamic = 'force-dynamic';
+
+async function canAuthorBooks(userId: string) {
+  const [roles, staff] = await Promise.all([getRoles(userId), getStaffPost(userId)]);
+  return roles.includes('mentor') || roles.includes('admin') || Boolean(staff);
+}
 
 export async function GET() {
   const user = getSessionUser();
@@ -13,13 +19,12 @@ export async function GET() {
   });
 }
 
-/** POST /api/learn/books - mentors create a new draft book. */
+/** POST /api/learn/books - instructors and staff create a new draft book. */
 export async function POST(req: NextRequest) {
   const user = getSessionUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  const roles = await getRoles(user.uid);
-  if (!roles.includes('mentor')) {
-    return NextResponse.json({ error: 'mentor_role_required' }, { status: 403 });
+  if (!(await canAuthorBooks(user.uid))) {
+    return NextResponse.json({ error: 'instructor_or_staff_required' }, { status: 403 });
   }
   const body = await req.json().catch(() => ({}));
   const title = String(body.title ?? '').trim();

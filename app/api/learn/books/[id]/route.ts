@@ -57,6 +57,22 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
   try {
     await updateBook(params.id, user.uid, patch);
+    if (patch.published === true && !book.published) {
+      try {
+        const { createNotificationsForUsers, listInstitutionNotifyIds } = await import(
+          '@/lib/learn/notifications'
+        );
+        const ids = await listInstitutionNotifyIds({ includeStaff: true, exclude: user.uid });
+        await createNotificationsForUsers(ids, {
+          title: `New in the library: ${String(patch.title || book.title)}`,
+          body: `${user.name} uploaded a book. Open the library to read it.`,
+          href: '/dashboard/library',
+          kind: 'note',
+        });
+      } catch {
+        /* non-blocking */
+      }
+    }
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('updateBook failed:', err);

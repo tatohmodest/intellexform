@@ -1209,14 +1209,13 @@ export async function publishAnnouncement(
     authorName: actor.name,
     createdAt: new Date(),
   });
-  if (opts.audience !== 'staff') {
-    let ids: string[] = [];
-    if (campusSlug) {
-      const recs = await (await recordsCol()).find({ campusSlug }).project({ userId: 1 }).limit(400).toArray();
-      ids = recs.map((r) => String(r.userId));
-    } else {
-      ids = (await db.collection('learners').distinct('lbId')).map(String).slice(0, 400);
-    }
+  const { resolveAnnouncementNotifyIds } = await import('@/lib/learn/notifications');
+  const ids = await resolveAnnouncementNotifyIds({
+    audience: opts.audience,
+    campusSlug: campusSlug || null,
+    authorId: actor.userId,
+  });
+  if (ids.length) {
     await createNotificationsForUsers(ids, {
       title,
       body,

@@ -18,6 +18,8 @@ import { STUDENT_MONTHLY_XAF } from '@/lib/learn/studentMembership';
 import GetBookButton from '@/components/dashboard/GetBookButton';
 import GetNoteButton from '@/components/dashboard/GetNoteButton';
 import BookRequestButton from '@/components/dashboard/BookRequestButton';
+import NewBookButton from '@/components/dashboard/NewBookButton';
+import { getStaffPost } from '@/lib/staff/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +28,7 @@ export default async function LibraryPage() {
   if (!session) redirect('/login?next=/dashboard/library');
 
   const isMember = await hasActiveCertSubscription(session.uid);
+  const staffPost = await getStaffPost(session.uid).catch(() => null);
   const [books, purchased, roles, libraryNotes, purchasedNotes, myRequests, quota] =
     await Promise.all([
       listPublishedBooks(),
@@ -36,6 +39,8 @@ export default async function LibraryPage() {
       listBookRequestsByUser(session.uid),
       getBookRequestQuota(session.uid, isMember),
     ]);
+  const canUpload =
+    roles.includes('mentor') || roles.includes('admin') || Boolean(staffPost && staffPost.active);
 
   const myShelf = books.filter(
     (b) =>
@@ -64,18 +69,21 @@ export default async function LibraryPage() {
           </div>
           <h1 className="font-display text-[30px] leading-tight">Library</h1>
           <p className="mt-1 max-w-xl text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-            Books from InTelleX and mentors. Request titles you need. Student members read paid
-            books free.
+            Books from InTelleX, instructors, and staff. Request titles you need. Student members
+            read paid books free.
           </p>
         </div>
-        <Link
-          href="/dashboard/mentor"
-          className="flex items-center gap-1.5 rounded-full border px-4 py-2 text-[12.5px] font-semibold"
-          style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}
-        >
-          <Feather size={13} />
-          {roles.includes('mentor') ? 'Write & sell your own book' : 'Become a mentor to publish'}
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {canUpload ? <NewBookButton /> : null}
+          <Link
+            href={canUpload ? '/dashboard/mentor' : '/dashboard/mentor'}
+            className="flex items-center gap-1.5 rounded-full border px-4 py-2 text-[12.5px] font-semibold"
+            style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}
+          >
+            <Feather size={13} />
+            {canUpload ? 'Your books' : 'Become a mentor to publish'}
+          </Link>
+        </div>
       </div>
 
       {!isMember ? (

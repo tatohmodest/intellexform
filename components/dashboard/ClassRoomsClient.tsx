@@ -29,9 +29,22 @@ type Group = {
   unread: number;
   lastPreview: string;
   isOwner: boolean;
+  isStaffMonitor?: boolean;
+  banned?: boolean;
+  rules?: string;
+  membersCanInvite?: boolean;
+  membersCanPost?: boolean;
 };
 type Channel = { id: string; name: string; topic: string; unread: number };
-type Member = { userId: string; name: string; email: string; avatar?: string | null; isOwner: boolean; isYou: boolean };
+type Member = {
+  userId: string;
+  name: string;
+  email: string;
+  avatar?: string | null;
+  isOwner: boolean;
+  isYou: boolean;
+  isStaff?: boolean;
+};
 type Mate = { userId: string; name: string; email: string; alreadyMember: boolean };
 type Attachment = { name: string; url: string; kind: 'image' | 'file' };
 type Message = {
@@ -67,6 +80,103 @@ function isImageName(name: string, url: string) {
   return /\.(png|jpe?g|gif|webp)$/i.test(name) || /\.(png|jpe?g|gif|webp)(\?|$)/i.test(url);
 }
 
+function GroupCreateFields({
+  newTitle,
+  setNewTitle,
+  newDesc,
+  setNewDesc,
+  newRules,
+  setNewRules,
+  newInvite,
+  setNewInvite,
+  newCanPost,
+  setNewCanPost,
+  newCourse,
+  setNewCourse,
+  courses,
+}: {
+  newTitle: string;
+  setNewTitle: (v: string) => void;
+  newDesc: string;
+  setNewDesc: (v: string) => void;
+  newRules: string;
+  setNewRules: (v: string) => void;
+  newInvite: boolean;
+  setNewInvite: (v: boolean) => void;
+  newCanPost: boolean;
+  setNewCanPost: (v: boolean) => void;
+  newCourse: string;
+  setNewCourse: (v: string) => void;
+  courses: Course[];
+}) {
+  return (
+    <>
+      <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+        Class advocates open a room for one course, then add course mates.
+      </p>
+      <div
+        className="mt-3 border px-3 py-2 text-[12.5px] leading-relaxed"
+        style={{ borderColor: 'var(--line)', background: 'rgba(0,179,105,0.08)' }}
+      >
+        Staff members monitor every class group by default. You do not invite them — they can open
+        the room, read, and message without changing these settings. They can also pause or delete
+        a group.
+      </div>
+      <input
+        required
+        value={newTitle}
+        onChange={(e) => setNewTitle(e.target.value)}
+        placeholder="e.g. SE 2026 · Cohort A"
+        className="mt-4 w-full border px-3 py-2 text-[14px]"
+        style={{ borderColor: 'var(--line)' }}
+      />
+      <textarea
+        value={newDesc}
+        onChange={(e) => setNewDesc(e.target.value)}
+        placeholder="What is this room for?"
+        className="mt-2 w-full border px-3 py-2 text-[14px]"
+        style={{ borderColor: 'var(--line)' }}
+        rows={2}
+      />
+      <textarea
+        value={newRules}
+        onChange={(e) => setNewRules(e.target.value)}
+        placeholder="Group rules (optional) — how classmates should use this room"
+        className="mt-2 w-full border px-3 py-2 text-[14px]"
+        style={{ borderColor: 'var(--line)' }}
+        rows={3}
+      />
+      <select
+        required
+        value={newCourse}
+        onChange={(e) => setNewCourse(e.target.value)}
+        className="mt-2 w-full border px-3 py-2 text-[14px]"
+        style={{ borderColor: 'var(--line)', background: 'transparent' }}
+      >
+        <option value="">Course this group belongs to</option>
+        {courses.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.title}
+          </option>
+        ))}
+      </select>
+      <label className="mt-3 flex items-start gap-2 text-[13px]">
+        <input type="checkbox" checked={newCanPost} onChange={(e) => setNewCanPost(e.target.checked)} className="mt-0.5" />
+        Members can post messages (staff and the class advocate always can)
+      </label>
+      <label className="mt-2 flex items-start gap-2 text-[13px]">
+        <input type="checkbox" checked={newInvite} onChange={(e) => setNewInvite(e.target.checked)} className="mt-0.5" />
+        Members can add classmates (otherwise only the class advocate)
+      </label>
+      {courses.length === 0 ? (
+        <p className="mt-2 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+          Enrol in a course first so classmates can be added.
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 export default function ClassRoomsClient({
   userId,
 }: {
@@ -75,6 +185,7 @@ export default function ClassRoomsClient({
   const router = useRouter();
   const search = useSearchParams();
   const [classHead, setClassHead] = useState(false);
+  const [isStaff, setIsStaff] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [groupId, setGroupId] = useState<string | null>(search.get('group'));
@@ -93,8 +204,15 @@ export default function ClassRoomsClient({
   const [channelOpen, setChannelOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
+  const [newRules, setNewRules] = useState('');
+  const [newInvite, setNewInvite] = useState(false);
+  const [newCanPost, setNewCanPost] = useState(true);
   const [newCourse, setNewCourse] = useState('');
   const [newChannel, setNewChannel] = useState('');
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [editRules, setEditRules] = useState('');
+  const [editInvite, setEditInvite] = useState(false);
+  const [editCanPost, setEditCanPost] = useState(true);
   const [mobilePane, setMobilePane] = useState<'groups' | 'channels' | 'chat'>('groups');
   const [pickMates, setPickMates] = useState<string[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -107,6 +225,7 @@ export default function ClassRoomsClient({
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Could not load groups');
     setClassHead(Boolean(data.classHead));
+    setIsStaff(Boolean(data.isStaff));
     setCourses(data.courses || []);
     setGroups(data.groups || []);
     return data.groups as Group[];
@@ -184,6 +303,10 @@ export default function ClassRoomsClient({
 
   const activeChannel = channels.find((c) => c.id === channelId);
   const owner = groupMeta?.isOwner || members.some((m) => m.isYou && m.isOwner);
+  const staffHere = Boolean(isStaff || groupMeta?.isStaffMonitor);
+  const banned = Boolean(groupMeta?.banned);
+  const canPost = Boolean(staffHere || (!banned && (owner || groupMeta?.membersCanPost !== false)));
+  const canInvite = owner || Boolean(groupMeta?.membersCanInvite);
 
   async function post(payload: Record<string, unknown>, key: string) {
     setBusy(key);
@@ -207,13 +330,24 @@ export default function ClassRoomsClient({
 
   async function create() {
     const data = await post(
-      { action: 'create_group', title: newTitle, description: newDesc, courseId: newCourse },
+      {
+        action: 'create_group',
+        title: newTitle,
+        description: newDesc,
+        courseId: newCourse,
+        rules: newRules,
+        membersCanInvite: newInvite,
+        membersCanPost: newCanPost,
+      },
       'create',
     );
     if (!data?.id) return;
     setCreateOpen(false);
     setNewTitle('');
     setNewDesc('');
+    setNewRules('');
+    setNewInvite(false);
+    setNewCanPost(true);
     await loadGroups();
     const id = String(data.id || '');
     if (id) enterGroup(id);
@@ -316,8 +450,9 @@ export default function ClassRoomsClient({
             groups
           </h1>
           <p className="mt-3 max-w-[440px] text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-            See the class groups you belong to, then open one to chat. The room does not open until
-            you choose a group.
+            {isStaff
+              ? 'Staff can open any class group without an invite, read and message inside, and pause or delete a room. Group settings stay as the class advocate set them.'
+              : 'See the class groups you belong to, then open one to chat. The room does not open until you choose a group. Staff monitor conversations by default.'}
           </p>
           {classHead ? (
             <button
@@ -346,8 +481,9 @@ export default function ClassRoomsClient({
             <Users size={26} className="mx-auto mb-4" style={{ color: 'var(--green-deep)' }} />
             <h2 className="font-display text-[22px]">You’re not in any group</h2>
             <p className="mx-auto mt-2 max-w-md text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-              When a class advocate adds you to a course group, it will show up here. Open a group
-              to enter the chat.
+              {isStaff
+                ? 'When class advocates create course groups, they appear here so you can monitor them without being invited.'
+                : 'When a class advocate adds you to a course group, it will show up here. Open a group to enter the chat. Staff can enter any group without an invite.'}
             </p>
           </div>
         ) : (
@@ -367,7 +503,10 @@ export default function ClassRoomsClient({
                     {initials(g.title)}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold">{g.title}</span>
+                    <span className="block truncate font-semibold">
+                      {g.title}
+                      {g.banned ? ' · paused' : ''}
+                    </span>
                     <span className="mt-0.5 block text-[13px]" style={{ color: 'var(--ink-soft)' }}>
                       {g.courseTitle || 'Course group'}
                       {' · '}
@@ -406,44 +545,21 @@ export default function ClassRoomsClient({
               }}
             >
               <h2 className="font-display text-[22px]">New class group</h2>
-              <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                Class advocates open a room for one course, then add course mates.
-              </p>
-              <input
-                required
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                placeholder="e.g. SE 2026 · Cohort A"
-                className="mt-4 w-full border px-3 py-2 text-[14px]"
-                style={{ borderColor: 'var(--line)' }}
+              <GroupCreateFields
+                newTitle={newTitle}
+                setNewTitle={setNewTitle}
+                newDesc={newDesc}
+                setNewDesc={setNewDesc}
+                newRules={newRules}
+                setNewRules={setNewRules}
+                newInvite={newInvite}
+                setNewInvite={setNewInvite}
+                newCanPost={newCanPost}
+                setNewCanPost={setNewCanPost}
+                newCourse={newCourse}
+                setNewCourse={setNewCourse}
+                courses={courses}
               />
-              <textarea
-                value={newDesc}
-                onChange={(e) => setNewDesc(e.target.value)}
-                placeholder="What is this room for?"
-                className="mt-2 w-full border px-3 py-2 text-[14px]"
-                style={{ borderColor: 'var(--line)' }}
-                rows={2}
-              />
-              <select
-                required
-                value={newCourse}
-                onChange={(e) => setNewCourse(e.target.value)}
-                className="mt-2 w-full border px-3 py-2 text-[14px]"
-                style={{ borderColor: 'var(--line)', background: 'transparent' }}
-              >
-                <option value="">Course this group belongs to</option>
-                {courses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.title}
-                  </option>
-                ))}
-              </select>
-              {courses.length === 0 ? (
-                <p className="mt-2 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
-                  Enrol in a course first so classmates can be added.
-                </p>
-              ) : null}
               <div className="mt-4 flex justify-end gap-2">
                 <button
                   type="button"
@@ -567,11 +683,13 @@ export default function ClassRoomsClient({
           ) : null}
         </div>
         <div className="border-t p-3 text-[12px]" style={{ borderColor: 'rgba(255,255,255,0.08)', color: '#8b97a8' }}>
-          {owner
-            ? 'You are class advocate. Add course mates from the member list.'
-            : classHead
-              ? 'Create a group for your course, then add classmates.'
-              : 'Only class advocates can create groups. Instructors assign that from My Students.'}
+          {staffHere
+            ? 'You are staff. You can read and message here without an invite, and pause or delete the group.'
+            : owner
+              ? 'You are class advocate. Add course mates from the member list. Staff monitor this room.'
+              : classHead
+                ? 'Create a group for your course, then add classmates. Staff monitor every group.'
+                : 'Only class advocates can create groups. Instructors assign that from My Students. Staff monitor conversations.'}
         </div>
       </aside>
 
@@ -593,6 +711,28 @@ export default function ClassRoomsClient({
             {members.length} members
           </span>
         </header>
+        {groupId && (staffHere || banned || groupMeta?.rules) ? (
+          <div
+            className="border-b px-4 py-2 text-[12.5px] leading-relaxed"
+            style={{
+              borderColor: 'var(--line)',
+              background: banned ? 'rgba(185,28,28,0.08)' : 'rgba(0,179,105,0.08)',
+            }}
+          >
+            {banned ? (
+              <p>
+                Staff paused this group. Members can read; posting is off until staff restore it.
+              </p>
+            ) : (
+              <p>Staff monitor this conversation. They can enter without an invite.</p>
+            )}
+            {groupMeta?.rules ? (
+              <p className="mt-1" style={{ color: 'var(--ink-soft)' }}>
+                Rules: {groupMeta.rules}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         <div
           className="min-h-0 flex-1 overflow-y-auto px-4 py-4"
@@ -667,7 +807,7 @@ export default function ClassRoomsClient({
                       )}
                     </div>
                   ) : null}
-                  {row.msg.senderId === userId || owner ? (
+                  {row.msg.senderId === userId || owner || staffHere ? (
                     <button
                       type="button"
                       className="absolute right-0 top-0 hidden text-[11px] group-hover:block"
@@ -693,7 +833,7 @@ export default function ClassRoomsClient({
           </p>
         ) : null}
 
-        {channelId ? (
+        {channelId && canPost ? (
           <form onSubmit={send} className="border-t p-3" style={{ borderColor: 'var(--line)', background: '#fff' }}>
             {pendingFiles.length ? (
               <div className="mb-2 flex flex-wrap gap-2">
@@ -754,13 +894,19 @@ export default function ClassRoomsClient({
               Enter to send · Shift+Enter for a new line · @firstName to ping someone
             </p>
           </form>
+        ) : channelId ? (
+          <p className="border-t px-4 py-3 text-[13px]" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
+            {banned
+              ? 'This group is paused by staff. You can still read the conversation.'
+              : 'Only the class advocate and staff can post in this group.'}
+          </p>
         ) : null}
       </section>
 
       <aside className="hidden w-[220px] shrink-0 flex-col border-l lg:flex" style={{ borderColor: 'var(--line)', background: '#fff' }}>
         <div className="flex items-center justify-between border-b px-3 py-3" style={{ borderColor: 'var(--line)' }}>
           <p className="text-[12px] font-semibold uppercase tracking-wide">Members — {members.length}</p>
-          {owner ? (
+          {owner || canInvite ? (
             <button
               type="button"
               onClick={() => setAddOpen(true)}
@@ -780,6 +926,7 @@ export default function ClassRoomsClient({
                 <span className="min-w-0 truncate">
                 {m.name}
                 {m.isOwner ? <span className="ml-1 text-[10px] font-semibold" style={{ color: '#00B369' }}>HEAD</span> : null}
+                {m.isStaff ? <span className="ml-1 text-[10px] font-semibold" style={{ color: 'var(--ink-soft)' }}>STAFF</span> : null}
                 </span>
               </span>
               {owner && !m.isOwner ? (
@@ -798,7 +945,7 @@ export default function ClassRoomsClient({
             </li>
           ))}
         </ul>
-        {groupMeta && !owner ? (
+        {groupMeta && !owner && !staffHere ? (
           <button
             type="button"
             className="border-t px-3 py-2 text-left text-[12px]"
@@ -815,7 +962,41 @@ export default function ClassRoomsClient({
             Leave group
           </button>
         ) : null}
-        {owner ? (
+        {owner || staffHere ? (
+          <button
+            type="button"
+            className="border-t px-3 py-2 text-left text-[12px]"
+            style={{ borderColor: 'var(--line)' }}
+            onClick={() => {
+              setEditRules(groupMeta?.rules || '');
+              setEditInvite(Boolean(groupMeta?.membersCanInvite));
+              setEditCanPost(groupMeta?.membersCanPost !== false);
+              setSettingsOpen(true);
+            }}
+          >
+            Group rules & permissions
+          </button>
+        ) : null}
+        {staffHere ? (
+          <button
+            type="button"
+            className="border-t px-3 py-2 text-left text-[12px]"
+            style={{ borderColor: 'var(--line)', color: banned ? 'var(--green-deep)' : '#b91c1c' }}
+            onClick={() => {
+              const action = banned ? 'unban_group' : 'ban_group';
+              const okAsk = banned
+                ? confirm('Restore posting in this group?')
+                : confirm('Pause this group? Students can still read, but cannot post.');
+              if (!okAsk) return;
+              post({ action, groupId }, 'ban').then((ok) => {
+                if (ok && groupId) void loadWorkspace(groupId);
+              });
+            }}
+          >
+            {banned ? 'Restore group' : 'Pause group'}
+          </button>
+        ) : null}
+        {owner || staffHere ? (
           <button
             type="button"
             className="border-t px-3 py-2 text-left text-[12px]"
@@ -846,44 +1027,21 @@ export default function ClassRoomsClient({
             }}
           >
             <h2 className="font-display text-[22px]">New class group</h2>
-            <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-              Class advocates open a room for one course, then add course mates.
-            </p>
-            <input
-              required
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="e.g. SE 2026 · Cohort A"
-              className="mt-4 w-full border px-3 py-2 text-[14px]"
-              style={{ borderColor: 'var(--line)' }}
+            <GroupCreateFields
+              newTitle={newTitle}
+              setNewTitle={setNewTitle}
+              newDesc={newDesc}
+              setNewDesc={setNewDesc}
+              newRules={newRules}
+              setNewRules={setNewRules}
+              newInvite={newInvite}
+              setNewInvite={setNewInvite}
+              newCanPost={newCanPost}
+              setNewCanPost={setNewCanPost}
+              newCourse={newCourse}
+              setNewCourse={setNewCourse}
+              courses={courses}
             />
-            <textarea
-              value={newDesc}
-              onChange={(e) => setNewDesc(e.target.value)}
-              placeholder="What is this room for?"
-              className="mt-2 w-full border px-3 py-2 text-[14px]"
-              style={{ borderColor: 'var(--line)' }}
-              rows={2}
-            />
-            <select
-              required
-              value={newCourse}
-              onChange={(e) => setNewCourse(e.target.value)}
-              className="mt-2 w-full border px-3 py-2 text-[14px]"
-              style={{ borderColor: 'var(--line)', background: 'transparent' }}
-            >
-              <option value="">Course this group belongs to</option>
-              {courses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.title}
-                </option>
-              ))}
-            </select>
-            {courses.length === 0 ? (
-              <p className="mt-2 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
-                Enrol in a course first so classmates can be added.
-              </p>
-            ) : null}
             <div className="mt-4 flex justify-end gap-2">
               <button type="button" onClick={() => setCreateOpen(false)} className="border px-3 py-2 text-[13px]" style={{ borderColor: 'var(--line)' }}>
                 Cancel
@@ -994,6 +1152,63 @@ export default function ClassRoomsClient({
               </button>
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {settingsOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <form
+            className="w-full max-w-md border bg-white p-5"
+            style={{ borderColor: 'var(--line)' }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              post(
+                {
+                  action: 'update_group',
+                  groupId,
+                  rules: editRules,
+                  membersCanInvite: editInvite,
+                  membersCanPost: editCanPost,
+                },
+                'settings',
+              ).then((ok) => {
+                if (ok && groupId) {
+                  setSettingsOpen(false);
+                  void loadWorkspace(groupId);
+                }
+              });
+            }}
+          >
+            <h2 className="font-display text-[20px]">Group rules & permissions</h2>
+            <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+              Staff still monitor this room and can enter without being invited. These settings only
+              change what students can do.
+            </p>
+            <textarea
+              value={editRules}
+              onChange={(e) => setEditRules(e.target.value)}
+              placeholder="Group rules"
+              rows={4}
+              className="mt-3 w-full border px-3 py-2 text-[14px]"
+              style={{ borderColor: 'var(--line)' }}
+            />
+            <label className="mt-3 flex items-start gap-2 text-[13px]">
+              <input type="checkbox" checked={editCanPost} onChange={(e) => setEditCanPost(e.target.checked)} className="mt-0.5" />
+              Members can post messages
+            </label>
+            <label className="mt-2 flex items-start gap-2 text-[13px]">
+              <input type="checkbox" checked={editInvite} onChange={(e) => setEditInvite(e.target.checked)} className="mt-0.5" />
+              Members can add classmates
+            </label>
+            <div className="mt-4 flex justify-end gap-2">
+              <button type="button" onClick={() => setSettingsOpen(false)} className="border px-3 py-2 text-[13px]" style={{ borderColor: 'var(--line)' }}>
+                Cancel
+              </button>
+              <button type="submit" className="px-3 py-2 text-[13px] font-semibold text-white" style={{ background: '#00B369' }}>
+                Save
+              </button>
+            </div>
+          </form>
         </div>
       ) : null}
     </div>

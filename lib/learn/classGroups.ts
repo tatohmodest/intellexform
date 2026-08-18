@@ -35,6 +35,11 @@ export type ClassGroupView = {
   lastMessageAt: string | null;
   lastPreview: string;
   isOwner: boolean;
+  isStaffMonitor: boolean;
+  banned: boolean;
+  rules: string;
+  membersCanInvite: boolean;
+  membersCanPost: boolean;
 };
 
 export type ChannelView = {
@@ -54,6 +59,7 @@ export type MemberView = {
   avatar: string | null;
   isOwner: boolean;
   isYou: boolean;
+  isStaff: boolean;
 };
 
 export type CourseMateView = {
@@ -113,14 +119,44 @@ function initials(name: string) {
 
 export { initials as groupInitials };
 
+async function isStaffMonitor(userId: string): Promise<boolean> {
+  try {
+    const { getStaffPost } = await import('@/lib/staff/store');
+    const post = await getStaffPost(userId);
+    return Boolean(post && post.active);
+  } catch {
+    return false;
+  }
+}
+
+function groupFlags(group: Record<string, unknown>) {
+  return {
+    banned: Boolean(group.bannedAt),
+    rules: String(group.rules || ''),
+    membersCanInvite: group.membersCanInvite === true,
+    membersCanPost: group.membersCanPost !== false,
+  };
+}
+
 async function requireMember(userId: string, groupId: string) {
   if (!ObjectId.isValid(groupId)) throw new ClassGroupError('Group not found.', 404);
   const db = await dbReady();
   const group = await db.collection('class_groups').findOne({ _id: new ObjectId(groupId) });
   if (!group) throw new ClassGroupError('Group not found.', 404);
   const memberIds = ((group.memberIds as string[]) || []).map(String);
-  if (!memberIds.includes(userId)) throw new ClassGroupError('You are not in this group.', 403);
-  return { db, group, memberIds, isOwner: String(group.ownerId) === userId };
+  const isOwner = String(group.ownerId) === userId;
+  const staff = await isStaffMonitor(userId);
+  if (!memberIds.includes(userId) && !staff) {
+    throw new ClassGroupError('You are not in this group.', 403);
+  }
+  return {
+    db,
+    group,
+    memberIds,
+    isOwner,
+    isStaff: staff,
+    flags: groupFlags(group as Record<string, unknown>),
+  };
 }
 
 export async function listStudentCourses(userId: string): Promise<StudentCourseOption[]> {
@@ -230,23 +266,27 @@ async function unreadForChannel(db: Awaited<ReturnType<typeof dbReady>>, userId:
 
 export async function listGroupsForUser(userId: string): Promise<{
   classHead: boolean;
+  isStaff: boolean;
   courses: StudentCourseOption[];
   groups: ClassGroupView[];
 }> {
-  const [classHead, courses, db] = await Promise.all([
+  const [classHead, courses, db, staff] = await Promise.all([
     isClassHead(userId),
     listStudentCourses(userId),
     dbReady(),
+    isStaffMonitor(userId),
   ]);
+  const query = staff ? {} : { memberIds: userId };
   const docs = await db
     .collection('class_groups')
-    .find({ memberIds: userId })
+    .find(query)
     .sort({ updatedAt: -1 })
     .limit(80)
     .toArray();
   const groups: ClassGroupView[] = [];
   for (const g of docs) {
     const id = String(g._id);
+    const flags = groupFlags(g as Record<string, unknown>);
     const channels = await db
       .collection('class_group_channels')
       .find({ groupId: id })
@@ -273,13 +313,18 @@ export async function listGroupsForUser(userId: string): Promise<{
       lastMessageAt: g.lastMessageAt ? new Date(g.lastMessageAt as Date).toISOString() : null,
       lastPreview: String(g.lastPreview || ''),
       isOwner: String(g.ownerId) === userId,
+      isStaffMonitor: staff,
+      banned: flags.banned,
+      rules: flags.rules,
+      membersCanInvite: flags.membersCanInvite,
+      membersCanPost: flags.membersCanPost,
     });
   }
-  return { classHead, courses, groups };
+  return { classHead, isStaff: staff, courses, groups };
 }
 
 export async function getGroupWorkspace(userId: string, groupId: string) {
-  const { db, group, memberIds, isOwner } = await requireMember(userId, groupId);
+  const { db, group, memberIds, isOwner, isStaff, flags } = await requireMember(userId, groupId);
   const channels = await db
     .collection('class_group_channels')
     .find({ groupId })
@@ -311,8 +356,22 @@ export async function getGroupWorkspace(userId: string, groupId: string) {
     avatar: typeof byId.get(id)?.avatar === 'string' ? String(byId.get(id)?.avatar) : null,
     isOwner: id === String(group.ownerId),
     isYou: id === userId,
+    isStaff: false,
   }));
-  const mates = isOwner && group.courseId
+  if (isStaff && !memberIds.includes(userId)) {
+    const me = await getLearner(userId);
+    members.unshift({
+      userId,
+      name: me?.name || 'Staff',
+      email: me?.email || '',
+      avatar: me?.avatar || null,
+      isOwner: false,
+      isYou: true,
+      isStaff: true,
+    });
+  }
+  const canAdd = isOwner || (flags.membersCanInvite && memberIds.includes(userId));
+  const mates = canAdd && group.courseId
     ? await listCourseMates(userId, String(group.courseId), memberIds)
     : [];
   return {
@@ -325,6 +384,11 @@ export async function getGroupWorkspace(userId: string, groupId: string) {
       ownerId: String(group.ownerId),
       memberCount: memberIds.length,
       isOwner,
+      isStaffMonitor: isStaff,
+      banned: flags.banned,
+      rules: flags.rules,
+      membersCanInvite: flags.membersCanInvite,
+      membersCanPost: flags.membersCanPost,
     },
     channels: channelViews,
     members,
@@ -355,7 +419,14 @@ async function insertDefaultChannels(db: Awaited<ReturnType<typeof dbReady>>, gr
 
 export async function createGroup(
   actor: { userId: string; name: string },
-  opts: { title: string; description?: string; courseId?: string },
+  opts: {
+    title: string;
+    description?: string;
+    courseId?: string;
+    rules?: string;
+    membersCanInvite?: boolean;
+    membersCanPost?: boolean;
+  },
 ) {
   if (!(await isClassHead(actor.userId))) {
     throw new ClassGroupError('Only class heads can create groups.', 403);
@@ -371,6 +442,9 @@ export async function createGroup(
   const doc = {
     title,
     description: String(opts.description || '').trim().slice(0, 280),
+    rules: String(opts.rules || '').trim().slice(0, 800),
+    membersCanInvite: Boolean(opts.membersCanInvite),
+    membersCanPost: opts.membersCanPost !== false,
     courseId: course.id,
     courseTitle: course.title,
     ownerId: actor.userId,
@@ -378,6 +452,8 @@ export async function createGroup(
     memberNames: { [actor.userId]: actor.name },
     lastPreview: '',
     lastMessageAt: null as Date | null,
+    bannedAt: null as Date | null,
+    bannedBy: null as string | null,
     createdAt: now,
     updatedAt: now,
   };
@@ -418,8 +494,9 @@ export async function addMembers(
   actor: { userId: string; name: string },
   opts: { groupId: string; userIds: string[] },
 ) {
-  const { db, group, memberIds, isOwner } = await requireMember(actor.userId, opts.groupId);
-  if (!isOwner) throw new ClassGroupError('Only the class head can add classmates.', 403);
+  const { db, group, memberIds, isOwner, flags } = await requireMember(actor.userId, opts.groupId);
+  const canAdd = isOwner || (flags.membersCanInvite && memberIds.includes(actor.userId));
+  if (!canAdd) throw new ClassGroupError('Only the class head can add classmates.', 403);
   const courseId = String(group.courseId || '');
   const mates = await listCourseMates(actor.userId, courseId, memberIds);
   const allowed = new Set(mates.map((m) => m.userId));
@@ -463,8 +540,8 @@ export async function removeMember(actor: { userId: string }, opts: { groupId: s
 }
 
 export async function deleteGroup(actor: { userId: string }, groupId: string) {
-  const { db, isOwner, group } = await requireMember(actor.userId, groupId);
-  if (!isOwner) throw new ClassGroupError('Only the class head can delete this group.', 403);
+  const { db, isOwner, isStaff, group } = await requireMember(actor.userId, groupId);
+  if (!isOwner && !isStaff) throw new ClassGroupError('Only the class head or staff can delete this group.', 403);
   const channels = await db.collection('class_group_channels').find({ groupId }).project({ _id: 1 }).toArray();
   const channelIds = channels.map((c) => String(c._id));
   await db.collection('class_group_messages').deleteMany({ groupId });
@@ -525,7 +602,13 @@ export async function sendGroupMessage(
   const db = await dbReady();
   const channel = await db.collection('class_group_channels').findOne({ _id: new ObjectId(opts.channelId) });
   if (!channel) throw new ClassGroupError('Channel not found.', 404);
-  const { group, memberIds } = await requireMember(actor.userId, String(channel.groupId));
+  const { group, memberIds, isStaff, isOwner, flags } = await requireMember(actor.userId, String(channel.groupId));
+  if (flags.banned && !isStaff) {
+    throw new ClassGroupError('Staff paused this group. You can still read, but posting is off.');
+  }
+  if (!flags.membersCanPost && !isOwner && !isStaff) {
+    throw new ClassGroupError('Only the class advocate and staff can post in this group.');
+  }
   const body = String(opts.body || '').trim().slice(0, 4000);
   const attachments = (opts.attachments || [])
     .filter((a) => a?.url && a?.name)
@@ -586,12 +669,67 @@ export async function deleteGroupMessage(actor: { userId: string }, messageId: s
   const db = await dbReady();
   const msg = await db.collection('class_group_messages').findOne({ _id: new ObjectId(messageId) });
   if (!msg) throw new ClassGroupError('Message not found.', 404);
-  const { isOwner } = await requireMember(actor.userId, String(msg.groupId));
-  if (!isOwner && String(msg.senderId) !== actor.userId) {
+  const { isOwner, isStaff } = await requireMember(actor.userId, String(msg.groupId));
+  if (!isOwner && !isStaff && String(msg.senderId) !== actor.userId) {
     throw new ClassGroupError('You can only delete your own messages.', 403);
   }
   await db.collection('class_group_messages').deleteOne({ _id: msg._id });
   return { ok: true };
+}
+
+export async function updateGroupSettings(
+  actor: { userId: string },
+  opts: {
+    groupId: string;
+    rules?: string;
+    membersCanInvite?: boolean;
+    membersCanPost?: boolean;
+    description?: string;
+  },
+) {
+  const { db, group, isOwner, isStaff } = await requireMember(actor.userId, opts.groupId);
+  if (!isOwner && !isStaff) {
+    throw new ClassGroupError('Only the class advocate or staff can change group settings.', 403);
+  }
+  const patch: Record<string, unknown> = { updatedAt: new Date() };
+  if (typeof opts.rules === 'string') patch.rules = opts.rules.trim().slice(0, 800);
+  if (typeof opts.membersCanInvite === 'boolean') patch.membersCanInvite = opts.membersCanInvite;
+  if (typeof opts.membersCanPost === 'boolean') patch.membersCanPost = opts.membersCanPost;
+  if (typeof opts.description === 'string') patch.description = opts.description.trim().slice(0, 280);
+  await db.collection('class_groups').updateOne({ _id: group._id }, { $set: patch });
+  return { ok: true };
+}
+
+export async function setGroupBanned(
+  actor: { userId: string; name: string },
+  groupId: string,
+  banned: boolean,
+) {
+  const { db, group, isStaff, memberIds } = await requireMember(actor.userId, groupId);
+  if (!isStaff) throw new ClassGroupError('Only staff can pause or restore a group.', 403);
+  const now = new Date();
+  await db.collection('class_groups').updateOne(
+    { _id: group._id },
+    {
+      $set: {
+        bannedAt: banned ? now : null,
+        bannedBy: banned ? actor.userId : null,
+        updatedAt: now,
+      },
+    },
+  );
+  if (banned) {
+    await createNotificationsForUsers(
+      memberIds.filter((id) => id !== actor.userId),
+      {
+        title: `${String(group.title)} was paused by staff`,
+        body: `${actor.name} paused this class group. You can still read it; posting is off until staff restore it.`,
+        href: `/dashboard/study-groups?group=${String(group._id)}`,
+        kind: 'institution',
+      },
+    ).catch(() => 0);
+  }
+  return { ok: true, banned };
 }
 
 export async function classHeadStatus(userId: string) {
