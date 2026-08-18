@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Users } from 'lucide-react';
+import { FileText, MessageSquare, Sparkles, Users } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { isOfficialStudent } from '@/lib/learn/studentAccess';
 import { getOrgConfig } from '@/lib/org/config';
@@ -109,13 +109,16 @@ export default async function CommunityPage({
       {showPublic ? (
         <section className="grid gap-3 sm:grid-cols-2">
           {[
-            ['Groups', '/dashboard/study-groups', 'Class rooms — chat, notes, ideas'],
-            ['Opportunities', '/dashboard/opportunities', 'Jobs, internships, and calls'],
-            ['Messages', '/dashboard/messages', 'Direct conversations'],
-            ['Notes', '/dashboard/notes', 'Educational resources'],
-          ].map(([title, href, body]) => (
+            { title: 'Groups', href: '/dashboard/study-groups', body: 'Class rooms — chat, notes, ideas', Icon: Users },
+            { title: 'Opportunities', href: '/dashboard/opportunities', body: 'Jobs, internships, and calls', Icon: Sparkles },
+            { title: 'Messages', href: '/dashboard/messages', body: 'Direct conversations', Icon: MessageSquare },
+            { title: 'Notes', href: '/dashboard/notes', body: 'Educational resources', Icon: FileText },
+          ].map(({ title, href, body, Icon }) => (
             <Link key={href} href={href} className="border p-4" style={{ borderColor: 'var(--line)' }}>
-              <p className="font-semibold">{title}</p>
+              <p className="flex items-center gap-2 font-semibold">
+                <Icon size={16} />
+                {title}
+              </p>
               <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
                 {body}
               </p>

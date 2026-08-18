@@ -38,6 +38,9 @@ export const STAFF_PERMISSIONS = [
   'reports.read',
   'director.view',
   'hr.read',
+  'data.read',
+  'data.write',
+  'data.manage',
 ] as const;
 
 export type StaffPermission = (typeof STAFF_PERMISSIONS)[number];
@@ -78,6 +81,9 @@ export const PERMISSION_LABELS: Record<StaffPermission, string> = {
   'reports.read': 'View operational reports',
   'director.view': 'View the director dashboard',
   'hr.read': 'View HR / staff directory',
+  'data.read': 'View Data Workspace datasets',
+  'data.write': 'Create forms and edit records',
+  'data.manage': 'Manage dataset settings, import, and permanent delete',
 };
 
 /** Optional presets. Organizations only get a module when someone is granted it. */
@@ -93,6 +99,9 @@ export const DESK_PERMISSIONS: Record<StaffDesk, StaffPermission[]> = {
     'director.view',
     'announcements.write',
     'hr.read',
+    'data.read',
+    'data.write',
+    'data.manage',
   ],
   secretary: [
     'staff.access',
@@ -101,6 +110,9 @@ export const DESK_PERMISSIONS: Record<StaffDesk, StaffPermission[]> = {
     'admissions.read',
     'announcements.write',
     'reports.read',
+    'data.read',
+    'data.write',
+    'data.manage',
   ],
   finance: [
     'staff.access',
@@ -109,6 +121,8 @@ export const DESK_PERMISSIONS: Record<StaffDesk, StaffPermission[]> = {
     'fees.write',
     'fees.record_payment',
     'reports.read',
+    'data.read',
+    'data.write',
   ],
   academic: [
     'staff.access',
@@ -116,6 +130,8 @@ export const DESK_PERMISSIONS: Record<StaffDesk, StaffPermission[]> = {
     'students.write',
     'students.status',
     'reports.read',
+    'data.read',
+    'data.write',
   ],
   admissions: [
     'staff.access',
@@ -124,12 +140,16 @@ export const DESK_PERMISSIONS: Record<StaffDesk, StaffPermission[]> = {
     'students.status',
     'admissions.read',
     'admissions.decide',
+    'data.read',
+    'data.write',
   ],
   student_services: [
     'staff.access',
     'students.read',
     'announcements.write',
     'reports.read',
+    'data.read',
+    'data.write',
   ],
   hr: ['staff.access', 'students.read', 'hr.read', 'reports.read'],
 };

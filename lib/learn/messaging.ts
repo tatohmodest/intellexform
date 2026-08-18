@@ -6,6 +6,7 @@ import { ObjectId } from 'mongodb';
 import { getDb } from '@/lib/repo';
 import { ensureLearnCollections } from '@/lib/learn/ecosystem';
 import { createNotification } from '@/lib/learn/notifications';
+import { getLearner } from '@/lib/learn/repo';
 
 export type MessageThreadView = {
   id: string;
@@ -23,6 +24,7 @@ export type MessageView = {
   threadId: string;
   senderId: string;
   senderName: string;
+  senderAvatar: string | null;
   body: string;
   href: string | null;
   createdAt: string;
@@ -62,6 +64,7 @@ function messageView(d: Record<string, unknown>): MessageView {
     threadId: String(d.threadId),
     senderId: String(d.senderId),
     senderName: String(d.senderName || 'User'),
+    senderAvatar: d.senderAvatar ? String(d.senderAvatar) : null,
     body: String(d.body || ''),
     href: (d.href as string) || null,
     createdAt: new Date(d.createdAt as string | Date).toISOString(),
@@ -161,10 +164,12 @@ export async function sendMessage(opts: {
   if (!body) throw new Error('Message required');
 
   const now = new Date();
+  const learner = await getLearner(opts.senderId);
   const msg = {
     threadId: opts.threadId,
     senderId: opts.senderId,
     senderName: opts.senderName,
+    senderAvatar: learner?.avatar || null,
     body,
     href: opts.href || null,
     createdAt: now,
