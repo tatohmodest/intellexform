@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Landmark } from 'lucide-react';
 import DirectorAsk from '@/components/staff/DirectorAsk';
 import { formatXAF } from '@/lib/staff/permissions';
@@ -13,7 +14,7 @@ export default async function DirectorPage() {
   const cards = [
     ['Students', String(snap.students)],
     ['New this week', String(snap.newLearners7d)],
-    ['Instructors', String(snap.mentors)],
+    ['Instructors', String(snap.teachers ?? snap.mentors)],
     ['Staff', String(snap.staffCount)],
     ['Pending admissions', String(snap.pendingAdmissions)],
     ['Outstanding fees', formatXAF(snap.outstandingXAF)],
@@ -35,14 +36,26 @@ export default async function DirectorPage() {
       </header>
 
       <section className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map(([label, value]) => (
-          <div key={label} className="border p-4" style={{ borderColor: 'var(--line)' }}>
-            <p className="font-display text-[24px] leading-none">{value}</p>
-            <p className="mt-2 font-mono text-[10px] uppercase tracking-wide" style={{ color: 'var(--ink-soft)' }}>
-              {label}
-            </p>
-          </div>
-        ))}
+        {cards.map(([label, value]) => {
+          const href = label === 'Instructors' ? '/dashboard/staff/teachers' : label === 'Students' ? '/dashboard/staff/students' : '';
+          const inner = (
+            <>
+              <p className="font-display text-[24px] leading-none">{value}</p>
+              <p className="mt-2 font-mono text-[10px] uppercase tracking-wide" style={{ color: 'var(--ink-soft)' }}>
+                {label}
+              </p>
+            </>
+          );
+          return href ? (
+            <Link key={label} href={href} className="border p-4" style={{ borderColor: 'var(--line)' }}>
+              {inner}
+            </Link>
+          ) : (
+            <div key={label} className="border p-4" style={{ borderColor: 'var(--line)' }}>
+              {inner}
+            </div>
+          );
+        })}
       </section>
 
       <div className="mb-8">

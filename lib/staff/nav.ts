@@ -10,6 +10,7 @@ export const STAFF_NAV: {
   { href: '/dashboard/staff/director', label: 'Director', permission: 'director.view' },
   { href: '/dashboard/staff/campuses', label: 'Campuses', permission: 'campuses.manage' },
   { href: '/dashboard/staff/team', label: 'Staff', permission: 'staff.manage' },
+  { href: '/dashboard/staff/teachers', label: 'Teachers', permission: 'teachers.read' },
   { href: '/dashboard/staff/students', label: 'Students', permission: 'students.read' },
   { href: '/dashboard/staff/admissions', label: 'Admissions', permission: 'admissions.read' },
   { href: '/dashboard/staff/fees', label: 'School fees', permission: 'fees.read' },

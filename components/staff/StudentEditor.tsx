@@ -20,6 +20,7 @@ export default function StudentEditor({
     department: string;
     faculty: string;
     year: string;
+    cohort: string;
     phone: string;
     notes: string;
     campusSlug: string;
@@ -100,6 +101,7 @@ export default function StudentEditor({
           ['department', 'Department'],
           ['faculty', 'Faculty'],
           ['year', 'Level / year'],
+          ['cohort', 'Class / cohort'],
           ['phone', 'Phone'],
         ].map(([key, label]) => (
           <label key={key} className="text-[13px]">

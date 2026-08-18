@@ -13,6 +13,12 @@ export async function GET(req: NextRequest) {
       status: url.searchParams.get('status') || undefined,
       page: Number(url.searchParams.get('page') || '1'),
       campusSlugs: actor.post.campusSlugs.length ? actor.post.campusSlugs : undefined,
+      campusSlug: url.searchParams.get('campus') || undefined,
+      program: url.searchParams.get('program') || undefined,
+      department: url.searchParams.get('department') || undefined,
+      year: url.searchParams.get('year') || undefined,
+      cohort: url.searchParams.get('cohort') || undefined,
+      courseId: url.searchParams.get('course') || undefined,
     });
     return NextResponse.json(data);
   } catch (err) {

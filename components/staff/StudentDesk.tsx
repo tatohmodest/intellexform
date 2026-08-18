@@ -14,16 +14,41 @@ type Row = {
   program: string;
   department: string;
   year: string;
+  cohort: string;
   campusSlug: string;
   classHead?: boolean;
   outstandingXAF: number;
+  courses: Array<{ id: string; title: string }>;
 };
+
+type Filters = {
+  programs: string[];
+  years: string[];
+  departments: string[];
+  cohorts: string[];
+  courses: Array<{ id: string; title: string }>;
+};
+
+type Campus = { slug: string; name: string };
 
 export default function StudentDesk() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
+  const [program, setProgram] = useState('');
+  const [year, setYear] = useState('');
+  const [cohort, setCohort] = useState('');
+  const [campus, setCampus] = useState('');
+  const [course, setCourse] = useState('');
   const [rows, setRows] = useState<Row[]>([]);
   const [total, setTotal] = useState(0);
+  const [filters, setFilters] = useState<Filters>({
+    programs: [],
+    years: [],
+    departments: [],
+    cohorts: [],
+    courses: [],
+  });
+  const [campuses, setCampuses] = useState<Campus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -31,8 +56,20 @@ export default function StudentDesk() {
     const p = new URLSearchParams();
     if (q.trim()) p.set('q', q.trim());
     if (status) p.set('status', status);
+    if (program) p.set('program', program);
+    if (year) p.set('year', year);
+    if (cohort) p.set('cohort', cohort);
+    if (campus) p.set('campus', campus);
+    if (course) p.set('course', course);
     return p.toString();
-  }, [q, status]);
+  }, [q, status, program, year, cohort, campus, course]);
+
+  useEffect(() => {
+    fetch('/api/staff/campuses')
+      .then((r) => r.json())
+      .then((d) => setCampuses(d.campuses || []))
+      .catch(() => setCampuses([]));
+  }, []);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -44,6 +81,7 @@ export default function StudentDesk() {
           if (!r.ok) throw new Error(data.error || 'Could not load students');
           setRows(data.students || []);
           setTotal(data.total || 0);
+          if (data.filters) setFilters(data.filters);
           setError('');
         })
         .catch((err) => {
@@ -57,9 +95,12 @@ export default function StudentDesk() {
     };
   }, [query]);
 
+  const selectCls = 'border px-3 py-2.5 text-[13px]';
+  const selectStyle = { borderColor: 'var(--line)', background: 'transparent' as const };
+
   return (
     <div>
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="mb-4 flex flex-col gap-3">
         <label className="relative min-w-0 flex-1">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--ink-soft)' }} />
           <input
@@ -70,20 +111,57 @@ export default function StudentDesk() {
             style={{ borderColor: 'var(--line)', background: 'transparent' }}
           />
         </label>
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="border px-3 py-2.5 text-[13px]"
-          style={{ borderColor: 'var(--line)', background: 'transparent' }}
-        >
-          <option value="">All statuses</option>
-          <option value="user">user (not yet a student)</option>
-          {STUDENT_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s.replace(/_/g, ' ')}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-wrap gap-2">
+          <select value={status} onChange={(e) => setStatus(e.target.value)} className={selectCls} style={selectStyle}>
+            <option value="">All statuses</option>
+            <option value="user">user (not yet a student)</option>
+            {STUDENT_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s.replace(/_/g, ' ')}
+              </option>
+            ))}
+          </select>
+          <select value={program} onChange={(e) => setProgram(e.target.value)} className={selectCls} style={selectStyle}>
+            <option value="">All programs</option>
+            {filters.programs.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+          <select value={year} onChange={(e) => setYear(e.target.value)} className={selectCls} style={selectStyle}>
+            <option value="">All levels</option>
+            {filters.years.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+          <select value={cohort} onChange={(e) => setCohort(e.target.value)} className={selectCls} style={selectStyle}>
+            <option value="">All classes</option>
+            {filters.cohorts.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+          <select value={campus} onChange={(e) => setCampus(e.target.value)} className={selectCls} style={selectStyle}>
+            <option value="">All campuses</option>
+            {campuses.map((c) => (
+              <option key={c.slug} value={c.slug}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <select value={course} onChange={(e) => setCourse(e.target.value)} className={selectCls} style={selectStyle}>
+            <option value="">All courses</option>
+            {filters.courses.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.title}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <p className="mb-3 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
@@ -104,13 +182,15 @@ export default function StudentDesk() {
         </div>
       ) : (
         <div className="overflow-x-auto border" style={{ borderColor: 'var(--line)' }}>
-          <table className="w-full min-w-[720px] text-left text-[13.5px]">
+          <table className="w-full min-w-[960px] text-left text-[13.5px]">
             <thead>
               <tr className="border-b text-[11px] uppercase tracking-wide" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
                 <th className="px-3 py-2.5 font-medium">Student</th>
                 <th className="px-3 py-2.5 font-medium">ID</th>
                 <th className="px-3 py-2.5 font-medium">Program</th>
-                <th className="px-3 py-2.5 font-medium">Campus</th>
+                <th className="px-3 py-2.5 font-medium">Level</th>
+                <th className="px-3 py-2.5 font-medium">Class</th>
+                <th className="px-3 py-2.5 font-medium">Courses</th>
                 <th className="px-3 py-2.5 font-medium">Status</th>
                 <th className="px-3 py-2.5 font-medium">Fees due</th>
               </tr>
@@ -139,7 +219,17 @@ export default function StudentDesk() {
                       </div>
                     ) : null}
                   </td>
-                  <td className="px-3 py-3">{row.campusSlug || '—'}</td>
+                  <td className="px-3 py-3">{row.year || '—'}</td>
+                  <td className="px-3 py-3">{row.cohort || '—'}</td>
+                  <td className="max-w-[220px] px-3 py-3">
+                    {row.courses?.length
+                      ? row.courses
+                          .slice(0, 2)
+                          .map((c) => c.title)
+                          .join(' · ')
+                      : '—'}
+                    {row.courses && row.courses.length > 2 ? ` +${row.courses.length - 2}` : ''}
+                  </td>
                   <td className="px-3 py-3 capitalize">
                     {row.status.replace(/_/g, ' ')}
                     {row.classHead ? (

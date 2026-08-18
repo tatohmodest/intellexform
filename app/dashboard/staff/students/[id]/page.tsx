@@ -37,7 +37,10 @@ export default async function StaffStudentDetailPage({ params }: { params: { id:
       <section className="grid gap-3 sm:grid-cols-3">
         {[
           ['Program', student.record.program || 'Not set'],
+          ['Level', student.record.year || 'Not set'],
+          ['Class', student.record.cohort || 'Not set'],
           ['Department', student.record.department || 'Not set'],
+          ['Campus', student.record.campusSlug || 'Not set'],
           ['Fees due', canFees ? formatXAF(student.outstandingXAF) : 'Hidden'],
         ].map(([label, value]) => (
           <div key={label} className="border p-4" style={{ borderColor: 'var(--line)' }}>

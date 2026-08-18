@@ -35,6 +35,7 @@ export async function PATCH(
       department: typeof body.department === 'string' ? body.department : undefined,
       faculty: typeof body.faculty === 'string' ? body.faculty : undefined,
       year: typeof body.year === 'string' ? body.year : undefined,
+      cohort: typeof body.cohort === 'string' ? body.cohort : undefined,
       phone: typeof body.phone === 'string' ? body.phone : undefined,
       notes: typeof body.notes === 'string' ? body.notes : undefined,
       campusSlug: typeof body.campusSlug === 'string' ? body.campusSlug : undefined,

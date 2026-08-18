@@ -17,6 +17,9 @@ export default async function StaffHomePage() {
   if (actor.permissions.includes('students.read')) {
     cards.push({ label: 'Students', value: String(stats.students), href: '/dashboard/staff/students' });
   }
+  if (actor.permissions.includes('teachers.read')) {
+    cards.push({ label: 'Teachers', value: String(stats.teachers), href: '/dashboard/staff/teachers' });
+  }
   if (actor.permissions.includes('admissions.read')) {
     cards.push({
       label: 'Pending applications',

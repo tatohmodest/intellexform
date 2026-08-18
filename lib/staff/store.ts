@@ -378,6 +378,7 @@ async function ensureStudentRecord(userId: string, fallback?: { name?: string; e
     department: '',
     faculty: '',
     year: '',
+    cohort: '',
     phone: '',
     notes: '',
     campusSlug: '',
@@ -396,6 +397,12 @@ export async function listStudents(opts: {
   status?: string;
   page?: number;
   campusSlugs?: string[];
+  campusSlug?: string;
+  program?: string;
+  department?: string;
+  year?: string;
+  cohort?: string;
+  courseId?: string;
 }) {
   const db = await getDb();
   const page = Math.max(1, opts.page || 1);
@@ -404,13 +411,47 @@ export async function listStudents(opts: {
     duplicateOfUserId: { $exists: false },
   };
   const recCol = await recordsCol();
-  if (opts.campusSlugs?.length) {
+  const recFilter: Record<string, unknown> = {};
+  if (opts.campusSlugs?.length) recFilter.campusSlug = { $in: opts.campusSlugs };
+  if (opts.campusSlug?.trim()) {
+    const slug = opts.campusSlug.trim();
+    if (opts.campusSlugs?.length && !opts.campusSlugs.includes(slug)) {
+      recFilter.campusSlug = { $in: ['__none__'] };
+    } else {
+      recFilter.campusSlug = slug;
+    }
+  }
+  if (opts.program?.trim()) recFilter.program = { $regex: opts.program.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
+  if (opts.department?.trim()) recFilter.department = { $regex: opts.department.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
+  if (opts.year?.trim()) recFilter.year = opts.year.trim();
+  if (opts.cohort?.trim()) recFilter.cohort = opts.cohort.trim();
+
+  const recordFilterActive = Object.keys(recFilter).length > 0;
+  if (recordFilterActive) {
+    const scoped = await recCol.find(recFilter).project({ userId: 1 }).toArray();
+    const scopedIds = scoped.map((r) => String(r.userId));
+    query.lbId = { $in: scopedIds.length ? scopedIds : ['__none__'] };
+  } else if (opts.campusSlugs?.length) {
     const scoped = await recCol
       .find({ campusSlug: { $in: opts.campusSlugs } })
       .project({ userId: 1 })
       .toArray();
     const scopedIds = scoped.map((r) => String(r.userId));
     query.lbId = { $in: scopedIds.length ? scopedIds : ['__none__'] };
+  }
+
+  if (opts.courseId?.trim()) {
+    const courseId = opts.courseId.trim();
+    const [live, catalog] = await Promise.all([
+      db.collection('course_enrollments').distinct('studentId', { courseId }).catch(() => [] as string[]),
+      db.collection('enrollments').distinct('userId', { courseSlug: courseId }).catch(() => [] as string[]),
+    ]);
+    const courseIds = Array.from(new Set([...live.map(String), ...catalog.map(String)]));
+    const existing = (query.lbId as { $in?: string[] } | undefined)?.$in;
+    const next = existing
+      ? courseIds.filter((id) => existing.includes(id))
+      : courseIds;
+    query.lbId = { $in: next.length ? next : ['__none__'] };
   }
   if (opts.q?.trim()) {
     const q = opts.q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -444,21 +485,53 @@ export async function listStudents(opts: {
   const ids = learners.map((l) => String(l.lbId));
   const records = await recCol.find({ userId: { $in: ids } }).toArray();
   const recById = new Map(records.map((r) => [String(r.userId), r]));
-
   const chCol = await chargesCol();
-  const balances = await chCol
-    .aggregate([
-      { $match: { studentUserId: { $in: ids } } },
-      {
-        $group: {
-          _id: '$studentUserId',
-          charged: { $sum: '$amountXAF' },
-          paid: { $sum: '$paidXAF' },
+
+  const [balances, liveEnroll, catalogEnroll] = await Promise.all([
+    chCol
+      .aggregate([
+        { $match: { studentUserId: { $in: ids } } },
+        {
+          $group: {
+            _id: '$studentUserId',
+            charged: { $sum: '$amountXAF' },
+            paid: { $sum: '$paidXAF' },
+          },
         },
-      },
-    ])
-    .toArray();
+      ])
+      .toArray(),
+    ids.length
+      ? db
+          .collection('course_enrollments')
+          .find({ studentId: { $in: ids } })
+          .project({ studentId: 1, courseId: 1, courseTitle: 1 })
+          .toArray()
+          .catch(() => [] as Array<Record<string, unknown>>)
+      : Promise.resolve([] as Array<Record<string, unknown>>),
+    ids.length
+      ? db
+          .collection('enrollments')
+          .find({ userId: { $in: ids } })
+          .project({ userId: 1, courseSlug: 1 })
+          .toArray()
+          .catch(() => [] as Array<Record<string, unknown>>)
+      : Promise.resolve([] as Array<Record<string, unknown>>),
+  ]);
   const balById = new Map(balances.map((b) => [String(b._id), b]));
+  const coursesById = new Map<string, Array<{ id: string; title: string }>>();
+  for (const e of liveEnroll) {
+    const sid = String(e.studentId || '');
+    const list = coursesById.get(sid) || [];
+    list.push({ id: String(e.courseId || ''), title: String(e.courseTitle || 'Course') });
+    coursesById.set(sid, list);
+  }
+  for (const e of catalogEnroll) {
+    const sid = String(e.userId || '');
+    const slug = String(e.courseSlug || '');
+    const list = coursesById.get(sid) || [];
+    if (slug && !list.some((c) => c.id === slug)) list.push({ id: slug, title: slug.replace(/-/g, ' ') });
+    coursesById.set(sid, list);
+  }
 
   const rows = [];
   for (const l of learners) {
@@ -476,10 +549,12 @@ export async function listStudents(opts: {
         program: '',
         department: '',
         year: '',
+        cohort: '',
         campusSlug: '',
         classHead: false,
         lastLoginAt: l.lastLoginAt || null,
         outstandingXAF: Math.max(0, Number(bal?.charged || 0) - Number(bal?.paid || 0)),
+        courses: coursesById.get(id) || [],
       });
       continue;
     }
@@ -494,14 +569,36 @@ export async function listStudents(opts: {
       program: String(rec.program || ''),
       department: String(rec.department || ''),
       year: String(rec.year || ''),
+      cohort: String(rec.cohort || ''),
       campusSlug: String(rec.campusSlug || ''),
       classHead: Boolean((rec as { classHead?: boolean }).classHead),
       lastLoginAt: l.lastLoginAt || null,
       outstandingXAF: Math.max(0, Number(bal?.charged || 0) - Number(bal?.paid || 0)),
+      courses: coursesById.get(id) || [],
     });
   }
 
-  return { students: rows, total, page, pageSize };
+  const [programs, years, departments, cohorts, courseFacets] = await Promise.all([
+    recCol.distinct('program').catch(() => [] as string[]),
+    recCol.distinct('year').catch(() => [] as string[]),
+    recCol.distinct('department').catch(() => [] as string[]),
+    recCol.distinct('cohort').catch(() => [] as string[]),
+    listBillableCourses().catch(() => [] as Awaited<ReturnType<typeof listBillableCourses>>),
+  ]);
+
+  return {
+    students: rows,
+    total,
+    page,
+    pageSize,
+    filters: {
+      programs: programs.map(String).filter(Boolean).sort(),
+      years: years.map(String).filter(Boolean).sort(),
+      departments: departments.map(String).filter(Boolean).sort(),
+      cohorts: cohorts.map(String).filter(Boolean).sort(),
+      courses: courseFacets.map((c) => ({ id: c.id, title: c.title })),
+    },
+  };
 }
 
 export async function getStudentDetail(userId: string, actor?: StaffActor) {
@@ -515,7 +612,7 @@ export async function getStudentDetail(userId: string, actor?: StaffActor) {
   const enrollments = await db
     .collection('course_enrollments')
     .find({ studentId: userId })
-    .project({ courseTitle: 1, courseId: 1, createdAt: 1 })
+    .project({ courseTitle: 1, courseId: 1, instructorId: 1, createdAt: 1 })
     .sort({ createdAt: -1 })
     .limit(40)
     .toArray();
@@ -549,6 +646,7 @@ export async function getStudentDetail(userId: string, actor?: StaffActor) {
       department: String(rec.department || ''),
       faculty: String(rec.faculty || ''),
       year: String(rec.year || ''),
+      cohort: String(rec.cohort || ''),
       phone: String(rec.phone || ''),
       notes: String(rec.notes || ''),
       campusSlug: String(rec.campusSlug || ''),
@@ -559,6 +657,7 @@ export async function getStudentDetail(userId: string, actor?: StaffActor) {
         id: String(e.courseId || ''),
         title: String(e.courseTitle || 'Course'),
         kind: 'instructor' as const,
+        instructorId: String(e.instructorId || ''),
       })),
       ...catalogue.map((e) => ({
         id: String(e.courseSlug || ''),
@@ -596,6 +695,7 @@ export async function updateStudentRecord(
     department: string;
     faculty: string;
     year: string;
+    cohort: string;
     phone: string;
     notes: string;
     campusSlug: string;
@@ -621,6 +721,7 @@ export async function updateStudentRecord(
     ...(patch.department !== undefined ? { department: String(patch.department).slice(0, 120) } : {}),
     ...(patch.faculty !== undefined ? { faculty: String(patch.faculty).slice(0, 120) } : {}),
     ...(patch.year !== undefined ? { year: String(patch.year).slice(0, 40) } : {}),
+    ...(patch.cohort !== undefined ? { cohort: String(patch.cohort).slice(0, 80) } : {}),
     ...(patch.phone !== undefined ? { phone: String(patch.phone).slice(0, 40) } : {}),
     ...(patch.notes !== undefined ? { notes: String(patch.notes).slice(0, 2000) } : {}),
     ...(patch.campusSlug !== undefined ? { campusSlug: String(patch.campusSlug).slice(0, 48) } : {}),
@@ -736,6 +837,320 @@ export async function listBillableCourses() {
     });
   }
   return courses.filter((c) => c.students > 0 || c.source === 'instructor').slice(0, 80);
+}
+
+export type StaffTeacherRow = {
+  userId: string;
+  name: string;
+  email: string;
+  title: string;
+  expertise: string[];
+  canTeach: boolean;
+  courseCount: number;
+  studentCount: number;
+  courses: Array<{ id: string; title: string; published: boolean; studentCount: number }>;
+};
+
+export async function listTeachers(opts?: { q?: string; campusSlugs?: string[] }): Promise<{
+  teachers: StaffTeacherRow[];
+  total: number;
+}> {
+  const db = await getDb();
+  const [mentors, profiles, courseDocs, enrollAgg] = await Promise.all([
+    db
+      .collection('learners')
+      .find({ roles: 'mentor' }, { projection: { lbId: 1, name: 1, email: 1 } })
+      .toArray()
+      .catch(() => []),
+    db
+      .collection('mentor_profiles')
+      .find({}, { projection: { lbId: 1, name: 1, title: 1, expertise: 1, active: 1 } })
+      .toArray()
+      .catch(() => []),
+    db
+      .collection('teacher_courses')
+      .find({}, { projection: { title: 1, authorId: 1, instructorId: 1, authorName: 1, instructorName: 1, published: 1 } })
+      .toArray()
+      .catch(() => []),
+    db
+      .collection('course_enrollments')
+      .aggregate<{ _id: string; n: number; students: string[] }>([
+        { $group: { _id: '$courseId', n: { $sum: 1 }, students: { $addToSet: '$studentId' } } },
+      ])
+      .toArray()
+      .catch(() => []),
+  ]);
+
+  const enrollByCourse = new Map(enrollAgg.map((r) => [String(r._id), r]));
+  const byId = new Map<
+    string,
+    {
+      userId: string;
+      name: string;
+      email: string;
+      title: string;
+      expertise: string[];
+      canTeach: boolean;
+      courseMap: Map<string, { id: string; title: string; published: boolean; studentCount: number }>;
+    }
+  >();
+
+  function ensure(id: string, name: string, extra?: { email?: string; title?: string; expertise?: string[]; canTeach?: boolean }) {
+    const key = String(id || '');
+    if (!key) return null;
+    let row = byId.get(key);
+    if (!row) {
+      row = {
+        userId: key,
+        name: name || 'Teacher',
+        email: extra?.email || '',
+        title: extra?.title || '',
+        expertise: extra?.expertise || [],
+        canTeach: Boolean(extra?.canTeach),
+        courseMap: new Map(),
+      };
+      byId.set(key, row);
+    } else {
+      if (extra?.email && !row.email) row.email = extra.email;
+      if (extra?.title && !row.title) row.title = extra.title;
+      if (extra?.expertise?.length && !row.expertise.length) row.expertise = extra.expertise;
+      if (extra?.canTeach) row.canTeach = true;
+      if (name && row.name === 'Teacher') row.name = name;
+    }
+    return row;
+  }
+
+  for (const l of mentors) {
+    ensure(String(l.lbId), String(l.name || ''), { email: String(l.email || ''), canTeach: true });
+  }
+  for (const p of profiles) {
+    ensure(String(p.lbId), String(p.name || ''), {
+      title: String(p.title || ''),
+      expertise: Array.isArray(p.expertise) ? p.expertise.map(String) : [],
+      canTeach: p.active !== false,
+    });
+  }
+  for (const c of courseDocs) {
+    const id = String(c._id);
+    const title = String(c.title || 'Course');
+    const published = c.published !== false;
+    const students = enrollByCourse.get(id)?.students?.map(String) || [];
+    const studentCount = students.length;
+    const ownerIds = Array.from(new Set([String(c.instructorId || ''), String(c.authorId || '')].filter(Boolean)));
+    for (const uid of ownerIds) {
+      const row = ensure(uid, String(c.instructorName || c.authorName || 'Teacher'));
+      if (!row) continue;
+      row.courseMap.set(id, { id, title, published, studentCount });
+    }
+  }
+
+  let campusStudentIds: Set<string> | null = null;
+  if (opts?.campusSlugs?.length) {
+    const recs = await (await recordsCol())
+      .find({ campusSlug: { $in: opts.campusSlugs } })
+      .project({ userId: 1 })
+      .toArray();
+    campusStudentIds = new Set(recs.map((r) => String(r.userId)));
+  }
+
+  const q = opts?.q?.trim().toLowerCase();
+  const teachers: StaffTeacherRow[] = [];
+  for (const row of byId.values()) {
+    const courses = Array.from(row.courseMap.values());
+    const studentSet = new Set<string>();
+    for (const c of courses) {
+      for (const sid of enrollByCourse.get(c.id)?.students || []) studentSet.add(String(sid));
+    }
+    if (campusStudentIds) {
+      const inCampus = Array.from(studentSet).some((id) => campusStudentIds!.has(id));
+      if (!inCampus && courses.length) continue;
+      if (!inCampus && !courses.length) continue;
+    }
+    if (q) {
+      const hay = `${row.name} ${row.email} ${row.title} ${row.expertise.join(' ')} ${courses.map((c) => c.title).join(' ')}`.toLowerCase();
+      if (!hay.includes(q)) continue;
+    }
+    teachers.push({
+      userId: row.userId,
+      name: row.name,
+      email: row.email,
+      title: row.title,
+      expertise: row.expertise,
+      canTeach: row.canTeach,
+      courseCount: courses.length,
+      studentCount: studentSet.size,
+      courses: courses.sort((a, b) => b.studentCount - a.studentCount),
+    });
+  }
+  teachers.sort((a, b) => b.studentCount - a.studentCount || a.name.localeCompare(b.name));
+
+  const missingEmail = teachers.filter((t) => !t.email).map((t) => t.userId);
+  if (missingEmail.length) {
+    const learners = await db
+      .collection('learners')
+      .find({ lbId: { $in: missingEmail } }, { projection: { lbId: 1, email: 1, name: 1 } })
+      .toArray();
+    const byLearner = new Map(learners.map((l) => [String(l.lbId), l]));
+    for (const t of teachers) {
+      const l = byLearner.get(t.userId);
+      if (!l) continue;
+      if (!t.email) t.email = String(l.email || '');
+      if (!t.name || t.name === 'Teacher') t.name = String(l.name || t.name);
+    }
+  }
+
+  return { teachers, total: teachers.length };
+}
+
+export async function getTeacherDetail(userId: string, actor?: StaffActor) {
+  const { teachers } = await listTeachers({ campusSlugs: actor?.post.campusSlugs.length ? actor.post.campusSlugs : undefined });
+  const summary = teachers.find((t) => t.userId === userId);
+  const learner = await getLearner(userId);
+  if (!summary && !learner) return null;
+
+  const db = await getDb();
+  const groups = await (async () => {
+    const { listInstructorStudentGroups } = await import('@/lib/learn/ecosystem');
+    return listInstructorStudentGroups(userId);
+  })();
+  const studentIds = Array.from(new Set(groups.flatMap((g) => g.students.map((s) => s.studentId))));
+  const recs = studentIds.length
+    ? await (await recordsCol())
+        .find({ userId: { $in: studentIds } })
+        .project({ userId: 1, program: 1, year: 1, cohort: 1, department: 1, campusSlug: 1, status: 1, studentCode: 1 })
+        .toArray()
+    : [];
+  const recById = new Map(recs.map((r) => [String(r.userId), r]));
+  if (actor?.post.campusSlugs.length) {
+    const allowed = actor.post.campusSlugs;
+    for (const g of groups) {
+      g.students = g.students.filter((s) => {
+        const rec = recById.get(s.studentId);
+        return campusInScope({ ...actor.post, campusSlugs: allowed }, String(rec?.campusSlug || '') || null);
+      });
+      g.studentCount = g.students.length;
+    }
+  }
+
+  const assignable = await db
+    .collection('teacher_courses')
+    .find({})
+    .project({ title: 1, instructorId: 1, instructorName: 1, authorId: 1, authorName: 1, published: 1 })
+    .sort({ updatedAt: -1 })
+    .limit(80)
+    .toArray();
+
+  const post = await getStaffPost(userId);
+
+  return {
+    userId,
+    name: summary?.name || learner?.name || 'Teacher',
+    email: summary?.email || learner?.email || '',
+    title: summary?.title || '',
+    expertise: summary?.expertise || [],
+    canTeach: Boolean(summary?.canTeach || learner?.roles?.includes('mentor')),
+    courseCount: summary?.courseCount || groups.length,
+    studentCount: groups.reduce((n, g) => n + g.studentCount, 0),
+    staffPost: post
+      ? { desks: post.desks, extraPermissions: post.extraPermissions, active: post.active }
+      : null,
+    groups: groups.map((g) => ({
+      ...g,
+      students: g.students.map((s) => {
+        const rec = recById.get(s.studentId);
+        return {
+          ...s,
+          program: String(rec?.program || ''),
+          year: String(rec?.year || ''),
+          cohort: String(rec?.cohort || ''),
+          department: String(rec?.department || ''),
+          campusSlug: String(rec?.campusSlug || ''),
+          status: String(rec?.status || ''),
+          studentCode: String(rec?.studentCode || ''),
+        };
+      }),
+    })),
+    assignableCourses: assignable.map((c) => ({
+      id: String(c._id),
+      title: String(c.title || 'Course'),
+      instructorId: String(c.instructorId || c.authorId || ''),
+      instructorName: String(c.instructorName || c.authorName || ''),
+      published: c.published !== false,
+    })),
+  };
+}
+
+export async function grantTeachingAccess(actor: StaffActor, userIdOrEmail: string) {
+  const key = String(userIdOrEmail || '').trim();
+  if (!key) throw new StaffAuthError('Choose a person with an InTelleX account.', 400);
+  const db = await getDb();
+  const learner = key.includes('@')
+    ? await db.collection('learners').findOne({
+        email: { $regex: `^${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' },
+      })
+    : await getLearner(key);
+  if (!learner) throw new StaffAuthError('That person does not have an InTelleX account.', 404);
+  const lbId = String((learner as { lbId?: string }).lbId || key);
+  const name = String((learner as { name?: string }).name || 'Instructor');
+  const { becomeMentor } = await import('@/lib/learn/ecosystem');
+  await becomeMentor({
+    lbId,
+    name,
+    title: 'Instructor',
+    expertise: [],
+    bio: '',
+    priceXAF: 0,
+    sessionMinutes: 45,
+    slots: [],
+    instructorBadge: 'InTelleX Instructor',
+  });
+  await writeStaffAudit({
+    actorId: actor.userId,
+    actorName: actor.name,
+    actorEmail: actor.email,
+    action: 'teacher.grant',
+    entityType: 'teacher',
+    entityId: lbId,
+    summary: `${actor.name} granted teaching access to ${name}`,
+    after: { userId: lbId, canTeach: true },
+  });
+  return getTeacherDetail(lbId, actor);
+}
+
+export async function assignCourseToTeacher(actor: StaffActor, opts: { courseId: string; instructorId: string }) {
+  const instructor = await getLearner(opts.instructorId);
+  if (!instructor) throw new StaffAuthError('Teacher not found.', 404);
+  const courseId = String(opts.courseId || '');
+  if (!ObjectId.isValid(courseId)) throw new StaffAuthError('Course not found.', 404);
+  const db = await getDb();
+  const course = await db.collection('teacher_courses').findOne({ _id: new ObjectId(courseId) });
+  if (!course) throw new StaffAuthError('Course not found.', 404);
+  await db.collection('teacher_courses').updateOne(
+    { _id: new ObjectId(courseId) },
+    {
+      $set: {
+        instructorId: instructor.lbId,
+        instructorName: instructor.name,
+        updatedAt: new Date(),
+      },
+    },
+  );
+  await db
+    .collection('course_enrollments')
+    .updateMany({ courseId }, { $set: { instructorId: instructor.lbId } })
+    .catch(() => {});
+  await writeStaffAudit({
+    actorId: actor.userId,
+    actorName: actor.name,
+    actorEmail: actor.email,
+    action: 'teacher.assign_course',
+    entityType: 'teacher_course',
+    entityId: courseId,
+    summary: `${actor.name} assigned “${String(course.title || 'Course')}” to ${instructor.name}`,
+    before: { instructorId: course.instructorId || course.authorId },
+    after: { instructorId: instructor.lbId },
+  });
+  return getTeacherDetail(instructor.lbId, actor);
 }
 
 export async function chargeFee(
@@ -1275,10 +1690,11 @@ export async function staffHomeStats() {
   const rec = await recordsCol();
   const ch = await chargesCol();
   const adm = await admissionsCol();
-  const [students, pendingAdmissions, staffCount, openCharges] = await Promise.all([
+  const [students, pendingAdmissions, staffCount, teacherCount, openCharges] = await Promise.all([
     db.collection('learners').countDocuments(),
     adm.countDocuments({ status: 'pending' }),
     (await postsCol()).countDocuments({ active: true }),
+    db.collection('learners').countDocuments({ roles: 'mentor' }),
     ch
       .aggregate([
         { $project: { due: { $subtract: ['$amountXAF', '$paidXAF'] } } },
@@ -1300,6 +1716,7 @@ export async function staffHomeStats() {
     students,
     pendingAdmissions,
     staffCount,
+    teachers: teacherCount,
     outstandingCount: Number(outstanding.n || 0),
     outstandingXAF: Number(outstanding.xaf || 0),
     statusCounts: statusCounts.map((s) => ({ status: String(s._id || 'active'), n: Number(s.n || 0) })),

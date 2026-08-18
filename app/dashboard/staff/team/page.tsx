@@ -15,8 +15,8 @@ export default async function StaffTeamPage() {
         </div>
         <h1 className="font-display text-[28px] leading-tight sm:text-[32px]">Appoint staff</h1>
         <p className="mt-2 max-w-[640px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          The institution decides who is staff and what they can do. Finance, HR, and admissions are
-          not created automatically — they appear only when you grant them.
+          The institution decides who is staff and what they can do. Teachers, fees, HR, and
+          admissions are not created automatically — they appear only when you grant them.
         </p>
       </header>
       <TeamDesk actorPermissions={actor.permissions} actorCampusSlugs={actor.post.campusSlugs} />

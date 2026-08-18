@@ -15,8 +15,8 @@ export default async function StaffStudentsPage() {
         </div>
         <h1 className="font-display text-[28px] leading-tight sm:text-[32px]">Student management</h1>
         <p className="mt-2 max-w-[620px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Search InTelleX learners, open a record, and update program, status, or notes — according to your desk.
-        </p>
+        Search enrolled learners by program, level, class, or course — then open a record to update it.
+      </p>
       </header>
       <StudentDesk />
     </div>
