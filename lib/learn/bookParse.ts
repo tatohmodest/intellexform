@@ -158,6 +158,57 @@ function looksLikeContentsList(text: string): boolean {
   return numbered >= Math.max(6, Math.floor(lines.length * 0.4));
 }
 
+const FRONT_TOKEN =
+  /\b(praise for|title page|copyright|dedication|about the author|preface|acknowledgments?|acknowledgements?|contents in detail|table of contents|isbn|published by|half[- ]title)\b/i;
+
+function proseSentenceCount(text: string): number {
+  return (text.match(/[A-Za-z][^.!?\n]{40,}[.!?]/g) || []).filter(
+    (s) => !FRONT_TOKEN.test(s) && !/^\s*exercise\s+\d/i.test(s),
+  ).length;
+}
+
+/** TOC / outline dumps: "Praise - Title Page - Copyright - Chapter 3 - Exercise 2-11…" */
+export function looksLikeHeadingCatalog(text: string): boolean {
+  const compact = text.replace(/\s+/g, ' ').trim();
+  if (!compact) return true;
+  const dashParts = compact
+    .split(/\s*[-–—]{1,3}\s*/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 1 && s.length < 90);
+  const frontHits = (compact.match(new RegExp(FRONT_TOKEN.source, 'gi')) || []).length;
+  const structHits = (compact.match(/\b(chapter\s+\d+|exercise\s+\d+[-\.]\d+|part\s+[ivx\d]+)\b/gi) || []).length;
+  const prose = proseSentenceCount(text);
+  if (dashParts.length >= 6 && frontHits + structHits >= 4 && prose < 2) return true;
+  if (frontHits >= 3 && structHits >= 2 && compact.length < 2800 && prose < 3) return true;
+  if (structHits >= 6 && prose < 3) return true;
+  const lines = text
+    .split(/\n+/)
+    .map((l) => l.replace(/^#+\s*/, '').replace(/\.{2,}\s*\d+\s*$/, '').trim())
+    .filter((l) => l.length > 2);
+  if (lines.length >= 8) {
+    const headingish = lines.filter(
+      (l) =>
+        l.length < 80 &&
+        (FRONT_TOKEN.test(l) || /^(chapter|exercise|part|summary|introduction|who is this book)\b/i.test(l)),
+    ).length;
+    if (headingish / lines.length >= 0.45 && prose < 4) return true;
+  }
+  return false;
+}
+
+/** Turn "Title Page - Copyright - Chapter 1" blobs into lines so catalog detection can drop them. */
+export function explodeDashedHeadings(text: string): string {
+  return text
+    .split(/\n{2,}/)
+    .map((para) => {
+      const parts = para.split(/\s+-\s+/).map((s) => s.trim()).filter(Boolean);
+      const short = parts.filter((p) => p.length < 80);
+      if (parts.length >= 6 && short.length >= 5) return parts.join('\n');
+      return para;
+    })
+    .join('\n\n');
+}
+
 function looksLikeOrientKeep(title: string, text: string): boolean {
   const t = title.replace(/^#+\s*/, '').replace(/\s+/g, ' ').trim();
   if (
@@ -165,7 +216,7 @@ function looksLikeOrientKeep(title: string, text: string): boolean {
       t,
     )
   ) {
-    return !looksLikeThanks(t, text) && !looksLikeContentsList(text);
+    return !looksLikeThanks(t, text) && !looksLikeContentsList(text) && !looksLikeHeadingCatalog(text);
   }
   const head = text.slice(0, 1800).toLowerCase();
   return (
@@ -196,10 +247,12 @@ function looksLikeBackMatter(title: string): boolean {
 }
 
 function stripJunkParagraphs(markdown: string): string {
-  const paras = markdown.split(/\n{2,}/);
+  const exploded = explodeDashedHeadings(markdown);
+  const paras = exploded.split(/\n{2,}/);
   const kept = paras.filter((p) => {
     const t = p.replace(/^#+\s*/, '').trim();
     if (!t) return false;
+    if (looksLikeHeadingCatalog(p)) return false;
     if (THANKS_BODY.test(p) && p.length < 3500) return false;
     if (FRONT_TITLE.test(firstTitle(p, '')) && p.length < 3500) return false;
     return true;
@@ -223,7 +276,7 @@ export function isFrontMatter(title: string, text: string): boolean {
   }
   if (/^contents\b/i.test(t) && t.length < 64) return true;
   if (looksLikeThanks(t, text)) return true;
-  if (looksLikeContentsList(text)) return true;
+  if (looksLikeContentsList(text) || looksLikeHeadingCatalog(text)) return true;
   if (looksLikeOrientKeep(t, text)) return false;
   const head = text.slice(0, 500).toLowerCase();
   if (/\b(isbn|copyright ©|all rights reserved|printed in the|library of congress)\b/.test(head) && text.length < 3200) {
@@ -254,17 +307,18 @@ export function keepInstructionalCore(chapters: ParsedChapter[]): ParsedChapter[
       const markdown = stripJunkParagraphs(c.markdown);
       return { ...c, title: markdown ? firstTitle(markdown, c.title) : c.title, markdown };
     })
-    .filter((c) => c.markdown.trim().length >= 80 && !isFrontMatter(c.title, c.markdown) && !looksLikeBackMatter(c.title));
+    .filter((c) => c.markdown.trim().length >= 120 && !isFrontMatter(c.title, c.markdown) && !looksLikeBackMatter(c.title) && !looksLikeHeadingCatalog(c.markdown));
   if (!kept.length) {
     const fallback = chapters.filter(
       (c) =>
-        c.markdown.trim().length >= 80 &&
+        c.markdown.trim().length >= 120 &&
         !looksLikeThanks(c.title, c.markdown) &&
         !looksLikeContentsList(c.markdown) &&
+        !looksLikeHeadingCatalog(c.markdown) &&
         !FRONT_TITLE.test(c.title.replace(/^#+\s*/, '').replace(/\s+/g, ' ').trim()) &&
         !looksLikeBackMatter(c.title),
     );
-    return fallback.length ? fallback : chapters;
+    return fallback;
   }
   return kept;
 }
@@ -298,7 +352,65 @@ function dropFrontMatter(chapters: ParsedChapter[]): ParsedChapter[] {
     return { ...c, title, markdown };
   });
   const core = keepInstructionalCore(cleaned);
-  return core.length ? core : cleaned.filter((c) => c.markdown.trim().length >= 80);
+  return core.filter((c) => c.markdown.trim().length >= 120 && !looksLikeHeadingCatalog(c.markdown));
+}
+
+function stripRunningHeaders(pages: string[]): string[] {
+  const firstLines = pages
+    .map((p) => (p.split('\n').find((l) => l.trim()) || '').trim())
+    .filter((l) => l.length > 2 && l.length < 80);
+  const counts = new Map<string, number>();
+  for (const line of firstLines) counts.set(line.toLowerCase(), (counts.get(line.toLowerCase()) || 0) + 1);
+  const repeated = new Set(
+    [...counts.entries()]
+      .filter(([, n]) => n >= Math.max(4, Math.floor(pages.length * 0.12)))
+      .map(([line]) => line),
+  );
+  return pages.map((page) =>
+    page
+      .split('\n')
+      .filter((line, i) => {
+        const t = line.trim();
+        if (i < 3 && /^\d+$/.test(t)) return false;
+        if (i < 3 && repeated.has(t.toLowerCase())) return false;
+        return true;
+      })
+      .join('\n')
+      .trim(),
+  );
+}
+
+const STRUCT_SPLIT =
+  /(?=^(?:#{1,3}\s+)?(?:part\s+(?:\d+|[ivxlcdm]+)|chapter\s+\d+|introduction|getting started)\b)/gim;
+
+function splitStructural(text: string, fallbackTitle: string): ParsedChapter[] {
+  const prepared = explodeDashedHeadings(text).replace(/\r\n/g, '\n').trim();
+  if (!prepared) return [];
+  const parts = prepared
+    .split(STRUCT_SPLIT)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 80);
+  if (parts.length < 2) return [];
+  const chapters: ParsedChapter[] = [];
+  for (const body of parts) {
+    if (looksLikeHeadingCatalog(body) || looksLikeContentsList(body)) continue;
+    const titleLine = body.split('\n').map((l) => l.replace(/^#+\s*/, '').trim()).find((l) => l.length > 3 && l.length < 120) || fallbackTitle;
+    chapters.push({
+      id: slugChapter(chapters.length),
+      title: titleLine.slice(0, 120),
+      markdown: body.slice(0, BOOK_TUTOR_CHAPTER_CHARS),
+    });
+  }
+  return chapters;
+}
+
+export function bookTitleFrom(chapters: ParsedChapter[], fallback: string): string {
+  const skip = /praise|copyright|dedication|title page|contents|acknowledg|about the author/i;
+  for (const chapter of chapters) {
+    const t = chapter.title.replace(/^#+\s*/, '').trim();
+    if (t && !skip.test(t) && t.length > 4 && t.length < 90) return t.slice(0, 120);
+  }
+  return fallback.slice(0, 120);
 }
 
 function thinChapters(chapters: ParsedChapter[], max: number): ParsedChapter[] {
@@ -351,6 +463,16 @@ function flushSized(buf: string, title: string, fallbackTitle: string, n: number
 
 /** Build chapters from PDF pages without concatenating the whole book into one string. */
 export function chaptersFromPages(pages: string[], fallbackTitle: string): ParsedChapter[] {
+  const cleanedPages = stripRunningHeaders(pages).filter((page) => {
+    const t = String(page || '').trim();
+    if (!t || looksLikeSparseExtract(t)) return false;
+    if (looksLikeHeadingCatalog(t) || looksLikeContentsList(t)) return false;
+    return true;
+  });
+  const joined = cleanedPages.join('\n\n');
+  const structured = splitStructural(joined, fallbackTitle);
+  if (structured.length) return dropFrontMatter(mergeChapters(structured, BOOK_TUTOR_MAX_CHAPTERS));
+
   const chapters: ParsedChapter[] = [];
   let title = '';
   let buf = '';
@@ -370,9 +492,10 @@ export function chaptersFromPages(pages: string[], fallbackTitle: string): Parse
     if (rest.trim().length) buf = rest;
   };
 
-  for (const rawPage of pages) {
+  const sourcePages = cleanedPages.length ? cleanedPages : pages;
+  for (const rawPage of sourcePages) {
     const page = String(rawPage || '').trim();
-    if (!page || looksLikeSparseExtract(page)) continue;
+    if (!page || looksLikeSparseExtract(page) || looksLikeHeadingCatalog(page) || looksLikeContentsList(page)) continue;
     const firstLine = page.split('\n').map((l) => l.trim()).find(Boolean) || '';
     const isHead = CHAPTER_HEADING.test(firstLine) && firstLine.length < 160;
     if (isHead && buf.length > 400) flush();
@@ -382,7 +505,7 @@ export function chaptersFromPages(pages: string[], fallbackTitle: string): Parse
   }
   flush();
   if (!chapters.length) {
-    const nonempty = pages.filter((p) => p && p.trim().length > 80);
+    const nonempty = sourcePages.filter((p) => p && p.trim().length > 80 && !looksLikeHeadingCatalog(p));
     if (!nonempty.length) return [];
     return dropFrontMatter(
       mergeChapters(
@@ -589,10 +712,10 @@ export async function parseBookFile(opts: {
     );
   }
 
-  if (!chapters.length) throw new Error('Could not extract enough text from that file.');
+  if (!chapters.length) throw new Error('Could not extract enough teaching text from that file. Tables of contents and title pages are skipped.');
 
   return {
-    title: firstTitle(chapters[0]?.markdown || fallbackTitle, fallbackTitle),
+    title: bookTitleFrom(chapters, fallbackTitle),
     chapters,
     charCount: extractedChars,
     pageHint,

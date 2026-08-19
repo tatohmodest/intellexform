@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, ArrowRight, CheckCircle2, FlaskConical, Lightbulb, ListChecks, Loader2, StickyNote } from 'lucide-react';
+import { ArrowRight, CheckCircle2, FlaskConical, Lightbulb, Loader2 } from 'lucide-react';
 import MarkdownLite from '@/components/dashboard/MarkdownLite';
 import BookTutorAnswerField, { type TutorUiType } from '@/components/dashboard/BookTutorAnswerField';
 
@@ -16,6 +16,8 @@ type Lesson = {
   example: string;
   question: string;
   kind?: 'orient' | 'teach' | 'practice';
+  stepType?: 'introduction' | 'explanation' | 'example' | 'guided_practice' | 'assessment' | 'transition';
+  interactionRequired?: boolean;
   keypoints?: string[];
   practiceTask?: string;
   note?: string;
@@ -243,13 +245,17 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
   const progress = session.progress;
   const passed = progress?.phase === 'passed' || progress?.lastCorrect === true;
   const complete = progress?.phase === 'complete';
-  const practice = lesson?.kind === 'practice';
-  const orient = lesson?.kind === 'orient' || !lesson?.question;
+  const stepType =
+    lesson?.stepType ||
+    (lesson?.kind === 'practice' ? 'guided_practice' : lesson?.kind === 'orient' ? 'introduction' : lesson?.question ? 'assessment' : 'explanation');
+  const practice = stepType === 'guided_practice';
+  const needsCheck = lesson?.interactionRequired === true || (lesson?.interactionRequired !== false && Boolean(lesson?.question) && stepType !== 'introduction' && stepType !== 'explanation' && stepType !== 'example' && stepType !== 'transition');
+  const teachOnly = !needsCheck;
   const checks = lesson?.checks || [];
   const checkpointPassed = progress?.checkpointPassed || 0;
-  const currentCheck = passed || orient ? undefined : checks[checkpointPassed];
+  const currentCheck = passed || teachOnly ? undefined : checks[checkpointPassed];
   const revealRest = !currentCheck || currentCheck.placement === 'end';
-  const revealWrite = !orient && Boolean(lesson?.question) && (passed || !currentCheck);
+  const revealWrite = needsCheck && Boolean(lesson?.question) && (passed || !currentCheck);
   const pct = useMemo(() => {
     const total = session.path.lessonCount || 1;
     const done = progress?.phase === 'complete' ? total : progress?.completedCount || 0;
@@ -443,7 +449,17 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
               color: practice ? 'var(--blue-ink)' : 'var(--green-deep)',
             }}
           >
-            {practice ? 'Try it' : orient ? 'Welcome' : 'Lesson'}
+            {stepType === 'guided_practice'
+              ? 'Try it'
+              : stepType === 'assessment'
+                ? 'Check'
+                : stepType === 'example'
+                  ? 'Example'
+                  : stepType === 'introduction'
+                    ? 'Welcome'
+                    : stepType === 'transition'
+                      ? 'Next'
+                      : 'Lesson'}
           </span>
         </div>
       </div>
@@ -470,55 +486,21 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
 
         {revealRest ? (
           <>
-            {!orient && lesson.analogy ? (
-              <Callout tone="tip" label="Analogy" text={lesson.analogy} icon={<Lightbulb size={14} />} />
-            ) : null}
-
-            {!orient && lesson.note ? (
-              <Callout tone="note" label="From the writer" text={lesson.note} icon={<StickyNote size={14} />} />
-            ) : null}
-
-            {!orient && lesson.watchOut ? (
-              <Callout tone="warning" label="Watch out" text={lesson.watchOut} icon={<AlertTriangle size={14} />} />
-            ) : null}
-
-            {!orient && lesson.keypoints && lesson.keypoints.length > 0 ? (
-              <div
-                className="mt-8 rounded-xl border p-5"
-                style={{ borderColor: 'rgba(0,179,105,0.25)', background: 'rgba(0,179,105,0.06)' }}
-              >
-                <div className="mb-3 flex items-center gap-2 font-display text-[18px]">
-                  <ListChecks size={18} style={{ color: 'var(--green-deep)' }} />
-                  Key points
-                </div>
-                <ul className="space-y-2 text-[14.5px] leading-relaxed" style={{ color: 'var(--ink)' }}>
-                  {lesson.keypoints.map((item) => (
-                    <li key={item} className="flex gap-2.5">
-                      <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: 'var(--green)' }} />
-                      <span>
-                        <MarkdownLite text={item} />
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-
             {lesson.example ? (
               /```/.test(lesson.example) ? (
                 <div className="mt-8">
                   <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
-                    Snippet
+                    Example
                   </p>
                   <MarkdownLite text={lesson.example} />
                 </div>
               ) : (
-                <Callout tone="tip" label="Worked example" text={lesson.example} icon={<Lightbulb size={14} />} />
+                <Callout tone="tip" label="Example" text={lesson.example} icon={<Lightbulb size={14} />} />
               )
             ) : null}
 
             {practice && lesson.practiceTask ? (
-              <Callout tone="try" label="Your turn — go do this" text={lesson.practiceTask} icon={<FlaskConical size={14} />} />
+              <Callout tone="try" label="Your turn" text={lesson.practiceTask} icon={<FlaskConical size={14} />} />
             ) : null}
 
             {currentCheck?.placement === 'end' ? (
@@ -533,13 +515,13 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
         ) : null}
       </article>
 
-      {orient ? (
+      {teachOnly ? (
         <div
           className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4"
           style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}
         >
           <p className="text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-            This stretch is the book’s welcome. Continue when you have heard it.
+            {stepType === 'introduction' ? 'Continue when you have heard this.' : 'Continue when you are ready.'}
           </p>
           <button
             type="button"

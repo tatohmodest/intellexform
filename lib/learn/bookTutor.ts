@@ -14,12 +14,19 @@ import { XP } from '@/lib/learn/xp';
 import { getBook, studentCanReadBook } from '@/lib/learn/ecosystem';
 import { isLLMConfigured } from '@/lib/learn/tutor';
 import { openaiJsonCompletion, parseJsonObject } from '@/lib/learn/openaiJson';
-import { parseBookFile, splitIntoChapters, type ParsedChapter, BOOK_TUTOR_CHAPTER_CHARS } from '@/lib/learn/bookParse';
+import { parseBookFile, splitIntoChapters, looksLikeHeadingCatalog, type ParsedChapter, BOOK_TUTOR_CHAPTER_CHARS } from '@/lib/learn/bookParse';
 import { buildCurriculum, inferLanguage, lessonNeedsCheck, looksLikeCode, stripTutorMetaSpeak, type LessonUiType } from '@/lib/learn/bookTutorCurriculum';
 import { BOOK_TUTOR_CLARIFY_SYSTEM, BOOK_TUTOR_GRADE_SYSTEM } from '@/lib/learn/bookTutorPrompt';
 
 export type BookTutorPhase = 'teaching' | 'quiz' | 'passed' | 'complete';
 export type BookTutorLessonKind = 'orient' | 'teach' | 'practice';
+export type BookTutorStepType =
+  | 'introduction'
+  | 'explanation'
+  | 'example'
+  | 'guided_practice'
+  | 'assessment'
+  | 'transition';
 export type BookTutorUiType = LessonUiType;
 
 export type BookTutorCheck = {
@@ -42,6 +49,9 @@ export type BookTutorLesson = {
   criteria: string;
   keywords: string[];
   kind?: BookTutorLessonKind;
+  stepType?: BookTutorStepType;
+  interactionRequired?: boolean;
+  objective?: string;
   keypoints?: string[];
   practiceTask?: string;
   note?: string;
@@ -119,6 +129,8 @@ export type PublicLesson = {
   example: string;
   question: string;
   kind: BookTutorLessonKind;
+  stepType: BookTutorStepType;
+  interactionRequired: boolean;
   keypoints: string[];
   practiceTask: string;
   note: string;
@@ -214,29 +226,55 @@ function publicExample(lesson: BookTutorLesson): string {
   return raw;
 }
 
+function inventedCallout(text: string): boolean {
+  return /maya’?s 40-second|labelled drawer|kitchen recipe|lock and a key|mash \*\*|go do the thing this stretch asked for|hold onto these/i.test(
+    text,
+  );
+}
+
 function publicLesson(lessons: BookTutorLesson[], index: number): PublicLesson | null {
   const lesson = lessons[index];
   if (!lesson) return null;
   const uiType = resolveUiType(lesson);
   const choices = uiType === 'multiple_choice' && Array.isArray(lesson.choices) ? lesson.choices.map(String).filter(Boolean).slice(0, 6) : [];
-  const needsCheck = lessonNeedsCheck(lesson);
+  const explanation = stripTutorMetaSpeak(lesson.explanation);
+  const junk = looksLikeHeadingCatalog(explanation);
+  const needsCheck = junk ? false : lessonNeedsCheck(lesson);
+  const stepType: BookTutorStepType = junk
+    ? 'explanation'
+    : lesson.stepType ||
+      (lesson.kind === 'practice'
+        ? 'guided_practice'
+        : lesson.kind === 'orient' || !needsCheck
+          ? 'introduction'
+          : 'assessment');
   const kind: BookTutorLessonKind =
-    !needsCheck && lesson.kind !== 'practice' ? 'orient' : lesson.kind === 'practice' ? 'practice' : 'teach';
-  const orient = kind === 'orient';
+    stepType === 'introduction' ? 'orient' : stepType === 'guided_practice' ? 'practice' : 'teach';
+  const exampleRaw = stripTutorMetaSpeak(lesson.example || '');
+  const keypoints = (Array.isArray(lesson.keypoints) ? lesson.keypoints.map(String) : []).filter(
+    (k) => k.length > 24 && !looksLikeHeadingCatalog(k) && !inventedCallout(k) && !/\s-\s.*\s-\s/.test(k),
+  );
+  const note = inventedCallout(String(lesson.note || '')) ? '' : stripTutorMetaSpeak(String(lesson.note || ''));
+  const watchOut = inventedCallout(String(lesson.watchOut || '')) ? '' : stripTutorMetaSpeak(String(lesson.watchOut || ''));
+  const analogy = inventedCallout(String(lesson.analogy || '')) ? '' : stripTutorMetaSpeak(String(lesson.analogy || ''));
   return {
     id: lesson.id,
     chapterTitle: lesson.chapterTitle,
     sortOrder: lesson.sortOrder,
     title: stripTutorMetaSpeak(lesson.title) || lesson.title,
-    explanation: stripTutorMetaSpeak(lesson.explanation),
-    example: publicExample({ ...lesson, example: stripTutorMetaSpeak(lesson.example || '') }),
+    explanation: looksLikeHeadingCatalog(explanation)
+      ? 'This step was built from a table of contents, not from a real chapter. Delete this tutor and upload the book again.'
+      : explanation,
+    example: looksLikeHeadingCatalog(exampleRaw) || inventedCallout(exampleRaw) ? '' : publicExample({ ...lesson, example: exampleRaw }),
     question: needsCheck ? lesson.question : '',
     kind,
-    keypoints: orient ? [] : Array.isArray(lesson.keypoints) ? lesson.keypoints.map(String).filter(Boolean).slice(0, 6) : [],
-    practiceTask: orient ? '' : String(lesson.practiceTask || ''),
-    note: orient ? '' : stripTutorMetaSpeak(String(lesson.note || '')),
-    watchOut: orient ? '' : stripTutorMetaSpeak(String(lesson.watchOut || '')),
-    analogy: orient ? '' : stripTutorMetaSpeak(String(lesson.analogy || '')),
+    stepType,
+    interactionRequired: needsCheck,
+    keypoints: needsCheck ? keypoints.slice(0, 6) : [],
+    practiceTask: stepType === 'guided_practice' && !looksLikeHeadingCatalog(String(lesson.practiceTask || '')) ? String(lesson.practiceTask || '') : '',
+    note: needsCheck ? note : '',
+    watchOut: needsCheck ? watchOut : '',
+    analogy: needsCheck ? analogy : '',
     checks: [],
     uiType: uiType === 'multiple_choice' && choices.length < 2 ? 'text_input' : uiType,
     language: String(lesson.language || inferLanguage(`${lesson.explanation}\n${lesson.example}`) || ''),
@@ -460,7 +498,7 @@ async function finishPathFromUpload(
       skipLlm: false,
       deadlineMs: Date.now() + (huge ? 240_000 : 150_000),
     });
-    if (!lessons.length) throw new BookTutorError('Could not turn that book into lessons.');
+    if (!lessons.length) throw new BookTutorError('Could not find real chapters to teach — the file looked like a table of contents or title pages.');
     const chapterOutline = outlineOf(parsed.chapters);
     for (const ch of parsed.chapters) ch.markdown = '';
     await db.collection('book_tutor_paths').updateOne(
@@ -573,7 +611,7 @@ function heuristicGrade(lesson: BookTutorLesson, answer: string): { isCorrect: b
     };
   }
   const words = tokenize(answer);
-  if (lesson.kind === 'practice') {
+  if (lesson.kind === 'practice' || lesson.stepType === 'guided_practice') {
     if (words.length < 8) {
       return {
         isCorrect: false,
@@ -609,7 +647,7 @@ function heuristicGrade(lesson: BookTutorLesson, answer: string): { isCorrect: b
 async function llmGrade(lesson: BookTutorLesson, answer: string): Promise<{ isCorrect: boolean; feedback: string } | null> {
   try {
     const practiceNote =
-      lesson.kind === 'practice'
+      lesson.kind === 'practice' || lesson.stepType === 'guided_practice'
         ? 'This is a hands-on step. Pass if they clearly attempted the task and reported a concrete result (output, error, screen, number, or working-enough code). Fail empty slogans or a restated chapter title.'
         : 'Be fair to paraphrases, invented examples, and mostly-right code. Fail if they only restate the title, repeat "the main idea", talk about acknowledgments, or dodge the question.';
     const raw = await openaiJsonCompletion({
@@ -618,7 +656,7 @@ async function llmGrade(lesson: BookTutorLesson, answer: string): Promise<{ isCo
       user: `${practiceNote}
 
 LESSON: ${lesson.title}
-KIND: ${lesson.kind || 'teach'}
+KIND: ${lesson.stepType || lesson.kind || 'teach'}
 UI: ${resolveUiType(lesson)}
 LANGUAGE: ${lesson.language || ''}
 EXPLANATION: ${lesson.explanation.slice(0, 1400)}
