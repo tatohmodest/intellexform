@@ -15,9 +15,9 @@ export type ParsedBook = {
 /** Original file is held in RAM only, then discarded. 80 MB covers most 4,000-page text PDFs. */
 export const BOOK_TUTOR_MAX_BYTES = 80 * 1024 * 1024;
 export const BOOK_TUTOR_MAX_PAGES = 4000;
-export const BOOK_TUTOR_MAX_CHAPTERS = 160;
+export const BOOK_TUTOR_MAX_CHAPTERS = 240;
 /** In-memory cap per chapter while generating lessons — never persisted. */
-export const BOOK_TUTOR_CHAPTER_CHARS = 10_000;
+export const BOOK_TUTOR_CHAPTER_CHARS = 24_000;
 
 const CHAPTER_HEADING =
   /^(?:#{1,2}\s+|(?:chapter|part|unit|section|lesson|module)\s+(?:\d+|[ivxlcdm]+)[.:)\s-]+|\d+\.\s+[A-Z])/i;
@@ -134,22 +134,53 @@ export function splitIntoChapters(raw: string, fallbackTitle = 'Book'): ParsedCh
   return mergeChapters(chunks, BOOK_TUTOR_MAX_CHAPTERS);
 }
 
-function mergeChapters(chapters: ParsedChapter[], max: number): ParsedChapter[] {
+/** Keep coverage across a long book instead of merging then truncating (which threw 600-page text away). */
+function thinChapters(chapters: ParsedChapter[], max: number): ParsedChapter[] {
   if (chapters.length <= max) return chapters;
-  const group = Math.ceil(chapters.length / max);
   const out: ParsedChapter[] = [];
-  for (let i = 0; i < chapters.length; i += group) {
-    const slice = chapters.slice(i, i + group);
+  const seen = new Set<number>();
+  for (let i = 0; i < max; i++) {
+    const idx = Math.round((i * (chapters.length - 1)) / Math.max(1, max - 1));
+    if (seen.has(idx)) continue;
+    seen.add(idx);
+    const ch = chapters[idx];
     out.push({
       id: slugChapter(out.length),
-      title: slice[0].title,
-      markdown: slice
-        .map((c) => c.markdown)
-        .join('\n\n')
-        .slice(0, BOOK_TUTOR_CHAPTER_CHARS),
+      title: ch.title,
+      markdown: ch.markdown.slice(0, BOOK_TUTOR_CHAPTER_CHARS),
     });
   }
   return out;
+}
+
+function mergeChapters(chapters: ParsedChapter[], max: number): ParsedChapter[] {
+  return thinChapters(chapters, max);
+}
+
+function flushSized(buf: string, title: string, fallbackTitle: string, n: number): { chapter: ParsedChapter | null; rest: string } {
+  const markdown = buf.trim();
+  if (markdown.length < 80) return { chapter: null, rest: '' };
+  if (markdown.length <= BOOK_TUTOR_CHAPTER_CHARS) {
+    return {
+      chapter: {
+        id: slugChapter(n),
+        title: (title || firstTitle(markdown, `${fallbackTitle} · ${n + 1}`)).slice(0, 120),
+        markdown,
+      },
+      rest: '',
+    };
+  }
+  let cut = markdown.lastIndexOf('\n\n', BOOK_TUTOR_CHAPTER_CHARS);
+  if (cut < BOOK_TUTOR_CHAPTER_CHARS * 0.55) cut = markdown.lastIndexOf('. ', BOOK_TUTOR_CHAPTER_CHARS);
+  if (cut < BOOK_TUTOR_CHAPTER_CHARS * 0.55) cut = BOOK_TUTOR_CHAPTER_CHARS;
+  return {
+    chapter: {
+      id: slugChapter(n),
+      title: (title || firstTitle(markdown, `${fallbackTitle} · ${n + 1}`)).slice(0, 120),
+      markdown: markdown.slice(0, cut + 1).trim(),
+    },
+    rest: markdown.slice(cut + 1).trim(),
+  };
 }
 
 /** Build chapters from PDF pages without concatenating the whole book into one string. */
@@ -159,19 +190,18 @@ export function chaptersFromPages(pages: string[], fallbackTitle: string): Parse
   let buf = '';
 
   const flush = () => {
-    const markdown = buf.trim();
-    if (markdown.length < 80) {
-      buf = '';
-      title = '';
-      return;
-    }
-    chapters.push({
-      id: slugChapter(chapters.length),
-      title: (title || firstTitle(markdown, `${fallbackTitle} · ${chapters.length + 1}`)).slice(0, 120),
-      markdown: markdown.slice(0, BOOK_TUTOR_CHAPTER_CHARS),
-    });
-    title = '';
+    let rest = buf;
+    let heading = title;
     buf = '';
+    title = '';
+    while (rest.trim().length >= 80) {
+      const next = flushSized(rest, heading, fallbackTitle, chapters.length);
+      if (next.chapter) chapters.push(next.chapter);
+      rest = next.rest;
+      heading = '';
+      if (!next.chapter) break;
+    }
+    if (rest.trim().length) buf = rest;
   };
 
   for (const rawPage of pages) {
@@ -182,19 +212,49 @@ export function chaptersFromPages(pages: string[], fallbackTitle: string): Parse
     if (isHead && buf.length > 400) flush();
     if (isHead && !title) title = firstLine.replace(/^#+\s*/, '');
     buf = buf ? `${buf}\n\n${page}` : page;
-    if (buf.length > BOOK_TUTOR_CHAPTER_CHARS + 2000) flush();
+    if (buf.length > BOOK_TUTOR_CHAPTER_CHARS) flush();
   }
   flush();
   if (!chapters.length) return splitIntoChapters(pages.join('\n\n'), fallbackTitle);
   return mergeChapters(chapters, BOOK_TUTOR_MAX_CHAPTERS);
 }
 
+type PdfTextItem = { str?: string; hasEOL?: boolean };
+
 async function extractPdfPages(buffer: Buffer): Promise<{ pages: string[]; totalPages: number }> {
-  const { extractText, getDocumentProxy } = await import('unpdf');
-  const pdf = await getDocumentProxy(new Uint8Array(buffer));
-  const result = await extractText(pdf, { mergePages: false });
-  const pages = (Array.isArray(result.text) ? result.text : [String(result.text || '')]).map((p) => String(p || ''));
-  return { pages, totalPages: result.totalPages || pages.length };
+  const { getDocumentProxy } = await import('unpdf');
+  const pdf = (await getDocumentProxy(new Uint8Array(buffer))) as {
+    numPages: number;
+    getPage: (n: number) => Promise<{
+      getTextContent: () => Promise<{ items: PdfTextItem[] }>;
+      cleanup: () => void;
+    }>;
+    destroy?: () => Promise<unknown>;
+    cleanup?: () => Promise<unknown>;
+  };
+  const totalPages = Number(pdf.numPages || 0);
+  const pages: string[] = [];
+  try {
+    // Sequential pages — unpdf's extractText Promise.all's every page and OOMs/timeouts on ~600pp.
+    for (let n = 1; n <= totalPages; n++) {
+      const page = await pdf.getPage(n);
+      try {
+        const content = await page.getTextContent();
+        const text = (content.items as PdfTextItem[])
+          .map((item) => (item.str || '') + (item.hasEOL ? '\n' : ''))
+          .join('')
+          .replace(/[ \t]+\n/g, '\n')
+          .trim();
+        pages.push(text);
+      } finally {
+        page.cleanup();
+      }
+    }
+  } finally {
+    await pdf.destroy?.().catch(() => {});
+    await pdf.cleanup?.().catch(() => {});
+  }
+  return { pages, totalPages };
 }
 
 async function extractDocx(buffer: Buffer): Promise<string> {

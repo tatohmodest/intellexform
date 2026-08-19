@@ -9,6 +9,14 @@ import type { ParsedChapter } from '@/lib/learn/bookParse';
 
 export type LessonKind = 'teach' | 'practice';
 
+export type TutorCheck = {
+  id: string;
+  prompt: string;
+  placement: 'mid' | 'end';
+  expected: boolean;
+  hint: string;
+};
+
 export type BuiltLesson = {
   id: string;
   chapterId: string;
@@ -25,6 +33,8 @@ export type BuiltLesson = {
   practiceTask: string;
   note: string;
   watchOut: string;
+  analogy: string;
+  checks: TutorCheck[];
 };
 
 const PRACTICE_RE =
@@ -142,30 +152,24 @@ function unitsFromChapters(chapters: ParsedChapter[]): SourceUnit[] {
   };
 
   const chars = chapters.reduce((n, c) => n + c.markdown.length, 0);
-  const target = clamp(Math.max(chapters.length, Math.round(chars / 1400) || 12), 8, 72);
-  let size = 1400;
+  const target = clamp(Math.max(chapters.length, Math.round(chars / 1800) || 12), 8, 96);
+  let size = 1600;
   let raw = collect(size);
   while (raw.length < Math.min(target, 18) && size > 420) {
     size -= 200;
     raw = collect(size);
   }
   if (!raw.length) return [];
-  if (raw.length <= 72) return raw;
-  const group = Math.ceil(raw.length / 72);
-  const merged: SourceUnit[] = [];
-  for (let i = 0; i < raw.length; i += group) {
-    const slice = raw.slice(i, i + group);
-    merged.push({
-      chapterId: slice[0].chapterId,
-      chapterTitle: slice[0].chapterTitle,
-      kind: slice.some((s) => s.kind === 'practice') ? 'practice' : 'teach',
-      text: slice
-        .map((s) => s.text)
-        .join('\n\n')
-        .slice(0, 2200),
-    });
+  if (raw.length <= 96) return raw;
+  const sampled: SourceUnit[] = [];
+  const seen = new Set<number>();
+  for (let i = 0; i < 96; i++) {
+    const idx = Math.round((i * (raw.length - 1)) / 95);
+    if (seen.has(idx)) continue;
+    seen.add(idx);
+    sampled.push(raw[idx]);
   }
-  return merged.slice(0, 72);
+  return sampled;
 }
 
 function pickConcrete(text: string): { snippet: string; number: string | null } {
@@ -247,16 +251,82 @@ function tutorExplanation(unit: SourceUnit, kws: string[]): string {
     .join('\n');
   const code = extractCodeish(unit.text);
   return [
-    `## Why this matters`,
-    `In **${unit.chapterTitle}**, the move is **${topic}** — not a slogan. The book’s claim, in one line: ${lead}`,
+    `## What I need you to see`,
+    `I am teaching **${unit.chapterTitle}** the way the writer meant it — not by recopying the page. Hold this: ${lead}`,
     `## How it works`,
     rest || `Keep **${topic}** distinct from **${other}**. If you mix them, the rest of this stretch stops making sense.`,
     code,
-    `## Tutor take`,
-    `If you can use **${topic}** on a tiny case without looking back, you understood this page. **${other}** is the thing sitting beside it — name both.`,
   ]
     .filter(Boolean)
     .join('\n\n');
+}
+
+function inventedAnalogy(kws: string[], index: number, chapterTitle: string): string {
+  const a = kws[0] || 'this idea';
+  const b = kws[1] || 'the next piece';
+  const bank = [
+    `**${a}** is like a labelled drawer: you do not search the whole room; you open the right drawer. **${b}** is what belongs in that drawer. That is the shape of “${chapterTitle}”.`,
+    `Think of a kitchen recipe. **${a}** is the step you cannot skip; **${b}** is the ingredient that step uses. Same move as this stretch of the book.`,
+    `A lock and a key: **${a}** is the key turning; **${b}** is the bolt moving. One without the other looks busy and does nothing. That is “${chapterTitle}”.`,
+  ];
+  return bank[index % bank.length];
+}
+
+function makeChecks(unit: SourceUnit, kws: string[], index: number): TutorCheck[] {
+  const topic = kws[0] || 'this idea';
+  const other = kws[1] || 'the next idea';
+  const midYes = index % 2 === 0;
+  const endYes = index % 3 !== 0;
+  return [
+    {
+      id: `${unit.chapterId}_mid_${index + 1}`,
+      placement: 'mid',
+      prompt: midYes
+        ? `Still with me? Is **${topic}** something you actually use in “${unit.chapterTitle}”, not just a label?`
+        : `Still with me? Can you skip **${topic}** in “${unit.chapterTitle}” and still do the rest the same way?`,
+      expected: midYes,
+      hint: midYes
+        ? `Yes — **${topic}** is the move this stretch is teaching, not decoration.`
+        : `No — if you skip **${topic}**, the rest of this stretch falls apart.`,
+    },
+    {
+      id: `${unit.chapterId}_end_${index + 1}`,
+      placement: 'end',
+      prompt: endYes
+        ? `After that analogy: if you can point to **${topic}** in a tiny real case, have you understood this step?`
+        : `After that analogy: are **${topic}** and **${other}** the same thing with two names?`,
+      expected: endYes,
+      hint: endYes
+        ? `Yes — being able to point at **${topic}** in a real case is the test.`
+        : `No — keep **${topic}** and **${other}** distinct. The written check will ask you to.`,
+    },
+  ];
+}
+
+function normalizeChecks(
+  raw: LlmLesson['checks'],
+  fallback: TutorCheck[],
+  unit: SourceUnit,
+  index: number,
+): TutorCheck[] {
+  const items = Array.isArray(raw) ? raw : [];
+  const parsed: TutorCheck[] = items
+    .map((c, i) => {
+      const prompt = String(c.prompt || '').trim();
+      if (prompt.length < 8) return null;
+      const placement: 'mid' | 'end' = c.placement === 'end' || i === 1 ? 'end' : 'mid';
+      return {
+        id: String(c.id || `${unit.chapterId}_${placement}_${index + 1}`).slice(0, 80),
+        prompt: prompt.slice(0, 280),
+        placement,
+        expected: Boolean(c.expected),
+        hint: String(c.hint || fallback[i]?.hint || 'Look back at the last paragraph.').slice(0, 400),
+      } satisfies TutorCheck;
+    })
+    .filter((c): c is TutorCheck => Boolean(c));
+  const mid = parsed.find((c) => c.placement === 'mid') || fallback[0];
+  const end = parsed.find((c) => c.placement === 'end') || parsed.find((c) => c.placement !== 'mid') || fallback[1];
+  return [mid, end];
 }
 
 function ensureStyledExplanation(text: string, title: string): string {
@@ -264,7 +334,7 @@ function ensureStyledExplanation(text: string, title: string): string {
   if (/^##\s/m.test(trimmed)) return trimmed;
   const parts = trimmed.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
   if (parts.length >= 2) {
-    return `## Why this matters\n\n${parts[0]}\n\n## How it works\n\n${parts.slice(1).join('\n\n')}`;
+    return `## What I need you to see\n\n${parts[0]}\n\n## How it works\n\n${parts.slice(1).join('\n\n')}`;
   }
   return `## ${title}\n\n${trimmed}`;
 }
@@ -372,6 +442,8 @@ function heuristicLesson(unit: SourceUnit, index: number): BuiltLesson {
     practiceTask: unit.kind === 'practice' ? practiceTaskFrom(unit.text) : '',
     note: noteFrom(unit, kws),
     watchOut: watchOutFrom(unit.text, kws),
+    analogy: inventedAnalogy(kws, index, unit.chapterTitle),
+    checks: makeChecks(unit, kws, index),
     question: q.question,
     criteria: q.criteria,
     keywords: kws,
@@ -391,6 +463,14 @@ type LlmLesson = {
   keywords?: string[];
   note?: string;
   watchOut?: string;
+  analogy?: string;
+  checks?: Array<{
+    id?: string;
+    prompt?: string;
+    placement?: string;
+    expected?: boolean;
+    hint?: string;
+  }>;
 };
 
 function ensurePracticeQuestion(question: string, chapterTitle: string): string {
@@ -409,21 +489,23 @@ async function llmLessonsForBatch(units: SourceUnit[], startIndex: number): Prom
     .join('\n\n----\n\n');
   const raw = await openaiJsonCompletion({
     temperature: 0.65,
-    system: `You are an InTelleX book tutor standing next to the learner. You teach THIS stretch as if you wrote a tutorial page for it.
+    system: `You ARE the author of this book, sitting next to the learner. Impersonate the writer: same intent, spoken teaching, not a photocopy of the page.
 Return JSON only: {"lessons":[...]}.
 One lesson object per UNIT, same order, keys:
-unit (number), title, kind ("teach"|"practice"), explanation, example, keypoints (3 short strings), practiceTask, question, criteria, keywords (3-8), note, watchOut.
+unit (number), title, kind ("teach"|"practice"), explanation, analogy, example, keypoints (3 short strings), practiceTask, question, criteria, keywords (3-8), note, watchOut, checks (array of 2).
 
 Hard rules:
-- You ARE the tutor. Teach in your own words. Do not dump the unit.
-- explanation: markdown with ## Why this matters and ## How it works. Short paragraphs, a bullet list, and a fenced code block ONLY if the book is showing a command or snippet.
-- example: invent a concrete worked illustration (named person, number, file, scene, or tiny snippet) from the ideas — even if the book gave none. Never say "hold onto these keywords". Never list keywords as the sample.
-- note: one tutor aside (1-2 sentences).
-- watchOut: the mix-up a beginner will make (1-2 sentences).
-- question: unique to THIS unit and must mention a specific term from it. NEVER ask "what is the main idea of this section/chapter". Mix types: why it matters, invent an example, contrast two terms, apply it tomorrow, catch a mistake, teach-back.
-- kind=practice ONLY when the book actually told the reader to try, download, install, run, open, or do a lab. Then practiceTask is numbered steps they must really do, and question asks them to paste the result/output/what they saw.
+- You cannot show the whole book. Teach only what is relevant in this stretch.
+- explanation: markdown with ## What I need you to see and ## How it works. 2–4 short paragraphs in the writer's voice. Code fence ONLY if the book is showing a command or snippet.
+- analogy: one everyday comparison (kitchen, lock, map, sports, drawer) that carries the idea. This is shown AFTER the first yes/no, at the bottom of the teach beat.
+- checks: exactly 2 objects {id, prompt, placement ("mid"|"end"), expected (boolean), hint}.
+  mid = after the explanation, before the analogy. end = after the analogy, before the written question.
+  expected true means Yes is the correct click. Mix yes-correct and no-correct. Prompts must be answerable with Yes or No.
+- example: invent a concrete worked illustration from the ideas even if the book gave none. Never "hold onto these keywords".
+- question: YOUR written check after both yes/no clicks. Unique. NEVER "main idea of this section/chapter".
+- kind=practice ONLY when the book told the reader to try, download, install, run, open, or do a lab. Then practiceTask is numbered real steps, and question asks them to paste what they got.
 - If the book did not ask them to do a task, kind must be teach and practiceTask "".`,
-    user: `Write one tutor lesson per unit. Each question in this batch must be different.\n\n${packed}`,
+    user: `Write one author-voiced tutor lesson per unit. Each written question in this batch must be different.\n\n${packed}`,
   });
   const parsed = parseJsonObject<{ lessons?: LlmLesson[] }>(raw);
   const items = Array.isArray(parsed?.lessons) ? parsed!.lessons : [];
@@ -468,6 +550,8 @@ Hard rules:
       practiceTask: kind === 'practice' ? String(item.practiceTask || practiceTaskFrom(unit.text)).slice(0, 1200) : '',
       note: String(item.note || fallback.note).slice(0, 400),
       watchOut: String(item.watchOut || fallback.watchOut).slice(0, 400),
+      analogy: String(item.analogy || fallback.analogy).slice(0, 900),
+      checks: normalizeChecks(item.checks, fallback.checks, unit, startIndex + i),
       question: qFinal.slice(0, 500),
       criteria: String(item.criteria || fallback.criteria).slice(0, 700),
       keywords: kws,
@@ -497,6 +581,8 @@ function polishLesson(lesson: BuiltLesson, index: number): BuiltLesson {
     keypoints: lesson.keypoints.filter(Boolean).length ? lesson.keypoints : fallback.keypoints,
     note: lesson.note || fallback.note,
     watchOut: lesson.watchOut || fallback.watchOut,
+    analogy: lesson.analogy || fallback.analogy,
+    checks: lesson.checks?.length >= 2 ? lesson.checks.slice(0, 2) : fallback.checks,
   };
 }
 
@@ -523,7 +609,10 @@ function dedupeQuestions(lessons: BuiltLesson[]): BuiltLesson[] {
   });
 }
 
-export async function buildCurriculum(chapters: ParsedChapter[]): Promise<{
+export async function buildCurriculum(
+  chapters: ParsedChapter[],
+  opts?: { deadlineMs?: number },
+): Promise<{
   lessons: BuiltLesson[];
   engine: 'llm' | 'heuristic' | 'mixed';
 }> {
@@ -534,12 +623,14 @@ export async function buildCurriculum(chapters: ParsedChapter[]): Promise<{
   let llmBatches = 0;
   let heuristicCount = 0;
   const batchSize = 5;
-  const llmBatchBudget = isLLMConfigured() ? 12 : 0;
+  const huge = units.length > 40 || chapters.reduce((n, c) => n + c.markdown.length, 0) > 220_000;
+  const llmBatchBudget = isLLMConfigured() ? (huge ? 4 : 8) : 0;
 
   for (let i = 0; i < units.length; i += batchSize) {
     const batch = units.slice(i, i + batchSize);
     let made: BuiltLesson[] | null = null;
-    if (llmBatches < llmBatchBudget) {
+    const timeLeft = opts?.deadlineMs ? opts.deadlineMs - Date.now() : 120_000;
+    if (llmBatches < llmBatchBudget && timeLeft > 12_000) {
       try {
         made = await llmLessonsForBatch(batch, lessons.length);
         if (made?.length) llmBatches += 1;
@@ -554,7 +645,7 @@ export async function buildCurriculum(chapters: ParsedChapter[]): Promise<{
     lessons.push(...made);
   }
 
-  const unique = dedupeQuestions(lessons).slice(0, 72);
+  const unique = dedupeQuestions(lessons).slice(0, 96);
   const engine = llmBatches && heuristicCount ? 'mixed' : llmBatches ? 'llm' : 'heuristic';
   return { lessons: unique, engine };
 }

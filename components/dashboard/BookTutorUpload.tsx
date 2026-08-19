@@ -18,7 +18,7 @@ export default function BookTutorUpload() {
       return;
     }
     setBusy(true);
-    setMsg('Reading the book and building your tutor path…');
+        setMsg('Studying the book and writing your tutor path. A ~600 page text PDF can take a minute…');
     try {
       const body = new FormData();
       body.set('file', file);
@@ -42,9 +42,9 @@ export default function BookTutorUpload() {
       <h2 className="font-display text-[22px]">Bring your own book</h2>
       <p className="mt-1 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
         Upload a copy you own (PDF, EPUB, DOCX, or text). We never save the file — it is read in
-        memory, turned into a compact tutor path, then discarded. Text PDFs up to about 4,000 pages
-        work; scanned image PDFs do not. Re-upload a title to rebuild a fuller path with new
-        examples and checks.
+        memory, studied into a compact tutor path (the writer sitting with the learner), then
+        discarded. Long text books (~600 pages and up) work; scanned image PDFs do not. Re-upload
+        a title to rebuild the path.
       </p>
       <input
         value={title}
