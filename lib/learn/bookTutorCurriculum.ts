@@ -204,11 +204,10 @@ export function lessonNeedsCheck(lesson: {
   return true;
 }
 
-function kindFromStep(stepType: LessonStepType, interaction: boolean): LessonKind {
+function kindFromStep(stepType: LessonStepType, _interaction: boolean): LessonKind {
   if (stepType === 'introduction') return 'orient';
   if (stepType === 'guided_practice') return 'practice';
-  if (interaction) return 'teach';
-  return stepType === 'assessment' ? 'teach' : stepType === 'introduction' ? 'orient' : 'teach';
+  return 'teach';
 }
 
 function normalizeStepType(raw: unknown, fallback: LessonStepType): LessonStepType {
