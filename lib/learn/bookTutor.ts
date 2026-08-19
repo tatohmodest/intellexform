@@ -20,6 +20,14 @@ import { buildCurriculum } from '@/lib/learn/bookTutorCurriculum';
 export type BookTutorPhase = 'teaching' | 'quiz' | 'passed' | 'complete';
 export type BookTutorLessonKind = 'teach' | 'practice';
 
+export type BookTutorCheck = {
+  id: string;
+  prompt: string;
+  placement: 'mid' | 'end';
+  expected: boolean;
+  hint: string;
+};
+
 export type BookTutorLesson = {
   id: string;
   chapterId: string;
@@ -36,6 +44,8 @@ export type BookTutorLesson = {
   practiceTask?: string;
   note?: string;
   watchOut?: string;
+  analogy?: string;
+  checks?: BookTutorCheck[];
 };
 
 export type BookTutorChapterOutline = { id: string; title: string };
@@ -88,6 +98,7 @@ export type BookTutorProgressDoc = {
   lastFeedback: string;
   lastCorrect: boolean | null;
   attemptsOnCurrent: number;
+  checkpointPassed: number;
   updatedAt: Date;
   createdAt: Date;
 };
@@ -105,6 +116,8 @@ export type PublicLesson = {
   practiceTask: string;
   note: string;
   watchOut: string;
+  analogy: string;
+  checks: Array<{ id: string; prompt: string; placement: 'mid' | 'end' }>;
   index: number;
   total: number;
 };
@@ -187,6 +200,17 @@ function publicLesson(lessons: BookTutorLesson[], index: number): PublicLesson |
     practiceTask: String(lesson.practiceTask || ''),
     note: String(lesson.note || ''),
     watchOut: String(lesson.watchOut || ''),
+    analogy: String(lesson.analogy || ''),
+    checks: Array.isArray(lesson.checks)
+      ? lesson.checks
+          .filter((c) => c && c.prompt)
+          .slice(0, 2)
+          .map((c) => ({
+            id: String(c.id),
+            prompt: String(c.prompt),
+            placement: c.placement === 'end' ? 'end' : 'mid',
+          }))
+      : [],
     index,
     total: lessons.length,
   };
@@ -251,6 +275,7 @@ export async function getProgress(userId: string, pathId: string): Promise<BookT
     lastFeedback: '',
     lastCorrect: null,
     attemptsOnCurrent: 0,
+    checkpointPassed: 0,
     createdAt: now,
     updatedAt: now,
   };
@@ -304,6 +329,7 @@ export async function getLearnerSession(userId: string, pathId: string) {
       lastFeedback: progress.lastFeedback,
       lastCorrect: progress.lastCorrect,
       attemptsOnCurrent: progress.attemptsOnCurrent,
+      checkpointPassed: progress.checkpointPassed || 0,
     },
     lesson: progress.phase === 'complete' ? null : publicLesson(path.lessons, idx),
   };
@@ -340,7 +366,7 @@ export async function createPathFromUpload(opts: {
   } finally {
     opts.buffer.fill(0);
   }
-  const { lessons, engine } = await buildCurriculum(parsed.chapters);
+  const { lessons, engine } = await buildCurriculum(parsed.chapters, { deadlineMs: Date.now() + 110_000 });
   if (!lessons.length) throw new BookTutorError('Could not turn that book into lessons.');
   const chapterOutline = outlineOf(parsed.chapters);
   for (const ch of parsed.chapters) ch.markdown = '';
@@ -406,7 +432,9 @@ export async function createOrGetPathFromLibraryBook(opts: {
             readable.map((c) => `# ${c.title}\n\n${c.markdown}`).join('\n\n'),
             book.title,
           );
-  const { lessons, engine } = await buildCurriculum(chapters.length ? chapters : readable);
+  const { lessons, engine } = await buildCurriculum(chapters.length ? chapters : readable, {
+    deadlineMs: Date.now() + 110_000,
+  });
   if (!lessons.length) throw new BookTutorError('Could not turn this book into lessons.');
   try {
     return await savePath({
@@ -498,6 +526,57 @@ STUDENT ANSWER: ${answer.slice(0, 2000)}`,
   }
 }
 
+function checksOf(lesson: BookTutorLesson): BookTutorCheck[] {
+  return Array.isArray(lesson.checks) ? lesson.checks.filter((c) => c && c.prompt).slice(0, 2) : [];
+}
+
+export async function submitCheckpoint(opts: {
+  userId: string;
+  pathId: string;
+  checkId: string;
+  yes: boolean;
+}) {
+  const path = await getPath(opts.pathId);
+  if (!path) throw new BookTutorError('Book tutor not found.', 404);
+  if (!(await canAccessPath(opts.userId, path))) throw new BookTutorError('You do not have access to this book tutor.', 403);
+  if (path.status !== 'ready') throw new BookTutorError('This tutor is not ready yet.', 409);
+  const progress = await getProgress(opts.userId, path.id);
+  if (progress.phase === 'complete' || progress.phase === 'passed') {
+    throw new BookTutorError('This step is already open for the written check.', 400);
+  }
+  const lesson = path.lessons[progress.currentLessonIndex];
+  if (!lesson) throw new BookTutorError('No lesson to check.', 400);
+  const checks = checksOf(lesson);
+  const passed = progress.checkpointPassed || 0;
+  if (passed >= checks.length) {
+    return { isCorrect: true, feedback: 'On to the written check.', checkpointPassed: passed, checksTotal: checks.length };
+  }
+  const current = checks[passed];
+  if (!current || current.id !== opts.checkId) {
+    throw new BookTutorError('That is not the current yes/no yet.', 400);
+  }
+  const isCorrect = opts.yes === current.expected;
+  const db = await getDb();
+  const nextPassed = isCorrect ? passed + 1 : passed;
+  await db.collection('book_tutor_progress').updateOne(
+    { userId: opts.userId, pathId: path.id },
+    {
+      $set: {
+        checkpointPassed: nextPassed,
+        lastFeedback: isCorrect && nextPassed >= checks.length ? '' : isCorrect ? 'Good — keep going.' : current.hint,
+        lastCorrect: isCorrect ? progress.lastCorrect : false,
+        updatedAt: new Date(),
+      },
+    },
+  );
+  return {
+    isCorrect,
+    feedback: isCorrect ? 'Good — keep going.' : current.hint,
+    checkpointPassed: nextPassed,
+    checksTotal: checks.length,
+  };
+}
+
 export async function submitAnswer(opts: { userId: string; pathId: string; answer: string }) {
   const path = await getPath(opts.pathId);
   if (!path) throw new BookTutorError('Book tutor not found.', 404);
@@ -507,6 +586,10 @@ export async function submitAnswer(opts: { userId: string; pathId: string; answe
   if (progress.phase === 'complete') throw new BookTutorError('You already finished this book.', 400);
   const lesson = path.lessons[progress.currentLessonIndex];
   if (!lesson) throw new BookTutorError('No lesson to grade.', 400);
+  const needed = checksOf(lesson).length;
+  if ((progress.checkpointPassed || 0) < needed) {
+    throw new BookTutorError('Click the yes/no checks first — then the written question unlocks.', 400);
+  }
   const answer = opts.answer.trim();
   if (answer.length < 4) throw new BookTutorError('Type an answer before submitting.', 400);
 
@@ -561,6 +644,7 @@ export async function advanceLesson(opts: { userId: string; pathId: string }) {
         lastFeedback: complete ? 'You finished this book tutor.' : '',
         lastCorrect: complete ? true : null,
         attemptsOnCurrent: 0,
+        checkpointPassed: 0,
         updatedAt: new Date(),
       },
     },
