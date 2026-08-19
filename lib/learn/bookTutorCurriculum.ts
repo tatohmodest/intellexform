@@ -305,7 +305,7 @@ function normalizeChecks(
   index: number,
 ): TutorCheck[] {
   const items = Array.isArray(raw) ? raw : [];
-  const parsed: TutorCheck[] = items
+  const parsed = items
     .map((c, i) => {
       const prompt = String(c.prompt || '').trim();
       if (prompt.length < 8) return null;
@@ -314,7 +314,7 @@ function normalizeChecks(
         id: String(c.id || `${unit.chapterId}_${placement}_${index + 1}`).slice(0, 80),
         prompt: prompt.slice(0, 280),
         placement,
-        expected: true,
+        expected: true as boolean,
         hint: String(c.hint || fallback[i]?.hint || 'Look back at the last paragraph.').slice(0, 400),
       } satisfies TutorCheck;
     })
