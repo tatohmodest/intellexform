@@ -15,8 +15,10 @@ import { getBook, studentCanReadBook } from '@/lib/learn/ecosystem';
 import { isLLMConfigured } from '@/lib/learn/tutor';
 import { openaiJsonCompletion, parseJsonObject } from '@/lib/learn/openaiJson';
 import { parseBookFile, splitIntoChapters, type ParsedChapter, BOOK_TUTOR_CHAPTER_CHARS } from '@/lib/learn/bookParse';
+import { buildCurriculum } from '@/lib/learn/bookTutorCurriculum';
 
 export type BookTutorPhase = 'teaching' | 'quiz' | 'passed' | 'complete';
+export type BookTutorLessonKind = 'teach' | 'practice';
 
 export type BookTutorLesson = {
   id: string;
@@ -29,6 +31,11 @@ export type BookTutorLesson = {
   question: string;
   criteria: string;
   keywords: string[];
+  kind?: BookTutorLessonKind;
+  keypoints?: string[];
+  practiceTask?: string;
+  note?: string;
+  watchOut?: string;
 };
 
 export type BookTutorChapterOutline = { id: string; title: string };
@@ -93,6 +100,11 @@ export type PublicLesson = {
   explanation: string;
   example: string;
   question: string;
+  kind: BookTutorLessonKind;
+  keypoints: string[];
+  practiceTask: string;
+  note: string;
+  watchOut: string;
   index: number;
   total: number;
 };
@@ -138,143 +150,6 @@ function tokenize(text: string): string[] {
     .filter((t) => t.length > 2 && !STOP.has(t));
 }
 
-function keywordsFrom(text: string, limit = 8): string[] {
-  const counts = new Map<string, number>();
-  for (const t of tokenize(text)) counts.set(t, (counts.get(t) || 0) + 1);
-  return [...counts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, limit)
-    .map(([w]) => w);
-}
-
-function firstSentence(text: string): string {
-  const clean = text.replace(/\s+/g, ' ').trim();
-  const m = clean.match(/^.{12,160}?[.!?]/);
-  return (m?.[0] || clean.slice(0, 120)).trim();
-}
-
-function chunkMarkdown(markdown: string, size = 1100): string[] {
-  const paras = markdown.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
-  const out: string[] = [];
-  let buf = '';
-  for (const p of paras) {
-    if ((buf + '\n\n' + p).length > size && buf.length > 280) {
-      out.push(buf.trim());
-      buf = p;
-    } else {
-      buf = buf ? `${buf}\n\n${p}` : p;
-    }
-  }
-  if (buf.trim().length > 80) out.push(buf.trim());
-  return out.slice(0, 6);
-}
-
-function heuristicLessons(chapter: ParsedChapter, startOrder: number, maxParts = 4): BookTutorLesson[] {
-  const parts = chunkMarkdown(chapter.markdown).slice(0, maxParts);
-  return parts.map((part, i) => {
-    const kws = keywordsFrom(part);
-    return {
-      id: `${chapter.id}_${i + 1}`,
-      chapterId: chapter.id,
-      chapterTitle: chapter.title,
-      sortOrder: startOrder + i,
-      title: firstSentence(part.replace(/^#+\s*/gm, '')).slice(0, 90) || `${chapter.title} · ${i + 1}`,
-      explanation: part.slice(0, 1600),
-      example: kws.length
-        ? `Hold onto these ideas from the passage: **${kws.slice(0, 4).join(', ')}**. Try restating them with a situation from your own work or studies.`
-        : 'Find one sentence in this section that you could teach to a classmate in 20 seconds.',
-      question: `In your own words, what is the main idea of “${chapter.title}”${parts.length > 1 ? ` (part ${i + 1})` : ''}?`,
-      criteria: `A good answer names the core idea and uses at least two of: ${kws.slice(0, 6).join(', ') || 'the key terms from the passage'}.`,
-      keywords: kws,
-    };
-  });
-}
-
-type LlmLesson = {
-  title?: string;
-  explanation?: string;
-  example?: string;
-  question?: string;
-  criteria?: string;
-  keywords?: string[];
-};
-
-async function llmLessonsForChapter(chapter: ParsedChapter, startOrder: number): Promise<BookTutorLesson[] | null> {
-  const raw = await openaiJsonCompletion({
-    temperature: 0.35,
-    system:
-      'You turn a book chapter into a step-by-step tutor. Return JSON only. Teach in the tutor’s own words; do not dump the chapter. Keep explanations short. Questions must be answerable from this chapter alone.',
-    user: `Create 2 to 5 micro-lessons from this chapter.
-Each lesson object keys: title, explanation, example, question, criteria, keywords (3-8 strings).
-explanation: 80-180 words, conversational tutor voice.
-example: one concrete illustration.
-question: one short check-for-understanding (not multiple choice).
-criteria: what a correct free-text answer must include.
-
-CHAPTER TITLE: ${chapter.title}
-CHAPTER TEXT:
-${chapter.markdown.slice(0, 8000)}`,
-  });
-  const parsed = parseJsonObject<{ lessons?: LlmLesson[] }>(raw);
-  const items = Array.isArray(parsed?.lessons) ? parsed!.lessons : [];
-  const lessons = items
-    .map((item, i) => {
-      const explanation = String(item.explanation || '').trim();
-      const question = String(item.question || '').trim();
-      if (explanation.length < 40 || question.length < 8) return null;
-      const keywords = Array.isArray(item.keywords)
-        ? item.keywords.map(String).filter(Boolean).slice(0, 10)
-        : keywordsFrom(`${explanation} ${question}`);
-      return {
-        id: `${chapter.id}_${i + 1}`,
-        chapterId: chapter.id,
-        chapterTitle: chapter.title,
-        sortOrder: startOrder + i,
-        title: String(item.title || `${chapter.title} · ${i + 1}`).slice(0, 120),
-        explanation: explanation.slice(0, 2200),
-        example: String(item.example || '').slice(0, 1200),
-        question: question.slice(0, 400),
-        criteria: String(item.criteria || '').slice(0, 600),
-        keywords,
-      } satisfies BookTutorLesson;
-    })
-    .filter((x): x is BookTutorLesson => Boolean(x));
-  return lessons.length ? lessons : null;
-}
-
-async function buildCurriculum(chapters: ParsedChapter[]): Promise<{
-  lessons: BookTutorLesson[];
-  engine: BookTutorPathDoc['engine'];
-}> {
-  const lessons: BookTutorLesson[] = [];
-  let llmCount = 0;
-  let heuristicCount = 0;
-  const llmBudget = isLLMConfigured() ? 6 : 0;
-  const compact = chapters.length > 50;
-  const maxLessons = 240;
-
-  for (const chapter of chapters.slice(0, 160)) {
-    if (lessons.length >= maxLessons) break;
-    let made: BookTutorLesson[] | null = null;
-    if (llmCount < llmBudget) {
-      try {
-        made = await llmLessonsForChapter(chapter, lessons.length);
-        if (made) llmCount += 1;
-      } catch (err) {
-        console.error('book tutor LLM chapter failed:', err);
-      }
-    }
-    if (!made) {
-      made = heuristicLessons(chapter, lessons.length, compact ? 1 : 3);
-      heuristicCount += 1;
-    }
-    lessons.push(...made);
-  }
-
-  const engine = llmCount && heuristicCount ? 'mixed' : llmCount ? 'llm' : 'heuristic';
-  return { lessons: lessons.slice(0, maxLessons), engine };
-}
-
 function chapterCountOf(path: Pick<BookTutorPathDoc, 'chapterOutline' | 'chapters'>): number {
   return path.chapterOutline?.length || path.chapters?.length || 0;
 }
@@ -307,6 +182,11 @@ function publicLesson(lessons: BookTutorLesson[], index: number): PublicLesson |
     explanation: lesson.explanation,
     example: lesson.example,
     question: lesson.question,
+    kind: lesson.kind === 'practice' ? 'practice' : 'teach',
+    keypoints: Array.isArray(lesson.keypoints) ? lesson.keypoints.map(String).filter(Boolean).slice(0, 6) : [],
+    practiceTask: String(lesson.practiceTask || ''),
+    note: String(lesson.note || ''),
+    watchOut: String(lesson.watchOut || ''),
     index,
     total: lessons.length,
   };
@@ -556,6 +436,18 @@ export async function createOrGetPathFromLibraryBook(opts: {
 
 function heuristicGrade(lesson: BookTutorLesson, answer: string): { isCorrect: boolean; feedback: string } {
   const words = tokenize(answer);
+  if (lesson.kind === 'practice') {
+    if (words.length < 8) {
+      return {
+        isCorrect: false,
+        feedback: 'Go do the task, then paste what you actually got — output, a short description of the result, or what changed.',
+      };
+    }
+    return {
+      isCorrect: true,
+      feedback: 'Good — that looks like a real attempt. Hold onto whatever surprised you; the next step will use it.',
+    };
+  }
   if (words.length < 6) {
     return {
       isCorrect: false,
@@ -579,12 +471,17 @@ function heuristicGrade(lesson: BookTutorLesson, answer: string): { isCorrect: b
 
 async function llmGrade(lesson: BookTutorLesson, answer: string): Promise<{ isCorrect: boolean; feedback: string } | null> {
   try {
+    const practiceNote =
+      lesson.kind === 'practice'
+        ? 'This is a hands-on step. Pass if they clearly attempted the task and reported a concrete result (output, error, screen, number). Fail empty slogans or a restated chapter title.'
+        : 'Be fair to paraphrases and invented examples. Fail if they only restate the title, repeat "the main idea", or dodge the question.';
     const raw = await openaiJsonCompletion({
       temperature: 0.2,
-      system:
-        'You grade a short free-text check question for a book tutor. Be fair to paraphrases. JSON only: {"is_correct": boolean, "feedback": string}. Feedback is 1-3 sentences, encouraging, specific. Do not reveal a full model answer if they failed; hint the missing idea.',
+      system: `You grade a short free-text check for a book tutor. ${practiceNote} JSON only: {"is_correct": boolean, "feedback": string}. Feedback is 1-3 sentences, encouraging, specific. If they failed, hint the missing idea without dumping a model answer.`,
       user: `LESSON: ${lesson.title}
+KIND: ${lesson.kind || 'teach'}
 EXPLANATION: ${lesson.explanation.slice(0, 1400)}
+EXAMPLE: ${(lesson.example || '').slice(0, 600)}
 QUESTION: ${lesson.question}
 RUBRIC: ${lesson.criteria}
 STUDENT ANSWER: ${answer.slice(0, 2000)}`,

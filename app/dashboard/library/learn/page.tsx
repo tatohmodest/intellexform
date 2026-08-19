@@ -32,9 +32,10 @@ export default async function BookTutorHubPage() {
         </div>
         <h1 className="font-display text-[32px] leading-tight">Learn a book with AI</h1>
         <p className="mt-2 max-w-[640px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          The original file is never stored. We keep a compact tutor path: short explanations,
-          examples, and check questions — not the PDF. Your place in that path is saved so you can
-          continue later. Text books around 4,000 pages are OK; scanned scans are not.
+          The original file is never stored. We keep a tutor path: explanations, worked examples,
+          try-it steps, and checks — not the PDF. Your place in that path is saved so you can
+          continue later. Older tutors that only had six identical checks need a re-upload to
+          rebuild. Text books around 4,000 pages are OK; scanned scans are not.
         </p>
       </header>
 
