@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { isLLMConfigured } from '@/lib/learn/tutor';
+import { openaiJsonCompletion, parseJsonObject } from '@/lib/learn/openaiJson';
 
 /**
  * Instructor AI - helps draft exam / assignment questions.
@@ -54,40 +55,19 @@ type ("structural"), prompt, points, hint (tip about submitting via Google Drive
     return NextResponse.json({
       questions: scaffold(),
       source: 'scaffold',
-      note: 'OpenAI key not configured - scaffold returned. Edit before publishing.',
+      note: 'Gemini/OpenAI key not configured - scaffold returned. Edit before publishing.',
     });
   }
 
   try {
-    const res = await fetch(
-      `${process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'}/chat/completions`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-          temperature: 0.4,
-          messages: [
-            {
-              role: 'system',
-              content: 'You help InTelleX instructors write assessments. Output JSON only.',
-            },
-            { role: 'user', content: prompt },
-          ],
-        }),
-      },
-    );
-    if (!res.ok) throw new Error(`openai_${res.status}`);
-    const data = await res.json();
-    const text = data.choices?.[0]?.message?.content || '';
-    const start = text.indexOf('[');
-    const end = text.lastIndexOf(']');
-    const json = start >= 0 && end > start ? text.slice(start, end + 1) : text;
-    const questions = JSON.parse(json);
-    if (!Array.isArray(questions)) throw new Error('invalid_ai_shape');
+    const raw = await openaiJsonCompletion({
+      temperature: 0.4,
+      system: 'You help InTelleX instructors write assessments. JSON only: {"questions":[...]}.',
+      user: prompt,
+    });
+    const parsed = parseJsonObject<{ questions?: unknown[] }>(raw);
+    const questions = Array.isArray(parsed?.questions) ? parsed!.questions : null;
+    if (!questions) throw new Error('invalid_ai_shape');
     return NextResponse.json({ questions, source: 'ai' });
   } catch (err) {
     console.error('assessment AI assist', err);

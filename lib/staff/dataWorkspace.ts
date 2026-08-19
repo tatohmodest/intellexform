@@ -1170,33 +1170,18 @@ export async function askDataset(actor: StaffActor, datasetId: string, question:
   });
 
   if (!isLLMConfigured()) {
-    return { answer: local.join(' ') || 'OpenAI is not configured. Use search and filters on the table.', local: true };
+    return { answer: local.join(' ') || 'AI is not configured. Use search and filters on the table.', local: true };
   }
   try {
-    const res = await fetch(`${process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        temperature: 0.2,
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You analyze one InTelleX dataset. Only use the provided stats and sample. Never invent people. If you cannot answer from the data, say so. Stay within this dataset.',
-          },
-          {
-            role: 'user',
-            content: JSON.stringify({ question, dataset: dataset.name, analytics, sample }),
-          },
-        ],
-      }),
+    const { openaiJsonCompletion, parseJsonObject } = await import('@/lib/learn/openaiJson');
+    const raw = await openaiJsonCompletion({
+      temperature: 0.2,
+      system:
+        'You analyze one InTelleX dataset. Only use the provided stats and sample. Never invent people. If you cannot answer from the data, say so. Stay within this dataset. JSON only: {"answer": string}.',
+      user: JSON.stringify({ question, dataset: dataset.name, analytics, sample }),
     });
-    const data = await res.json();
-    const answer = String(data.choices?.[0]?.message?.content || local.join(' '));
+    const parsed = parseJsonObject<{ answer?: string }>(raw);
+    const answer = String(parsed?.answer || local.join(' '));
     return { answer, local: false };
   } catch {
     return { answer: local.join(' ') || 'Could not reach the AI right now.', local: true };

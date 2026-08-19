@@ -233,25 +233,7 @@ function publicLesson(lessons: BookTutorLesson[], index: number): PublicLesson |
     note: String(lesson.note || ''),
     watchOut: String(lesson.watchOut || ''),
     analogy: String(lesson.analogy || ''),
-    checks: Array.isArray(lesson.checks)
-      ? lesson.checks
-          .filter((c) => c && c.prompt)
-          .slice(0, 2)
-          .map((c) => {
-            const placement: 'mid' | 'end' = c.placement === 'end' ? 'end' : 'mid';
-            const raw = String(c.prompt);
-            const trick = c.expected === false || /true or false|is this (statement|claim)|which is (true|false)/i.test(raw);
-            return {
-              id: String(c.id),
-              prompt: trick
-                ? placement === 'end'
-                  ? 'Ready for the written check on this stretch?'
-                  : 'Still with me on this stretch?'
-                : raw,
-              placement,
-            };
-          })
-      : [],
+    checks: [],
     uiType: uiType === 'multiple_choice' && choices.length < 2 ? 'text_input' : uiType,
     language: String(lesson.language || inferLanguage(`${lesson.explanation}\n${lesson.example}`) || ''),
     choices,
@@ -471,8 +453,8 @@ async function finishPathFromUpload(
     const huge =
       (parsed.pageHint || 0) > 160 || parsed.charCount > 160_000 || (parsed.chapters?.length || 0) > 80;
     const { lessons, engine } = await buildCurriculum(parsed.chapters, {
-      skipLlm: huge,
-      deadlineMs: Date.now() + (huge ? 5_000 : 80_000),
+      skipLlm: false,
+      deadlineMs: Date.now() + (huge ? 240_000 : 150_000),
     });
     if (!lessons.length) throw new BookTutorError('Could not turn that book into lessons.');
     const chapterOutline = outlineOf(parsed.chapters);

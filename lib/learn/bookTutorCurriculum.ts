@@ -170,19 +170,19 @@ function unitsFromChapters(chapters: ParsedChapter[]): SourceUnit[] {
   };
 
   const chars = chapters.reduce((n, c) => n + c.markdown.length, 0);
-  const target = clamp(Math.max(chapters.length, Math.round(chars / 1800) || 12), 8, 96);
-  let size = 1600;
+  const target = clamp(Math.max(chapters.length, Math.round(chars / 4500) || 8), 6, 32);
+  let size = 4200;
   let raw = collect(size);
-  while (raw.length < Math.min(target, 18) && size > 420) {
-    size -= 200;
+  while (raw.length < Math.min(target, 10) && size > 1800) {
+    size -= 400;
     raw = collect(size);
   }
   if (!raw.length) return [];
-  if (raw.length <= 96) return raw;
+  if (raw.length <= 32) return raw;
   const sampled: SourceUnit[] = [];
   const seen = new Set<number>();
-  for (let i = 0; i < 96; i++) {
-    const idx = Math.round((i * (raw.length - 1)) / 95);
+  for (let i = 0; i < 32; i++) {
+    const idx = Math.round((i * (raw.length - 1)) / 31);
     if (seen.has(idx)) continue;
     seen.add(idx);
     sampled.push(raw[idx]);
@@ -339,50 +339,17 @@ function inventedAnalogy(kws: string[], index: number, chapterTitle: string): st
   return bank[index % bank.length];
 }
 
-function makeChecks(unit: SourceUnit, kws: string[], index: number): TutorCheck[] {
-  const topic = kws[0] || 'this idea';
-  return [
-    {
-      id: `${unit.chapterId}_mid_${index + 1}`,
-      placement: 'mid',
-      prompt: `Still with me on **${topic}** in “${unit.chapterTitle}”?`,
-      expected: true,
-      hint: `Yes means this stretch is making sense. If not, say what is fuzzy — we will clear it, then ask again.`,
-    },
-    {
-      id: `${unit.chapterId}_end_${index + 1}`,
-      placement: 'end',
-      prompt: `Ready to try the written check on **${topic}**?`,
-      expected: true,
-      hint: `Yes means you can use **${topic}** on a tiny case. If something is still muddy, say what.`,
-    },
-  ];
+function makeChecks(_unit: SourceUnit, _kws: string[], _index: number): TutorCheck[] {
+  return [];
 }
 
 function normalizeChecks(
-  raw: LlmLesson['checks'],
-  fallback: TutorCheck[],
-  unit: SourceUnit,
-  index: number,
+  _raw: unknown,
+  _fallback: TutorCheck[],
+  _unit: SourceUnit,
+  _index: number,
 ): TutorCheck[] {
-  const items = Array.isArray(raw) ? raw : [];
-  const parsed = items
-    .map((c, i) => {
-      const prompt = String(c.prompt || '').trim();
-      if (prompt.length < 8) return null;
-      const placement: 'mid' | 'end' = c.placement === 'end' || i === 1 ? 'end' : 'mid';
-      return {
-        id: String(c.id || `${unit.chapterId}_${placement}_${index + 1}`).slice(0, 80),
-        prompt: prompt.slice(0, 280),
-        placement,
-        expected: true as boolean,
-        hint: String(c.hint || fallback[i]?.hint || 'Look back at the last paragraph.').slice(0, 400),
-      } satisfies TutorCheck;
-    })
-    .filter((c): c is TutorCheck => Boolean(c));
-  const mid = parsed.find((c) => c.placement === 'mid') || fallback[0];
-  const end = parsed.find((c) => c.placement === 'end') || parsed.find((c) => c.placement !== 'mid') || fallback[1];
-  return [mid, end];
+  return [];
 }
 
 function ensureStyledExplanation(text: string, title: string): string {
@@ -554,7 +521,7 @@ async function llmLessonsForBatch(units: SourceUnit[], startIndex: number): Prom
   const packed = units
     .map(
       (u, i) =>
-        `UNIT ${i + 1} [${u.kind}] chapter="${u.chapterTitle}"\n${u.text.slice(0, 1800)}`,
+        `UNIT ${i + 1} [${u.kind}] chapter="${u.chapterTitle}"\n${u.text.slice(0, 4500)}`,
     )
     .join('\n\n----\n\n');
   const raw = await openaiJsonCompletion({
@@ -664,7 +631,7 @@ function polishLesson(lesson: BuiltLesson, index: number): BuiltLesson {
     note: lesson.note || fallback.note,
     watchOut: lesson.watchOut || fallback.watchOut,
     analogy: lesson.analogy || fallback.analogy,
-    checks: lesson.checks?.length >= 2 ? lesson.checks.slice(0, 2) : fallback.checks,
+    checks: [],
     uiType,
     exampleType,
     language,
@@ -709,15 +676,14 @@ export async function buildCurriculum(
   const lessons: BuiltLesson[] = [];
   let llmBatches = 0;
   let heuristicCount = 0;
-  const batchSize = 5;
-  const huge = units.length > 40 || chapters.reduce((n, c) => n + c.markdown.length, 0) > 220_000;
-  const llmBatchBudget =
-    opts?.skipLlm || !isLLMConfigured() ? 0 : huge ? 2 : 8;
+  const batchSize = 6;
+  const huge = units.length > 24 || chapters.reduce((n, c) => n + c.markdown.length, 0) > 400_000;
+  const llmBatchBudget = opts?.skipLlm || !isLLMConfigured() ? 0 : huge ? 8 : 16;
 
   for (let i = 0; i < units.length; i += batchSize) {
     const batch = units.slice(i, i + batchSize);
     let made: BuiltLesson[] | null = null;
-    const timeLeft = opts?.deadlineMs ? opts.deadlineMs - Date.now() : 120_000;
+    const timeLeft = opts?.deadlineMs ? opts.deadlineMs - Date.now() : 180_000;
     if (llmBatches < llmBatchBudget && timeLeft > 12_000) {
       try {
         made = await llmLessonsForBatch(batch, lessons.length);
@@ -741,7 +707,7 @@ export async function buildCurriculum(
         !/^SKIP$/i.test(lesson.title) &&
         !/\b(acknowledg?e?ments?|table of contents|^contents$|copyright|dedication)\b/i.test(lesson.title),
     )
-    .slice(0, 96);
+    .slice(0, 32);
   const engine = llmBatches && heuristicCount ? 'mixed' : llmBatches ? 'llm' : 'heuristic';
   return { lessons: unique, engine };
 }

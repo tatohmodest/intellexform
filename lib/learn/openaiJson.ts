@@ -1,4 +1,5 @@
 import { isLLMConfigured } from '@/lib/learn/tutor';
+import { geminiApiKey, geminiJsonCompletion } from '@/lib/learn/gemini';
 
 export async function openaiJsonCompletion(opts: {
   system: string;
@@ -6,6 +7,9 @@ export async function openaiJsonCompletion(opts: {
   temperature?: number;
 }): Promise<string | null> {
   if (!isLLMConfigured()) return null;
+  if (geminiApiKey()) {
+    return geminiJsonCompletion(opts);
+  }
   const url = `${process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'}/chat/completions`;
   const headers = {
     'Content-Type': 'application/json',
