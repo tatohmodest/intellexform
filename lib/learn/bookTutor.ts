@@ -563,7 +563,7 @@ export async function submitCheckpoint(opts: {
     {
       $set: {
         checkpointPassed: nextPassed,
-        lastFeedback: isCorrect && nextPassed >= checks.length ? '' : isCorrect ? 'Good — keep going.' : current.hint,
+        lastFeedback: isCorrect && nextPassed >= checks.length ? '' : isCorrect ? 'Good — keep going.' : '',
         lastCorrect: isCorrect ? progress.lastCorrect : false,
         updatedAt: new Date(),
       },
@@ -571,10 +571,92 @@ export async function submitCheckpoint(opts: {
   );
   return {
     isCorrect,
-    feedback: isCorrect ? 'Good — keep going.' : current.hint,
+    needsClarify: !isCorrect,
+    feedback: isCorrect
+      ? 'Good — keep going.'
+      : 'Not quite. Tell me what you do not get — then try Yes / No again.',
     checkpointPassed: nextPassed,
     checksTotal: checks.length,
+    checkPrompt: current.prompt,
   };
+}
+
+export async function clarifyCheckpoint(opts: {
+  userId: string;
+  pathId: string;
+  checkId: string;
+  confusion: string;
+}) {
+  const path = await getPath(opts.pathId);
+  if (!path) throw new BookTutorError('Book tutor not found.', 404);
+  if (!(await canAccessPath(opts.userId, path))) throw new BookTutorError('You do not have access to this book tutor.', 403);
+  if (path.status !== 'ready') throw new BookTutorError('This tutor is not ready yet.', 409);
+  const progress = await getProgress(opts.userId, path.id);
+  if (progress.phase === 'complete' || progress.phase === 'passed') {
+    throw new BookTutorError('This step is already open for the written check.', 400);
+  }
+  const lesson = path.lessons[progress.currentLessonIndex];
+  if (!lesson) throw new BookTutorError('No lesson to clarify.', 400);
+  const checks = checksOf(lesson);
+  const current = checks[progress.checkpointPassed || 0];
+  if (!current || current.id !== opts.checkId) {
+    throw new BookTutorError('That is not the current yes/no yet.', 400);
+  }
+  const confusion = opts.confusion.trim();
+  if (confusion.length < 4) throw new BookTutorError('Say what you do not get — a short sentence is enough.', 400);
+
+  let explanation = isLLMConfigured() ? await llmClarify(lesson, current, confusion) : null;
+  if (!explanation) explanation = heuristicClarify(lesson, current, confusion);
+
+  return {
+    explanation,
+    prompt: current.prompt,
+  };
+}
+
+function heuristicClarify(lesson: BookTutorLesson, check: BookTutorCheck, confusion: string): string {
+  const topic = (lesson.keywords || [])[0] || 'this idea';
+  const clip = confusion.replace(/\s+/g, ' ').slice(0, 90);
+  return [
+    `You are stuck on “${clip}”.`,
+    check.hint,
+    lesson.watchOut || `Hold **${topic}** as a thing you *use*, not a label.`,
+    'Read that once more, then try the Yes / No again.',
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
+async function llmClarify(
+  lesson: BookTutorLesson,
+  check: BookTutorCheck,
+  confusion: string,
+): Promise<string | null> {
+  try {
+    const raw = await openaiJsonCompletion({
+      temperature: 0.45,
+      system: `You ARE the author of this book, inside a tiny clarify bubble. The learner clicked No / got the yes-no wrong and will type what they do not get.
+Reply JSON only: {"explanation": string}.
+Rules:
+- 3–5 short sentences. One everyday analogy max.
+- Answer THEIR confusion. Do not recopy the lesson.
+- Do not say whether Yes or No is the correct click.
+- Do not start a long chat or ask follow-up questions besides implying they will retry Yes/No.`,
+      user: `LESSON TITLE: ${lesson.title}
+TEACH: ${lesson.explanation.slice(0, 900)}
+ANALOGY: ${(lesson.analogy || '').slice(0, 400)}
+WATCH OUT: ${(lesson.watchOut || '').slice(0, 240)}
+YES/NO PROMPT: ${check.prompt}
+HINT (do not quote as "the answer"): ${check.hint}
+STUDENT DOES NOT GET: ${confusion.slice(0, 600)}`,
+    });
+    const parsed = parseJsonObject<{ explanation?: string }>(raw);
+    const text = String(parsed?.explanation || '').trim();
+    return text.length >= 24 ? text.slice(0, 700) : null;
+  } catch (err) {
+    console.error('book tutor clarify failed:', err);
+    return null;
+  }
 }
 
 export async function submitAnswer(opts: { userId: string; pathId: string; answer: string }) {
