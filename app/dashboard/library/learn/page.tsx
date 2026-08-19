@@ -33,10 +33,10 @@ export default async function BookTutorHubPage() {
         </div>
         <h1 className="font-display text-[32px] leading-tight">Learn a book with AI</h1>
         <p className="mt-2 max-w-[640px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          The original file is never stored. Locked ebooks and scanned image PDFs will not convert —
-          use an unlocked EPUB or a PDF you can select text in. Large books are studied in the
-          background after you upload. Front matter (contents, thanks, copyright) is skipped so
-          learning starts in the real chapters.
+          The original file is never stored. Learning starts at the real chapters — contents, thanks,
+          copyright, and index are skipped. If the book teaches code, you get a code editor instead of
+          a plain text box. Locked ebooks and scanned image PDFs will not convert. Large books are
+          studied in the background after you upload.
         </p>
       </header>
 
