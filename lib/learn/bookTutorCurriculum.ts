@@ -12,8 +12,6 @@ export type LessonKind = 'teach' | 'practice';
 export type LessonUiType = 'text_input' | 'code_editor' | 'multiple_choice';
 export type LessonExampleType = 'code_snippet' | 'mathematical_formula' | 'real_world_scenario';
 
-export type LessonKind = 'teach' | 'practice';
-
 export type TutorCheck = {
   id: string;
   prompt: string;
