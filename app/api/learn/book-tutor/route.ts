@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, id });
   } catch (err) {
     const status = err instanceof BookTutorError ? err.status : 400;
-    const message = err instanceof Error ? err.message : 'Could not build a tutor from that file.';
+    const message = err instanceof Error ? err.message : 'Could not start a tutor from that file.';
     console.error('book tutor upload failed:', err);
     return NextResponse.json({ error: message }, { status });
   }

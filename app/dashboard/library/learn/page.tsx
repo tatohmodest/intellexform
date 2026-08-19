@@ -32,10 +32,9 @@ export default async function BookTutorHubPage() {
         </div>
         <h1 className="font-display text-[32px] leading-tight">Learn a book with AI</h1>
         <p className="mt-2 max-w-[640px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          The original file is never stored. We study the text and keep a tutor path — the writer
-          teaching in short steps, with analogies, yes/no checks, and a written check. Your place
-          in that path is saved. Older short tutors need a re-upload. Text books around 4,000 pages
-          are OK; scanned scans are not.
+          The original file is never stored. Amazon Kindle .azw / print-replica scans will not
+          convert — use an unlocked EPUB or a PDF you can select text in. Huge books are studied
+          in the background after you upload.
         </p>
       </header>
 

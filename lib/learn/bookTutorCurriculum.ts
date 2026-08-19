@@ -611,7 +611,7 @@ function dedupeQuestions(lessons: BuiltLesson[]): BuiltLesson[] {
 
 export async function buildCurriculum(
   chapters: ParsedChapter[],
-  opts?: { deadlineMs?: number },
+  opts?: { deadlineMs?: number; skipLlm?: boolean },
 ): Promise<{
   lessons: BuiltLesson[];
   engine: 'llm' | 'heuristic' | 'mixed';
@@ -624,7 +624,8 @@ export async function buildCurriculum(
   let heuristicCount = 0;
   const batchSize = 5;
   const huge = units.length > 40 || chapters.reduce((n, c) => n + c.markdown.length, 0) > 220_000;
-  const llmBatchBudget = isLLMConfigured() ? (huge ? 4 : 8) : 0;
+  const llmBatchBudget =
+    opts?.skipLlm || !isLLMConfigured() ? 0 : huge ? 2 : 8;
 
   for (let i = 0; i < units.length; i += batchSize) {
     const batch = units.slice(i, i + batchSize);

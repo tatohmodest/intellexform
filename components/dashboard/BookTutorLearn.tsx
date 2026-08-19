@@ -256,7 +256,7 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
       const res = await fetch(`/api/learn/book-tutor/${session.path.id}`);
       const data = await res.json().catch(() => null);
       if (data?.path) setSession(data);
-    }, 3000);
+    }, 2000);
     return () => window.clearInterval(timer);
   }, [session.path.id, session.path.status]);
 
@@ -390,7 +390,8 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
       <div className="rounded-2xl border border-dashed px-4 py-10 text-center" style={{ borderColor: 'var(--line)' }}>
         <p className="font-display text-[22px]">{session.path.status === 'failed' ? 'Could not build this tutor' : 'Studying the book'}</p>
         <p className="mt-2 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-          {session.path.error || 'The tutor is reading the text and writing a compact teaching path — not storing the file. This can take a minute on a long book.'}
+          {session.path.error ||
+            'Huge Amazon books take a bit. We are reading the text in the background and will open the first step when the tutor path is ready. Unlocked EPUB is the most reliable Amazon format.'}
         </p>
         {session.path.status !== 'failed' ? <Loader2 size={18} className="mx-auto mt-4 animate-spin" /> : null}
       </div>

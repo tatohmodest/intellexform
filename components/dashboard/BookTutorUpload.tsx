@@ -18,17 +18,26 @@ export default function BookTutorUpload() {
       return;
     }
     setBusy(true);
-        setMsg('Studying the book and writing your tutor path. A ~600 page text PDF can take a minute…');
+    setMsg('Uploading — huge Amazon books are studied in the background, not in this click…');
     try {
       const body = new FormData();
       body.set('file', file);
       if (title.trim()) body.set('title', title.trim());
       const res = await fetch('/api/learn/book-tutor', { method: 'POST', body });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Could not build a tutor from that file.');
+      if (res.status === 413) {
+        throw new Error('This host rejected the file as too large. Try the EPUB (usually much smaller) or a text PDF under 40 MB.');
+      }
+      if (!res.ok) throw new Error(data.error || 'Could not start a tutor from that file.');
       router.push(`/dashboard/library/learn/${data.id}`);
     } catch (err) {
-      setMsg(err instanceof Error ? err.message : 'Could not build a tutor from that file.');
+      const raw = err instanceof Error ? err.message : '';
+      const timedOut = /failed to fetch|networkerror|load failed/i.test(raw);
+      setMsg(
+        timedOut
+          ? 'The connection dropped on a very large file. Prefer an unlocked EPUB from Amazon, or a text PDF under 40 MB, then try again.'
+          : raw || 'Could not start a tutor from that file.',
+      );
       setBusy(false);
     }
   }
@@ -41,10 +50,9 @@ export default function BookTutorUpload() {
     >
       <h2 className="font-display text-[22px]">Bring your own book</h2>
       <p className="mt-1 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
-        Upload a copy you own (PDF, EPUB, DOCX, or text). We never save the file — it is read in
-        memory, studied into a compact tutor path (the writer sitting with the learner), then
-        discarded. Long text books (~600 pages and up) work; scanned image PDFs do not. Re-upload
-        a title to rebuild the path.
+        Upload a copy you own (PDF, EPUB, DOCX, or text). We never save the file. Amazon / Kindle
+        .azw and print-replica image PDFs will not work — use an unlocked EPUB or a PDF you can
+        select text in. Huge books are studied in the background after upload.
       </p>
       <input
         value={title}
