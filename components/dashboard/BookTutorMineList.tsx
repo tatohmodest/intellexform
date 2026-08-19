@@ -11,6 +11,7 @@ type MineRow = {
   lessonCount: number;
   isPrivate: boolean;
   engine: string;
+  status?: string;
 };
 
 export default function BookTutorMineList({ rows }: { rows: MineRow[] }) {
@@ -64,7 +65,13 @@ export default function BookTutorMineList({ rows }: { rows: MineRow[] }) {
                 {item.title}
               </Link>
               <p className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                {item.lessonCount ? `${item.lessonCount} steps` : 'Still building…'}
+                {item.status === 'generating'
+                  ? 'Preparing full course — wait until this is ready'
+                  : item.status === 'failed'
+                    ? 'Could not build'
+                    : item.lessonCount
+                      ? `${item.lessonCount} steps`
+                      : 'Ready'}
                 {item.isPrivate ? ' · private' : ''}
               </p>
             </div>

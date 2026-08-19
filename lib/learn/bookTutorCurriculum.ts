@@ -422,7 +422,8 @@ function instructionalChapters(chapters: ParsedChapter[]): ParsedChapter[] {
       c.markdown.trim().length >= 120 &&
       !looksLikeHeadingCatalog(c.markdown) &&
       !isFrontMatter(c.title, c.markdown) &&
-      !isExerciseDump(c.markdown),
+      !isExerciseDump(c.markdown) &&
+      !/^(?:#{1,3}\s+)?(?:contents(?: in detail)?|table of contents)\b/i.test(c.title.replace(/^#+\s*/, '').trim()),
   );
 }
 

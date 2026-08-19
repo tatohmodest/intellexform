@@ -34,8 +34,8 @@ export default async function BookTutorHubPage() {
         <h1 className="font-display text-[32px] leading-tight">Learn a book with AI</h1>
         <p className="mt-2 max-w-[640px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
           The original file is never stored. Front matter and tables of contents are not lessons.
-          The tutor follows real chapters: explain, then example, then a try-it only when the book
-          actually assigned one. Locked ebooks and scanned image PDFs will not convert.
+          After upload, wait until the complete course is ready — then you learn from stored steps.
+          Locked ebooks and scanned image PDFs will not convert.
         </p>
       </header>
 
@@ -77,6 +77,7 @@ export default async function BookTutorHubPage() {
               lessonCount: p.lessonCount,
               isPrivate: p.isPrivate,
               engine: p.engine,
+              status: p.status,
             }))}
           />
         </section>

@@ -41,7 +41,11 @@ export default async function BookTutorSessionPage({ params }: { params: { id: s
       <h1 className="font-display text-[30px] leading-tight">{session.path.title}</h1>
       <p className="mb-8 mt-1 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
         {session.path.authorName ? `with ${session.path.authorName} · ` : ''}
-        {session.path.lessonCount ? `${session.path.lessonCount} tutor steps` : 'Preparing tutor steps'}
+        {session.path.status === 'ready'
+          ? `${session.path.lessonCount} tutor steps`
+          : session.path.status === 'failed'
+            ? 'Could not prepare this course'
+            : 'Preparing the complete course — wait here until it is ready'}
       </p>
       {session.path.canDelete ? (
         <BookTutorDeleteButton pathId={session.path.id} title={session.path.title} />

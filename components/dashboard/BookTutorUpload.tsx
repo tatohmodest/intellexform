@@ -52,7 +52,8 @@ export default function BookTutorUpload() {
       <p className="mt-1 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
         Upload a copy you own (PDF, EPUB, DOCX, or text). We never save the file. Locked ebooks
         (.azw / .mobi) and scanned image PDFs will not work — use an unlocked EPUB or a PDF you
-        can select text in. Large books are studied in the background after upload.
+        can select text in. After upload, wait on the next page until every chapter is stored. You can
+        leave and come back — preparation continues in the background.
       </p>
       <input
         value={title}
