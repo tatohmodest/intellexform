@@ -4,7 +4,7 @@ import { BookTutorError, createOrGetPathFromLibraryBook } from '@/lib/learn/book
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
   const user = getSessionUser();

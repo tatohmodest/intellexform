@@ -5,7 +5,7 @@ import { BookTutorError, createPathFromUpload, listPathsForUser } from '@/lib/le
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export async function GET() {
   const user = getSessionUser();
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   const file = form.get('file');
   if (!(file instanceof File)) return NextResponse.json({ error: 'Choose a PDF, EPUB, DOCX, or text file.' }, { status: 400 });
   if (file.size > BOOK_TUTOR_MAX_BYTES) {
-    return NextResponse.json({ error: 'File is too large (12 MB max).' }, { status: 400 });
+    return NextResponse.json({ error: 'File is too large (80 MB max).' }, { status: 400 });
   }
 
   const title = String(form.get('title') || '').trim();

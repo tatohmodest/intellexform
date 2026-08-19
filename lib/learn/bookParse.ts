@@ -12,8 +12,12 @@ export type ParsedBook = {
   pageHint?: number;
 };
 
-export const BOOK_TUTOR_MAX_BYTES = 12 * 1024 * 1024;
-export const BOOK_TUTOR_MAX_CHARS = 220_000;
+/** Original file is held in RAM only, then discarded. 80 MB covers most 4,000-page text PDFs. */
+export const BOOK_TUTOR_MAX_BYTES = 80 * 1024 * 1024;
+export const BOOK_TUTOR_MAX_PAGES = 4000;
+export const BOOK_TUTOR_MAX_CHAPTERS = 160;
+/** In-memory cap per chapter while generating lessons — never persisted. */
+export const BOOK_TUTOR_CHAPTER_CHARS = 10_000;
 
 const CHAPTER_HEADING =
   /^(?:#{1,2}\s+|(?:chapter|part|unit|section|lesson|module)\s+(?:\d+|[ivxlcdm]+)[.:)\s-]+|\d+\.\s+[A-Z])/i;
@@ -83,7 +87,7 @@ export function splitIntoChapters(raw: string, fallbackTitle = 'Book'): ParsedCh
         chapters.push({
           id: slugChapter(0),
           title: firstTitle(intro, 'Introduction'),
-          markdown: intro.slice(0, 24_000),
+          markdown: intro.slice(0, BOOK_TUTOR_CHAPTER_CHARS),
         });
       }
     }
@@ -95,10 +99,10 @@ export function splitIntoChapters(raw: string, fallbackTitle = 'Book'): ParsedCh
       chapters.push({
         id: slugChapter(chapters.length),
         title: titleLine.slice(0, 120) || `Chapter ${chapters.length + 1}`,
-        markdown: body.slice(0, 24_000),
+        markdown: body.slice(0, BOOK_TUTOR_CHAPTER_CHARS),
       });
     });
-    if (chapters.length) return chapters.slice(0, 40);
+    if (chapters.length) return mergeChapters(chapters, BOOK_TUTOR_MAX_CHAPTERS);
   }
 
   const chunks: ParsedChapter[] = [];
@@ -114,7 +118,7 @@ export function splitIntoChapters(raw: string, fallbackTitle = 'Book'): ParsedCh
     chunks.push({
       id: slugChapter(n),
       title: firstTitle(markdown, `${fallbackTitle} · part ${n + 1}`),
-      markdown: markdown.slice(0, 24_000),
+      markdown: markdown.slice(0, BOOK_TUTOR_CHAPTER_CHARS),
     });
     n += 1;
     buf = '';
@@ -124,19 +128,73 @@ export function splitIntoChapters(raw: string, fallbackTitle = 'Book'): ParsedCh
     buf = buf ? `${buf}\n\n${p}` : p;
   }
   flush();
-  return chunks.length ? chunks.slice(0, 40) : [{ id: 'ch_1', title: fallbackTitle, markdown: text.slice(0, 24_000) }];
+  if (!chunks.length) {
+    return [{ id: 'ch_1', title: fallbackTitle, markdown: text.slice(0, BOOK_TUTOR_CHAPTER_CHARS) }];
+  }
+  return mergeChapters(chunks, BOOK_TUTOR_MAX_CHAPTERS);
 }
 
-async function extractPdf(buffer: Buffer): Promise<{ text: string; pages: number }> {
+function mergeChapters(chapters: ParsedChapter[], max: number): ParsedChapter[] {
+  if (chapters.length <= max) return chapters;
+  const group = Math.ceil(chapters.length / max);
+  const out: ParsedChapter[] = [];
+  for (let i = 0; i < chapters.length; i += group) {
+    const slice = chapters.slice(i, i + group);
+    out.push({
+      id: slugChapter(out.length),
+      title: slice[0].title,
+      markdown: slice
+        .map((c) => c.markdown)
+        .join('\n\n')
+        .slice(0, BOOK_TUTOR_CHAPTER_CHARS),
+    });
+  }
+  return out;
+}
+
+/** Build chapters from PDF pages without concatenating the whole book into one string. */
+export function chaptersFromPages(pages: string[], fallbackTitle: string): ParsedChapter[] {
+  const chapters: ParsedChapter[] = [];
+  let title = '';
+  let buf = '';
+
+  const flush = () => {
+    const markdown = buf.trim();
+    if (markdown.length < 80) {
+      buf = '';
+      title = '';
+      return;
+    }
+    chapters.push({
+      id: slugChapter(chapters.length),
+      title: (title || firstTitle(markdown, `${fallbackTitle} · ${chapters.length + 1}`)).slice(0, 120),
+      markdown: markdown.slice(0, BOOK_TUTOR_CHAPTER_CHARS),
+    });
+    title = '';
+    buf = '';
+  };
+
+  for (const rawPage of pages) {
+    const page = String(rawPage || '').trim();
+    if (!page) continue;
+    const firstLine = page.split('\n').map((l) => l.trim()).find(Boolean) || '';
+    const isHead = CHAPTER_HEADING.test(firstLine) && firstLine.length < 160;
+    if (isHead && buf.length > 400) flush();
+    if (isHead && !title) title = firstLine.replace(/^#+\s*/, '');
+    buf = buf ? `${buf}\n\n${page}` : page;
+    if (buf.length > BOOK_TUTOR_CHAPTER_CHARS + 2000) flush();
+  }
+  flush();
+  if (!chapters.length) return splitIntoChapters(pages.join('\n\n'), fallbackTitle);
+  return mergeChapters(chapters, BOOK_TUTOR_MAX_CHAPTERS);
+}
+
+async function extractPdfPages(buffer: Buffer): Promise<{ pages: string[]; totalPages: number }> {
   const { extractText, getDocumentProxy } = await import('unpdf');
   const pdf = await getDocumentProxy(new Uint8Array(buffer));
   const result = await extractText(pdf, { mergePages: false });
-  const pages = Array.isArray(result.text) ? result.text : [String(result.text || '')];
-  const text = pages
-    .map((p, i) => `\n\n## Page ${i + 1}\n\n${p}`)
-    .join('\n')
-    .trim();
-  return { text, pages: result.totalPages || pages.length };
+  const pages = (Array.isArray(result.text) ? result.text : [String(result.text || '')]).map((p) => String(p || ''));
+  return { pages, totalPages: result.totalPages || pages.length };
 }
 
 async function extractDocx(buffer: Buffer): Promise<string> {
@@ -155,7 +213,7 @@ function xmlAttr(xml: string, name: string): string | null {
   return m?.[1] || null;
 }
 
-async function extractEpub(buffer: Buffer): Promise<string> {
+async function extractEpubChapters(buffer: Buffer): Promise<string[]> {
   const JSZip = (await import('jszip')).default;
   const zip = await JSZip.loadAsync(buffer);
   const container = await zip.file('META-INF/container.xml')?.async('string');
@@ -182,7 +240,7 @@ async function extractEpub(buffer: Buffer): Promise<string> {
     if (idref) spineIds.push(idref);
   }
   const parts: string[] = [];
-  for (const id of spineIds.slice(0, 80)) {
+  for (const id of spineIds.slice(0, 500)) {
     const href = manifest.get(id);
     if (!href) continue;
     const path = `${base}${href}`.replace(/\\/g, '/');
@@ -192,7 +250,7 @@ async function extractEpub(buffer: Buffer): Promise<string> {
     if (md.length > 40) parts.push(md);
   }
   if (!parts.length) throw new Error('No readable chapters found in this EPUB.');
-  return parts.join('\n\n');
+  return parts;
 }
 
 function extOf(name: string, mime: string): string {
@@ -212,35 +270,50 @@ export async function parseBookFile(opts: {
   titleHint?: string;
 }): Promise<ParsedBook> {
   if (opts.buffer.length > BOOK_TUTOR_MAX_BYTES) {
-    throw new Error('File is too large. Upload a PDF, EPUB, DOCX, or text file under 12 MB.');
+    throw new Error('File is too large. Use a text PDF, EPUB, DOCX, or text file under 80 MB.');
   }
   const ext = extOf(opts.filename, opts.mime || '');
   const fallbackTitle = (opts.titleHint || opts.filename.replace(/\.[^.]+$/, '') || 'Untitled book').slice(0, 120);
 
-  let raw = '';
+  let chapters: ParsedChapter[] = [];
   let pageHint: number | undefined;
+  let extractedChars = 0;
+
   if (ext === 'pdf') {
-    const pdf = await extractPdf(opts.buffer);
-    raw = pdf.text;
-    pageHint = pdf.pages;
+    const pdf = await extractPdfPages(opts.buffer);
+    if (pdf.totalPages > BOOK_TUTOR_MAX_PAGES) {
+      throw new Error(`This PDF has ${pdf.totalPages} pages. Book tutor can read up to ${BOOK_TUTOR_MAX_PAGES} pages.`);
+    }
+    extractedChars = pdf.pages.reduce((n, p) => n + p.length, 0);
+    if (pdf.totalPages > 80 && extractedChars < pdf.totalPages * 40) {
+      throw new Error(
+        'This looks like a scanned / image PDF. Book tutor needs selectable text — export a text PDF or EPUB.',
+      );
+    }
+    pageHint = pdf.totalPages;
+    chapters = chaptersFromPages(pdf.pages, fallbackTitle);
   } else if (ext === 'epub') {
-    raw = await extractEpub(opts.buffer);
+    const parts = await extractEpubChapters(opts.buffer);
+    extractedChars = parts.reduce((n, p) => n + p.length, 0);
+    chapters = chaptersFromPages(parts, fallbackTitle);
   } else if (ext === 'docx') {
-    raw = await extractDocx(opts.buffer);
+    const raw = await extractDocx(opts.buffer);
+    extractedChars = raw.length;
+    chapters = splitIntoChapters(raw, fallbackTitle);
   } else if (ext === 'txt' || ext === 'md') {
-    raw = opts.buffer.toString('utf8');
+    const raw = opts.buffer.toString('utf8');
+    extractedChars = raw.length;
+    chapters = splitIntoChapters(raw, fallbackTitle);
   } else {
     throw new Error('Use a PDF, EPUB, DOCX, Markdown, or .txt file.');
   }
 
-  raw = raw.slice(0, BOOK_TUTOR_MAX_CHARS).trim();
-  if (raw.length < 80) throw new Error('Could not extract enough text from that file.');
+  if (!chapters.length) throw new Error('Could not extract enough text from that file.');
 
-  const chapters = splitIntoChapters(raw, fallbackTitle);
   return {
-    title: firstTitle(raw, fallbackTitle),
+    title: firstTitle(chapters[0]?.markdown || fallbackTitle, fallbackTitle),
     chapters,
-    charCount: chapters.reduce((n, c) => n + c.markdown.length, 0),
+    charCount: extractedChars,
     pageHint,
   };
 }

@@ -14,7 +14,7 @@ import { XP } from '@/lib/learn/xp';
 import { getBook, studentCanReadBook } from '@/lib/learn/ecosystem';
 import { isLLMConfigured } from '@/lib/learn/tutor';
 import { openaiJsonCompletion, parseJsonObject } from '@/lib/learn/openaiJson';
-import { parseBookFile, splitIntoChapters, type ParsedChapter } from '@/lib/learn/bookParse';
+import { parseBookFile, splitIntoChapters, type ParsedChapter, BOOK_TUTOR_CHAPTER_CHARS } from '@/lib/learn/bookParse';
 
 export type BookTutorPhase = 'teaching' | 'quiz' | 'passed' | 'complete';
 
@@ -31,6 +31,8 @@ export type BookTutorLesson = {
   keywords: string[];
 };
 
+export type BookTutorChapterOutline = { id: string; title: string };
+
 export type BookTutorPathDoc = {
   _id?: ObjectId;
   ownerUserId: string;
@@ -43,8 +45,14 @@ export type BookTutorPathDoc = {
   status: 'generating' | 'ready' | 'failed';
   error?: string;
   engine: 'llm' | 'heuristic' | 'mixed';
-  chapters: ParsedChapter[];
+  /** Titles only. Full chapter markdown is never persisted. */
+  chapterOutline: BookTutorChapterOutline[];
+  /** Legacy field — ignored on write. Old rows may still have it. */
+  chapters?: ParsedChapter[];
   lessons: BookTutorLesson[];
+  pageCount?: number;
+  sourceChars?: number;
+  sourceBytes?: number;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -161,8 +169,8 @@ function chunkMarkdown(markdown: string, size = 1100): string[] {
   return out.slice(0, 6);
 }
 
-function heuristicLessons(chapter: ParsedChapter, startOrder: number): BookTutorLesson[] {
-  const parts = chunkMarkdown(chapter.markdown);
+function heuristicLessons(chapter: ParsedChapter, startOrder: number, maxParts = 4): BookTutorLesson[] {
+  const parts = chunkMarkdown(chapter.markdown).slice(0, maxParts);
   return parts.map((part, i) => {
     const kws = keywordsFrom(part);
     return {
@@ -241,10 +249,12 @@ async function buildCurriculum(chapters: ParsedChapter[]): Promise<{
   const lessons: BookTutorLesson[] = [];
   let llmCount = 0;
   let heuristicCount = 0;
-  const llmBudget = isLLMConfigured() ? 8 : 0;
+  const llmBudget = isLLMConfigured() ? 6 : 0;
+  const compact = chapters.length > 50;
+  const maxLessons = 240;
 
-  for (const chapter of chapters.slice(0, 40)) {
-    if (lessons.length >= 48) break;
+  for (const chapter of chapters.slice(0, 160)) {
+    if (lessons.length >= maxLessons) break;
     let made: BookTutorLesson[] | null = null;
     if (llmCount < llmBudget) {
       try {
@@ -255,14 +265,18 @@ async function buildCurriculum(chapters: ParsedChapter[]): Promise<{
       }
     }
     if (!made) {
-      made = heuristicLessons(chapter, lessons.length);
+      made = heuristicLessons(chapter, lessons.length, compact ? 1 : 3);
       heuristicCount += 1;
     }
     lessons.push(...made);
   }
 
   const engine = llmCount && heuristicCount ? 'mixed' : llmCount ? 'llm' : 'heuristic';
-  return { lessons: lessons.slice(0, 48), engine };
+  return { lessons: lessons.slice(0, maxLessons), engine };
+}
+
+function chapterCountOf(path: Pick<BookTutorPathDoc, 'chapterOutline' | 'chapters'>): number {
+  return path.chapterOutline?.length || path.chapters?.length || 0;
 }
 
 function toSummary(doc: BookTutorPathDoc & { _id: ObjectId }): BookTutorPathSummary {
@@ -276,7 +290,7 @@ function toSummary(doc: BookTutorPathDoc & { _id: ObjectId }): BookTutorPathSumm
     status: doc.status,
     engine: doc.engine,
     lessonCount: doc.lessons?.length || 0,
-    chapterCount: doc.chapters?.length || 0,
+    chapterCount: chapterCountOf(doc),
     sourceFilename: doc.sourceFilename,
     updatedAt: doc.updatedAt,
   };
@@ -380,7 +394,7 @@ export async function getLearnerSession(userId: string, pathId: string) {
         error: path.error || null,
         engine: path.engine,
         lessonCount: path.lessons.length,
-        chapterCount: path.chapters.length,
+        chapterCount: chapterCountOf(path),
         isPrivate: path.isPrivate,
         sourceBookId: path.sourceBookId,
       },
@@ -399,7 +413,7 @@ export async function getLearnerSession(userId: string, pathId: string) {
       error: null as string | null,
       engine: path.engine,
       lessonCount: path.lessons.length,
-      chapterCount: path.chapters.length,
+      chapterCount: chapterCountOf(path),
       isPrivate: path.isPrivate,
       sourceBookId: path.sourceBookId,
     },
@@ -422,6 +436,10 @@ async function savePath(doc: Omit<BookTutorPathDoc, '_id'>): Promise<string> {
   return res.insertedId.toString();
 }
 
+function outlineOf(chapters: ParsedChapter[]): BookTutorChapterOutline[] {
+  return chapters.map((c) => ({ id: c.id, title: c.title }));
+}
+
 export async function createPathFromUpload(opts: {
   userId: string;
   userName: string;
@@ -430,14 +448,22 @@ export async function createPathFromUpload(opts: {
   mime?: string;
   title?: string;
 }): Promise<string> {
-  const parsed = await parseBookFile({
-    buffer: opts.buffer,
-    filename: opts.filename,
-    mime: opts.mime,
-    titleHint: opts.title,
-  });
+  const sourceBytes = opts.buffer.length;
+  let parsed;
+  try {
+    parsed = await parseBookFile({
+      buffer: opts.buffer,
+      filename: opts.filename,
+      mime: opts.mime,
+      titleHint: opts.title,
+    });
+  } finally {
+    opts.buffer.fill(0);
+  }
   const { lessons, engine } = await buildCurriculum(parsed.chapters);
   if (!lessons.length) throw new BookTutorError('Could not turn that book into lessons.');
+  const chapterOutline = outlineOf(parsed.chapters);
+  for (const ch of parsed.chapters) ch.markdown = '';
   return savePath({
     ownerUserId: opts.userId,
     ownerName: opts.userName,
@@ -448,8 +474,11 @@ export async function createPathFromUpload(opts: {
     isPrivate: true,
     status: 'ready',
     engine,
-    chapters: parsed.chapters,
+    chapterOutline,
     lessons,
+    pageCount: parsed.pageHint,
+    sourceChars: parsed.charCount,
+    sourceBytes,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -477,7 +506,7 @@ export async function createOrGetPathFromLibraryBook(opts: {
     .map((c, i) => ({
       id: `ch_${i + 1}`,
       title: String(c.title || `Chapter ${i + 1}`),
-      markdown: String(c.content || '').trim(),
+      markdown: String(c.content || '').trim().slice(0, BOOK_TUTOR_CHAPTER_CHARS),
     }))
     .filter((c) => c.markdown.length > 40);
 
@@ -488,10 +517,15 @@ export async function createOrGetPathFromLibraryBook(opts: {
     );
   }
 
-  const chapters = readable.length > 40 ? readable.slice(0, 40) : splitIntoChapters(
-    readable.map((c) => `# ${c.title}\n\n${c.markdown}`).join('\n\n'),
-    book.title,
-  );
+  const chapters =
+    readable.length > 160
+      ? readable.slice(0, 160)
+      : readable.length > 8
+        ? readable
+        : splitIntoChapters(
+            readable.map((c) => `# ${c.title}\n\n${c.markdown}`).join('\n\n'),
+            book.title,
+          );
   const { lessons, engine } = await buildCurriculum(chapters.length ? chapters : readable);
   if (!lessons.length) throw new BookTutorError('Could not turn this book into lessons.');
   try {
@@ -505,7 +539,7 @@ export async function createOrGetPathFromLibraryBook(opts: {
       isPrivate: false,
       status: 'ready',
       engine,
-      chapters: chapters.length ? chapters : readable,
+      chapterOutline: outlineOf(chapters.length ? chapters : readable),
       lessons,
       createdAt: new Date(),
       updatedAt: new Date(),

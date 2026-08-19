@@ -41,9 +41,9 @@ export default function BookTutorUpload() {
     >
       <h2 className="font-display text-[22px]">Bring your own book</h2>
       <p className="mt-1 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
-        Upload a copy you own (PDF, EPUB, DOCX, or text). We parse it locally, then the tutor
-        studies each chapter once and walks you through it step by step. Uploads stay private to
-        you.
+        Upload a copy you own (PDF, EPUB, DOCX, or text). We never save the file — it is read in
+        memory, turned into a compact tutor path (markdown lessons), then discarded. Text PDFs up to
+        about 4,000 pages work; scanned image PDFs do not.
       </p>
       <input
         value={title}
@@ -59,7 +59,7 @@ export default function BookTutorUpload() {
         <Upload size={18} style={{ color: 'var(--ink-soft)' }} />
         <span className="mt-2 text-[13.5px] font-semibold">{file ? file.name : 'Choose file'}</span>
         <span className="mt-1 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-          PDF, EPUB, DOCX, Markdown, or .txt · 12 MB max
+          PDF, EPUB, DOCX, Markdown, or .txt · 80 MB max · original file is not stored
         </span>
         <input
           type="file"

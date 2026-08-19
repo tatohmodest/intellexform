@@ -32,8 +32,9 @@ export default async function BookTutorHubPage() {
         </div>
         <h1 className="font-display text-[32px] leading-tight">Learn a book with AI</h1>
         <p className="mt-2 max-w-[640px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          The file is parsed first — no tokens. Then a tutor path is stored: bite-sized explanations,
-          examples, and a check question. Your place in that book is saved so you can continue later.
+          The original file is never stored. We keep a compact tutor path: short explanations,
+          examples, and check questions — not the PDF. Your place in that path is saved so you can
+          continue later. Text books around 4,000 pages are OK; scanned scans are not.
         </p>
       </header>
 
