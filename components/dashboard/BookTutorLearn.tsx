@@ -6,7 +6,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, FlaskConical, Lightbulb, Loader2 }
 import MarkdownLite from '@/components/dashboard/MarkdownLite';
 import BookTutorAnswerField, { type TutorUiType } from '@/components/dashboard/BookTutorAnswerField';
 import BookTutorReadAloud from '@/components/dashboard/BookTutorReadAloud';
-import BookTutorContents, { type ContentsItem } from '@/components/dashboard/BookTutorContents';
+import BookTutorContents, { ContentsButton, type ContentsItem } from '@/components/dashboard/BookTutorContents';
 
 type Check = { id: string; prompt: string; placement: 'mid' | 'end' };
 
@@ -253,6 +253,7 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
   const [clarifyDraft, setClarifyDraft] = useState('');
   const [clarifyReply, setClarifyReply] = useState('');
   const [youSaid, setYouSaid] = useState('');
+  const [contentsOpen, setContentsOpen] = useState(false);
 
   const lesson = session.lesson;
   const progress = session.progress;
@@ -456,6 +457,7 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
       if (!res.ok) throw new Error(data.error || 'Could not open that chapter.');
       setSession(data);
       setAnswer(data.lesson?.savedAnswer || '');
+      setContentsOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not open that chapter.');
     } finally {
@@ -517,10 +519,8 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
           {progress?.completedCount || 0} of {session.path.lessonCount} steps completed with {session.path.title}.
           Jumping chapters does not count as finishing the ones in between.
         </p>
-        <div className="mx-auto mt-6 max-w-[520px] text-left">
-          <BookTutorContents items={contents} onOpen={jump} busy={busy === 'goto'} />
-        </div>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <ContentsButton onClick={() => setContentsOpen(true)} />
           <button type="button" onClick={previous} className="btn !px-5 !py-2.5 text-[13.5px]" style={{ background: 'var(--paper)', border: '1px solid var(--line)' }}>
             <ArrowLeft size={15} /> Review steps
           </button>
@@ -528,6 +528,13 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
             More book tutors
           </Link>
         </div>
+        <BookTutorContents
+          items={contents}
+          open={contentsOpen}
+          onClose={() => setContentsOpen(false)}
+          onOpen={jump}
+          busy={busy === 'goto'}
+        />
       </div>
     );
   }
@@ -538,37 +545,47 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="sticky top-0 z-20 mb-6 pb-3" style={{ background: 'var(--paper)' }}>
         <div className="h-1.5" style={{ background: 'var(--paper-dim)' }}>
           <div style={{ width: `${pct}%`, background: 'var(--green-deep)', height: '100%' }} />
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
           <p className="font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
             Step {lesson.index + 1} of {lesson.total} · {lesson.chapterTitle}
           </p>
-          <span
-            className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]"
-            style={{
-              background: practice ? 'var(--amber-soft)' : 'rgba(0,179,105,0.12)',
-              color: practice ? 'var(--blue-ink)' : 'var(--green-deep)',
-            }}
-          >
-            {stepType === 'guided_practice'
-              ? 'Try it'
-              : stepType === 'assessment'
-                ? 'Check'
-                : stepType === 'example'
-                  ? 'Example'
-                  : stepType === 'introduction'
-                    ? 'Welcome'
-                    : stepType === 'transition'
-                      ? 'Next'
-                      : 'Lesson'}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]"
+              style={{
+                background: practice ? 'var(--amber-soft)' : 'rgba(0,179,105,0.12)',
+                color: practice ? 'var(--blue-ink)' : 'var(--green-deep)',
+              }}
+            >
+              {stepType === 'guided_practice'
+                ? 'Try it'
+                : stepType === 'assessment'
+                  ? 'Check'
+                  : stepType === 'example'
+                    ? 'Example'
+                    : stepType === 'introduction'
+                      ? 'Welcome'
+                      : stepType === 'transition'
+                        ? 'Next'
+                        : 'Lesson'}
+            </span>
+            <ContentsButton onClick={() => setContentsOpen(true)} />
+          </div>
         </div>
       </div>
 
-      <BookTutorContents items={contents} currentChapterId={lesson.chapterId} onOpen={jump} busy={busy === 'goto'} />
+      <BookTutorContents
+        items={contents}
+        currentChapterId={lesson.chapterId}
+        open={contentsOpen}
+        onClose={() => setContentsOpen(false)}
+        onOpen={jump}
+        busy={busy === 'goto'}
+      />
       {firstReal && firstReal.id !== lesson.chapterId && contents[0]?.looksLikeContents && contents[0]?.id === lesson.chapterId ? (
         <div
           className="mb-6 rounded-xl border px-4 py-3 text-[13.5px]"

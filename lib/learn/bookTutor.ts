@@ -572,6 +572,8 @@ export async function continuePathBuild(pathId: string) {
     for (let slice = 0; slice < 800; slice++) {
       const path = await getPath(pathId);
       if (!path || path.status !== 'generating') return;
+      const sources = await loadSources(pathId);
+      if (!sources?.length && !path.curriculum?.length && !(path.lessons?.length)) return;
       await runPathBuild(pathId);
       const after = await getPath(pathId);
       if (!after || after.status !== 'generating') return;
@@ -589,6 +591,8 @@ async function runPathBuild(pathId: string) {
   if (!path || path.status !== 'generating') return;
   const sources = await loadSources(pathId);
   if (!sources?.length) {
+    const stillExtracting = !path.curriculum?.length && !(path.lessons?.length);
+    if (stillExtracting) return;
     const done = (path.nextChapterIndex || 0) >= (path.curriculum?.length || 0) && path.lessons.length;
     if (done) {
       await db.collection('book_tutor_paths').updateOne(
@@ -758,6 +762,10 @@ async function finishPathFromUpload(
   const db = await getDb();
   const oid = new ObjectId(pathId);
   try {
+    await db.collection('book_tutor_paths').updateOne(
+      { _id: oid },
+      { $set: { buildNote: 'Extracting book text…', error: '', updatedAt: new Date() } },
+    );
     let parsed;
     try {
       parsed = await parseBookFile({
