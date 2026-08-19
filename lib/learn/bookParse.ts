@@ -140,11 +140,13 @@ async function extractPdf(buffer: Buffer): Promise<{ text: string; pages: number
 }
 
 async function extractDocx(buffer: Buffer): Promise<string> {
-  const mammothMod = await import('mammoth');
-  const mammoth = ('convertToHtml' in mammothMod ? mammothMod : mammothMod.default) as {
-    convertToHtml: (input: { buffer: Buffer }) => Promise<{ value: string }>;
+  const mammothMod = (await import('mammoth')) as unknown as {
+    convertToHtml?: (input: { buffer: Buffer }) => Promise<{ value: string }>;
+    default?: { convertToHtml: (input: { buffer: Buffer }) => Promise<{ value: string }> };
   };
-  const result = await mammoth.convertToHtml({ buffer });
+  const convert = mammothMod.convertToHtml || mammothMod.default?.convertToHtml;
+  if (!convert) throw new Error('Could not read this Word document.');
+  const result = await convert({ buffer });
   return htmlToMarkdown(result.value || '');
 }
 
