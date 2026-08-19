@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Award, BookMarked, Feather, FileText, Layers, Sparkles } from 'lucide-react';
+import BookTutorUpload from '@/components/dashboard/BookTutorUpload';
+import StartBookTutorButton from '@/components/dashboard/StartBookTutorButton';
 import { getSessionUser } from '@/lib/auth/getUser';
 import {
   getPurchasedBookIds,
@@ -69,11 +71,18 @@ export default async function LibraryPage() {
           </div>
           <h1 className="font-display text-[30px] leading-tight">Library</h1>
           <p className="mt-1 max-w-xl text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-            Books from InTelleX, instructors, and staff. Request titles you need. Student members
-            read paid books free.
+            Books from InTelleX, instructors, and staff. Learn a title step by step with AI, or
+            upload a copy you own. Student members read paid books free.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/dashboard/library/learn"
+            className="flex items-center gap-1.5 rounded-full border px-4 py-2 text-[12.5px] font-semibold"
+            style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
+          >
+            <Sparkles size={13} /> Book tutor
+          </Link>
           {canUpload ? <NewBookButton /> : null}
           <Link
             href={canUpload ? '/dashboard/mentor' : '/dashboard/mentor'}
@@ -118,6 +127,10 @@ export default async function LibraryPage() {
           Active InTelleX Student membership - priced library books are free for you.
         </div>
       )}
+
+      <section className="mb-10">
+        <BookTutorUpload />
+      </section>
 
       <section className="mb-10 rounded-2xl border p-5 sm:p-6" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
         <div className="mb-4">
@@ -289,7 +302,7 @@ export default async function LibraryPage() {
                       <p className="mt-1.5 line-clamp-2 text-[12.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
                         {b.subtitle || b.description}
                       </p>
-                      <div className="mt-auto flex items-center justify-between pt-2">
+                      <div className="mt-auto flex items-center justify-between gap-2 pt-2">
                         <span className="text-[13px] font-bold" style={{ color: b.priceXAF > 0 && !isMember ? 'var(--ink)' : 'var(--green-deep)' }}>
                           {b.priceXAF > 0
                             ? isMember
@@ -297,14 +310,18 @@ export default async function LibraryPage() {
                               : `${b.priceXAF.toLocaleString()} XAF`
                             : 'Free'}
                         </span>
-                        <GetBookButton
-                          bookId={b.id}
-                          priceXAF={b.priceXAF}
-                          owned={owned}
-                          isMember={isMember}
-                          downloadUrl={b.downloadUrl}
-                          compact
-                        />
+                        {owned ? (
+                          <StartBookTutorButton bookId={b.id} compact />
+                        ) : (
+                          <GetBookButton
+                            bookId={b.id}
+                            priceXAF={b.priceXAF}
+                            owned={owned}
+                            isMember={isMember}
+                            downloadUrl={b.downloadUrl}
+                            compact
+                          />
+                        )}
                       </div>
                     </div>
                   </div>

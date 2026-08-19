@@ -12,6 +12,7 @@ import {
 } from '@/lib/learn/driveDownload';
 import MarkdownLite from '@/components/dashboard/MarkdownLite';
 import GetBookButton from '@/components/dashboard/GetBookButton';
+import StartBookTutorButton from '@/components/dashboard/StartBookTutorButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -119,6 +120,7 @@ export default async function BookReaderPage({
               </div>
             ) : (
               <div className="mt-8 flex flex-wrap gap-3">
+                <StartBookTutorButton bookId={book.id} />
                 {readExternalHref ? (
                   <a
                     href={readExternalHref}
@@ -241,6 +243,11 @@ export default async function BookReaderPage({
             >
               <Download size={13} /> Download book
             </a>
+          ) : null}
+          {owned ? (
+            <div className="mt-3">
+              <StartBookTutorButton bookId={book.id} compact />
+            </div>
           ) : null}
         </div>
         <div className="p-2">

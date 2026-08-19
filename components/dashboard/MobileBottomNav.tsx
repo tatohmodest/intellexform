@@ -44,6 +44,7 @@ const TABS: Tab[] = [
     match: (p) =>
       p.startsWith('/dashboard/my-learning') ||
       p.startsWith('/dashboard/courses') ||
+      p.startsWith('/dashboard/library') ||
       p.startsWith('/dashboard/classroom') ||
       p.startsWith('/dashboard/drive-player'),
   },
@@ -75,6 +76,7 @@ const MORE_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/dashboard/academic', label: 'Academic', icon: GraduationCap },
   { href: '/dashboard/fees', label: 'Fees', icon: Briefcase },
   { href: '/dashboard/portfolio', label: 'Portfolio', icon: Briefcase },
+  { href: '/dashboard/library', label: 'Library', icon: BookOpen },
   { href: '/dashboard/teach', label: 'Teaching', icon: BookOpen },
   { href: '/dashboard/staff', label: 'Staff', icon: Briefcase },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },

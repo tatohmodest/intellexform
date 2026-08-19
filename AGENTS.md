@@ -34,4 +34,5 @@ DB name is `intellex`; OTP codes live in `admin_otps`.
 - The README is outdated relative to the full product surface.
 - PayUnit, Agora, Cloudinary, and OpenAI are optional; without them checkout may use a mock page, live video needs an Agora app id, media uploads need Cloudinary, and the AI tutor falls back to static answers.
 - **Video Hall search** uses the YouTube Data API v3 (`YOUTUBE_API_KEY`). Without it, search reports unconfigured and still lets learners paste a YouTube URL. The key is a Cloud Agent environment secret, not something to put in git.
+- **Book tutor** (`/dashboard/library/learn`) parses PDF/EPUB/DOCX locally (no tokens). Optional `OPENAI_API_KEY` generates the lesson path and grades answers; without it, heuristic lessons still work. Learner uploads stay private.
 - There is no automated test suite; verify changes via `npm run lint`, `npm run build`, and the `/register` → `/admin` flow (learner flows also need credentials auth + `SESSION_SECRET`).

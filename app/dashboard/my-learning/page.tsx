@@ -45,6 +45,9 @@ export default async function MyLearningPage({
           <Link href="/dashboard/courses" style={{ color: 'var(--green-deep)' }}>
             Full course browser →
           </Link>
+          <Link href="/dashboard/library/learn" style={{ color: 'var(--green-deep)' }}>
+            Book tutor →
+          </Link>
           {isMember ? (
             <Link href="/dashboard/courses/browse/suggested-catalogue" style={{ color: 'var(--ink-soft)' }}>
               Explore catalogue

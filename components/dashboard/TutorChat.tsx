@@ -279,6 +279,13 @@ export default function TutorChat() {
                   Quiz you. Build a plan. Explain anything. Debug with you. Same editorial feel as
                   My Courses - built to make you want the next question.
                 </p>
+                <Link
+                  href="/dashboard/library/learn"
+                  className="mt-3 inline-block text-[13.5px] font-semibold"
+                  style={{ color: 'var(--green-deep)' }}
+                >
+                  Learn a whole book step by step →
+                </Link>
               </div>
               <div
                 className="flex flex-wrap gap-2 font-mono text-[11px] uppercase tracking-[0.12em]"

@@ -3,6 +3,11 @@ const nextConfig = {
   images: {
     domains: ['cdn.jsdelivr.net'],
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '16mb',
+    },
+  },
   async headers() {
     return [
       {

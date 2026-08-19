@@ -1,0 +1,88 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Loader2, Upload } from 'lucide-react';
+
+export default function BookTutorUpload() {
+  const router = useRouter();
+  const [title, setTitle] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!file) {
+      setMsg('Choose a PDF, EPUB, DOCX, or text file.');
+      return;
+    }
+    setBusy(true);
+    setMsg('Reading the book and building your tutor path…');
+    try {
+      const body = new FormData();
+      body.set('file', file);
+      if (title.trim()) body.set('title', title.trim());
+      const res = await fetch('/api/learn/book-tutor', { method: 'POST', body });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not build a tutor from that file.');
+      router.push(`/dashboard/library/learn/${data.id}`);
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'Could not build a tutor from that file.');
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      className="rounded-2xl border p-5"
+      style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}
+    >
+      <h2 className="font-display text-[22px]">Bring your own book</h2>
+      <p className="mt-1 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
+        Upload a copy you own (PDF, EPUB, DOCX, or text). We parse it locally, then the tutor
+        studies each chapter once and walks you through it step by step. Uploads stay private to
+        you.
+      </p>
+      <input
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Title (optional)"
+        className="mt-4 w-full border px-3 py-2.5 text-[14px]"
+        style={{ borderColor: 'var(--line)', background: 'transparent' }}
+      />
+      <label
+        className="mt-3 flex cursor-pointer flex-col items-center justify-center border border-dashed px-4 py-8 text-center"
+        style={{ borderColor: 'var(--line)' }}
+      >
+        <Upload size={18} style={{ color: 'var(--ink-soft)' }} />
+        <span className="mt-2 text-[13.5px] font-semibold">{file ? file.name : 'Choose file'}</span>
+        <span className="mt-1 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+          PDF, EPUB, DOCX, Markdown, or .txt · 12 MB max
+        </span>
+        <input
+          type="file"
+          accept=".pdf,.epub,.docx,.txt,.md,application/pdf,application/epub+zip"
+          className="hidden"
+          onChange={(e) => setFile(e.target.files?.[0] || null)}
+        />
+      </label>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <button
+          type="submit"
+          disabled={busy}
+          className="btn btn-primary !px-5 !py-2.5 text-[13.5px]"
+        >
+          {busy ? <Loader2 size={15} className="animate-spin" /> : null}
+          {busy ? 'Building tutor…' : 'Start learning'}
+        </button>
+        {msg ? (
+          <span className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+            {msg}
+          </span>
+        ) : null}
+      </div>
+    </form>
+  );
+}

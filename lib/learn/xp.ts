@@ -10,6 +10,8 @@ export const XP = {
   ENROLL_TRACK: 10,
   /** Learner completes a lesson (first time only) */
   COMPLETE_LESSON: 20,
+  /** Learner passes one book-tutor micro-lesson */
+  COMPLETE_BOOK_LESSON: 10,
   /** Learner books a mentorship session */
   BOOK_MENTORSHIP: 5,
 
