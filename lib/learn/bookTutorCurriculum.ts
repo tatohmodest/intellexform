@@ -6,6 +6,11 @@
 import { isLLMConfigured } from '@/lib/learn/tutor';
 import { openaiJsonCompletion, parseJsonObject } from '@/lib/learn/openaiJson';
 import { isFrontMatter, type ParsedChapter } from '@/lib/learn/bookParse';
+import { BOOK_TUTOR_CURRICULUM_SYSTEM } from '@/lib/learn/bookTutorPrompt';
+
+export type LessonKind = 'teach' | 'practice';
+export type LessonUiType = 'text_input' | 'code_editor' | 'multiple_choice';
+export type LessonExampleType = 'code_snippet' | 'mathematical_formula' | 'real_world_scenario';
 
 export type LessonKind = 'teach' | 'practice';
 
@@ -35,10 +40,18 @@ export type BuiltLesson = {
   watchOut: string;
   analogy: string;
   checks: TutorCheck[];
+  uiType: LessonUiType;
+  exampleType: LessonExampleType;
+  language: string;
+  choices: string[];
+  correctChoice: number | null;
 };
 
 const PRACTICE_RE =
   /\b(try (this|it|the)|your turn|exercise\b|download\b|install\b|run (this|the|it)|open (the|your)|paste |type this|click |go to https?:\/\/|visit https?:\/\/|do the following|homework|practice:|challenge:|lab\b|experiment:)\b/i;
+
+const THANKS_SKIP =
+  /\b(thank(?:s| you)(?: to)?(?: my)? (?:wife|husband|spouse|partner|children|family|parents?|editor)|dedicated to my)\b/i;
 
 const STOP = new Set(
   'a an and are as at be but by for from has have how i in is it its of on or that the this to was what when where which who why will with you your me my can do does stay stays remain remains close just over more less very much such only even still than then also into from with need needs using used use about after before because while chapter section page book'.split(
@@ -146,6 +159,7 @@ function unitsFromChapters(chapters: ParsedChapter[]): SourceUnit[] {
             .map((l) => l.replace(/^#+\s*/, '').trim())
             .find((l) => l.length > 3 && l.length < 120) || chapter.title;
         if (isFrontMatter(chapter.title, text) || isFrontMatter(chunkTitle, text)) continue;
+        if (THANKS_SKIP.test(text) || /^SKIP$/i.test(chunkTitle)) continue;
         raw.push({
           chapterId: chapter.id,
           chapterTitle: chapter.title,
@@ -197,6 +211,55 @@ function extractCodeish(text: string): string {
       /^(npm |npx |pip |python |node |git |curl |SELECT |def |function |const |let |import |FROM |cd )/i.test(l),
     );
   return cmd ? `\n\n\`\`\`\n${cmd}\n\`\`\`\n` : '';
+}
+
+export function looksLikeCode(text: string): boolean {
+  if (/```[\s\S]{4,}?```/.test(text)) return true;
+  const hits =
+    text.match(
+      /\b(def |function |const |let |var |import |class |print\(|console\.|SELECT |FROM |public static|#include |elif |=> |fn |\.py\b|\.js\b|npm |pip install|<!DOCTYPE|<html)\b/gi,
+    ) || [];
+  return hits.length >= 2;
+}
+
+export function inferLanguage(text: string): string {
+  const t = text.slice(0, 4000);
+  if (/```(?:python|py)\b|\bdef |\belif |\bprint\(|\bimport os\b|\.py\b/i.test(t)) return 'python';
+  if (/```(?:ts|typescript)\b|\binterface |\btype \w+ =/i.test(t)) return 'typescript';
+  if (/```(?:js|javascript)\b|\bconst |\blet |\bconsole\.|\bfunction /i.test(t)) return 'javascript';
+  if (/```sql\b|\bSELECT |\bFROM |\bWHERE |\bJOIN /i.test(t)) return 'sql';
+  if (/```(?:html)?\b|<!DOCTYPE|<html/i.test(t)) return 'html';
+  if (/```css\b|\b[.#][\w-]+\s*\{/i.test(t)) return 'css';
+  if (/```(?:java)\b|\bpublic class |\bSystem\.out/i.test(t)) return 'java';
+  if (/```(?:bash|sh)\b|^\s*(npm |pip |curl |cd )/m.test(t)) return 'bash';
+  return looksLikeCode(t) ? 'other' : '';
+}
+
+function inferUiType(unit: SourceUnit, question: string): LessonUiType {
+  const blob = `${unit.text}\n${question}`;
+  if (looksLikeCode(blob) || inferLanguage(blob)) return 'code_editor';
+  return 'text_input';
+}
+
+function inferExampleType(text: string, uiType: LessonUiType): LessonExampleType {
+  if (uiType === 'code_editor' || looksLikeCode(text)) return 'code_snippet';
+  if (/[=≈≤≥∑∫√]|\$\$|\\\(|\\frac/.test(text)) return 'mathematical_formula';
+  return 'real_world_scenario';
+}
+
+function fenceIfCode(example: string, exampleType: LessonExampleType, language: string): string {
+  const trimmed = example.trim();
+  if (!trimmed) return trimmed;
+  if (exampleType !== 'code_snippet' && !looksLikeCode(trimmed)) return trimmed;
+  if (/```/.test(trimmed)) return trimmed;
+  const lang = language && language !== 'other' ? language : '';
+  return `\`\`\`${lang}\n${trimmed}\n\`\`\``;
+}
+
+function normalizeUiType(raw: unknown, fallback: LessonUiType): LessonUiType {
+  const v = String(raw || '').trim();
+  if (v === 'code_editor' || v === 'multiple_choice' || v === 'text_input') return v;
+  return fallback;
 }
 
 function lessonTitle(unit: SourceUnit, kws: string[]): string {
@@ -424,6 +487,10 @@ function heuristicLesson(unit: SourceUnit, index: number): BuiltLesson {
   const kws = keywordsFrom(unit.text);
   const q = variedQuestion(unit, kws, index);
   const title = lessonTitle(unit, kws);
+  const uiType = inferUiType(unit, q.question);
+  const language = inferLanguage(unit.text);
+  const exampleType = inferExampleType(unit.text, uiType);
+  const example = fenceIfCode(inventedExample(unit.text, kws, index, unit.chapterTitle), exampleType, language);
   return {
     id: `${unit.chapterId}_${index + 1}`,
     chapterId: unit.chapterId,
@@ -432,7 +499,12 @@ function heuristicLesson(unit: SourceUnit, index: number): BuiltLesson {
     title,
     kind: unit.kind,
     explanation: tutorExplanation(unit, kws),
-    example: inventedExample(unit.text, kws, index, unit.chapterTitle),
+    example,
+    exampleType,
+    language,
+    uiType,
+    choices: [],
+    correctChoice: null,
     keypoints: keypointsFrom(unit.text, kws),
     practiceTask: unit.kind === 'practice' ? practiceTaskFrom(unit.text) : '',
     note: noteFrom(unit, kws),
@@ -459,6 +531,11 @@ type LlmLesson = {
   note?: string;
   watchOut?: string;
   analogy?: string;
+  uiType?: string;
+  exampleType?: string;
+  language?: string;
+  choices?: string[];
+  correctChoice?: number | null;
   checks?: Array<{
     id?: string;
     prompt?: string;
@@ -484,25 +561,8 @@ async function llmLessonsForBatch(units: SourceUnit[], startIndex: number): Prom
     .join('\n\n----\n\n');
   const raw = await openaiJsonCompletion({
     temperature: 0.65,
-    system: `You ARE the author of this book, sitting next to the learner. Impersonate the writer: same intent, spoken teaching, not a photocopy of the page.
-Return JSON only: {"lessons":[...]}.
-One lesson object per UNIT, same order, keys:
-unit (number), title, kind ("teach"|"practice"), explanation, analogy, example, keypoints (3 short strings), practiceTask, question, criteria, keywords (3-8), note, watchOut, checks (array of 2).
-
-Hard rules:
-- You cannot show the whole book. Teach only what is relevant in this stretch.
-- explanation: markdown with ## What I need you to see and ## How it works. 2–4 short paragraphs in the writer's voice. Code fence ONLY if the book is showing a command or snippet.
-- analogy: one everyday comparison (kitchen, lock, map, sports, drawer) that carries the idea. This is shown AFTER the first yes/no, at the bottom of the teach beat.
-- SKIP table of contents, acknowledgments, copyright, dedication, praise, “about the author”, and short preface/introduction openings. Those are not the lesson. Teach the actual subject of the stretch.
-- checks: exactly 2 objects {id, prompt, placement ("mid"|"end"), expected (always true), hint}.
-  mid = after the explanation, before the analogy. end = after the analogy, before the written question.
-  These are understand-gates, NOT trick true/false. Yes always continues. No always means stuck.
-  Prompts like “Still with me on X?” / “Ready for the written check?”
-- example: invent a concrete worked illustration from the ideas even if the book gave none. Never "hold onto these keywords".
-- question: YOUR written check after both yes/no clicks. Unique. NEVER "main idea of this section/chapter".
-- kind=practice ONLY when the book told the reader to try, download, install, run, open, or do a lab. Then practiceTask is numbered real steps, and question asks them to paste what they got.
-- If the book did not ask them to do a task, kind must be teach and practiceTask "".`,
-    user: `Write one author-voiced tutor lesson per unit. Each written question in this batch must be different.\n\n${packed}`,
+    system: BOOK_TUTOR_CURRICULUM_SYSTEM,
+    user: `Write one author-voiced tutor lesson per unit. Each written question in this batch must be different. Skip junk. If a unit is code, use uiType code_editor and a fenced snippet.\n\n${packed}`,
   });
   const parsed = parseJsonObject<{ lessons?: LlmLesson[] }>(raw);
   const items = Array.isArray(parsed?.lessons) ? parsed!.lessons : [];
@@ -517,6 +577,10 @@ Hard rules:
     }
     const explanation = String(item.explanation || '').trim();
     const question = String(item.question || '').trim();
+    const title = String(item.title || lessonTitle(unit, keywordsFrom(unit.text))).slice(0, 120);
+    if (/^SKIP$/i.test(title) || THANKS_SKIP.test(`${title}\n${explanation}`)) {
+      continue;
+    }
     const kind: LessonKind = item.kind === 'practice' || unit.kind === 'practice' ? 'practice' : 'teach';
     if (explanation.length < 50 || question.length < 12) {
       out.push(heuristicLesson(unit, startIndex + i));
@@ -532,15 +596,35 @@ Hard rules:
       : kind === 'practice'
         ? ensurePracticeQuestion(question, unit.chapterTitle)
         : question;
+    const uiType = normalizeUiType(item.uiType, fallback.uiType);
+    const choices = Array.isArray(item.choices) ? item.choices.map(String).filter(Boolean).slice(0, 6) : [];
+    const safeUi: LessonUiType = uiType === 'multiple_choice' && choices.length < 2 ? fallback.uiType : uiType;
+    const language = String(item.language || fallback.language || inferLanguage(unit.text)).slice(0, 24);
+    const exampleType = (['code_snippet', 'mathematical_formula', 'real_world_scenario'].includes(String(item.exampleType))
+      ? String(item.exampleType)
+      : fallback.exampleType) as LessonExampleType;
+    const correctChoice =
+      safeUi === 'multiple_choice' && Number.isFinite(Number(item.correctChoice))
+        ? Math.max(0, Math.min(choices.length - 1, Number(item.correctChoice)))
+        : null;
     out.push({
       id: `${unit.chapterId}_${startIndex + i + 1}`,
       chapterId: unit.chapterId,
       chapterTitle: unit.chapterTitle,
       sortOrder: startIndex + i,
-      title: String(item.title || lessonTitle(unit, kws)).slice(0, 120),
+      title,
       kind,
-      explanation: ensureStyledExplanation(explanation, String(item.title || unit.chapterTitle)).slice(0, 3200),
-      example: (looksLikeKeywordDump(exampleRaw) ? fallback.example : exampleRaw || fallback.example).slice(0, 1600),
+      explanation: ensureStyledExplanation(explanation, title).slice(0, 3200),
+      example: fenceIfCode(
+        looksLikeKeywordDump(exampleRaw) ? fallback.example : exampleRaw || fallback.example,
+        exampleType,
+        language,
+      ).slice(0, 1600),
+      exampleType,
+      language,
+      uiType: safeUi,
+      choices: safeUi === 'multiple_choice' ? choices : [],
+      correctChoice,
       keypoints: Array.isArray(item.keypoints)
         ? item.keypoints.map(String).filter(Boolean).slice(0, 5)
         : fallback.keypoints,
@@ -569,17 +653,25 @@ function polishLesson(lesson: BuiltLesson, index: number): BuiltLesson {
   if (looksLikeMainIdea(question) || !question.trim()) question = fallback.question;
   if (lesson.kind === 'practice') question = ensurePracticeQuestion(question, lesson.chapterTitle);
   const example = looksLikeKeywordDump(lesson.example) || !lesson.example.trim() ? fallback.example : lesson.example;
+  const uiType = lesson.uiType || fallback.uiType;
+  const exampleType = lesson.exampleType || fallback.exampleType;
+  const language = lesson.language || fallback.language;
   return {
     ...lesson,
     sortOrder: index,
     question,
-    example,
+    example: fenceIfCode(example, exampleType, language),
     explanation: ensureStyledExplanation(lesson.explanation, lesson.title),
     keypoints: lesson.keypoints.filter(Boolean).length ? lesson.keypoints : fallback.keypoints,
     note: lesson.note || fallback.note,
     watchOut: lesson.watchOut || fallback.watchOut,
     analogy: lesson.analogy || fallback.analogy,
     checks: lesson.checks?.length >= 2 ? lesson.checks.slice(0, 2) : fallback.checks,
+    uiType,
+    exampleType,
+    language,
+    choices: uiType === 'multiple_choice' ? lesson.choices || [] : [],
+    correctChoice: uiType === 'multiple_choice' ? lesson.correctChoice : null,
   };
 }
 
@@ -647,6 +739,8 @@ export async function buildCurriculum(
     .filter(
       (lesson) =>
         !isFrontMatter(lesson.chapterTitle, lesson.explanation) &&
+        !THANKS_SKIP.test(`${lesson.title}\n${lesson.explanation}`) &&
+        !/^SKIP$/i.test(lesson.title) &&
         !/\b(acknowledg?e?ments?|table of contents|^contents$|copyright|dedication)\b/i.test(lesson.title),
     )
     .slice(0, 96);

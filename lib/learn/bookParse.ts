@@ -80,17 +80,6 @@ export function splitIntoChapters(raw: string, fallbackTitle = 'Book'): ParsedCh
   const useHeads = starts.length >= 2 && starts[0] < lines.length * 0.4;
   if (useHeads) {
     const chapters: ParsedChapter[] = [];
-    const first = starts[0];
-    if (first > 0) {
-      const intro = lines.slice(0, first).join('\n').trim();
-      if (intro.length > 80) {
-        chapters.push({
-          id: slugChapter(0),
-          title: firstTitle(intro, 'Introduction'),
-          markdown: intro.slice(0, BOOK_TUTOR_CHAPTER_CHARS),
-        });
-      }
-    }
     starts.forEach((start, idx) => {
       const end = starts[idx + 1] ?? lines.length;
       const body = lines.slice(start, end).join('\n').trim();
@@ -137,7 +126,16 @@ export function splitIntoChapters(raw: string, fallbackTitle = 'Book'): ParsedCh
 }
 
 const FRONT_TITLE =
-  /^(contents|table of contents|acknowledgments?|acknowledgements?|dedication|copyright|also by|about the author|about the authors|praise for|praise|list of (figures|tables|illustrations|maps)|credits|permissions|colophon|index|half[- ]title|title page|copyright page|published by|other (books|titles) by|by the same author|to the reader|author'?s note|how to (use|read) this book|a note (from|to)|epigraph)$/i;
+  /^(contents|table of contents|contents in detail|acknowledgments?|acknowledgements?|dedication|copyright|also by|about the author|about the authors|praise for|praise|list of (figures|tables|illustrations|maps)|credits|permissions|colophon|index|half[- ]title|title page|copyright page|published by|other (books|titles) by|by the same author|to the reader|author'?s note|how to (use|read) this book|a note (from|to)|epigraph|foreword|preface)$/i;
+
+const CORE_START =
+  /^(?:#{1,3}\s+)?(?:chapter\s+(?:0*1|one|i)\b|part\s+(?:0*1|one|i)\b|lesson\s+0*1\b|unit\s+0*1\b|module\s+0*1\b|getting started\b|1\.\s+[A-Z])/i;
+
+const BACK_TITLE =
+  /^(?:#{1,3}\s+)?(?:index|bibliography|works cited|references|glossary|notes|colophon|about the (?:author|type|cover)|appendix(?:es)?(?:\s+[a-z0-9]+)?)\b/i;
+
+const THANKS_BODY =
+  /\b(thank(?:s| you)(?: to)?(?: my)? (?:wife|husband|spouse|partner|children|kids|son|daughter|parents?|family|mother|father|mom|dad|editor|agent|publisher|mentor)|dedicated to my|this book (?:is|would (?:not|never) have been) possible without|i (?:would like to |want to )?thank my)\b/i;
 
 function letterCount(text: string): number {
   return (text.match(/[A-Za-zÀ-ÿ]/g) || []).length;
@@ -168,11 +166,34 @@ function looksLikeBookOverview(text: string): boolean {
 
 function looksLikeThanks(title: string, text: string): boolean {
   const t = title.toLowerCase();
-  const head = text.slice(0, 600).toLowerCase();
+  const head = text.slice(0, 1400);
   return (
-    /acknowledg|thank(s| you) to (my|the)|gratitude to/.test(t) ||
-    (/^\s*(acknowledg|thanks to my|i (would like to )?thank)/i.test(head) && text.length < 5000)
+    /acknowledgments?|acknowledgements?|thank(s| you) to (my|the)|gratitude to|^dedication$/.test(t) ||
+    THANKS_BODY.test(head) ||
+    (/^\s*(acknowledgments?|acknowledgements?|thanks to my|i (would like to )?thank my)/i.test(head) && text.length < 8000)
   );
+}
+
+function looksLikeCoreStart(title: string): boolean {
+  const t = title.replace(/^#+\s*/, '').replace(/\s+/g, ' ').trim();
+  return CORE_START.test(t);
+}
+
+function looksLikeBackMatter(title: string): boolean {
+  const t = title.replace(/^#+\s*/, '').replace(/\s+/g, ' ').trim();
+  return BACK_TITLE.test(t) || /^index$/i.test(t);
+}
+
+function stripJunkParagraphs(markdown: string): string {
+  const paras = markdown.split(/\n{2,}/);
+  const kept = paras.filter((p) => {
+    const t = p.replace(/^#+\s*/, '').trim();
+    if (!t) return false;
+    if (THANKS_BODY.test(p) && p.length < 3500) return false;
+    if (FRONT_TITLE.test(firstTitle(p, '')) && p.length < 3500) return false;
+    return true;
+  });
+  return kept.join('\n\n').trim();
 }
 
 /** Skip TOC, thanks, copyright, image openings, and other pages that are not the book teaching. */
@@ -182,11 +203,14 @@ export function isFrontMatter(title: string, text: string): boolean {
   if (looksLikeSparseExtract(text) && /contents|acknowledg|copyright|dedication|praise|title/i.test(t || text.slice(0, 200))) {
     return true;
   }
-  if (FRONT_TITLE.test(t)) return true;
-  if (/\b(table of contents|acknowledg?e?ments?|copyright page|about the author|list of (figures|tables))\b/i.test(t)) {
+  if (FRONT_TITLE.test(t) || BACK_TITLE.test(t)) return true;
+  if (
+    /^(table of contents|contents in detail|acknowledg?e?ments?|copyright page|about the authors?)\b/i.test(t) ||
+    /\blist of (figures|tables|illustrations)\b/i.test(t)
+  ) {
     return true;
   }
-  if (/^contents\b/i.test(t) && t.length < 48) return true;
+  if (/^contents\b/i.test(t) && t.length < 64) return true;
   if (/^(preface|foreword|prologue|introduction|intro)\b/i.test(t) && (text.length < 2500 || looksLikeBookOverview(text))) {
     return true;
   }
@@ -198,6 +222,37 @@ export function isFrontMatter(title: string, text: string): boolean {
   if (looksLikeContentsList(text)) return true;
   if (looksLikeBookOverview(text) && text.length < 4500) return true;
   return false;
+}
+
+/** Drop everything before Chapter 1 / Getting Started and everything after the last real chapter. */
+export function keepInstructionalCore(chapters: ParsedChapter[]): ParsedChapter[] {
+  if (!chapters.length) return chapters;
+  const startIdx = chapters.findIndex((c) => looksLikeCoreStart(c.title) && !isFrontMatter(c.title, c.markdown));
+  let slice = startIdx >= 0 ? chapters.slice(startIdx) : chapters;
+  if (startIdx < 0) {
+    const firstReal = slice.findIndex((c) => !isFrontMatter(c.title, c.markdown) && !looksLikeBackMatter(c.title));
+    if (firstReal > 0) slice = slice.slice(firstReal);
+  }
+  const backIdx = slice.findIndex((c, i) => i > 0 && looksLikeBackMatter(c.title));
+  if (backIdx > 0) slice = slice.slice(0, backIdx);
+  const kept = slice
+    .map((c) => {
+      const markdown = stripJunkParagraphs(c.markdown);
+      return { ...c, title: markdown ? firstTitle(markdown, c.title) : c.title, markdown };
+    })
+    .filter((c) => c.markdown.trim().length >= 80 && !isFrontMatter(c.title, c.markdown) && !looksLikeBackMatter(c.title));
+  if (!kept.length) {
+    const fallback = chapters.filter(
+      (c) =>
+        c.markdown.trim().length >= 80 &&
+        !looksLikeThanks(c.title, c.markdown) &&
+        !looksLikeContentsList(c.markdown) &&
+        !FRONT_TITLE.test(c.title.replace(/^#+\s*/, '').replace(/\s+/g, ' ').trim()) &&
+        !looksLikeBackMatter(c.title),
+    );
+    return fallback.length ? fallback : chapters;
+  }
+  return kept;
 }
 
 /** Cut TOC / thanks / copyright blocks glued onto the start of chapter 1. */
@@ -223,14 +278,13 @@ function stripOpeningBlocks(markdown: string): string {
 }
 
 function dropFrontMatter(chapters: ParsedChapter[]): ParsedChapter[] {
-  const kept = chapters
-    .map((c, i) => {
-      const markdown = i < 8 ? stripOpeningBlocks(c.markdown) : c.markdown;
-      const title = markdown ? firstTitle(markdown, c.title) : c.title;
-      return { ...c, title, markdown };
-    })
-    .filter((c) => c.markdown.trim().length >= 80 && !isFrontMatter(c.title, c.markdown));
-  return kept.length ? kept : chapters;
+  const cleaned = chapters.map((c, i) => {
+    const markdown = i < 12 ? stripJunkParagraphs(stripOpeningBlocks(c.markdown)) : stripJunkParagraphs(c.markdown);
+    const title = markdown ? firstTitle(markdown, c.title) : c.title;
+    return { ...c, title, markdown };
+  });
+  const core = keepInstructionalCore(cleaned);
+  return core.length ? core : cleaned.filter((c) => c.markdown.trim().length >= 80);
 }
 
 function thinChapters(chapters: ParsedChapter[], max: number): ParsedChapter[] {

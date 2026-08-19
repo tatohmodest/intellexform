@@ -15,10 +15,12 @@ import { getBook, studentCanReadBook } from '@/lib/learn/ecosystem';
 import { isLLMConfigured } from '@/lib/learn/tutor';
 import { openaiJsonCompletion, parseJsonObject } from '@/lib/learn/openaiJson';
 import { parseBookFile, splitIntoChapters, type ParsedChapter, BOOK_TUTOR_CHAPTER_CHARS } from '@/lib/learn/bookParse';
-import { buildCurriculum } from '@/lib/learn/bookTutorCurriculum';
+import { buildCurriculum, inferLanguage, looksLikeCode, type LessonUiType } from '@/lib/learn/bookTutorCurriculum';
+import { BOOK_TUTOR_CLARIFY_SYSTEM, BOOK_TUTOR_GRADE_SYSTEM } from '@/lib/learn/bookTutorPrompt';
 
 export type BookTutorPhase = 'teaching' | 'quiz' | 'passed' | 'complete';
 export type BookTutorLessonKind = 'teach' | 'practice';
+export type BookTutorUiType = LessonUiType;
 
 export type BookTutorCheck = {
   id: string;
@@ -46,6 +48,11 @@ export type BookTutorLesson = {
   watchOut?: string;
   analogy?: string;
   checks?: BookTutorCheck[];
+  uiType?: BookTutorUiType;
+  exampleType?: 'code_snippet' | 'mathematical_formula' | 'real_world_scenario';
+  language?: string;
+  choices?: string[];
+  correctChoice?: number | null;
 };
 
 export type BookTutorChapterOutline = { id: string; title: string };
@@ -118,6 +125,9 @@ export type PublicLesson = {
   watchOut: string;
   analogy: string;
   checks: Array<{ id: string; prompt: string; placement: 'mid' | 'end' }>;
+  uiType: BookTutorUiType;
+  language: string;
+  choices: string[];
   index: number;
   total: number;
 };
@@ -184,16 +194,38 @@ function toSummary(doc: BookTutorPathDoc & { _id: ObjectId }): BookTutorPathSumm
   };
 }
 
+function resolveUiType(lesson: BookTutorLesson): BookTutorUiType {
+  if (lesson.uiType === 'code_editor' || lesson.uiType === 'multiple_choice' || lesson.uiType === 'text_input') {
+    return lesson.uiType;
+  }
+  const blob = `${lesson.explanation}\n${lesson.example}\n${lesson.question}\n${lesson.practiceTask || ''}`;
+  if (looksLikeCode(blob) || inferLanguage(blob)) return 'code_editor';
+  return 'text_input';
+}
+
+function publicExample(lesson: BookTutorLesson): string {
+  const raw = String(lesson.example || '').trim();
+  if (!raw) return '';
+  if (/```/.test(raw)) return raw;
+  if (lesson.exampleType === 'code_snippet' || looksLikeCode(raw)) {
+    const lang = lesson.language && lesson.language !== 'other' ? lesson.language : inferLanguage(raw);
+    return `\`\`\`${lang && lang !== 'other' ? lang : ''}\n${raw}\n\`\`\``;
+  }
+  return raw;
+}
+
 function publicLesson(lessons: BookTutorLesson[], index: number): PublicLesson | null {
   const lesson = lessons[index];
   if (!lesson) return null;
+  const uiType = resolveUiType(lesson);
+  const choices = uiType === 'multiple_choice' && Array.isArray(lesson.choices) ? lesson.choices.map(String).filter(Boolean).slice(0, 6) : [];
   return {
     id: lesson.id,
     chapterTitle: lesson.chapterTitle,
     sortOrder: lesson.sortOrder,
     title: lesson.title,
     explanation: lesson.explanation,
-    example: lesson.example,
+    example: publicExample(lesson),
     question: lesson.question,
     kind: lesson.kind === 'practice' ? 'practice' : 'teach',
     keypoints: Array.isArray(lesson.keypoints) ? lesson.keypoints.map(String).filter(Boolean).slice(0, 6) : [],
@@ -220,6 +252,9 @@ function publicLesson(lessons: BookTutorLesson[], index: number): PublicLesson |
             };
           })
       : [],
+    uiType: uiType === 'multiple_choice' && choices.length < 2 ? 'text_input' : uiType,
+    language: String(lesson.language || inferLanguage(`${lesson.explanation}\n${lesson.example}`) || ''),
+    choices,
     index,
     total: lessons.length,
   };
@@ -542,6 +577,15 @@ export async function createOrGetPathFromLibraryBook(opts: {
 }
 
 function heuristicGrade(lesson: BookTutorLesson, answer: string): { isCorrect: boolean; feedback: string } {
+  const ui = resolveUiType(lesson);
+  if (ui === 'multiple_choice' && Array.isArray(lesson.choices) && typeof lesson.correctChoice === 'number') {
+    const correct = String(lesson.choices[lesson.correctChoice] || '').trim();
+    const ok = answer.trim().toLowerCase() === correct.toLowerCase();
+    return {
+      isCorrect: ok,
+      feedback: ok ? 'That’s the one. Hold that distinction — the next step uses it.' : 'Not that option. Look back at the last stretch and pick again.',
+    };
+  }
   const words = tokenize(answer);
   if (lesson.kind === 'practice') {
     if (words.length < 8) {
@@ -580,17 +624,23 @@ async function llmGrade(lesson: BookTutorLesson, answer: string): Promise<{ isCo
   try {
     const practiceNote =
       lesson.kind === 'practice'
-        ? 'This is a hands-on step. Pass if they clearly attempted the task and reported a concrete result (output, error, screen, number). Fail empty slogans or a restated chapter title.'
-        : 'Be fair to paraphrases and invented examples. Fail if they only restate the title, repeat "the main idea", or dodge the question.';
+        ? 'This is a hands-on step. Pass if they clearly attempted the task and reported a concrete result (output, error, screen, number, or working-enough code). Fail empty slogans or a restated chapter title.'
+        : 'Be fair to paraphrases, invented examples, and mostly-right code. Fail if they only restate the title, repeat "the main idea", talk about acknowledgments, or dodge the question.';
     const raw = await openaiJsonCompletion({
       temperature: 0.2,
-      system: `You grade a short free-text check for a book tutor. ${practiceNote} JSON only: {"is_correct": boolean, "feedback": string}. Feedback is 1-3 sentences, encouraging, specific. If they failed, hint the missing idea without dumping a model answer.`,
-      user: `LESSON: ${lesson.title}
+      system: BOOK_TUTOR_GRADE_SYSTEM,
+      user: `${practiceNote}
+
+LESSON: ${lesson.title}
 KIND: ${lesson.kind || 'teach'}
+UI: ${resolveUiType(lesson)}
+LANGUAGE: ${lesson.language || ''}
 EXPLANATION: ${lesson.explanation.slice(0, 1400)}
 EXAMPLE: ${(lesson.example || '').slice(0, 600)}
 QUESTION: ${lesson.question}
 RUBRIC: ${lesson.criteria}
+CHOICES: ${(lesson.choices || []).join(' | ')}
+CORRECT_CHOICE_INDEX: ${lesson.correctChoice ?? ''}
 STUDENT ANSWER: ${answer.slice(0, 2000)}`,
     });
     const parsed = parseJsonObject<{ is_correct?: boolean; isCorrect?: boolean; feedback?: string }>(raw);
@@ -722,13 +772,7 @@ async function llmClarify(
   try {
     const raw = await openaiJsonCompletion({
       temperature: 0.45,
-      system: `You ARE the author of this book, inside a tiny clarify bubble. The learner clicked No / got the yes-no wrong and will type what they do not get.
-Reply JSON only: {"explanation": string}.
-Rules:
-- 3–5 short sentences. One everyday analogy max.
-- Answer THEIR confusion. Do not recopy the lesson.
-- Do not say whether Yes or No is the correct click.
-- Do not start a long chat or ask follow-up questions besides implying they will retry Yes/No.`,
+      system: BOOK_TUTOR_CLARIFY_SYSTEM,
       user: `LESSON TITLE: ${lesson.title}
 TEACH: ${lesson.explanation.slice(0, 900)}
 ANALOGY: ${(lesson.analogy || '').slice(0, 400)}
@@ -760,9 +804,16 @@ export async function submitAnswer(opts: { userId: string; pathId: string; answe
     throw new BookTutorError('Click the yes/no checks first — then the written question unlocks.', 400);
   }
   const answer = opts.answer.trim();
-  if (answer.length < 4) throw new BookTutorError('Type an answer before submitting.', 400);
+  const ui = resolveUiType(lesson);
+  const minLen = ui === 'multiple_choice' ? 1 : ui === 'code_editor' ? 2 : 4;
+  if (answer.length < minLen) throw new BookTutorError('Type an answer before submitting.', 400);
 
-  let result = isLLMConfigured() ? await llmGrade(lesson, answer) : null;
+  let result =
+    ui === 'multiple_choice' && typeof lesson.correctChoice === 'number'
+      ? heuristicGrade(lesson, answer)
+      : isLLMConfigured()
+        ? await llmGrade(lesson, answer)
+        : null;
   if (!result) result = heuristicGrade(lesson, answer);
 
   const db = await getDb();

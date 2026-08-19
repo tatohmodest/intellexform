@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, ArrowRight, CheckCircle2, FlaskConical, Lightbulb, ListChecks, Loader2, StickyNote } from 'lucide-react';
 import MarkdownLite from '@/components/dashboard/MarkdownLite';
+import BookTutorAnswerField, { type TutorUiType } from '@/components/dashboard/BookTutorAnswerField';
 
 type Check = { id: string; prompt: string; placement: 'mid' | 'end' };
 
@@ -21,6 +22,9 @@ type Lesson = {
   watchOut?: string;
   analogy?: string;
   checks?: Check[];
+  uiType?: TutorUiType;
+  language?: string;
+  choices?: string[];
   index: number;
   total: number;
 };
@@ -266,6 +270,7 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
     setClarifyDraft('');
     setClarifyReply('');
     setYouSaid('');
+    setAnswer('');
   }, [lesson?.id]);
 
   function openClarify(seed?: string) {
@@ -499,7 +504,16 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
             ) : null}
 
             {lesson.example ? (
-              <Callout tone="tip" label="Worked example" text={lesson.example} icon={<Lightbulb size={14} />} />
+              /```/.test(lesson.example) ? (
+                <div className="mt-8">
+                  <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
+                    Snippet
+                  </p>
+                  <MarkdownLite text={lesson.example} />
+                </div>
+              ) : (
+                <Callout tone="tip" label="Worked example" text={lesson.example} icon={<Lightbulb size={14} />} />
+              )
             ) : null}
 
             {practice && lesson.practiceTask ? (
@@ -522,14 +536,14 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
         <form onSubmit={grade} className="mt-8 rounded-2xl border p-5" style={{ borderColor: 'var(--line)' }}>
           <h3 className="font-display text-[20px]">{practice ? 'What did you get?' : 'Now, in your words'}</h3>
           <p className="mt-2 text-[14.5px] leading-relaxed">{lesson.question}</p>
-          <textarea
+          <BookTutorAnswerField
+            uiType={lesson.uiType || 'text_input'}
+            language={lesson.language}
+            choices={lesson.choices}
             value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
-            rows={practice ? 5 : 4}
-            placeholder={practice ? 'Paste the output, result, or what you saw…' : 'Answer in your own words…'}
-            className="mt-4 w-full border px-3 py-2.5 text-[14px]"
-            style={{ borderColor: 'var(--line)', background: 'transparent' }}
             disabled={passed}
+            practice={practice}
+            onChange={setAnswer}
           />
           {progress?.lastFeedback ? (
             <p
@@ -555,7 +569,7 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
               style={{ background: 'var(--paper)', border: '1px solid var(--line)', color: 'var(--ink)' }}
             >
               {busy === 'grade' ? <Loader2 size={15} className="animate-spin" /> : null}
-              {passed ? 'Checked' : practice ? 'Submit result' : 'Check answer'}
+              {passed ? 'Checked' : lesson.uiType === 'code_editor' ? 'Run check' : practice ? 'Submit result' : 'Check answer'}
             </button>
             <button
               type="button"
@@ -572,7 +586,11 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
             <p className="mt-3 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
               {practice
                 ? 'Next stays locked until you paste a real result from the try-it. You can retry.'
-                : 'Next stays locked until this written check is correct. You can retry.'}
+                : lesson.uiType === 'code_editor'
+                  ? 'Write or paste code in the editor. Next stays locked until this check is correct.'
+                  : lesson.uiType === 'multiple_choice'
+                    ? 'Pick one, then check. Next stays locked until it is correct.'
+                    : 'Next stays locked until this written check is correct. You can retry.'}
             </p>
           ) : null}
         </form>
