@@ -438,6 +438,7 @@ async function analyzeBook(
     .join('\n');
   const raw = await openaiJsonCompletion({
     temperature: 0.1,
+    timeoutMs: 12_000,
     system: BOOK_ANALYZER_SYSTEM,
     user: `Classify every chapter listed. Do not omit later chapters. Instructional chapters stay keep=true.\n\n${packed}`,
   });
@@ -491,6 +492,7 @@ async function llmStepsForSections(
   const unitHint = sections.map((s) => `- ${s.title}`).join('\n');
   const raw = await openaiJsonCompletion({
     temperature: 0.4,
+    timeoutMs: 18_000,
     system: BOOK_TUTOR_STEP_SYSTEM,
     user: `CHAPTER: ${chapter.title}
 ROLE: ${role}
@@ -584,7 +586,10 @@ export async function planBookCurriculum(
   const introIdx = new Set<number>();
   if (!opts?.skipLlm && isLLMConfigured()) {
     try {
-      const analyzed = await analyzeBook(pool);
+      const analyzed = await Promise.race([
+        analyzeBook(pool),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 14_000)),
+      ]);
       if (analyzed) {
         keepIdx = pool.map((_, i) => i).filter((i) => !analyzed.skip.has(i));
         if (!keepIdx.length) keepIdx = pool.map((_, i) => i);
@@ -618,6 +623,7 @@ export async function generateChapterSteps(opts: {
   plan: CurriculumChapterPlan;
   startIndex: number;
   skipLlm?: boolean;
+  deadlineMs?: number;
 }): Promise<{ lessons: BuiltLesson[]; plan: CurriculumChapterPlan; engine: 'llm' | 'heuristic' | 'mixed' }> {
   const role = opts.plan.role;
   const sections = sectionsFromChapter(opts.chapter, role);
@@ -627,9 +633,10 @@ export async function generateChapterSteps(opts: {
   const lessons: BuiltLesson[] = [];
   let llm = 0;
   let heuristic = 0;
-  const useLlm = !opts.skipLlm && isLLMConfigured();
+  const deadline = opts.deadlineMs || Date.now() + 40_000;
   for (const batch of packSections(usable)) {
     let made: BuiltLesson[] | null = null;
+    const useLlm = !opts.skipLlm && isLLMConfigured() && Date.now() < deadline;
     if (useLlm) {
       try {
         made = await llmStepsForSections(opts.chapter, batch, role, opts.startIndex + lessons.length);

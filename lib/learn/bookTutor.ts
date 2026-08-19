@@ -358,8 +358,8 @@ function buildPhaseOf(path: BookTutorPathDoc): BuildPhase {
   return 'analyzing';
 }
 
-function pathIsPlayable(path: Pick<BookTutorPathDoc, 'status'>): boolean {
-  return path.status === 'ready';
+function pathIsPlayable(path: Pick<BookTutorPathDoc, 'status' | 'lessons'>): boolean {
+  return path.status === 'ready' || (path.status === 'generating' && (path.lessons?.length || 0) > 0);
 }
 
 export async function canAccessPath(userId: string, path: BookTutorPathDoc & { id?: string }): Promise<boolean> {
@@ -444,22 +444,24 @@ export async function getProgress(userId: string, pathId: string): Promise<BookT
 }
 
 export async function getLearnerSession(userId: string, pathId: string) {
-  const path = await getPath(pathId);
-  if (!path) throw new BookTutorError('Book tutor not found.', 404);
-  if (!(await canAccessPath(userId, path))) {
+  const path0 = await getPath(pathId);
+  if (!path0) throw new BookTutorError('Book tutor not found.', 404);
+  if (!(await canAccessPath(userId, path0))) {
     throw new BookTutorError('You do not have access to this book tutor.', 403);
   }
-  if (path.status === 'generating') {
-    const staleMs = Date.now() - new Date(path.updatedAt).getTime();
-    if (staleMs > 45 * 60 * 1000 && !(path.lessons?.length)) {
-      path.status = 'failed';
-      path.error = path.error || 'This book took too long to study. Try an unlocked EPUB, or a PDF you can select text in.';
+  if (path0.status === 'generating') {
+    const staleMs = Date.now() - new Date(path0.updatedAt).getTime();
+    if (staleMs > 45 * 60 * 1000 && !(path0.lessons?.length)) {
+      path0.status = 'failed';
+      path0.error = path0.error || 'This book took too long to study. Try an unlocked EPUB, or a PDF you can select text in.';
     } else {
-      continuePathBuild(pathId).catch((err) => console.error('book tutor resume failed:', err));
+      await continuePathBuild(pathId).catch((err) => console.error('book tutor resume failed:', err));
     }
   }
+  const path = (await getPath(pathId)) || path0;
   const phase = buildPhaseOf(path);
-  if (path.status !== 'ready') {
+  const playable = pathIsPlayable(path);
+  if (!playable) {
     return {
       path: {
         id: path.id,
@@ -477,6 +479,7 @@ export async function getLearnerSession(userId: string, pathId: string) {
         buildChapter: path.nextChapterIndex || 0,
         buildChapters: path.curriculum?.length || chapterCountOf(path),
         buildPhase: phase,
+        stillBuilding: path.status === 'generating',
       },
       progress: null,
       lesson: null,
@@ -486,6 +489,8 @@ export async function getLearnerSession(userId: string, pathId: string) {
   const progress = await getProgress(userId, pathId);
   const idx = Math.min(progress.currentLessonIndex, Math.max(0, path.lessons.length - 1));
   const completedIds = progress.completedLessonIds || [];
+  const stillBuilding = path.status === 'generating';
+  const waitingOnBuild = stillBuilding && idx >= path.lessons.length - 1 && progress.phase !== 'complete';
   const lesson = progress.phase === 'complete' ? null : publicLesson(path.lessons, idx);
   const saved = lesson ? progress.lessonAnswers?.[lesson.id] : null;
   const alreadyDone = Boolean(lesson && completedIds.includes(lesson.id));
@@ -495,6 +500,7 @@ export async function getLearnerSession(userId: string, pathId: string) {
     lesson.savedCorrect = saved ? saved.isCorrect : alreadyDone ? true : null;
     lesson.canGoBack = idx > 0 || progress.phase === 'complete';
     lesson.reviewing = alreadyDone;
+    lesson.total = path.lessons.length;
   }
   const contents = courseContents(path.lessons, completedIds);
   return {
@@ -510,10 +516,11 @@ export async function getLearnerSession(userId: string, pathId: string) {
       isPrivate: path.isPrivate,
       sourceBookId: path.sourceBookId,
       canDelete: path.ownerUserId === userId,
-      buildNote: null as string | null,
-      buildChapter: contents.length,
-      buildChapters: contents.length,
-      buildPhase: 'ready' as const,
+      buildNote: stillBuilding ? path.buildNote || null : null,
+      buildChapter: path.nextChapterIndex || 0,
+      buildChapters: path.curriculum?.length || contents.length,
+      buildPhase: phase,
+      stillBuilding,
     },
     progress: {
       currentLessonIndex: idx,
@@ -523,6 +530,7 @@ export async function getLearnerSession(userId: string, pathId: string) {
       lastCorrect: saved ? saved.isCorrect : alreadyDone ? true : progress.lastCorrect,
       attemptsOnCurrent: progress.attemptsOnCurrent,
       checkpointPassed: progress.checkpointPassed || 0,
+      waitingOnBuild,
     },
     lesson,
     contents,
@@ -569,15 +577,7 @@ export async function continuePathBuild(pathId: string) {
   if (building.has(pathId)) return;
   building.add(pathId);
   try {
-    for (let slice = 0; slice < 800; slice++) {
-      const path = await getPath(pathId);
-      if (!path || path.status !== 'generating') return;
-      const sources = await loadSources(pathId);
-      if (!sources?.length && !path.curriculum?.length && !(path.lessons?.length)) return;
-      await runPathBuild(pathId);
-      const after = await getPath(pathId);
-      if (!after || after.status !== 'generating') return;
-    }
+    await runPathBuild(pathId);
   } finally {
     building.delete(pathId);
   }
@@ -651,7 +651,6 @@ async function runPathBuild(pathId: string) {
   let lessons = [...(path.lessons || [])];
   let llm = 0;
   let heuristic = 0;
-  const started = Date.now();
   while (next < plan.length) {
     const chapter = teach.find((c) => c.id === plan[next].id) || teach[next];
     if (!chapter) {
@@ -662,6 +661,7 @@ async function runPathBuild(pathId: string) {
       chapter,
       plan: plan[next],
       startIndex: lessons.length,
+      deadlineMs: Date.now() + 35_000,
     });
     lessons = lessons.concat(made);
     plan[next] = { ...updated, status: made.length ? 'complete' : updated.status };
@@ -686,7 +686,7 @@ async function runPathBuild(pathId: string) {
         },
       },
     );
-    if (Date.now() - started > 50_000) return;
+    if (next < plan.length) return;
   }
   if (!lessons.length) {
     await db.collection('book_tutor_paths').updateOne(
@@ -752,6 +752,7 @@ export async function createPathFromUpload(opts: {
     title: opts.title,
   });
   work.catch((err) => console.error('book tutor background build failed:', err));
+  await work;
   return id;
 }
 
@@ -777,6 +778,14 @@ async function finishPathFromUpload(
     } finally {
       opts.buffer.fill(0);
     }
+    await saveSources(
+      pathId,
+      parsed.chapters.filter((c) => String(c.markdown || '').trim().length >= 80),
+    );
+    await db.collection('book_tutor_paths').updateOne(
+      { _id: oid },
+      { $set: { buildNote: 'Building curriculum…', sourceChars: parsed.charCount, pageCount: parsed.pageHint, updatedAt: new Date() } },
+    );
     const { chapters: teach, plan } = await planBookCurriculum(parsed.chapters);
     if (!teach.length || !plan.length) throw new BookTutorError('Could not find real chapters to teach — the file looked like a table of contents or title pages.');
     await saveSources(pathId, teach);
@@ -869,7 +878,7 @@ export async function createOrGetPathFromLibraryBook(opts: {
       updatedAt: new Date(),
     });
     await saveSources(id, teach);
-    continuePathBuild(id).catch((err) => console.error('book tutor library build failed:', err));
+    await continuePathBuild(id);
     return id;
   } catch {
     const raced = await db.collection('book_tutor_paths').findOne({
@@ -1154,10 +1163,10 @@ export async function submitAnswer(opts: { userId: string; pathId: string; answe
 }
 
 export async function advanceLesson(opts: { userId: string; pathId: string }) {
-  const path = await getPath(opts.pathId);
+  let path = await getPath(opts.pathId);
   if (!path) throw new BookTutorError('Book tutor not found.', 404);
   if (!(await canAccessPath(opts.userId, path))) throw new BookTutorError('You do not have access to this book tutor.', 403);
-  if (path.status !== 'ready') throw new BookTutorError('This tutor is still being prepared. Wait until it is ready.', 409);
+  if (!pathIsPlayable(path)) throw new BookTutorError('This tutor is still being prepared. Wait a moment.', 409);
   const progress = await getProgress(opts.userId, path.id);
   const lesson = path.lessons[progress.currentLessonIndex];
   const skipCheck = lesson && !lessonNeedsCheck(lesson);
@@ -1165,7 +1174,14 @@ export async function advanceLesson(opts: { userId: string; pathId: string }) {
   if (!alreadyDone && progress.phase !== 'passed' && !skipCheck) {
     throw new BookTutorError('Answer the check question correctly before going to the next step.', 400);
   }
-  const nextIndex = progress.currentLessonIndex + 1;
+  let nextIndex = progress.currentLessonIndex + 1;
+  if (nextIndex >= path.lessons.length && path.status === 'generating') {
+    await continuePathBuild(path.id).catch((err) => console.error('book tutor advance build failed:', err));
+    path = (await getPath(opts.pathId)) || path;
+  }
+  if (nextIndex >= path.lessons.length && path.status === 'generating') {
+    throw new BookTutorError('The next chapter is still being written. Stay on this page or tap Next again in a moment.', 409);
+  }
   const complete = nextIndex >= path.lessons.length;
   const completed = new Set(progress.completedLessonIds || []);
   if (lesson?.id && (skipCheck || alreadyDone || progress.phase === 'passed')) completed.add(lesson.id);
@@ -1197,7 +1213,7 @@ export async function retreatLesson(opts: { userId: string; pathId: string }) {
   const path = await getPath(opts.pathId);
   if (!path) throw new BookTutorError('Book tutor not found.', 404);
   if (!(await canAccessPath(opts.userId, path))) throw new BookTutorError('You do not have access to this book tutor.', 403);
-  if (path.status !== 'ready') throw new BookTutorError('This tutor is still being prepared. Wait until it is ready.', 409);
+  if (!pathIsPlayable(path)) throw new BookTutorError('This tutor is still being prepared. Wait a moment.', 409);
   const progress = await getProgress(opts.userId, path.id);
   let nextIndex = progress.currentLessonIndex - 1;
   if (progress.phase === 'complete') nextIndex = Math.max(0, path.lessons.length - 1);
@@ -1227,7 +1243,7 @@ export async function openStoredLesson(opts: { userId: string; pathId: string; c
   const path = await getPath(opts.pathId);
   if (!path) throw new BookTutorError('Book tutor not found.', 404);
   if (!(await canAccessPath(opts.userId, path))) throw new BookTutorError('You do not have access to this book tutor.', 403);
-  if (path.status !== 'ready') throw new BookTutorError('This tutor is still being prepared. Wait until it is ready.', 409);
+  if (!pathIsPlayable(path)) throw new BookTutorError('This tutor is still being prepared. Wait a moment.', 409);
   let nextIndex = -1;
   if (typeof opts.lessonIndex === 'number' && Number.isFinite(opts.lessonIndex)) {
     nextIndex = Math.floor(opts.lessonIndex);

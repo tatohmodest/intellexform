@@ -54,6 +54,7 @@ type Session = {
     buildChapter?: number;
     buildChapters?: number;
     buildPhase?: 'analyzing' | 'planning' | 'generating' | 'validating' | 'ready' | 'failed';
+    stillBuilding?: boolean;
   };
   progress: {
     currentLessonIndex: number;
@@ -63,6 +64,7 @@ type Session = {
     lastCorrect: boolean | null;
     attemptsOnCurrent: number;
     checkpointPassed: number;
+    waitingOnBuild?: boolean;
   } | null;
   lesson: Lesson | null;
   contents?: ContentsItem[];
@@ -284,12 +286,25 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
 
   useEffect(() => {
     if (session.path.status === 'ready' || session.path.status === 'failed') return undefined;
-    const timer = window.setInterval(async () => {
-      const res = await fetch(`/api/learn/book-tutor/${session.path.id}`);
-      const data = await res.json().catch(() => null);
-      if (data?.path) setSession(data);
-    }, 2500);
-    return () => window.clearInterval(timer);
+    let stop = false;
+    (async () => {
+      while (!stop) {
+        try {
+          const res = await fetch(`/api/learn/book-tutor/${session.path.id}`);
+          const data = await res.json().catch(() => null);
+          if (stop) break;
+          if (data?.path) setSession(data);
+          if (!data?.path || data.path.status === 'ready' || data.path.status === 'failed') break;
+          await new Promise((r) => setTimeout(r, 800));
+        } catch {
+          if (stop) break;
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+      }
+    })();
+    return () => {
+      stop = true;
+    };
   }, [session.path.id, session.path.status]);
 
   useEffect(() => {
@@ -474,7 +489,7 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
           ? 'Validating course…'
           : 'Generating learning experiences…';
 
-  if (session.path.status !== 'ready') {
+  if (session.path.status === 'failed' || (!lesson && !complete && session.path.status !== 'ready')) {
     return (
       <div className="rounded-2xl border border-dashed px-4 py-10 text-center" style={{ borderColor: 'var(--line)' }}>
         <p className="font-display text-[22px]">{session.path.status === 'failed' ? 'Could not build this tutor' : 'Preparing your learning experience'}</p>
@@ -482,7 +497,7 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
           {session.path.error ||
             (session.path.status === 'failed'
               ? 'Try an unlocked EPUB, or a PDF you can select text in.'
-              : 'We are analyzing your book and building the complete interactive course. Wait until this finishes before you start — Next will not generate new steps later.')}
+              : 'Your book is being turned into tutor steps. Stay on this page if you can — each moment here writes another chapter. If you leave, come back and it will continue from where it stopped.')}
         </p>
         {session.path.status !== 'failed' ? (
           <>
@@ -501,7 +516,7 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
               </p>
             ) : null}
             <p className="mx-auto mt-4 max-w-[420px] text-[13px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              You can leave this page and come back later. Preparation continues in the background. When it is ready, the stored course opens — it will not generate again.
+              Do not close this tab until you see the first lesson. After that you can learn while later chapters keep writing. Next uses stored steps — it does not start from scratch.
             </p>
             <Loader2 size={18} className="mx-auto mt-4 animate-spin" />
           </>
@@ -576,8 +591,12 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
             <ContentsButton onClick={() => setContentsOpen(true)} />
           </div>
         </div>
+        {session.path.stillBuilding ? (
+          <p className="mt-2 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+            {session.path.buildNote || 'Later chapters are still being written. Stay here or come back — it continues from where it stopped.'}
+          </p>
+        ) : null}
       </div>
-
       <BookTutorContents
         items={contents}
         currentChapterId={lesson.chapterId}
@@ -686,7 +705,11 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
               className="btn btn-primary !px-5 !py-2.5 text-[13.5px]"
             >
               {busy === 'next' ? <Loader2 size={15} className="animate-spin" /> : null}
-              {lesson.index + 1 >= lesson.total ? 'Complete course' : 'Continue'}
+              {progress?.waitingOnBuild
+                ? 'Write next chapter'
+                : lesson.index + 1 >= lesson.total
+                  ? 'Complete course'
+                  : 'Continue'}
               <ArrowRight size={15} />
             </button>
           </div>
@@ -764,7 +787,11 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
                 className="btn btn-primary !px-5 !py-2.5 text-[13.5px]"
               >
                 {busy === 'next' ? <Loader2 size={15} className="animate-spin" /> : null}
-                {lesson.index + 1 >= lesson.total ? 'Complete course' : 'Next'}
+                {progress?.waitingOnBuild
+                  ? 'Write next chapter'
+                  : lesson.index + 1 >= lesson.total
+                    ? 'Complete course'
+                    : 'Next'}
                 <ArrowRight size={15} />
               </button>
             </div>

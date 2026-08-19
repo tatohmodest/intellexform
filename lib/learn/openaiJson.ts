@@ -4,6 +4,7 @@ export async function openaiJsonCompletion(opts: {
   system: string;
   user: string;
   temperature?: number;
+  timeoutMs?: number;
 }): Promise<string | null> {
   if (!isLLMConfigured()) return null;
   const url = `${process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'}/chat/completions`;
@@ -20,25 +21,34 @@ export async function openaiJsonCompletion(opts: {
     temperature: opts.temperature ?? 0.4,
     messages,
   };
+  const timeoutMs = opts.timeoutMs ?? 20_000;
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), timeoutMs);
 
-  let res = await fetch(url, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ ...base, response_format: { type: 'json_object' } }),
-  });
-  if (!res.ok) {
-    res = await fetch(url, {
+  try {
+    let res = await fetch(url, {
       method: 'POST',
       headers,
-      body: JSON.stringify(base),
+      body: JSON.stringify({ ...base, response_format: { type: 'json_object' } }),
+      signal: ac.signal,
     });
+    if (!res.ok) {
+      res = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(base),
+        signal: ac.signal,
+      });
+    }
+    if (!res.ok) {
+      const err = await res.text().catch(() => '');
+      throw new Error(`LLM request failed (${res.status}): ${err.slice(0, 280)}`);
+    }
+    const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+    return data.choices?.[0]?.message?.content || null;
+  } finally {
+    clearTimeout(timer);
   }
-  if (!res.ok) {
-    const err = await res.text().catch(() => '');
-    throw new Error(`LLM request failed (${res.status}): ${err.slice(0, 280)}`);
-  }
-  const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-  return data.choices?.[0]?.message?.content || null;
 }
 
 export function parseJsonObject<T>(raw: string | null): T | null {

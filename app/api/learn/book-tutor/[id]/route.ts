@@ -3,6 +3,7 @@ import { getSessionUser } from '@/lib/auth/getUser';
 import { BookTutorError, deletePathForUser, getLearnerSession } from '@/lib/learn/bookTutor';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const user = getSessionUser();
