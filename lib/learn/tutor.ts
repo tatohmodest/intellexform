@@ -4,7 +4,6 @@ import { getAllCourses } from '@/lib/repo';
 import type { Course } from '@/lib/types';
 import { GOLDEN_RULE } from '@/lib/eduos/governance';
 import { ECOSYSTEM, LOOPING_BINARY } from '@/lib/ecosystem';
-import { geminiApiKey, geminiTextCompletion, textToTokenStream } from '@/lib/learn/gemini';
 
 /**
  * InTelleX AI - interactive teaching engine.
@@ -798,11 +797,7 @@ export function curriculumTutorAnswer(
 }
 
 export function isLLMConfigured(): boolean {
-  return Boolean(
-    process.env.GEMINI_API_KEY ||
-      process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-      process.env.OPENAI_API_KEY,
-  );
+  return Boolean(process.env.OPENAI_API_KEY);
 }
 
 export async function buildSystemPrompt(): Promise<string> {
@@ -892,27 +887,6 @@ export async function llmTutorStream(
       ...messages.filter((m) => m.role !== 'system').slice(-20),
     ],
   };
-
-  if (geminiApiKey()) {
-    const history = messages
-      .filter((m) => m.role !== 'system')
-      .slice(-20)
-      .map((m) => `${m.role === 'assistant' ? 'Tutor' : 'Student'}: ${m.content}`)
-      .join('\n\n');
-    const extra = [
-      lessonContext && `Curriculum context:\n${lessonContext}`,
-      catalogueContext && `Catalogue:\n${catalogueContext}`,
-    ]
-      .filter(Boolean)
-      .join('\n\n');
-    const text = await geminiTextCompletion({
-      system: `${system}\n\n${modeNudge}${extra ? `\n\n${extra}` : ''}`,
-      user: `${history}\n\nReply as the tutor now.`,
-      temperature: 0.7,
-    });
-    if (!text) throw new Error('Gemini returned an empty reply.');
-    return textToTokenStream(text);
-  }
 
   const res = await fetch(
     `${process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'}/chat/completions`,

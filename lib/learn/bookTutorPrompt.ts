@@ -1,5 +1,5 @@
 /**
- * Book Agent spec — this is the prompt we send to Gemini (and the contract
+ * Book Agent spec — this is the prompt we send to OpenAI (and the contract
  * for heuristic fallback). Copy BOOK_AGENT_SPEC if you need to recreate the
  * agent elsewhere. The student never sees this text.
  *

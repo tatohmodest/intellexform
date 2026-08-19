@@ -55,7 +55,7 @@ type ("structural"), prompt, points, hint (tip about submitting via Google Drive
     return NextResponse.json({
       questions: scaffold(),
       source: 'scaffold',
-      note: 'Gemini/OpenAI key not configured - scaffold returned. Edit before publishing.',
+      note: 'OPENAI_API_KEY not configured - scaffold returned. Edit before publishing.',
     });
   }
 
