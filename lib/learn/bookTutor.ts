@@ -15,11 +15,11 @@ import { getBook, studentCanReadBook } from '@/lib/learn/ecosystem';
 import { isLLMConfigured } from '@/lib/learn/tutor';
 import { openaiJsonCompletion, parseJsonObject } from '@/lib/learn/openaiJson';
 import { parseBookFile, splitIntoChapters, type ParsedChapter, BOOK_TUTOR_CHAPTER_CHARS } from '@/lib/learn/bookParse';
-import { buildCurriculum, inferLanguage, looksLikeCode, type LessonUiType } from '@/lib/learn/bookTutorCurriculum';
+import { buildCurriculum, inferLanguage, lessonNeedsCheck, looksLikeCode, stripTutorMetaSpeak, type LessonUiType } from '@/lib/learn/bookTutorCurriculum';
 import { BOOK_TUTOR_CLARIFY_SYSTEM, BOOK_TUTOR_GRADE_SYSTEM } from '@/lib/learn/bookTutorPrompt';
 
 export type BookTutorPhase = 'teaching' | 'quiz' | 'passed' | 'complete';
-export type BookTutorLessonKind = 'teach' | 'practice';
+export type BookTutorLessonKind = 'orient' | 'teach' | 'practice';
 export type BookTutorUiType = LessonUiType;
 
 export type BookTutorCheck = {
@@ -219,20 +219,24 @@ function publicLesson(lessons: BookTutorLesson[], index: number): PublicLesson |
   if (!lesson) return null;
   const uiType = resolveUiType(lesson);
   const choices = uiType === 'multiple_choice' && Array.isArray(lesson.choices) ? lesson.choices.map(String).filter(Boolean).slice(0, 6) : [];
+  const needsCheck = lessonNeedsCheck(lesson);
+  const kind: BookTutorLessonKind =
+    !needsCheck && lesson.kind !== 'practice' ? 'orient' : lesson.kind === 'practice' ? 'practice' : 'teach';
+  const orient = kind === 'orient';
   return {
     id: lesson.id,
     chapterTitle: lesson.chapterTitle,
     sortOrder: lesson.sortOrder,
-    title: lesson.title,
-    explanation: lesson.explanation,
-    example: publicExample(lesson),
-    question: lesson.question,
-    kind: lesson.kind === 'practice' ? 'practice' : 'teach',
-    keypoints: Array.isArray(lesson.keypoints) ? lesson.keypoints.map(String).filter(Boolean).slice(0, 6) : [],
-    practiceTask: String(lesson.practiceTask || ''),
-    note: String(lesson.note || ''),
-    watchOut: String(lesson.watchOut || ''),
-    analogy: String(lesson.analogy || ''),
+    title: stripTutorMetaSpeak(lesson.title) || lesson.title,
+    explanation: stripTutorMetaSpeak(lesson.explanation),
+    example: publicExample({ ...lesson, example: stripTutorMetaSpeak(lesson.example || '') }),
+    question: needsCheck ? lesson.question : '',
+    kind,
+    keypoints: orient ? [] : Array.isArray(lesson.keypoints) ? lesson.keypoints.map(String).filter(Boolean).slice(0, 6) : [],
+    practiceTask: orient ? '' : String(lesson.practiceTask || ''),
+    note: orient ? '' : stripTutorMetaSpeak(String(lesson.note || '')),
+    watchOut: orient ? '' : stripTutorMetaSpeak(String(lesson.watchOut || '')),
+    analogy: orient ? '' : stripTutorMetaSpeak(String(lesson.analogy || '')),
     checks: [],
     uiType: uiType === 'multiple_choice' && choices.length < 2 ? 'text_input' : uiType,
     language: String(lesson.language || inferLanguage(`${lesson.explanation}\n${lesson.example}`) || ''),
@@ -831,11 +835,15 @@ export async function advanceLesson(opts: { userId: string; pathId: string }) {
   if (!path) throw new BookTutorError('Book tutor not found.', 404);
   if (!(await canAccessPath(opts.userId, path))) throw new BookTutorError('You do not have access to this book tutor.', 403);
   const progress = await getProgress(opts.userId, path.id);
-  if (progress.phase !== 'passed') {
+  const lesson = path.lessons[progress.currentLessonIndex];
+  const skipCheck = lesson && !lessonNeedsCheck(lesson);
+  if (progress.phase !== 'passed' && !skipCheck) {
     throw new BookTutorError('Answer the check question correctly before going to the next step.', 400);
   }
   const nextIndex = progress.currentLessonIndex + 1;
   const complete = nextIndex >= path.lessons.length;
+  const completed = new Set(progress.completedLessonIds || []);
+  if (skipCheck && lesson?.id) completed.add(lesson.id);
   const db = await getDb();
   await db.collection('book_tutor_progress').updateOne(
     { userId: opts.userId, pathId: path.id },
@@ -847,6 +855,7 @@ export async function advanceLesson(opts: { userId: string; pathId: string }) {
         lastCorrect: complete ? true : null,
         attemptsOnCurrent: 0,
         checkpointPassed: 0,
+        completedLessonIds: Array.from(completed),
         updatedAt: new Date(),
       },
     },

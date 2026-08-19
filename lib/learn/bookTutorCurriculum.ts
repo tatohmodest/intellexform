@@ -8,7 +8,7 @@ import { openaiJsonCompletion, parseJsonObject } from '@/lib/learn/openaiJson';
 import { isFrontMatter, type ParsedChapter } from '@/lib/learn/bookParse';
 import { BOOK_TUTOR_CURRICULUM_SYSTEM } from '@/lib/learn/bookTutorPrompt';
 
-export type LessonKind = 'teach' | 'practice';
+export type LessonKind = 'orient' | 'teach' | 'practice';
 export type LessonUiType = 'text_input' | 'code_editor' | 'multiple_choice';
 export type LessonExampleType = 'code_snippet' | 'mathematical_formula' | 'real_world_scenario';
 
@@ -49,7 +49,7 @@ const PRACTICE_RE =
   /\b(try (this|it|the)|your turn|exercise\b|download\b|install\b|run (this|the|it)|open (the|your)|paste |type this|click |go to https?:\/\/|visit https?:\/\/|do the following|homework|practice:|challenge:|lab\b|experiment:)\b/i;
 
 const THANKS_SKIP =
-  /\b(thank(?:s| you)(?: to)?(?: my)? (?:wife|husband|spouse|partner|children|family|parents?|editor)|dedicated to my)\b/i;
+  /\b(thank(?:s| you)(?: to)?(?: my)? (?:wife|husband|spouse|partner|children|family|parents?|editor)|dedicated to my|table of contents|all rights reserved|revision history|version history|changelog)\b/i;
 
 const STOP = new Set(
   'a an and are as at be but by for from has have how i in is it its of on or that the this to was what when where which who why will with you your me my can do does stay stays remain remains close just over more less very much such only even still than then also into from with need needs using used use about after before because while chapter section page book'.split(
@@ -162,7 +162,11 @@ function unitsFromChapters(chapters: ParsedChapter[]): SourceUnit[] {
           chapterId: chapter.id,
           chapterTitle: chapter.title,
           text,
-          kind: PRACTICE_RE.test(text) ? 'practice' : 'teach',
+          kind: PRACTICE_RE.test(text)
+            ? 'practice'
+            : looksLikeWelcome(chapter.title, text) || looksLikeWelcome(chunkTitle, text)
+              ? 'orient'
+              : 'teach',
         });
       }
     }
@@ -303,29 +307,70 @@ function looksLikeKeywordDump(example: string): boolean {
 }
 
 function looksLikeMainIdea(q: string): boolean {
-  return /main idea of|what is this (section|chapter|part) about|summarize this (section|chapter)|in your own words,? what (is|was) this/i.test(
+  return /main idea of|what is this (section|chapter|part) about|summarize this (section|chapter)|in your own words,? what (is|was) this|what (have you|did you) learn(ed)? from (this|the) (chapter|section|book|lesson)|copy and paste|write exactly/i.test(
     q,
   );
 }
 
+/** Welcome / about-this-book stretches. Teach them, but do not quiz. */
+export function looksLikeWelcome(title: string, text: string): boolean {
+  const blob = `${title}\n${text.slice(0, 1800)}`.toLowerCase();
+  if (PRACTICE_RE.test(text) || looksLikeCode(text)) return false;
+  const welcome =
+    /\b(welcome to (this|the) book|this book (is about|will (teach|show|help))|who this book is for|who should read|no (prior|previous) experience|you (don'?t|do not) need to (be|know|have)|how to (use|read) this book|what you('ll| will) (need|learn)|prerequisites)\b/.test(
+      blob,
+    );
+  const titleHit =
+    /^(welcome|introduction|intro|about this book|who this book is for|how to (use|read) this book|getting started|preface|foreword|to the reader|author'?s note)$/i.test(
+      title.replace(/^#+\s*/, '').trim(),
+    );
+  return welcome || (titleHit && text.length < 5000);
+}
+
+const META_SPEAK =
+  /i (am|'m|will be|’ll be) teaching you|as the author of this book|i will not copy and paste|not by recopying the page|the way the writer meant|impersonate the writer|as your (ai )?tutor|in this lesson i will|i cannot show the whole book|hold this:/i;
+
+export function stripTutorMetaSpeak(text: string): string {
+  const cleaned = text
+    .split(/\n{2,}/)
+    .map((p) =>
+      p
+        .replace(/\bI am teaching [^.!?\n]{0,160}(?:—|-)?\s*not by recopying the page\.?\s*/gi, '')
+        .replace(/\bI will be teaching you[^.!?\n]{0,220}\.?\s*/gi, '')
+        .replace(/\bAs the author of this book[^.!?\n]{0,200}\.?\s*/gi, '')
+        .replace(/\bI will not copy and paste[^.!?\n]{0,160}\.?\s*/gi, '')
+        .replace(/\bI (?:am|'m) not (?:going to |here to )?copy and paste[^.!?\n]{0,160}\.?\s*/gi, '')
+        .trim(),
+    )
+    .filter((p) => p && !META_SPEAK.test(p) && !/^hold this:/i.test(p));
+  return cleaned.join('\n\n').trim();
+}
+
+export function lessonNeedsCheck(lesson: {
+  kind?: string;
+  question?: string;
+  chapterTitle?: string;
+  title?: string;
+  explanation?: string;
+}): boolean {
+  if (lesson.kind === 'practice') return true;
+  if (lesson.kind === 'orient') return false;
+  const q = String(lesson.question || '').trim();
+  if (!q || looksLikeMainIdea(q)) return false;
+  if (looksLikeWelcome(lesson.chapterTitle || lesson.title || '', lesson.explanation || '')) return false;
+  return true;
+}
+
 function tutorExplanation(unit: SourceUnit, kws: string[]): string {
-  const topic = kws[0] || 'this idea';
-  const other = kws[1] || 'the idea next to it';
+  const topic = kws[0] || unit.chapterTitle;
   const lead = firstSentence(unit.text);
-  const rest = sentencesOf(unit.text)
-    .slice(1, 4)
-    .map((s) => `- ${s}`)
-    .join('\n');
+  const rest = sentencesOf(unit.text).slice(1, 6).join(' ');
   const code = extractCodeish(unit.text);
-  return [
-    `## What I need you to see`,
-    `I am teaching **${unit.chapterTitle}** the way the writer meant it — not by recopying the page. Hold this: ${lead}`,
-    `## How it works`,
-    rest || `Keep **${topic}** distinct from **${other}**. If you mix them, the rest of this stretch stops making sense.`,
-    code,
-  ]
-    .filter(Boolean)
-    .join('\n\n');
+  if (unit.kind === 'orient') {
+    return [lead, rest, code].filter(Boolean).join('\n\n');
+  }
+  const heading = topic.charAt(0).toUpperCase() + topic.slice(1);
+  return [`## ${heading}`, lead, rest, code].filter(Boolean).join('\n\n');
 }
 
 function inventedAnalogy(kws: string[], index: number, chapterTitle: string): string {
@@ -353,13 +398,10 @@ function normalizeChecks(
 }
 
 function ensureStyledExplanation(text: string, title: string): string {
-  const trimmed = text.trim();
+  const trimmed = stripTutorMetaSpeak(text).trim();
+  if (!trimmed) return `## ${title}`;
   if (/^##\s/m.test(trimmed)) return trimmed;
-  const parts = trimmed.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
-  if (parts.length >= 2) {
-    return `## What I need you to see\n\n${parts[0]}\n\n## How it works\n\n${parts.slice(1).join('\n\n')}`;
-  }
-  return `## ${title}\n\n${trimmed}`;
+  return trimmed;
 }
 
 function practiceTaskFrom(text: string): string {
@@ -396,11 +438,12 @@ function watchOutFrom(text: string, kws: string[]): string {
 }
 
 function noteFrom(unit: SourceUnit, kws: string[]): string {
+  if (unit.kind === 'orient') return '';
   const topic = kws[0] || 'this idea';
   if (unit.kind === 'practice') {
-    return `This page is not a reading check. Go do the thing the book asked for, then paste what you got.`;
+    return `Go do the thing this stretch asked for, then paste what you got.`;
   }
-  return `You do not need to memorise the page. You need to be able to use **${topic}** on a case you invent.`;
+  return `You need to be able to use **${topic}** on a case of your own — not recite the heading.`;
 }
 
 function variedQuestion(unit: SourceUnit, kws: string[], index: number): { question: string; criteria: string } {
@@ -450,32 +493,35 @@ function variedQuestion(unit: SourceUnit, kws: string[], index: number): { quest
 
 function heuristicLesson(unit: SourceUnit, index: number): BuiltLesson {
   const kws = keywordsFrom(unit.text);
-  const q = variedQuestion(unit, kws, index);
+  const kind: LessonKind =
+    unit.kind === 'practice' ? 'practice' : unit.kind === 'orient' || looksLikeWelcome(unit.chapterTitle, unit.text) ? 'orient' : 'teach';
+  const q = kind === 'orient' ? { question: '', criteria: '' } : variedQuestion({ ...unit, kind }, kws, index);
   const title = lessonTitle(unit, kws);
-  const uiType = inferUiType(unit, q.question);
+  const uiType = kind === 'orient' ? 'text_input' : inferUiType(unit, q.question);
   const language = inferLanguage(unit.text);
-  const exampleType = inferExampleType(unit.text, uiType);
-  const example = fenceIfCode(inventedExample(unit.text, kws, index, unit.chapterTitle), exampleType, language);
+  const exampleType = kind === 'orient' ? 'real_world_scenario' : inferExampleType(unit.text, uiType);
+  const example =
+    kind === 'orient' ? '' : fenceIfCode(inventedExample(unit.text, kws, index, unit.chapterTitle), exampleType, language);
   return {
     id: `${unit.chapterId}_${index + 1}`,
     chapterId: unit.chapterId,
     chapterTitle: unit.chapterTitle,
     sortOrder: index,
     title,
-    kind: unit.kind,
-    explanation: tutorExplanation(unit, kws),
+    kind,
+    explanation: stripTutorMetaSpeak(tutorExplanation({ ...unit, kind }, kws)),
     example,
     exampleType,
     language,
     uiType,
     choices: [],
     correctChoice: null,
-    keypoints: keypointsFrom(unit.text, kws),
-    practiceTask: unit.kind === 'practice' ? practiceTaskFrom(unit.text) : '',
-    note: noteFrom(unit, kws),
-    watchOut: watchOutFrom(unit.text, kws),
-    analogy: inventedAnalogy(kws, index, unit.chapterTitle),
-    checks: makeChecks(unit, kws, index),
+    keypoints: kind === 'orient' ? [] : keypointsFrom(unit.text, kws),
+    practiceTask: kind === 'practice' ? practiceTaskFrom(unit.text) : '',
+    note: noteFrom({ ...unit, kind }, kws),
+    watchOut: kind === 'orient' ? '' : watchOutFrom(unit.text, kws),
+    analogy: kind === 'orient' ? '' : inventedAnalogy(kws, index, unit.chapterTitle),
+    checks: [],
     question: q.question,
     criteria: q.criteria,
     keywords: kws,
@@ -527,7 +573,14 @@ async function llmLessonsForBatch(units: SourceUnit[], startIndex: number): Prom
   const raw = await openaiJsonCompletion({
     temperature: 0.65,
     system: BOOK_TUTOR_CURRICULUM_SYSTEM,
-    user: `Write one author-voiced tutor lesson per unit. Each written question in this batch must be different. Skip junk. If a unit is code, use uiType code_editor and a fenced snippet.\n\n${packed}`,
+    user: `Teach each unit as the writer of this book. Do not say you are the author or that you will not copy the page — just teach the content.
+Orient / welcome / about-this-book: kind=orient, question="".
+Real idea: kind=teach, one practical check (never "what did you learn" / summarize / copy-paste).
+Lab the book assigned: kind=practice.
+Skip acknowledgments, TOC, abstract, version history.
+If the unit has code, uiType=code_editor.
+
+${packed}`,
   });
   const parsed = parseJsonObject<{ lessons?: LlmLesson[] }>(raw);
   const items = Array.isArray(parsed?.lessons) ? parsed!.lessons : [];
@@ -540,14 +593,20 @@ async function llmLessonsForBatch(units: SourceUnit[], startIndex: number): Prom
       out.push(heuristicLesson(unit, startIndex + i));
       continue;
     }
-    const explanation = String(item.explanation || '').trim();
-    const question = String(item.question || '').trim();
+    const explanation = stripTutorMetaSpeak(String(item.explanation || '')).trim();
     const title = String(item.title || lessonTitle(unit, keywordsFrom(unit.text))).slice(0, 120);
     if (/^SKIP$/i.test(title) || THANKS_SKIP.test(`${title}\n${explanation}`)) {
       continue;
     }
-    const kind: LessonKind = item.kind === 'practice' || unit.kind === 'practice' ? 'practice' : 'teach';
-    if (explanation.length < 50 || question.length < 12) {
+    let kind: LessonKind =
+      item.kind === 'practice' || unit.kind === 'practice'
+        ? 'practice'
+        : item.kind === 'orient' || unit.kind === 'orient' || looksLikeWelcome(title, explanation) || looksLikeWelcome(unit.chapterTitle, unit.text)
+          ? 'orient'
+          : 'teach';
+    let question = String(item.question || '').trim();
+    if (kind === 'orient') question = '';
+    if (explanation.length < 50 || (kind !== 'orient' && question.length < 12)) {
       out.push(heuristicLesson(unit, startIndex + i));
       continue;
     }
@@ -556,14 +615,20 @@ async function llmLessonsForBatch(units: SourceUnit[], startIndex: number): Prom
       : keywordsFrom(unit.text);
     const fallback = heuristicLesson(unit, startIndex + i);
     const exampleRaw = String(item.example || '').trim();
-    const qFinal = looksLikeMainIdea(question)
-      ? fallback.question
-      : kind === 'practice'
-        ? ensurePracticeQuestion(question, unit.chapterTitle)
-        : question;
-    const uiType = normalizeUiType(item.uiType, fallback.uiType);
+    let qFinal =
+      kind === 'orient'
+        ? ''
+        : looksLikeMainIdea(question)
+          ? fallback.question
+          : kind === 'practice'
+            ? ensurePracticeQuestion(question, unit.chapterTitle)
+            : question;
+    if (kind !== 'orient' && looksLikeMainIdea(qFinal)) qFinal = '';
+    if (!qFinal && kind === 'teach') kind = 'orient';
+    const uiType = kind === 'orient' ? 'text_input' : normalizeUiType(item.uiType, fallback.uiType);
     const choices = Array.isArray(item.choices) ? item.choices.map(String).filter(Boolean).slice(0, 6) : [];
-    const safeUi: LessonUiType = uiType === 'multiple_choice' && choices.length < 2 ? fallback.uiType : uiType;
+    const safeUi: LessonUiType =
+      kind === 'orient' ? 'text_input' : uiType === 'multiple_choice' && choices.length < 2 ? fallback.uiType : uiType;
     const language = String(item.language || fallback.language || inferLanguage(unit.text)).slice(0, 24);
     const exampleType = (['code_snippet', 'mathematical_formula', 'real_world_scenario'].includes(String(item.exampleType))
       ? String(item.exampleType)
@@ -580,26 +645,29 @@ async function llmLessonsForBatch(units: SourceUnit[], startIndex: number): Prom
       title,
       kind,
       explanation: ensureStyledExplanation(explanation, title).slice(0, 3200),
-      example: fenceIfCode(
-        looksLikeKeywordDump(exampleRaw) ? fallback.example : exampleRaw || fallback.example,
-        exampleType,
-        language,
-      ).slice(0, 1600),
+      example:
+        kind === 'orient'
+          ? ''
+          : fenceIfCode(
+              looksLikeKeywordDump(exampleRaw) ? fallback.example : exampleRaw || fallback.example,
+              exampleType,
+              language,
+            ).slice(0, 1600),
       exampleType,
       language,
       uiType: safeUi,
       choices: safeUi === 'multiple_choice' ? choices : [],
       correctChoice,
-      keypoints: Array.isArray(item.keypoints)
+      keypoints: kind === 'orient' ? [] : Array.isArray(item.keypoints)
         ? item.keypoints.map(String).filter(Boolean).slice(0, 5)
         : fallback.keypoints,
       practiceTask: kind === 'practice' ? String(item.practiceTask || practiceTaskFrom(unit.text)).slice(0, 1200) : '',
-      note: String(item.note || fallback.note).slice(0, 400),
-      watchOut: String(item.watchOut || fallback.watchOut).slice(0, 400),
-      analogy: String(item.analogy || fallback.analogy).slice(0, 900),
-      checks: normalizeChecks(item.checks, fallback.checks, unit, startIndex + i),
+      note: kind === 'orient' ? '' : String(item.note || fallback.note).slice(0, 400),
+      watchOut: kind === 'orient' ? '' : String(item.watchOut || fallback.watchOut).slice(0, 400),
+      analogy: kind === 'orient' ? '' : String(item.analogy || fallback.analogy).slice(0, 900),
+      checks: [],
       question: qFinal.slice(0, 500),
-      criteria: String(item.criteria || fallback.criteria).slice(0, 700),
+      criteria: kind === 'orient' ? '' : String(item.criteria || fallback.criteria).slice(0, 700),
       keywords: kws,
     });
   }
@@ -611,26 +679,42 @@ function polishLesson(lesson: BuiltLesson, index: number): BuiltLesson {
     chapterId: lesson.chapterId,
     chapterTitle: lesson.chapterTitle,
     text: `${lesson.explanation}\n${lesson.example}\n${lesson.question}`,
-    kind: lesson.kind === 'practice' ? 'practice' : 'teach',
+    kind: lesson.kind,
   };
   const fallback = heuristicLesson(unit, index + 3);
+  let kind = lesson.kind;
   let question = lesson.question;
-  if (looksLikeMainIdea(question) || !question.trim()) question = fallback.question;
+  if (kind === 'orient' || looksLikeWelcome(lesson.chapterTitle, lesson.explanation)) {
+    kind = 'orient';
+    question = '';
+  } else if (looksLikeMainIdea(question) || !question.trim()) {
+    question = fallback.question;
+    if (looksLikeMainIdea(question) || !question.trim()) {
+      kind = 'orient';
+      question = '';
+    }
+  }
   if (lesson.kind === 'practice') question = ensurePracticeQuestion(question, lesson.chapterTitle);
-  const example = looksLikeKeywordDump(lesson.example) || !lesson.example.trim() ? fallback.example : lesson.example;
-  const uiType = lesson.uiType || fallback.uiType;
+  const example =
+    kind === 'orient' || looksLikeKeywordDump(lesson.example) || !lesson.example.trim()
+      ? kind === 'orient'
+        ? ''
+        : fallback.example
+      : lesson.example;
+  const uiType = kind === 'orient' ? 'text_input' : lesson.uiType || fallback.uiType;
   const exampleType = lesson.exampleType || fallback.exampleType;
   const language = lesson.language || fallback.language;
   return {
     ...lesson,
+    kind,
     sortOrder: index,
     question,
-    example: fenceIfCode(example, exampleType, language),
+    example: kind === 'orient' ? '' : fenceIfCode(example, exampleType, language),
     explanation: ensureStyledExplanation(lesson.explanation, lesson.title),
-    keypoints: lesson.keypoints.filter(Boolean).length ? lesson.keypoints : fallback.keypoints,
-    note: lesson.note || fallback.note,
-    watchOut: lesson.watchOut || fallback.watchOut,
-    analogy: lesson.analogy || fallback.analogy,
+    keypoints: kind === 'orient' ? [] : lesson.keypoints.filter(Boolean).length ? lesson.keypoints : fallback.keypoints,
+    note: kind === 'orient' ? '' : lesson.note || fallback.note,
+    watchOut: kind === 'orient' ? '' : lesson.watchOut || fallback.watchOut,
+    analogy: kind === 'orient' ? '' : lesson.analogy || fallback.analogy,
     checks: [],
     uiType,
     exampleType,
@@ -645,8 +729,11 @@ function dedupeQuestions(lessons: BuiltLesson[]): BuiltLesson[] {
   return lessons.map((lesson, i) => {
     const polished = polishLesson(lesson, i);
     let q = polished.question;
+    if (polished.kind === 'orient') {
+      return { ...polished, question: '' };
+    }
     const key = tokenize(q).slice(0, 8).join(' ');
-    if (seen.includes(key) || looksLikeMainIdea(q)) {
+    if ((q && seen.includes(key)) || looksLikeMainIdea(q)) {
       const fallback = heuristicLesson(
         {
           chapterId: lesson.chapterId,
@@ -656,10 +743,10 @@ function dedupeQuestions(lessons: BuiltLesson[]): BuiltLesson[] {
         },
         i + 5,
       );
-      q = fallback.question;
+      q = looksLikeMainIdea(fallback.question) ? '' : fallback.question;
     }
-    seen.push(tokenize(q).slice(0, 8).join(' '));
-    return { ...polished, question: q };
+    if (q) seen.push(tokenize(q).slice(0, 8).join(' '));
+    return { ...polished, question: q, kind: q ? polished.kind : 'orient' };
   });
 }
 

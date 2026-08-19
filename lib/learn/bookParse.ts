@@ -126,7 +126,7 @@ export function splitIntoChapters(raw: string, fallbackTitle = 'Book'): ParsedCh
 }
 
 const FRONT_TITLE =
-  /^(contents|table of contents|contents in detail|acknowledgments?|acknowledgements?|dedication|copyright|also by|about the author|about the authors|praise for|praise|list of (figures|tables|illustrations|maps)|credits|permissions|colophon|index|half[- ]title|title page|copyright page|published by|other (books|titles) by|by the same author|to the reader|author'?s note|how to (use|read) this book|a note (from|to)|epigraph|foreword|preface)$/i;
+  /^(contents|table of contents|contents in detail|acknowledgments?|acknowledgements?|dedication|copyright|also by|about the author|about the authors|praise for|praise|list of (figures|tables|illustrations|maps)|credits|permissions|colophon|index|half[- ]title|title page|copyright page|published by|other (books|titles) by|by the same author|abstract|abstracts|version( history)?|revision history|changelog|what'?s new|errata)$/i;
 
 const CORE_START =
   /^(?:#{1,3}\s+)?(?:chapter\s+(?:0*1|one|i)\b|part\s+(?:0*1|one|i)\b|lesson\s+0*1\b|unit\s+0*1\b|module\s+0*1\b|getting started\b|1\.\s+[A-Z])/i;
@@ -158,10 +158,21 @@ function looksLikeContentsList(text: string): boolean {
   return numbered >= Math.max(6, Math.floor(lines.length * 0.4));
 }
 
-function looksLikeBookOverview(text: string): boolean {
-  const head = text.slice(0, 2200).toLowerCase();
-  const chapterMentions = (head.match(/\bchapter\s+\d+/g) || []).length;
-  return chapterMentions >= 4 && /\b(this book|in this book|you will (learn|find|discover|see))\b/.test(head);
+function looksLikeOrientKeep(title: string, text: string): boolean {
+  const t = title.replace(/^#+\s*/, '').replace(/\s+/g, ' ').trim();
+  if (
+    /^(welcome|introduction|intro|about this book|who this book is for|how to (use|read) this book|getting started|preface|foreword|prologue|to the reader|author'?s note)$/i.test(
+      t,
+    )
+  ) {
+    return !looksLikeThanks(t, text) && !looksLikeContentsList(text);
+  }
+  const head = text.slice(0, 1800).toLowerCase();
+  return (
+    /\b(welcome to (this|the) book|this book (is about|will (teach|show|help))|who this book is for|you (don'?t|do not) need to (be|know|have)|how to (use|read) this book)\b/.test(
+      head,
+    ) && !looksLikeThanks(t, text)
+  );
 }
 
 function looksLikeThanks(title: string, text: string): boolean {
@@ -211,24 +222,27 @@ export function isFrontMatter(title: string, text: string): boolean {
     return true;
   }
   if (/^contents\b/i.test(t) && t.length < 64) return true;
-  if (/^(preface|foreword|prologue|introduction|intro)\b/i.test(t) && (text.length < 2500 || looksLikeBookOverview(text))) {
-    return true;
-  }
+  if (looksLikeThanks(t, text)) return true;
+  if (looksLikeContentsList(text)) return true;
+  if (looksLikeOrientKeep(t, text)) return false;
   const head = text.slice(0, 500).toLowerCase();
   if (/\b(isbn|copyright ©|all rights reserved|printed in the|library of congress)\b/.test(head) && text.length < 3200) {
     return true;
   }
-  if (looksLikeThanks(t, text)) return true;
-  if (looksLikeContentsList(text)) return true;
-  if (looksLikeBookOverview(text) && text.length < 4500) return true;
   return false;
 }
 
-/** Drop everything before Chapter 1 / Getting Started and everything after the last real chapter. */
+/** Keep welcome/how-to-use stretches, then Chapter 1 onward. Drop TOC / thanks / copyright / version junk. */
 export function keepInstructionalCore(chapters: ParsedChapter[]): ParsedChapter[] {
   if (!chapters.length) return chapters;
   const startIdx = chapters.findIndex((c) => looksLikeCoreStart(c.title) && !isFrontMatter(c.title, c.markdown));
-  let slice = startIdx >= 0 ? chapters.slice(startIdx) : chapters;
+  const before =
+    startIdx > 0
+      ? chapters
+          .slice(0, startIdx)
+          .filter((c) => !isFrontMatter(c.title, c.markdown) && !looksLikeBackMatter(c.title))
+      : [];
+  let slice = startIdx >= 0 ? [...before, ...chapters.slice(startIdx)] : chapters;
   if (startIdx < 0) {
     const firstReal = slice.findIndex((c) => !isFrontMatter(c.title, c.markdown) && !looksLikeBackMatter(c.title));
     if (firstReal > 0) slice = slice.slice(firstReal);

@@ -15,7 +15,7 @@ type Lesson = {
   explanation: string;
   example: string;
   question: string;
-  kind?: 'teach' | 'practice';
+  kind?: 'orient' | 'teach' | 'practice';
   keypoints?: string[];
   practiceTask?: string;
   note?: string;
@@ -244,11 +244,12 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
   const passed = progress?.phase === 'passed' || progress?.lastCorrect === true;
   const complete = progress?.phase === 'complete';
   const practice = lesson?.kind === 'practice';
+  const orient = lesson?.kind === 'orient' || !lesson?.question;
   const checks = lesson?.checks || [];
   const checkpointPassed = progress?.checkpointPassed || 0;
-  const currentCheck = passed ? undefined : checks[checkpointPassed];
+  const currentCheck = passed || orient ? undefined : checks[checkpointPassed];
   const revealRest = !currentCheck || currentCheck.placement === 'end';
-  const revealWrite = passed || !currentCheck;
+  const revealWrite = !orient && Boolean(lesson?.question) && (passed || !currentCheck);
   const pct = useMemo(() => {
     const total = session.path.lessonCount || 1;
     const done = progress?.phase === 'complete' ? total : progress?.completedCount || 0;
@@ -442,7 +443,7 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
               color: practice ? 'var(--blue-ink)' : 'var(--green-deep)',
             }}
           >
-            {practice ? 'Try it' : 'Author'}
+            {practice ? 'Try it' : orient ? 'Welcome' : 'Lesson'}
           </span>
         </div>
       </div>
@@ -469,19 +470,19 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
 
         {revealRest ? (
           <>
-            {lesson.analogy ? (
+            {!orient && lesson.analogy ? (
               <Callout tone="tip" label="Analogy" text={lesson.analogy} icon={<Lightbulb size={14} />} />
             ) : null}
 
-            {lesson.note ? (
+            {!orient && lesson.note ? (
               <Callout tone="note" label="From the writer" text={lesson.note} icon={<StickyNote size={14} />} />
             ) : null}
 
-            {lesson.watchOut ? (
+            {!orient && lesson.watchOut ? (
               <Callout tone="warning" label="Watch out" text={lesson.watchOut} icon={<AlertTriangle size={14} />} />
             ) : null}
 
-            {lesson.keypoints && lesson.keypoints.length > 0 ? (
+            {!orient && lesson.keypoints && lesson.keypoints.length > 0 ? (
               <div
                 className="mt-8 rounded-xl border p-5"
                 style={{ borderColor: 'rgba(0,179,105,0.25)', background: 'rgba(0,179,105,0.06)' }}
@@ -532,7 +533,26 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
         ) : null}
       </article>
 
-      {revealWrite ? (
+      {orient ? (
+        <div
+          className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4"
+          style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}
+        >
+          <p className="text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+            This stretch is the book’s welcome. Continue when you have heard it.
+          </p>
+          <button
+            type="button"
+            onClick={next}
+            disabled={busy === 'next'}
+            className="btn btn-primary !px-5 !py-2.5 text-[13.5px]"
+          >
+            {busy === 'next' ? <Loader2 size={15} className="animate-spin" /> : null}
+            {lesson.index + 1 >= lesson.total ? 'Finish' : 'Continue'}
+            <ArrowRight size={15} />
+          </button>
+        </div>
+      ) : revealWrite ? (
         <form onSubmit={grade} className="mt-8 rounded-2xl border p-5" style={{ borderColor: 'var(--line)' }}>
           <h3 className="font-display text-[20px]">{practice ? 'What did you get?' : 'Now, in your words'}</h3>
           <p className="mt-2 text-[14.5px] leading-relaxed">{lesson.question}</p>
