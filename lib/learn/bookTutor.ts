@@ -289,6 +289,14 @@ export async function getLearnerSession(userId: string, pathId: string) {
   if (!(await canAccessPath(userId, path))) {
     throw new BookTutorError('You do not have access to this book tutor.', 403);
   }
+  const generatingTooLong =
+    path.status === 'generating' && Date.now() - new Date(path.updatedAt).getTime() > 15 * 60 * 1000;
+  if (generatingTooLong) {
+    path.status = 'failed';
+    path.error =
+      path.error ||
+      'This book took too long to study. Try an unlocked EPUB from Amazon, or a text PDF you can select text in.';
+  }
   if (path.status !== 'ready') {
     return {
       path: {
@@ -355,39 +363,89 @@ export async function createPathFromUpload(opts: {
   title?: string;
 }): Promise<string> {
   const sourceBytes = opts.buffer.length;
-  let parsed;
-  try {
-    parsed = await parseBookFile({
-      buffer: opts.buffer,
-      filename: opts.filename,
-      mime: opts.mime,
-      titleHint: opts.title,
-    });
-  } finally {
-    opts.buffer.fill(0);
-  }
-  const { lessons, engine } = await buildCurriculum(parsed.chapters, { deadlineMs: Date.now() + 110_000 });
-  if (!lessons.length) throw new BookTutorError('Could not turn that book into lessons.');
-  const chapterOutline = outlineOf(parsed.chapters);
-  for (const ch of parsed.chapters) ch.markdown = '';
-  return savePath({
+  const title = (opts.title || opts.filename.replace(/\.[^.]+$/, '') || 'Untitled book').slice(0, 160);
+  const id = await savePath({
     ownerUserId: opts.userId,
     ownerName: opts.userName,
     sourceBookId: null,
-    title: (opts.title || parsed.title).slice(0, 160),
+    title,
     authorName: opts.userName,
     sourceFilename: opts.filename.slice(0, 180),
     isPrivate: true,
-    status: 'ready',
-    engine,
-    chapterOutline,
-    lessons,
-    pageCount: parsed.pageHint,
-    sourceChars: parsed.charCount,
+    status: 'generating',
+    engine: 'heuristic',
+    chapterOutline: [],
+    lessons: [],
     sourceBytes,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
+
+  const work = finishPathFromUpload(id, {
+    buffer: opts.buffer,
+    filename: opts.filename,
+    mime: opts.mime,
+    title: opts.title,
+  });
+  work.catch((err) => console.error('book tutor background build failed:', err));
+  // Small files can finish before the next page loads. Huge Amazon PDFs must
+  // not block the HTTP request (proxy timeouts show up as a generic failure).
+  if (sourceBytes <= 4 * 1024 * 1024) await work;
+  return id;
+}
+
+async function finishPathFromUpload(
+  pathId: string,
+  opts: { buffer: Buffer; filename: string; mime?: string; title?: string },
+) {
+  const db = await getDb();
+  const oid = new ObjectId(pathId);
+  try {
+    let parsed;
+    try {
+      parsed = await parseBookFile({
+        buffer: opts.buffer,
+        filename: opts.filename,
+        mime: opts.mime,
+        titleHint: opts.title,
+      });
+    } finally {
+      opts.buffer.fill(0);
+    }
+    const huge =
+      (parsed.pageHint || 0) > 160 || parsed.charCount > 160_000 || (parsed.chapters?.length || 0) > 80;
+    const { lessons, engine } = await buildCurriculum(parsed.chapters, {
+      skipLlm: huge,
+      deadlineMs: Date.now() + (huge ? 5_000 : 80_000),
+    });
+    if (!lessons.length) throw new BookTutorError('Could not turn that book into lessons.');
+    const chapterOutline = outlineOf(parsed.chapters);
+    for (const ch of parsed.chapters) ch.markdown = '';
+    await db.collection('book_tutor_paths').updateOne(
+      { _id: oid },
+      {
+        $set: {
+          title: (opts.title || parsed.title).slice(0, 160),
+          status: 'ready',
+          engine,
+          chapterOutline,
+          lessons,
+          pageCount: parsed.pageHint,
+          sourceChars: parsed.charCount,
+          error: '',
+          updatedAt: new Date(),
+        },
+      },
+    );
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : 'Could not build a tutor from that file.';
+    console.error('book tutor finish failed:', err);
+    await db.collection('book_tutor_paths').updateOne(
+      { _id: oid },
+      { $set: { status: 'failed', error: message.slice(0, 400), updatedAt: new Date() } },
+    );
+  }
 }
 
 export async function createOrGetPathFromLibraryBook(opts: {

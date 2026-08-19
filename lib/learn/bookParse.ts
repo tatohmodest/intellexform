@@ -215,15 +215,66 @@ export function chaptersFromPages(pages: string[], fallbackTitle: string): Parse
     if (buf.length > BOOK_TUTOR_CHAPTER_CHARS) flush();
   }
   flush();
-  if (!chapters.length) return splitIntoChapters(pages.join('\n\n'), fallbackTitle);
+  if (!chapters.length) {
+    const nonempty = pages.filter((p) => p && p.trim().length > 80);
+    if (!nonempty.length) return [];
+    return mergeChapters(
+      nonempty.slice(0, BOOK_TUTOR_MAX_CHAPTERS).map((markdown, i) => ({
+        id: slugChapter(i),
+        title: firstTitle(markdown, `${fallbackTitle} · ${i + 1}`),
+        markdown: markdown.slice(0, BOOK_TUTOR_CHAPTER_CHARS),
+      })),
+      BOOK_TUTOR_MAX_CHAPTERS,
+    );
+  }
   return mergeChapters(chapters, BOOK_TUTOR_MAX_CHAPTERS);
 }
 
 type PdfTextItem = { str?: string; hasEOL?: boolean };
 
+function extOf(name: string, mime: string): string {
+  const fromName = name.split('.').pop()?.toLowerCase() || '';
+  if (['pdf', 'epub', 'docx', 'txt', 'md', 'markdown'].includes(fromName)) return fromName === 'markdown' ? 'md' : fromName;
+  if (mime.includes('pdf')) return 'pdf';
+  if (mime.includes('epub')) return 'epub';
+  if (mime.includes('wordprocessingml') || mime.includes('msword')) return 'docx';
+  if (mime.includes('markdown') || mime.includes('text/plain')) return 'txt';
+  return fromName;
+}
+
+function looksLikeKindle(buf: Buffer, filename: string): boolean {
+  const name = filename.toLowerCase();
+  if (/\.(azw|azw3|kfx|mobi|prc)$/i.test(name)) return true;
+  const head = buf.subarray(0, 72).toString('latin1');
+  return head.includes('BOOKMOBI') || head.startsWith('TPZ') || head.includes('KINDLE');
+}
+
+/** Trust magic bytes — Amazon often sends an EPUB named .pdf or a zip without an extension. */
+function sniffKind(filename: string, mime: string, buf: Buffer): string {
+  if (looksLikeKindle(buf, filename)) {
+    throw new Error(
+      'This looks like a locked Kindle file (.azw / .mobi / KFX). Book tutor cannot read DRM. In Amazon use “Download EPUB” or a text PDF you can select text in.',
+    );
+  }
+  if (buf.length >= 5 && buf[0] === 0x25 && buf[1] === 0x50 && buf[2] === 0x44 && buf[3] === 0x46) return 'pdf';
+  if (buf.length >= 2 && buf[0] === 0x50 && buf[1] === 0x4b) {
+    const probe = buf.subarray(0, Math.min(buf.length, 16_000)).toString('latin1');
+    if (probe.includes('word/')) return 'docx';
+    if (probe.includes('META-INF') || probe.includes('epub') || probe.includes('mimetype')) return 'epub';
+    return extOf(filename, mime) === 'docx' ? 'docx' : 'epub';
+  }
+  return extOf(filename, mime);
+}
+
 async function extractPdfPages(buffer: Buffer): Promise<{ pages: string[]; totalPages: number }> {
   const { getDocumentProxy } = await import('unpdf');
-  const pdf = (await getDocumentProxy(new Uint8Array(buffer))) as {
+  const shared = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  const pdf = (await getDocumentProxy(shared, {
+    disableAutoFetch: true,
+    disableStream: true,
+    isEvalSupported: false,
+    useSystemFonts: true,
+  })) as {
     numPages: number;
     getPage: (n: number) => Promise<{
       getTextContent: () => Promise<{ items: PdfTextItem[] }>;
@@ -235,19 +286,23 @@ async function extractPdfPages(buffer: Buffer): Promise<{ pages: string[]; total
   const totalPages = Number(pdf.numPages || 0);
   const pages: string[] = [];
   try {
-    // Sequential pages — unpdf's extractText Promise.all's every page and OOMs/timeouts on ~600pp.
     for (let n = 1; n <= totalPages; n++) {
-      const page = await pdf.getPage(n);
       try {
-        const content = await page.getTextContent();
-        const text = (content.items as PdfTextItem[])
-          .map((item) => (item.str || '') + (item.hasEOL ? '\n' : ''))
-          .join('')
-          .replace(/[ \t]+\n/g, '\n')
-          .trim();
-        pages.push(text);
-      } finally {
-        page.cleanup();
+        const page = await pdf.getPage(n);
+        try {
+          const content = await page.getTextContent();
+          const text = (content.items as PdfTextItem[])
+            .map((item) => (item.str || '') + (item.hasEOL ? '\n' : ''))
+            .join('')
+            .replace(/[ \t]+\n/g, '\n')
+            .trim();
+          pages.push(text);
+        } finally {
+          page.cleanup();
+        }
+      } catch (err) {
+        console.warn('book tutor skipped PDF page', n, err);
+        pages.push('');
       }
     }
   } finally {
@@ -276,6 +331,11 @@ function xmlAttr(xml: string, name: string): string | null {
 async function extractEpubChapters(buffer: Buffer): Promise<string[]> {
   const JSZip = (await import('jszip')).default;
   const zip = await JSZip.loadAsync(buffer);
+  if (zip.file('META-INF/encryption.xml')) {
+    throw new Error(
+      'This EPUB is locked (Kindle / Adobe DRM). Book tutor needs an unlocked EPUB or a text PDF you can select text in.',
+    );
+  }
   const container = await zip.file('META-INF/container.xml')?.async('string');
   if (!container) throw new Error('This EPUB is missing META-INF/container.xml.');
   const rootPath = xmlAttr(container, 'full-path');
@@ -290,7 +350,7 @@ async function extractEpubChapters(buffer: Buffer): Promise<string[]> {
     const tag = item[0];
     const id = xmlAttr(tag, 'id');
     const href = xmlAttr(tag, 'href');
-    if (id && href) manifest.set(id, decodeURIComponent(href));
+    if (id && href) manifest.set(id, decodeURIComponent(href.replace(/\\/g, '/')));
   }
   const spineIds: string[] = [];
   const spineRe = /<itemref\b[^>]*>/gi;
@@ -300,27 +360,19 @@ async function extractEpubChapters(buffer: Buffer): Promise<string[]> {
     if (idref) spineIds.push(idref);
   }
   const parts: string[] = [];
-  for (const id of spineIds.slice(0, 500)) {
+  for (const id of spineIds.slice(0, 1600)) {
     const href = manifest.get(id);
     if (!href) continue;
-    const path = `${base}${href}`.replace(/\\/g, '/');
-    const html = await zip.file(path)?.async('string');
-    if (!html) continue;
+    if (/\.(css|jpg|jpeg|png|gif|svg|woff2?|ttf|otf|ncx|mp3|mp4)$/i.test(href)) continue;
+    const path = `${base}${href}`.replace(/\\/g, '/').replace(/^\//, '');
+    const file = zip.file(path) || zip.file(decodeURIComponent(path));
+    if (!file) continue;
+    const html = await file.async('string');
     const md = htmlToMarkdown(html);
     if (md.length > 40) parts.push(md);
   }
   if (!parts.length) throw new Error('No readable chapters found in this EPUB.');
   return parts;
-}
-
-function extOf(name: string, mime: string): string {
-  const fromName = name.split('.').pop()?.toLowerCase() || '';
-  if (['pdf', 'epub', 'docx', 'txt', 'md', 'markdown'].includes(fromName)) return fromName === 'markdown' ? 'md' : fromName;
-  if (mime.includes('pdf')) return 'pdf';
-  if (mime.includes('epub')) return 'epub';
-  if (mime.includes('wordprocessingml') || mime.includes('msword')) return 'docx';
-  if (mime.includes('markdown') || mime.includes('text/plain')) return 'txt';
-  return fromName;
 }
 
 export async function parseBookFile(opts: {
@@ -332,7 +384,7 @@ export async function parseBookFile(opts: {
   if (opts.buffer.length > BOOK_TUTOR_MAX_BYTES) {
     throw new Error('File is too large. Use a text PDF, EPUB, DOCX, or text file under 80 MB.');
   }
-  const ext = extOf(opts.filename, opts.mime || '');
+  const ext = sniffKind(opts.filename, opts.mime || '', opts.buffer);
   const fallbackTitle = (opts.titleHint || opts.filename.replace(/\.[^.]+$/, '') || 'Untitled book').slice(0, 120);
 
   let chapters: ParsedChapter[] = [];
@@ -345,10 +397,14 @@ export async function parseBookFile(opts: {
       throw new Error(`This PDF has ${pdf.totalPages} pages. Book tutor can read up to ${BOOK_TUTOR_MAX_PAGES} pages.`);
     }
     extractedChars = pdf.pages.reduce((n, p) => n + p.length, 0);
-    if (pdf.totalPages > 80 && extractedChars < pdf.totalPages * 40) {
+    const denseEnough = extractedChars >= 8_000 || (pdf.totalPages > 0 && extractedChars >= pdf.totalPages * 12);
+    if (pdf.totalPages > 60 && extractedChars < 4_000 && !denseEnough) {
       throw new Error(
-        'This looks like a scanned / image PDF. Book tutor needs selectable text — export a text PDF or EPUB.',
+        'This looks like a scanned / image PDF (common with Amazon “print replica”). Book tutor needs selectable text — download the EPUB or a text PDF.',
       );
+    }
+    if (extractedChars < 400) {
+      throw new Error('Hardly any text came out of that PDF. If it is an Amazon print replica, try the EPUB instead.');
     }
     pageHint = pdf.totalPages;
     chapters = chaptersFromPages(pdf.pages, fallbackTitle);
@@ -365,7 +421,9 @@ export async function parseBookFile(opts: {
     extractedChars = raw.length;
     chapters = splitIntoChapters(raw, fallbackTitle);
   } else {
-    throw new Error('Use a PDF, EPUB, DOCX, Markdown, or .txt file.');
+    throw new Error(
+      'Use a PDF, EPUB, DOCX, Markdown, or .txt file. Kindle .azw / .mobi files are not readable (DRM).',
+    );
   }
 
   if (!chapters.length) throw new Error('Could not extract enough text from that file.');
