@@ -88,16 +88,21 @@ function Callout({
 function YesNo({
   prompt,
   busy,
-  feedback,
   onPick,
+  onStuck,
+  compact,
 }: {
   prompt: string;
   busy: boolean;
-  feedback: string;
   onPick: (yes: boolean) => void;
+  onStuck?: () => void;
+  compact?: boolean;
 }) {
   return (
-    <div className="mt-8 rounded-2xl border p-5" style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}>
+    <div
+      className={compact ? 'mt-4' : 'mt-8 rounded-2xl border p-5'}
+      style={compact ? undefined : { borderColor: 'var(--line)', background: 'var(--paper-dim)' }}
+    >
       <p className="font-display text-[18px] leading-snug">{prompt}</p>
       <div className="mt-4 flex flex-wrap gap-3">
         <button
@@ -119,15 +124,102 @@ function YesNo({
           No
         </button>
       </div>
-      {feedback ? (
-        <p className="mt-3 text-[14px]" style={{ color: '#b91c1c' }}>
-          {feedback}
-        </p>
+      {onStuck ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onStuck}
+          className="mt-3 text-[13px] font-semibold"
+          style={{ color: 'var(--green-deep)' }}
+        >
+          I don’t get this
+        </button>
       ) : (
         <p className="mt-3 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Click Yes or No. The written check stays locked until this is right.
+          Click Yes or No. If it is wrong, a clarify bubble will ask what you do not get.
         </p>
       )}
+    </div>
+  );
+}
+
+function ClarifyBubble({
+  prompt,
+  tutor,
+  youSaid,
+  value,
+  busy,
+  error,
+  onChange,
+  onSend,
+  onPick,
+}: {
+  prompt: string;
+  tutor: string;
+  youSaid: string;
+  value: string;
+  busy: boolean;
+  error: string;
+  onChange: (v: string) => void;
+  onSend: () => void;
+  onPick: (yes: boolean) => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/25 p-3 sm:items-center">
+      <div
+        className="w-full max-w-[440px] rounded-2xl border p-5 shadow-card"
+        style={{ background: 'var(--paper)', borderColor: 'var(--line)' }}
+        role="dialog"
+        aria-label="Clarify this step"
+      >
+        <p className="font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
+          Clarify
+        </p>
+        <h3 className="mt-1 font-display text-[22px] leading-tight">What don’t you get?</h3>
+        {tutor ? (
+          <div className="mt-3 text-[14.5px] leading-relaxed" style={{ color: 'var(--ink)' }}>
+            <MarkdownLite text={tutor} />
+          </div>
+        ) : (
+          <p className="mt-2 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
+            Tell the writer where you are stuck. They will explain, then ask Yes / No again.
+          </p>
+        )}
+        {youSaid ? (
+          <p className="mt-2 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+            You said: {youSaid}
+          </p>
+        ) : null}
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          rows={3}
+          placeholder="I don’t get…"
+          className="mt-4 w-full border px-3 py-2.5 text-[14px]"
+          style={{ borderColor: 'var(--line)', background: 'transparent' }}
+          disabled={busy}
+        />
+        <button
+          type="button"
+          onClick={onSend}
+          disabled={busy || value.trim().length < 4}
+          className="btn btn-primary mt-3 !px-5 !py-2.5 text-[13.5px]"
+        >
+          {busy ? <Loader2 size={15} className="animate-spin" /> : null}
+          Explain this
+        </button>
+        {error ? (
+          <p className="mt-2 text-[13px]" style={{ color: '#b91c1c' }}>
+            {error}
+          </p>
+        ) : null}
+        <div className="mt-5 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
+          <p className="mb-1 text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: 'var(--ink-soft)' }}>
+            Try the check again
+          </p>
+          <YesNo prompt={prompt} busy={busy} onPick={onPick} compact />
+        </div>
+      </div>
     </div>
   );
 }
@@ -137,7 +229,10 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
   const [answer, setAnswer] = useState('');
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
-  const [checkFeedback, setCheckFeedback] = useState('');
+  const [clarifyOpen, setClarifyOpen] = useState(false);
+  const [clarifyDraft, setClarifyDraft] = useState('');
+  const [clarifyReply, setClarifyReply] = useState('');
+  const [youSaid, setYouSaid] = useState('');
 
   const lesson = session.lesson;
   const progress = session.progress;
@@ -165,11 +260,23 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
     return () => window.clearInterval(timer);
   }, [session.path.id, session.path.status]);
 
+  useEffect(() => {
+    setClarifyOpen(false);
+    setClarifyDraft('');
+    setClarifyReply('');
+    setYouSaid('');
+  }, [lesson?.id]);
+
+  function openClarify(seed?: string) {
+    setClarifyOpen(true);
+    setError('');
+    if (seed) setClarifyReply(seed);
+  }
+
   async function pickCheck(yes: boolean) {
     if (!currentCheck) return;
     setBusy('check');
     setError('');
-    setCheckFeedback('');
     try {
       const res = await fetch(`/api/learn/book-tutor/${session.path.id}/checkpoint`, {
         method: 'POST',
@@ -179,10 +286,13 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Could not record that check.');
       if (!data.isCorrect) {
-        setCheckFeedback(data.feedback || 'Not quite — try the other one.');
+        openClarify(data.feedback || 'Not quite. What part is unclear?');
         return;
       }
-      setCheckFeedback('');
+      setClarifyOpen(false);
+      setClarifyDraft('');
+      setClarifyReply('');
+      setYouSaid('');
       setSession((cur) => ({
         ...cur,
         progress: cur.progress
@@ -191,6 +301,28 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
       }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not record that check.');
+    } finally {
+      setBusy('');
+    }
+  }
+
+  async function sendClarify() {
+    if (!currentCheck || clarifyDraft.trim().length < 4) return;
+    setBusy('clarify');
+    setError('');
+    try {
+      const res = await fetch(`/api/learn/book-tutor/${session.path.id}/clarify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checkId: currentCheck.id, confusion: clarifyDraft.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not explain that.');
+      setYouSaid(clarifyDraft.trim());
+      setClarifyReply(data.explanation || '');
+      setClarifyDraft('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not explain that.');
     } finally {
       setBusy('');
     }
@@ -236,7 +368,10 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
   async function next() {
     setBusy('next');
     setError('');
-    setCheckFeedback('');
+    setClarifyOpen(false);
+    setClarifyDraft('');
+    setClarifyReply('');
+    setYouSaid('');
     try {
       const res = await fetch(`/api/learn/book-tutor/${session.path.id}/advance`, { method: 'POST' });
       const data = await res.json().catch(() => ({}));
@@ -315,7 +450,12 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
         </div>
 
         {currentCheck?.placement === 'mid' ? (
-          <YesNo prompt={currentCheck.prompt} busy={busy === 'check'} feedback={checkFeedback} onPick={pickCheck} />
+          <YesNo
+            prompt={currentCheck.prompt}
+            busy={busy === 'check'}
+            onPick={pickCheck}
+            onStuck={() => openClarify()}
+          />
         ) : null}
 
         {revealRest ? (
@@ -363,7 +503,12 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
             ) : null}
 
             {currentCheck?.placement === 'end' ? (
-              <YesNo prompt={currentCheck.prompt} busy={busy === 'check'} feedback={checkFeedback} onPick={pickCheck} />
+              <YesNo
+                prompt={currentCheck.prompt}
+                busy={busy === 'check'}
+                onPick={pickCheck}
+                onStuck={() => openClarify()}
+              />
             ) : null}
           </>
         ) : null}
@@ -427,10 +572,24 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
             </p>
           ) : null}
         </form>
-      ) : error ? (
+      ) : error && !clarifyOpen ? (
         <p className="mt-4 text-[13px]" style={{ color: '#b91c1c' }}>
           {error}
         </p>
+      ) : null}
+
+      {clarifyOpen && currentCheck ? (
+        <ClarifyBubble
+          prompt={currentCheck.prompt}
+          tutor={clarifyReply}
+          youSaid={youSaid}
+          value={clarifyDraft}
+          busy={busy === 'check' || busy === 'clarify'}
+          error={error}
+          onChange={setClarifyDraft}
+          onSend={sendClarify}
+          onPick={pickCheck}
+        />
       ) : null}
     </div>
   );
