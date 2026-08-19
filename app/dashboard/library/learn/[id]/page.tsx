@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { BookTutorError, getLearnerSession } from '@/lib/learn/bookTutor';
 import BookTutorLearn from '@/components/dashboard/BookTutorLearn';
+import BookTutorDeleteButton from '@/components/dashboard/BookTutorDeleteButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,7 +43,12 @@ export default async function BookTutorSessionPage({ params }: { params: { id: s
         {session.path.authorName ? `with ${session.path.authorName} · ` : ''}
         {session.path.lessonCount ? `${session.path.lessonCount} tutor steps` : 'Preparing tutor steps'}
       </p>
-      <BookTutorLearn initial={session} />
+      {session.path.canDelete ? (
+        <BookTutorDeleteButton pathId={session.path.id} title={session.path.title} />
+      ) : null}
+      <div className="mt-6">
+        <BookTutorLearn initial={session} />
+      </div>
     </div>
   );
 }

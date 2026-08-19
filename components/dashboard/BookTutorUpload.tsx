@@ -18,7 +18,7 @@ export default function BookTutorUpload() {
       return;
     }
     setBusy(true);
-    setMsg('Uploading — huge Amazon books are studied in the background, not in this click…');
+    setMsg('Uploading — large books are studied in the background, not in this click…');
     try {
       const body = new FormData();
       body.set('file', file);
@@ -35,7 +35,7 @@ export default function BookTutorUpload() {
       const timedOut = /failed to fetch|networkerror|load failed/i.test(raw);
       setMsg(
         timedOut
-          ? 'The connection dropped on a very large file. Prefer an unlocked EPUB from Amazon, or a text PDF under 40 MB, then try again.'
+          ? 'The connection dropped on a very large file. Try an unlocked EPUB, or a PDF under 40 MB that you can select text in.'
           : raw || 'Could not start a tutor from that file.',
       );
       setBusy(false);
@@ -50,9 +50,9 @@ export default function BookTutorUpload() {
     >
       <h2 className="font-display text-[22px]">Bring your own book</h2>
       <p className="mt-1 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
-        Upload a copy you own (PDF, EPUB, DOCX, or text). We never save the file. Amazon / Kindle
-        .azw and print-replica image PDFs will not work — use an unlocked EPUB or a PDF you can
-        select text in. Huge books are studied in the background after upload.
+        Upload a copy you own (PDF, EPUB, DOCX, or text). We never save the file. Locked ebooks
+        (.azw / .mobi) and scanned image PDFs will not work — use an unlocked EPUB or a PDF you
+        can select text in. Large books are studied in the background after upload.
       </p>
       <input
         value={title}

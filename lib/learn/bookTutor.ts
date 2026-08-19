@@ -205,11 +205,20 @@ function publicLesson(lessons: BookTutorLesson[], index: number): PublicLesson |
       ? lesson.checks
           .filter((c) => c && c.prompt)
           .slice(0, 2)
-          .map((c) => ({
-            id: String(c.id),
-            prompt: String(c.prompt),
-            placement: c.placement === 'end' ? 'end' : 'mid',
-          }))
+          .map((c) => {
+            const placement: 'mid' | 'end' = c.placement === 'end' ? 'end' : 'mid';
+            const raw = String(c.prompt);
+            const trick = c.expected === false || /true or false|is this (statement|claim)|which is (true|false)/i.test(raw);
+            return {
+              id: String(c.id),
+              prompt: trick
+                ? placement === 'end'
+                  ? 'Ready for the written check on this stretch?'
+                  : 'Still with me on this stretch?'
+                : raw,
+              placement,
+            };
+          })
       : [],
     index,
     total: lessons.length,
@@ -260,6 +269,16 @@ export async function listPathsForUser(userId: string): Promise<{
   return { mine, library };
 }
 
+export async function deletePathForUser(userId: string, pathId: string) {
+  const path = await getPath(pathId);
+  if (!path) throw new BookTutorError('Book tutor not found.', 404);
+  if (path.ownerUserId !== userId) throw new BookTutorError('You can only delete tutors you created.', 403);
+  const db = await getDb();
+  await db.collection('book_tutor_progress').deleteMany({ pathId });
+  await db.collection('book_tutor_paths').deleteOne({ _id: new ObjectId(pathId) });
+  return { ok: true };
+}
+
 export async function getProgress(userId: string, pathId: string): Promise<BookTutorProgressDoc> {
   await ensureBookTutor();
   const db = await getDb();
@@ -295,7 +314,7 @@ export async function getLearnerSession(userId: string, pathId: string) {
     path.status = 'failed';
     path.error =
       path.error ||
-      'This book took too long to study. Try an unlocked EPUB from Amazon, or a text PDF you can select text in.';
+      'This book took too long to study. Try an unlocked EPUB, or a PDF you can select text in.';
   }
   if (path.status !== 'ready') {
     return {
@@ -310,6 +329,7 @@ export async function getLearnerSession(userId: string, pathId: string) {
         chapterCount: chapterCountOf(path),
         isPrivate: path.isPrivate,
         sourceBookId: path.sourceBookId,
+        canDelete: path.ownerUserId === userId,
       },
       progress: null,
       lesson: null,
@@ -329,6 +349,7 @@ export async function getLearnerSession(userId: string, pathId: string) {
       chapterCount: chapterCountOf(path),
       isPrivate: path.isPrivate,
       sourceBookId: path.sourceBookId,
+      canDelete: path.ownerUserId === userId,
     },
     progress: {
       currentLessonIndex: idx,
@@ -388,7 +409,7 @@ export async function createPathFromUpload(opts: {
     title: opts.title,
   });
   work.catch((err) => console.error('book tutor background build failed:', err));
-  // Small files can finish before the next page loads. Huge Amazon PDFs must
+  // Small files can finish before the next page loads. Very large PDFs must
   // not block the HTTP request (proxy timeouts show up as a generic failure).
   if (sourceBytes <= 4 * 1024 * 1024) await work;
   return id;
@@ -613,26 +634,34 @@ export async function submitCheckpoint(opts: {
   if (!current || current.id !== opts.checkId) {
     throw new BookTutorError('That is not the current yes/no yet.', 400);
   }
-  const isCorrect = opts.yes === current.expected;
+  // Yes always means “I get it — continue.” Stored `expected` is ignored
+  // (older paths used trick true/false). No is handled in the UI (clarify bubble).
+  if (opts.yes !== true) {
+    return {
+      isCorrect: false,
+      needsClarify: true,
+      feedback: 'Tell me what you do not get — then tap Yes when it clicks.',
+      checkpointPassed: passed,
+      checksTotal: checks.length,
+      checkPrompt: current.prompt,
+    };
+  }
   const db = await getDb();
-  const nextPassed = isCorrect ? passed + 1 : passed;
+  const nextPassed = passed + 1;
   await db.collection('book_tutor_progress').updateOne(
     { userId: opts.userId, pathId: path.id },
     {
       $set: {
         checkpointPassed: nextPassed,
-        lastFeedback: isCorrect && nextPassed >= checks.length ? '' : isCorrect ? 'Good — keep going.' : '',
-        lastCorrect: isCorrect ? progress.lastCorrect : false,
+        lastFeedback: nextPassed >= checks.length ? '' : 'Good — keep going.',
         updatedAt: new Date(),
       },
     },
   );
   return {
-    isCorrect,
-    needsClarify: !isCorrect,
-    feedback: isCorrect
-      ? 'Good — keep going.'
-      : 'Not quite. Tell me what you do not get — then try Yes / No again.',
+    isCorrect: true,
+    needsClarify: false,
+    feedback: 'Good — keep going.',
     checkpointPassed: nextPassed,
     checksTotal: checks.length,
     checkPrompt: current.prompt,

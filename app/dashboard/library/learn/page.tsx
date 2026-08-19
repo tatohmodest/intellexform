@@ -4,6 +4,7 @@ import { BookMarked, Sparkles } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { listInProgressForUser, listPathsForUser } from '@/lib/learn/bookTutor';
 import BookTutorUpload from '@/components/dashboard/BookTutorUpload';
+import BookTutorMineList from '@/components/dashboard/BookTutorMineList';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,9 +33,10 @@ export default async function BookTutorHubPage() {
         </div>
         <h1 className="font-display text-[32px] leading-tight">Learn a book with AI</h1>
         <p className="mt-2 max-w-[640px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          The original file is never stored. Amazon Kindle .azw / print-replica scans will not
-          convert — use an unlocked EPUB or a PDF you can select text in. Huge books are studied
-          in the background after you upload.
+          The original file is never stored. Locked ebooks and scanned image PDFs will not convert —
+          use an unlocked EPUB or a PDF you can select text in. Large books are studied in the
+          background after you upload. Front matter (contents, thanks, copyright) is skipped so
+          learning starts in the real chapters.
         </p>
       </header>
 
@@ -69,18 +71,15 @@ export default async function BookTutorHubPage() {
       {mine.length > 0 ? (
         <section className="mt-10">
           <h2 className="mb-4 font-display text-[21px]">Your books</h2>
-          <ul className="space-y-2">
-            {mine.map((p) => (
-              <li key={p.id} className="border px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-                <Link href={`/dashboard/library/learn/${p.id}`} className="font-semibold">
-                  {p.title}
-                </Link>
-                <p className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                  {p.lessonCount} steps · {p.isPrivate ? 'Private' : 'Library'} · {p.engine}
-                </p>
-              </li>
-            ))}
-          </ul>
+          <BookTutorMineList
+            rows={mine.map((p) => ({
+              id: p.id,
+              title: p.title,
+              lessonCount: p.lessonCount,
+              isPrivate: p.isPrivate,
+              engine: p.engine,
+            }))}
+          />
         </section>
       ) : null}
 

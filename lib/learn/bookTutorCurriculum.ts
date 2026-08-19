@@ -5,7 +5,7 @@
 
 import { isLLMConfigured } from '@/lib/learn/tutor';
 import { openaiJsonCompletion, parseJsonObject } from '@/lib/learn/openaiJson';
-import type { ParsedChapter } from '@/lib/learn/bookParse';
+import { isFrontMatter, type ParsedChapter } from '@/lib/learn/bookParse';
 
 export type LessonKind = 'teach' | 'practice';
 
@@ -140,6 +140,12 @@ function unitsFromChapters(chapters: ParsedChapter[]): SourceUnit[] {
       const parts = chunks.length ? chunks : [chapter.markdown.slice(0, size)];
       for (const text of parts) {
         if (text.trim().length < 70) continue;
+        const chunkTitle =
+          text
+            .split('\n')
+            .map((l) => l.replace(/^#+\s*/, '').trim())
+            .find((l) => l.length > 3 && l.length < 120) || chapter.title;
+        if (isFrontMatter(chapter.title, text) || isFrontMatter(chunkTitle, text)) continue;
         raw.push({
           chapterId: chapter.id,
           chapterTitle: chapter.title,
@@ -274,31 +280,20 @@ function inventedAnalogy(kws: string[], index: number, chapterTitle: string): st
 
 function makeChecks(unit: SourceUnit, kws: string[], index: number): TutorCheck[] {
   const topic = kws[0] || 'this idea';
-  const other = kws[1] || 'the next idea';
-  const midYes = index % 2 === 0;
-  const endYes = index % 3 !== 0;
   return [
     {
       id: `${unit.chapterId}_mid_${index + 1}`,
       placement: 'mid',
-      prompt: midYes
-        ? `Still with me? Is **${topic}** something you actually use in “${unit.chapterTitle}”, not just a label?`
-        : `Still with me? Can you skip **${topic}** in “${unit.chapterTitle}” and still do the rest the same way?`,
-      expected: midYes,
-      hint: midYes
-        ? `Yes — **${topic}** is the move this stretch is teaching, not decoration.`
-        : `No — if you skip **${topic}**, the rest of this stretch falls apart.`,
+      prompt: `Still with me on **${topic}** in “${unit.chapterTitle}”?`,
+      expected: true,
+      hint: `Yes means this stretch is making sense. If not, say what is fuzzy — we will clear it, then ask again.`,
     },
     {
       id: `${unit.chapterId}_end_${index + 1}`,
       placement: 'end',
-      prompt: endYes
-        ? `After that analogy: if you can point to **${topic}** in a tiny real case, have you understood this step?`
-        : `After that analogy: are **${topic}** and **${other}** the same thing with two names?`,
-      expected: endYes,
-      hint: endYes
-        ? `Yes — being able to point at **${topic}** in a real case is the test.`
-        : `No — keep **${topic}** and **${other}** distinct. The written check will ask you to.`,
+      prompt: `Ready to try the written check on **${topic}**?`,
+      expected: true,
+      hint: `Yes means you can use **${topic}** on a tiny case. If something is still muddy, say what.`,
     },
   ];
 }
@@ -319,7 +314,7 @@ function normalizeChecks(
         id: String(c.id || `${unit.chapterId}_${placement}_${index + 1}`).slice(0, 80),
         prompt: prompt.slice(0, 280),
         placement,
-        expected: Boolean(c.expected),
+        expected: true,
         hint: String(c.hint || fallback[i]?.hint || 'Look back at the last paragraph.').slice(0, 400),
       } satisfies TutorCheck;
     })
@@ -498,9 +493,11 @@ Hard rules:
 - You cannot show the whole book. Teach only what is relevant in this stretch.
 - explanation: markdown with ## What I need you to see and ## How it works. 2–4 short paragraphs in the writer's voice. Code fence ONLY if the book is showing a command or snippet.
 - analogy: one everyday comparison (kitchen, lock, map, sports, drawer) that carries the idea. This is shown AFTER the first yes/no, at the bottom of the teach beat.
-- checks: exactly 2 objects {id, prompt, placement ("mid"|"end"), expected (boolean), hint}.
+- SKIP table of contents, acknowledgments, copyright, dedication, praise, “about the author”, and short preface/introduction openings. Those are not the lesson. Teach the actual subject of the stretch.
+- checks: exactly 2 objects {id, prompt, placement ("mid"|"end"), expected (always true), hint}.
   mid = after the explanation, before the analogy. end = after the analogy, before the written question.
-  expected true means Yes is the correct click. Mix yes-correct and no-correct. Prompts must be answerable with Yes or No.
+  These are understand-gates, NOT trick true/false. Yes always continues. No always means stuck.
+  Prompts like “Still with me on X?” / “Ready for the written check?”
 - example: invent a concrete worked illustration from the ideas even if the book gave none. Never "hold onto these keywords".
 - question: YOUR written check after both yes/no clicks. Unique. NEVER "main idea of this section/chapter".
 - kind=practice ONLY when the book told the reader to try, download, install, run, open, or do a lab. Then practiceTask is numbered real steps, and question asks them to paste what they got.
@@ -646,7 +643,13 @@ export async function buildCurriculum(
     lessons.push(...made);
   }
 
-  const unique = dedupeQuestions(lessons).slice(0, 96);
+  const unique = dedupeQuestions(lessons)
+    .filter(
+      (lesson) =>
+        !isFrontMatter(lesson.chapterTitle, lesson.explanation) &&
+        !/\b(acknowledg?e?ments?|table of contents|^contents$|copyright|dedication)\b/i.test(lesson.title),
+    )
+    .slice(0, 96);
   const engine = llmBatches && heuristicCount ? 'mixed' : llmBatches ? 'llm' : 'heuristic';
   return { lessons: unique, engine };
 }

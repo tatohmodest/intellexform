@@ -35,6 +35,7 @@ type Session = {
     engine: string;
     lessonCount: number;
     chapterCount: number;
+    canDelete?: boolean;
   };
   progress: {
     currentLessonIndex: number;
@@ -112,7 +113,7 @@ function YesNo({
           className="btn btn-primary !px-6 !py-2.5 text-[13.5px]"
         >
           {busy ? <Loader2 size={15} className="animate-spin" /> : null}
-          Yes
+          Yes, I get it
         </button>
         <button
           type="button"
@@ -121,7 +122,7 @@ function YesNo({
           className="btn !px-6 !py-2.5 text-[13.5px]"
           style={{ background: 'var(--paper)', border: '1px solid var(--line)', color: 'var(--ink)' }}
         >
-          No
+          No, I’m stuck
         </button>
       </div>
       {onStuck ? (
@@ -136,7 +137,7 @@ function YesNo({
         </button>
       ) : (
         <p className="mt-3 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Click Yes or No. If it is wrong, a clarify bubble will ask what you do not get.
+          Click Yes if this makes sense. No opens a short clarify bubble — it does not mean a trick answer.
         </p>
       )}
     </div>
@@ -275,28 +276,30 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
 
   async function pickCheck(yes: boolean) {
     if (!currentCheck) return;
+    if (!yes) {
+      openClarify();
+      return;
+    }
+    setClarifyOpen(false);
+    setClarifyDraft('');
+    setClarifyReply('');
+    setYouSaid('');
     setBusy('check');
     setError('');
     try {
       const res = await fetch(`/api/learn/book-tutor/${session.path.id}/checkpoint`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ checkId: currentCheck.id, yes }),
+        body: JSON.stringify({ checkId: currentCheck.id, yes: true }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Could not record that check.');
-      if (!data.isCorrect) {
-        openClarify(data.feedback || 'Not quite. What part is unclear?');
-        return;
-      }
-      setClarifyOpen(false);
-      setClarifyDraft('');
-      setClarifyReply('');
-      setYouSaid('');
+      const nextPassed =
+        typeof data.checkpointPassed === 'number' ? data.checkpointPassed : checkpointPassed + 1;
       setSession((cur) => ({
         ...cur,
         progress: cur.progress
-          ? { ...cur.progress, checkpointPassed: data.checkpointPassed, lastFeedback: '' }
+          ? { ...cur.progress, checkpointPassed: nextPassed, lastFeedback: '' }
           : cur.progress,
       }));
     } catch (err) {
@@ -391,7 +394,7 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
         <p className="font-display text-[22px]">{session.path.status === 'failed' ? 'Could not build this tutor' : 'Studying the book'}</p>
         <p className="mt-2 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
           {session.path.error ||
-            'Huge Amazon books take a bit. We are reading the text in the background and will open the first step when the tutor path is ready. Unlocked EPUB is the most reliable Amazon format.'}
+            'Huge books take a bit. We are reading the text in the background and will open the first step when the tutor path is ready.'}
         </p>
         {session.path.status !== 'failed' ? <Loader2 size={18} className="mx-auto mt-4 animate-spin" /> : null}
       </div>

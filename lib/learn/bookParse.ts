@@ -102,7 +102,7 @@ export function splitIntoChapters(raw: string, fallbackTitle = 'Book'): ParsedCh
         markdown: body.slice(0, BOOK_TUTOR_CHAPTER_CHARS),
       });
     });
-    if (chapters.length) return mergeChapters(chapters, BOOK_TUTOR_MAX_CHAPTERS);
+    if (chapters.length) return dropFrontMatter(mergeChapters(chapters, BOOK_TUTOR_MAX_CHAPTERS));
   }
 
   const chunks: ParsedChapter[] = [];
@@ -129,12 +129,110 @@ export function splitIntoChapters(raw: string, fallbackTitle = 'Book'): ParsedCh
   }
   flush();
   if (!chunks.length) {
-    return [{ id: 'ch_1', title: fallbackTitle, markdown: text.slice(0, BOOK_TUTOR_CHAPTER_CHARS) }];
+    return dropFrontMatter([
+      { id: 'ch_1', title: fallbackTitle, markdown: text.slice(0, BOOK_TUTOR_CHAPTER_CHARS) },
+    ]);
   }
-  return mergeChapters(chunks, BOOK_TUTOR_MAX_CHAPTERS);
+  return dropFrontMatter(mergeChapters(chunks, BOOK_TUTOR_MAX_CHAPTERS));
 }
 
-/** Keep coverage across a long book instead of merging then truncating (which threw 600-page text away). */
+const FRONT_TITLE =
+  /^(contents|table of contents|acknowledgments?|acknowledgements?|dedication|copyright|also by|about the author|about the authors|praise for|praise|list of (figures|tables|illustrations|maps)|credits|permissions|colophon|index|half[- ]title|title page|copyright page|published by|other (books|titles) by|by the same author|to the reader|author'?s note|how to (use|read) this book|a note (from|to)|epigraph)$/i;
+
+function letterCount(text: string): number {
+  return (text.match(/[A-Za-zÀ-ÿ]/g) || []).length;
+}
+
+/** Image TOC / thanks pages often extract as almost no selectable text. */
+function looksLikeSparseExtract(text: string): boolean {
+  return letterCount(text) < 90 && text.length < 800;
+}
+
+function looksLikeContentsList(text: string): boolean {
+  const head = text.slice(0, 400).toLowerCase();
+  const lines = text
+    .split('\n')
+    .map((l) => l.replace(/^#+\s*/, '').trim())
+    .filter((l) => l.length > 2);
+  const numbered = lines.filter((l) => /\.{2,}\s*\d+\s*$/.test(l) || /\s+\d{1,3}$/.test(l)).length;
+  if (/\btable of contents\b|^contents\b/im.test(head) && (text.length < 2800 || numbered >= 4)) return true;
+  if (lines.length < 6) return false;
+  return numbered >= Math.max(6, Math.floor(lines.length * 0.4));
+}
+
+function looksLikeBookOverview(text: string): boolean {
+  const head = text.slice(0, 2200).toLowerCase();
+  const chapterMentions = (head.match(/\bchapter\s+\d+/g) || []).length;
+  return chapterMentions >= 4 && /\b(this book|in this book|you will (learn|find|discover|see))\b/.test(head);
+}
+
+function looksLikeThanks(title: string, text: string): boolean {
+  const t = title.toLowerCase();
+  const head = text.slice(0, 600).toLowerCase();
+  return (
+    /acknowledg|thank(s| you) to (my|the)|gratitude to/.test(t) ||
+    (/^\s*(acknowledg|thanks to my|i (would like to )?thank)/i.test(head) && text.length < 5000)
+  );
+}
+
+/** Skip TOC, thanks, copyright, image openings, and other pages that are not the book teaching. */
+export function isFrontMatter(title: string, text: string): boolean {
+  const t = title.replace(/^#+\s*/, '').replace(/\s+/g, ' ').trim();
+  if (!text.trim()) return true;
+  if (looksLikeSparseExtract(text) && /contents|acknowledg|copyright|dedication|praise|title/i.test(t || text.slice(0, 200))) {
+    return true;
+  }
+  if (FRONT_TITLE.test(t)) return true;
+  if (/\b(table of contents|acknowledg?e?ments?|copyright page|about the author|list of (figures|tables))\b/i.test(t)) {
+    return true;
+  }
+  if (/^contents\b/i.test(t) && t.length < 48) return true;
+  if (/^(preface|foreword|prologue|introduction|intro)\b/i.test(t) && (text.length < 2500 || looksLikeBookOverview(text))) {
+    return true;
+  }
+  const head = text.slice(0, 500).toLowerCase();
+  if (/\b(isbn|copyright ©|all rights reserved|printed in the|library of congress)\b/.test(head) && text.length < 3200) {
+    return true;
+  }
+  if (looksLikeThanks(t, text)) return true;
+  if (looksLikeContentsList(text)) return true;
+  if (looksLikeBookOverview(text) && text.length < 4500) return true;
+  return false;
+}
+
+/** Cut TOC / thanks / copyright blocks glued onto the start of chapter 1. */
+function stripOpeningBlocks(markdown: string): string {
+  let text = markdown.trim();
+  for (let i = 0; i < 10; i++) {
+    const next = text.search(
+      /\n(?:#{1,3}\s+|(?:chapter|part|unit)\s+(?:\d+|[ivxlcdm]+)\b)/i,
+    );
+    const firstBlock = next > 80 ? text.slice(0, next) : text;
+    const title = firstTitle(firstBlock, '');
+    const skip =
+      isFrontMatter(title, firstBlock) ||
+      looksLikeContentsList(firstBlock) ||
+      looksLikeSparseExtract(firstBlock);
+    if (!skip) break;
+    if (next < 80) {
+      return isFrontMatter(title, text) || looksLikeContentsList(text) ? '' : text;
+    }
+    text = text.slice(next).trim();
+  }
+  return text;
+}
+
+function dropFrontMatter(chapters: ParsedChapter[]): ParsedChapter[] {
+  const kept = chapters
+    .map((c, i) => {
+      const markdown = i < 8 ? stripOpeningBlocks(c.markdown) : c.markdown;
+      const title = markdown ? firstTitle(markdown, c.title) : c.title;
+      return { ...c, title, markdown };
+    })
+    .filter((c) => c.markdown.trim().length >= 80 && !isFrontMatter(c.title, c.markdown));
+  return kept.length ? kept : chapters;
+}
+
 function thinChapters(chapters: ParsedChapter[], max: number): ParsedChapter[] {
   if (chapters.length <= max) return chapters;
   const out: ParsedChapter[] = [];
@@ -206,7 +304,7 @@ export function chaptersFromPages(pages: string[], fallbackTitle: string): Parse
 
   for (const rawPage of pages) {
     const page = String(rawPage || '').trim();
-    if (!page) continue;
+    if (!page || looksLikeSparseExtract(page)) continue;
     const firstLine = page.split('\n').map((l) => l.trim()).find(Boolean) || '';
     const isHead = CHAPTER_HEADING.test(firstLine) && firstLine.length < 160;
     if (isHead && buf.length > 400) flush();
@@ -218,16 +316,18 @@ export function chaptersFromPages(pages: string[], fallbackTitle: string): Parse
   if (!chapters.length) {
     const nonempty = pages.filter((p) => p && p.trim().length > 80);
     if (!nonempty.length) return [];
-    return mergeChapters(
-      nonempty.slice(0, BOOK_TUTOR_MAX_CHAPTERS).map((markdown, i) => ({
-        id: slugChapter(i),
-        title: firstTitle(markdown, `${fallbackTitle} · ${i + 1}`),
-        markdown: markdown.slice(0, BOOK_TUTOR_CHAPTER_CHARS),
-      })),
-      BOOK_TUTOR_MAX_CHAPTERS,
+    return dropFrontMatter(
+      mergeChapters(
+        nonempty.slice(0, BOOK_TUTOR_MAX_CHAPTERS).map((markdown, i) => ({
+          id: slugChapter(i),
+          title: firstTitle(markdown, `${fallbackTitle} · ${i + 1}`),
+          markdown: markdown.slice(0, BOOK_TUTOR_CHAPTER_CHARS),
+        })),
+        BOOK_TUTOR_MAX_CHAPTERS,
+      ),
     );
   }
-  return mergeChapters(chapters, BOOK_TUTOR_MAX_CHAPTERS);
+  return dropFrontMatter(mergeChapters(chapters, BOOK_TUTOR_MAX_CHAPTERS));
 }
 
 type PdfTextItem = { str?: string; hasEOL?: boolean };
@@ -249,11 +349,11 @@ function looksLikeKindle(buf: Buffer, filename: string): boolean {
   return head.includes('BOOKMOBI') || head.startsWith('TPZ') || head.includes('KINDLE');
 }
 
-/** Trust magic bytes — Amazon often sends an EPUB named .pdf or a zip without an extension. */
+/** Trust magic bytes — some stores send an EPUB named .pdf or a zip without an extension. */
 function sniffKind(filename: string, mime: string, buf: Buffer): string {
   if (looksLikeKindle(buf, filename)) {
     throw new Error(
-      'This looks like a locked Kindle file (.azw / .mobi / KFX). Book tutor cannot read DRM. In Amazon use “Download EPUB” or a text PDF you can select text in.',
+      'This looks like a locked ebook (.azw / .mobi / KFX). Book tutor cannot read DRM. Use an unlocked EPUB or a PDF you can select text in.',
     );
   }
   if (buf.length >= 5 && buf[0] === 0x25 && buf[1] === 0x50 && buf[2] === 0x44 && buf[3] === 0x46) return 'pdf';
@@ -328,7 +428,7 @@ async function extractEpubChapters(buffer: Buffer): Promise<string[]> {
   const zip = await JSZip.loadAsync(buffer);
   if (zip.file('META-INF/encryption.xml')) {
     throw new Error(
-      'This EPUB is locked (Kindle / Adobe DRM). Book tutor needs an unlocked EPUB or a text PDF you can select text in.',
+      'This EPUB is locked (DRM). Book tutor needs an unlocked EPUB or a PDF you can select text in.',
     );
   }
   const container = await zip.file('META-INF/container.xml')?.async('string');
@@ -395,11 +495,11 @@ export async function parseBookFile(opts: {
     const denseEnough = extractedChars >= 8_000 || (pdf.totalPages > 0 && extractedChars >= pdf.totalPages * 12);
     if (pdf.totalPages > 60 && extractedChars < 4_000 && !denseEnough) {
       throw new Error(
-        'This looks like a scanned / image PDF (common with Amazon “print replica”). Book tutor needs selectable text — download the EPUB or a text PDF.',
+        'This looks like a scanned / image PDF. Book tutor needs selectable text — try an EPUB or a PDF you can highlight.',
       );
     }
     if (extractedChars < 400) {
-      throw new Error('Hardly any text came out of that PDF. If it is an Amazon print replica, try the EPUB instead.');
+      throw new Error('Hardly any text came out of that PDF. Try an EPUB or a PDF you can select text in.');
     }
     pageHint = pdf.totalPages;
     chapters = chaptersFromPages(pdf.pages, fallbackTitle);
@@ -417,7 +517,7 @@ export async function parseBookFile(opts: {
     chapters = splitIntoChapters(raw, fallbackTitle);
   } else {
     throw new Error(
-      'Use a PDF, EPUB, DOCX, Markdown, or .txt file. Kindle .azw / .mobi files are not readable (DRM).',
+      'Use a PDF, EPUB, DOCX, Markdown, or .txt file. Locked ebook files (.azw / .mobi) are not readable.',
     );
   }
 
