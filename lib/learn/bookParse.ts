@@ -15,8 +15,8 @@ export type ParsedBook = {
 /** Original file is held in RAM only, then discarded. 80 MB covers most 4,000-page text PDFs. */
 export const BOOK_TUTOR_MAX_BYTES = 80 * 1024 * 1024;
 export const BOOK_TUTOR_MAX_PAGES = 4000;
-export const BOOK_TUTOR_MAX_CHAPTERS = 240;
-/** In-memory cap per chapter while generating lessons — never persisted. */
+export const BOOK_TUTOR_MAX_CHAPTERS = 800;
+/** Split oversized chapters instead of dropping the tail. */
 export const BOOK_TUTOR_CHAPTER_CHARS = 24_000;
 
 const CHAPTER_HEADING =
@@ -65,6 +65,38 @@ function slugChapter(i: number): string {
   return `ch_${i + 1}`;
 }
 
+function splitLongChapter(title: string, body: string, startIndex: number): ParsedChapter[] {
+  const text = body.trim();
+  if (!text) return [];
+  if (text.length <= BOOK_TUTOR_CHAPTER_CHARS) {
+    return [{ id: slugChapter(startIndex), title: title.slice(0, 120), markdown: text }];
+  }
+  const out: ParsedChapter[] = [];
+  let remaining = text;
+  let part = 0;
+  while (remaining.length > 80) {
+    if (remaining.length <= BOOK_TUTOR_CHAPTER_CHARS) {
+      out.push({
+        id: slugChapter(startIndex + out.length),
+        title: (part ? `${title} · ${part + 1}` : title).slice(0, 120),
+        markdown: remaining,
+      });
+      break;
+    }
+    let cut = remaining.lastIndexOf('\n\n', BOOK_TUTOR_CHAPTER_CHARS);
+    if (cut < BOOK_TUTOR_CHAPTER_CHARS * 0.45) cut = remaining.lastIndexOf('. ', BOOK_TUTOR_CHAPTER_CHARS);
+    if (cut < BOOK_TUTOR_CHAPTER_CHARS * 0.45) cut = BOOK_TUTOR_CHAPTER_CHARS;
+    out.push({
+      id: slugChapter(startIndex + out.length),
+      title: (part ? `${title} · ${part + 1}` : title).slice(0, 120),
+      markdown: remaining.slice(0, cut + 1).trim(),
+    });
+    remaining = remaining.slice(cut + 1).trim();
+    part += 1;
+  }
+  return out;
+}
+
 export function splitIntoChapters(raw: string, fallbackTitle = 'Book'): ParsedChapter[] {
   const text = raw.replace(/\r\n/g, '\n').trim();
   if (!text) return [];
@@ -84,12 +116,8 @@ export function splitIntoChapters(raw: string, fallbackTitle = 'Book'): ParsedCh
       const end = starts[idx + 1] ?? lines.length;
       const body = lines.slice(start, end).join('\n').trim();
       if (body.length < 40) return;
-      const titleLine = lines[start].replace(/^#+\s*/, '').trim();
-      chapters.push({
-        id: slugChapter(chapters.length),
-        title: titleLine.slice(0, 120) || `Chapter ${chapters.length + 1}`,
-        markdown: body.slice(0, BOOK_TUTOR_CHAPTER_CHARS),
-      });
+      const titleLine = lines[start].replace(/^#+\s*/, '').trim() || `Chapter ${chapters.length + 1}`;
+      chapters.push(...splitLongChapter(titleLine.slice(0, 120), body, chapters.length));
     });
     if (chapters.length) return dropFrontMatter(mergeChapters(chapters, BOOK_TUTOR_MAX_CHAPTERS));
   }
@@ -104,12 +132,8 @@ export function splitIntoChapters(raw: string, fallbackTitle = 'Book'): ParsedCh
       buf = '';
       return;
     }
-    chunks.push({
-      id: slugChapter(n),
-      title: firstTitle(markdown, `${fallbackTitle} · part ${n + 1}`),
-      markdown: markdown.slice(0, BOOK_TUTOR_CHAPTER_CHARS),
-    });
-    n += 1;
+    chunks.push(...splitLongChapter(firstTitle(markdown, `${fallbackTitle} · part ${n + 1}`), markdown, chunks.length));
+    n = chunks.length;
     buf = '';
   };
   for (const p of paras) {
@@ -118,9 +142,7 @@ export function splitIntoChapters(raw: string, fallbackTitle = 'Book'): ParsedCh
   }
   flush();
   if (!chunks.length) {
-    return dropFrontMatter([
-      { id: 'ch_1', title: fallbackTitle, markdown: text.slice(0, BOOK_TUTOR_CHAPTER_CHARS) },
-    ]);
+    return dropFrontMatter(splitLongChapter(fallbackTitle, text, 0));
   }
   return dropFrontMatter(mergeChapters(chunks, BOOK_TUTOR_MAX_CHAPTERS));
 }
@@ -395,11 +417,7 @@ function splitStructural(text: string, fallbackTitle: string): ParsedChapter[] {
   for (const body of parts) {
     if (looksLikeHeadingCatalog(body) || looksLikeContentsList(body)) continue;
     const titleLine = body.split('\n').map((l) => l.replace(/^#+\s*/, '').trim()).find((l) => l.length > 3 && l.length < 120) || fallbackTitle;
-    chapters.push({
-      id: slugChapter(chapters.length),
-      title: titleLine.slice(0, 120),
-      markdown: body.slice(0, BOOK_TUTOR_CHAPTER_CHARS),
-    });
+    chapters.push(...splitLongChapter(titleLine.slice(0, 120), body, chapters.length));
   }
   return chapters;
 }
@@ -413,26 +431,17 @@ export function bookTitleFrom(chapters: ParsedChapter[], fallback: string): stri
   return fallback.slice(0, 120);
 }
 
-function thinChapters(chapters: ParsedChapter[], max: number): ParsedChapter[] {
-  if (chapters.length <= max) return chapters;
-  const out: ParsedChapter[] = [];
-  const seen = new Set<number>();
-  for (let i = 0; i < max; i++) {
-    const idx = Math.round((i * (chapters.length - 1)) / Math.max(1, max - 1));
-    if (seen.has(idx)) continue;
-    seen.add(idx);
-    const ch = chapters[idx];
-    out.push({
-      id: slugChapter(out.length),
-      title: ch.title,
-      markdown: ch.markdown.slice(0, BOOK_TUTOR_CHAPTER_CHARS),
-    });
-  }
-  return out;
-}
-
 function mergeChapters(chapters: ParsedChapter[], max: number): ParsedChapter[] {
-  return thinChapters(chapters, max);
+  if (chapters.length <= max) {
+    return chapters.map((c, i) => ({ ...c, id: slugChapter(i) }));
+  }
+  const per = Math.ceil(chapters.length / max);
+  const out: ParsedChapter[] = [];
+  for (let i = 0; i < chapters.length; i += per) {
+    const group = chapters.slice(i, i + per);
+    out.push(...splitLongChapter(group[0].title, group.map((g) => g.markdown).join('\n\n'), out.length));
+  }
+  return out.map((c, i) => ({ ...c, id: slugChapter(i) }));
 }
 
 function flushSized(buf: string, title: string, fallbackTitle: string, n: number): { chapter: ParsedChapter | null; rest: string } {
@@ -507,16 +516,13 @@ export function chaptersFromPages(pages: string[], fallbackTitle: string): Parse
   if (!chapters.length) {
     const nonempty = sourcePages.filter((p) => p && p.trim().length > 80 && !looksLikeHeadingCatalog(p));
     if (!nonempty.length) return [];
-    return dropFrontMatter(
-      mergeChapters(
-        nonempty.slice(0, BOOK_TUTOR_MAX_CHAPTERS).map((markdown, i) => ({
-          id: slugChapter(i),
-          title: firstTitle(markdown, `${fallbackTitle} · ${i + 1}`),
-          markdown: markdown.slice(0, BOOK_TUTOR_CHAPTER_CHARS),
-        })),
-        BOOK_TUTOR_MAX_CHAPTERS,
-      ),
-    );
+    const fromPages: ParsedChapter[] = [];
+    for (const markdown of nonempty) {
+      fromPages.push(
+        ...splitLongChapter(firstTitle(markdown, `${fallbackTitle} · ${fromPages.length + 1}`), markdown, fromPages.length),
+      );
+    }
+    return dropFrontMatter(mergeChapters(fromPages, BOOK_TUTOR_MAX_CHAPTERS));
   }
   return dropFrontMatter(mergeChapters(chapters, BOOK_TUTOR_MAX_CHAPTERS));
 }

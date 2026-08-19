@@ -24,7 +24,8 @@ JSON only:
 {"title":"","author":"","chapters":[{"index":1,"role":"chapter","keep":true,"reason":""}]}
 
 keep=true only for introduction and chapter.
-keep=false for toc, front_matter, appendix, or any preview that is only a list of headings (Praise / Title Page / Copyright / Exercise 2-11 / Chapter 3 …).`;
+keep=false for toc, front_matter, appendix, or any preview that is only a list of headings (Praise / Title Page / Copyright / Exercise 2-11 / Chapter 3 …).
+Classify every listed chapter. Do not omit later chapters from the JSON. Chapters you do not mention will still be kept as instructional.`;
 
 export const BOOK_ARCHITECT_SYSTEM = `You are a curriculum architect. You do not write student-facing lessons yet.
 
@@ -38,7 +39,7 @@ JSON only:
 Rules:
 - Ignore tables of contents, praise, copyright, acknowledgments.
 - Do not list every Exercise N-N in the book. has_exercise=true only if THIS excerpt contains a try-it the student should do at this point.
-- 2–8 units per chapter. Merge tiny headings.`;
+- List every meaningful learning unit in this chapter. Merge tiny headings, but do not compress a long chapter into a handful of units.`;
 
 export const BOOK_TUTOR_STEP_SYSTEM = `You generate tutor steps from ONE chapter of a book that has already been cleaned. You are not allowed to see or invent the rest of the book.
 
@@ -62,6 +63,9 @@ FORBIDDEN:
 - Forcing a quiz onto introduction/explanation/example.
 
 If the excerpt is junk (TOC, praise, copyright), return {"steps":[]}.
+Cover every unit listed for this excerpt. Do not stop early or skip later sections.
+There is no maximum step count. If this excerpt needs 20 or 40 steps, return that many.
+Only include URLs that already appear in the excerpt. Do not invent links. Keep source URLs accurate.
 
 JSON only:
 {"steps":[{"title":"","step_type":"explanation","objective":"","explanation":"","example":"","question":"","criteria":"","ui_type":"text_input","language":"","choices":[],"correct_choice":null,"practice_task":"","keypoints":[]}]}

@@ -14,7 +14,6 @@ import {
 } from '@/lib/learn/bookParse';
 import {
   BOOK_ANALYZER_SYSTEM,
-  BOOK_ARCHITECT_SYSTEM,
   BOOK_TUTOR_STEP_SYSTEM,
 } from '@/lib/learn/bookTutorPrompt';
 
@@ -252,15 +251,36 @@ function sectionsFromChapter(chapter: ParsedChapter, role: 'introduction' | 'cha
   const out: SourceSection[] = [];
   for (const text of chunks) {
     if (text.length < 100) continue;
-    out.push({
-      chapterId: chapter.id,
-      chapterTitle: chapter.title,
-      title: sectionTitle(text, chapter.title),
-      text: text.slice(0, 8000),
-      role,
-    });
+    for (const piece of splitSectionText(text)) {
+      out.push({
+        chapterId: chapter.id,
+        chapterTitle: chapter.title,
+        title: sectionTitle(piece, chapter.title),
+        text: piece,
+        role,
+      });
+    }
   }
   return out;
+}
+
+function splitSectionText(text: string, max = 6000): string[] {
+  const trimmed = text.trim();
+  if (trimmed.length <= max) return [trimmed];
+  const out: string[] = [];
+  let remaining = trimmed;
+  while (remaining.length > 80) {
+    if (remaining.length <= max) {
+      out.push(remaining);
+      break;
+    }
+    let cut = remaining.lastIndexOf('\n\n', max);
+    if (cut < max * 0.4) cut = remaining.lastIndexOf('. ', max);
+    if (cut < max * 0.4) cut = max;
+    out.push(remaining.slice(0, cut + 1).trim());
+    remaining = remaining.slice(cut + 1).trim();
+  }
+  return out.filter((s) => s.length >= 80);
 }
 
 function groundedExplanation(text: string): string {
@@ -347,18 +367,31 @@ function heuristicStepsForSection(section: SourceSection, startIndex: number): B
     );
     return steps;
   }
-  steps.push(
-    makeLesson({
-      chapterId: section.chapterId,
-      chapterTitle: section.chapterTitle,
-      index: startIndex,
-      title: section.title,
-      stepType: 'explanation',
-      explanation,
-      example: code,
-      text: section.text,
-    }),
-  );
+  const paras = explodeDashedHeadings(section.text)
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 40 && !looksLikeHeadingCatalog(p) && !isExerciseDump(p));
+  const bodies =
+    paras.length <= 4 || section.text.length < 2500
+      ? [explanation]
+      : Array.from({ length: Math.ceil(paras.length / 3) }, (_, i) =>
+          stripTutorMetaSpeak(paras.slice(i * 3, i * 3 + 3).join('\n\n')).slice(0, 2800),
+        ).filter((body) => body.length >= 80);
+  const groups = bodies.length ? bodies : [explanation];
+  groups.forEach((body, gi) => {
+    steps.push(
+      makeLesson({
+        chapterId: section.chapterId,
+        chapterTitle: section.chapterTitle,
+        index: startIndex + steps.length,
+        title: groups.length > 1 ? `${section.title} · ${gi + 1}` : section.title,
+        stepType: gi === 0 && code ? 'example' : 'explanation',
+        explanation: body,
+        example: gi === 0 ? code : '',
+        text: section.text,
+      }),
+    );
+  });
   if (isRealTryIt(section.text)) {
     const exerciseLine =
       section.text
@@ -395,18 +428,17 @@ function instructionalChapters(chapters: ParsedChapter[]): ParsedChapter[] {
 
 async function analyzeBook(
   chapters: ParsedChapter[],
-): Promise<{ keep: Set<number>; intro: Set<number> } | null> {
+): Promise<{ keep: Set<number>; intro: Set<number>; skip: Set<number> } | null> {
   const packed = chapters
-    .slice(0, 80)
-    .map(
-      (c, i) =>
-        `${i + 1}. title=${JSON.stringify(c.title)}\npreview=${JSON.stringify(c.markdown.replace(/\s+/g, ' ').slice(0, 280))}`,
-    )
+    .map((c, i) => {
+      const preview = JSON.stringify(c.markdown.replace(/\s+/g, ' ').slice(0, i < 240 ? 240 : 80));
+      return `${i + 1}. title=${JSON.stringify(c.title)}\npreview=${preview}`;
+    })
     .join('\n');
   const raw = await openaiJsonCompletion({
     temperature: 0.1,
     system: BOOK_ANALYZER_SYSTEM,
-    user: packed,
+    user: `Classify every chapter listed. Do not omit later chapters. Instructional chapters stay keep=true.\n\n${packed}`,
   });
   const parsed = parseJsonObject<{
     chapters?: Array<{ index?: number; role?: string; keep?: boolean }>;
@@ -415,17 +447,20 @@ async function analyzeBook(
   if (!rows.length) return null;
   const keep = new Set<number>();
   const intro = new Set<number>();
+  const skip = new Set<number>();
   for (const row of rows) {
     const idx = Number(row.index) - 1;
     if (idx < 0 || idx >= chapters.length) continue;
     const role = String(row.role || '');
     const shouldKeep = row.keep !== false && (role === 'chapter' || role === 'introduction');
-    if (!shouldKeep) continue;
-    if (looksLikeHeadingCatalog(chapters[idx].markdown)) continue;
+    if (!shouldKeep || looksLikeHeadingCatalog(chapters[idx].markdown)) {
+      skip.add(idx);
+      continue;
+    }
     keep.add(idx);
     if (role === 'introduction') intro.add(idx);
   }
-  return keep.size ? { keep, intro } : null;
+  return { keep, intro, skip };
 }
 
 type LlmStep = {
@@ -444,35 +479,24 @@ type LlmStep = {
   keypoints?: string[];
 };
 
-async function llmStepsForChapter(
+async function llmStepsForSections(
   chapter: ParsedChapter,
+  sections: SourceSection[],
   role: 'introduction' | 'chapter',
   startIndex: number,
 ): Promise<BuiltLesson[] | null> {
-  const excerpt = explodeDashedHeadings(chapter.markdown).slice(0, 9000);
-  if (looksLikeHeadingCatalog(excerpt) || excerpt.length < 120) return [];
-  const architect = await openaiJsonCompletion({
-    temperature: 0.2,
-    system: BOOK_ARCHITECT_SYSTEM,
-    user: `CHAPTER: ${chapter.title}\nROLE: ${role}\n\n${excerpt.slice(0, 6000)}`,
-  });
-  const plan = parseJsonObject<{ units?: Array<{ title?: string; objective?: string; has_exercise?: boolean }> }>(
-    architect,
-  );
-  const unitHint = Array.isArray(plan?.units)
-    ? plan!.units
-        .map((u) => `- ${u.title}: ${u.objective || ''}${u.has_exercise ? ' (has exercise now)' : ''}`)
-        .join('\n')
-    : '(derive units from the excerpt)';
+  const excerpt = sections.map((s) => `## ${s.title}\n${s.text}`).join('\n\n').slice(0, 9000);
+  if (excerpt.length < 120 || looksLikeHeadingCatalog(excerpt)) return [];
+  const unitHint = sections.map((s) => `- ${s.title}`).join('\n');
   const raw = await openaiJsonCompletion({
     temperature: 0.4,
     system: BOOK_TUTOR_STEP_SYSTEM,
     user: `CHAPTER: ${chapter.title}
 ROLE: ${role}
-CURRICULUM UNITS:
+CURRICULUM UNITS (cover each):
 ${unitHint}
 
-EXCERPT (teach only this):
+EXCERPT (teach only this — do not skip later units):
 ${excerpt}`,
   });
   const parsed = parseJsonObject<{ steps?: LlmStep[] }>(raw);
@@ -508,19 +532,150 @@ ${excerpt}`,
       const idx = Number(item.correct_choice);
       lesson.correctChoice = Number.isFinite(idx) ? Math.max(0, Math.min(lesson.choices.length - 1, idx)) : 0;
     }
-    if (Array.isArray(item.keypoints)) {
-      lesson.keypoints = item.keypoints
-        .map(String)
-        .filter((k) => k.length > 20 && !looksLikeHeadingCatalog(k) && !/\s-\s/.test(k))
-        .slice(0, 4);
-    }
-    lesson.objective = '';
     out.push(lesson);
   }
   return out.length ? out : null;
 }
 
-const MAX_STEPS = 80;
+function packSections(sections: SourceSection[], maxChars = 7000, maxItems = 4): SourceSection[][] {
+  const batches: SourceSection[][] = [];
+  let cur: SourceSection[] = [];
+  let size = 0;
+  for (const section of sections) {
+    if (cur.length && (size + section.text.length > maxChars || cur.length >= maxItems)) {
+      batches.push(cur);
+      cur = [];
+      size = 0;
+    }
+    cur.push(section);
+    size += section.text.length;
+  }
+  if (cur.length) batches.push(cur);
+  return batches;
+}
+
+function unitCovered(unit: CurriculumUnitPlan, lessons: BuiltLesson[]): boolean {
+  const blob = lessons.map((l) => `${l.title}\n${l.explanation}\n${l.practiceTask}`).join('\n').toLowerCase();
+  const words = tokenize(unit.title).slice(0, 5);
+  if (!words.length) return lessons.length > 0;
+  const hits = words.filter((w) => blob.includes(w)).length;
+  return hits >= Math.min(2, words.length);
+}
+
+export type CurriculumUnitPlan = { title: string; hasExercise: boolean; hasExample: boolean };
+
+export type CurriculumChapterPlan = {
+  id: string;
+  title: string;
+  role: 'introduction' | 'chapter';
+  units: CurriculumUnitPlan[];
+  status: 'pending' | 'complete' | 'incomplete';
+  covered: number;
+};
+
+export async function planBookCurriculum(
+  chapters: ParsedChapter[],
+  opts?: { skipLlm?: boolean },
+): Promise<{ chapters: ParsedChapter[]; plan: CurriculumChapterPlan[] }> {
+  const pool = instructionalChapters(chapters);
+  if (!pool.length) return { chapters: [], plan: [] };
+  let keepIdx: number[] = pool.map((_, i) => i);
+  const introIdx = new Set<number>();
+  if (!opts?.skipLlm && isLLMConfigured()) {
+    try {
+      const analyzed = await analyzeBook(pool);
+      if (analyzed) {
+        keepIdx = pool.map((_, i) => i).filter((i) => !analyzed.skip.has(i));
+        if (!keepIdx.length) keepIdx = pool.map((_, i) => i);
+        analyzed.intro.forEach((i) => introIdx.add(i));
+      }
+    } catch (err) {
+      console.error('book analyzer failed:', err);
+    }
+  }
+  const selected = keepIdx.map((i) => pool[i]).filter(Boolean);
+  const teach = selected.length ? selected : pool;
+  const plan: CurriculumChapterPlan[] = teach.map((chapter) => {
+    const origIdx = pool.indexOf(chapter);
+    const role: 'introduction' | 'chapter' =
+      introIdx.has(origIdx) || looksLikeWelcome(chapter.title, chapter.markdown) ? 'introduction' : 'chapter';
+    const sections = sectionsFromChapter(chapter, role);
+    const units = (sections.length ? sections : [{ title: chapter.title, text: chapter.markdown, chapterId: chapter.id, chapterTitle: chapter.title, role }]).map(
+      (s) => ({
+        title: s.title,
+        hasExercise: isRealTryIt(s.text),
+        hasExample: Boolean(extractCodeish(s.text)),
+      }),
+    );
+    return { id: chapter.id, title: chapter.title, role, units, status: 'pending' as const, covered: 0 };
+  });
+  return { chapters: teach, plan };
+}
+
+export async function generateChapterSteps(opts: {
+  chapter: ParsedChapter;
+  plan: CurriculumChapterPlan;
+  startIndex: number;
+  skipLlm?: boolean;
+}): Promise<{ lessons: BuiltLesson[]; plan: CurriculumChapterPlan; engine: 'llm' | 'heuristic' | 'mixed' }> {
+  const role = opts.plan.role;
+  const sections = sectionsFromChapter(opts.chapter, role);
+  const usable = sections.length
+    ? sections
+    : [{ title: opts.chapter.title, text: opts.chapter.markdown, chapterId: opts.chapter.id, chapterTitle: opts.chapter.title, role }];
+  const lessons: BuiltLesson[] = [];
+  let llm = 0;
+  let heuristic = 0;
+  const useLlm = !opts.skipLlm && isLLMConfigured();
+  for (const batch of packSections(usable)) {
+    let made: BuiltLesson[] | null = null;
+    if (useLlm) {
+      try {
+        made = await llmStepsForSections(opts.chapter, batch, role, opts.startIndex + lessons.length);
+        if (made?.length) llm += 1;
+      } catch (err) {
+        console.error('book tutor chapter steps failed:', err);
+      }
+    }
+    if (!made?.length) {
+      made = batch.flatMap((section) => heuristicStepsForSection(section, opts.startIndex + lessons.length));
+      if (made.length) heuristic += 1;
+    }
+    for (const lesson of made || []) {
+      if (looksLikeHeadingCatalog(lesson.explanation)) continue;
+      lesson.sortOrder = opts.startIndex + lessons.length;
+      lesson.id = `${lesson.chapterId}_${opts.startIndex + lessons.length + 1}`;
+      lessons.push(lesson);
+    }
+  }
+  const missing = opts.plan.units.filter((u) => !unitCovered(u, lessons));
+  for (const unit of missing) {
+    const section = usable.find((s) => s.title === unit.title) || usable.find((s) => tokenize(unit.title).some((w) => s.title.toLowerCase().includes(w)));
+    if (!section) continue;
+    if (lessons.some((l) => l.title === section.title)) continue;
+    const extra = heuristicStepsForSection(section, opts.startIndex + lessons.length);
+    for (const lesson of extra) {
+      lesson.sortOrder = opts.startIndex + lessons.length;
+      lesson.id = `${lesson.chapterId}_${opts.startIndex + lessons.length + 1}`;
+      lessons.push(lesson);
+    }
+    heuristic += extra.length ? 1 : 0;
+  }
+  const covered = opts.plan.units.filter((u) => unitCovered(u, lessons)).length;
+  const plan: CurriculumChapterPlan = {
+    ...opts.plan,
+    covered,
+    status:
+      lessons.length && (opts.plan.units.length === 0 || covered >= opts.plan.units.length)
+        ? 'complete'
+        : lessons.length
+          ? 'incomplete'
+          : 'incomplete',
+  };
+  if (lessons.length && !opts.plan.units.length) plan.status = 'complete';
+  const engine = llm && heuristic ? 'mixed' : llm ? 'llm' : 'heuristic';
+  return { lessons, plan, engine };
+}
 
 export async function buildCurriculum(
   chapters: ParsedChapter[],
@@ -528,62 +683,31 @@ export async function buildCurriculum(
 ): Promise<{
   lessons: BuiltLesson[];
   engine: 'llm' | 'heuristic' | 'mixed';
+  plan: CurriculumChapterPlan[];
 }> {
-  const pool = instructionalChapters(chapters);
-  if (!pool.length) return { lessons: [], engine: 'heuristic' };
-
-  let keepIdx: number[] = pool.map((_, i) => i);
-  const introIdx = new Set<number>();
-  const useLlm = !opts?.skipLlm && isLLMConfigured();
-  const deadline = opts?.deadlineMs || Date.now() + 150_000;
-
-  if (useLlm && Date.now() < deadline - 12_000) {
-    try {
-      const analyzed = await analyzeBook(pool);
-      if (analyzed) {
-        keepIdx = [...analyzed.keep].sort((a, b) => a - b);
-        analyzed.intro.forEach((i) => introIdx.add(i));
-      }
-    } catch (err) {
-      console.error('book analyzer failed:', err);
-    }
-  }
-
-  const selected = keepIdx.map((i) => pool[i]).filter(Boolean);
-  const chaptersToTeach = selected.length ? selected : pool;
+  const { chapters: teach, plan } = await planBookCurriculum(chapters, { skipLlm: opts?.skipLlm });
+  if (!teach.length) return { lessons: [], engine: 'heuristic', plan: [] };
   const lessons: BuiltLesson[] = [];
-  let llmChapters = 0;
-  let heuristicChapters = 0;
-
-  for (let i = 0; i < chaptersToTeach.length && lessons.length < MAX_STEPS; i++) {
-    const chapter = chaptersToTeach[i];
-    const origIdx = pool.indexOf(chapter);
-    const role: 'introduction' | 'chapter' =
-      introIdx.has(origIdx) || looksLikeWelcome(chapter.title, chapter.markdown) ? 'introduction' : 'chapter';
-    const timeLeft = deadline - Date.now();
-    let made: BuiltLesson[] | null = null;
-    if (useLlm && timeLeft > 14_000 && llmChapters < 18) {
-      try {
-        made = await llmStepsForChapter(chapter, role, lessons.length);
-        if (made?.length) llmChapters += 1;
-      } catch (err) {
-        console.error('book tutor chapter steps failed:', err);
-      }
+  let llm = 0;
+  let heuristic = 0;
+  const updated: CurriculumChapterPlan[] = [];
+  for (let i = 0; i < teach.length; i++) {
+    const chapter = teach[i];
+    const { lessons: made, plan: next, engine } = await generateChapterSteps({
+      chapter,
+      plan: plan[i],
+      startIndex: lessons.length,
+      skipLlm: opts?.skipLlm,
+    });
+    if (engine === 'llm') llm += 1;
+    else if (engine === 'heuristic') heuristic += 1;
+    else {
+      llm += 1;
+      heuristic += 1;
     }
-    if (!made?.length) {
-      const sections = sectionsFromChapter(chapter, role);
-      made = sections.flatMap((section) => heuristicStepsForSection(section, lessons.length));
-      if (made.length) heuristicChapters += 1;
-    }
-    for (const lesson of made || []) {
-      if (lessons.length >= MAX_STEPS) break;
-      if (looksLikeHeadingCatalog(lesson.explanation)) continue;
-      lesson.sortOrder = lessons.length;
-      lesson.id = `${lesson.chapterId}_${lessons.length + 1}`;
-      lessons.push(lesson);
-    }
+    lessons.push(...made);
+    updated.push(next);
   }
-
-  const engine = llmChapters && heuristicChapters ? 'mixed' : llmChapters ? 'llm' : 'heuristic';
-  return { lessons, engine };
+  const engine = llm && heuristic ? 'mixed' : llm ? 'llm' : 'heuristic';
+  return { lessons, engine, plan: updated };
 }

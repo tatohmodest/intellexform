@@ -14,8 +14,8 @@ import { XP } from '@/lib/learn/xp';
 import { getBook, studentCanReadBook } from '@/lib/learn/ecosystem';
 import { isLLMConfigured } from '@/lib/learn/tutor';
 import { openaiJsonCompletion, parseJsonObject } from '@/lib/learn/openaiJson';
-import { parseBookFile, splitIntoChapters, looksLikeHeadingCatalog, type ParsedChapter, BOOK_TUTOR_CHAPTER_CHARS } from '@/lib/learn/bookParse';
-import { buildCurriculum, inferLanguage, lessonNeedsCheck, looksLikeCode, stripTutorMetaSpeak, type LessonUiType } from '@/lib/learn/bookTutorCurriculum';
+import { parseBookFile, splitIntoChapters, looksLikeHeadingCatalog, type ParsedChapter } from '@/lib/learn/bookParse';
+import { generateChapterSteps, inferLanguage, lessonNeedsCheck, looksLikeCode, planBookCurriculum, stripTutorMetaSpeak, type CurriculumChapterPlan, type LessonUiType } from '@/lib/learn/bookTutorCurriculum';
 import { BOOK_TUTOR_CLARIFY_SYSTEM, BOOK_TUTOR_GRADE_SYSTEM } from '@/lib/learn/bookTutorPrompt';
 
 export type BookTutorPhase = 'teaching' | 'quiz' | 'passed' | 'complete';
@@ -84,6 +84,9 @@ export type BookTutorPathDoc = {
   /** Legacy field — ignored on write. Old rows may still have it. */
   chapters?: ParsedChapter[];
   lessons: BookTutorLesson[];
+  curriculum?: CurriculumChapterPlan[];
+  nextChapterIndex?: number;
+  buildNote?: string;
   pageCount?: number;
   sourceChars?: number;
   sourceBytes?: number;
@@ -116,6 +119,8 @@ export type BookTutorProgressDoc = {
   lastCorrect: boolean | null;
   attemptsOnCurrent: number;
   checkpointPassed: number;
+  furthestLessonIndex?: number;
+  lessonAnswers?: Record<string, { answer: string; feedback: string; isCorrect: boolean }>;
   updatedAt: Date;
   createdAt: Date;
 };
@@ -131,6 +136,11 @@ export type PublicLesson = {
   kind: BookTutorLessonKind;
   stepType: BookTutorStepType;
   interactionRequired: boolean;
+  savedAnswer: string;
+  savedFeedback: string;
+  savedCorrect: boolean | null;
+  canGoBack: boolean;
+  reviewing: boolean;
   keypoints: string[];
   practiceTask: string;
   note: string;
@@ -281,13 +291,22 @@ function publicLesson(lessons: BookTutorLesson[], index: number): PublicLesson |
     choices,
     index,
     total: lessons.length,
+    savedAnswer: '',
+    savedFeedback: '',
+    savedCorrect: null,
+    canGoBack: index > 0,
+    reviewing: false,
   };
+}
+
+function pathIsPlayable(path: Pick<BookTutorPathDoc, 'status' | 'lessons'>): boolean {
+  return path.status === 'ready' || (path.status === 'generating' && (path.lessons?.length || 0) > 0);
 }
 
 export async function canAccessPath(userId: string, path: BookTutorPathDoc & { id?: string }): Promise<boolean> {
   if (path.ownerUserId === userId) return true;
   if (path.isPrivate) return false;
-  if (path.status !== 'ready') return false;
+  if (!pathIsPlayable(path)) return false;
   if (path.sourceBookId) {
     const book = await getBook(path.sourceBookId);
     if (!book) return false;
@@ -335,6 +354,7 @@ export async function deletePathForUser(userId: string, pathId: string) {
   const db = await getDb();
   await db.collection('book_tutor_progress').deleteMany({ pathId });
   await db.collection('book_tutor_paths').deleteOne({ _id: new ObjectId(pathId) });
+  await clearSources(pathId);
   return { ok: true };
 }
 
@@ -354,6 +374,8 @@ export async function getProgress(userId: string, pathId: string): Promise<BookT
     lastCorrect: null,
     attemptsOnCurrent: 0,
     checkpointPassed: 0,
+    furthestLessonIndex: 0,
+    lessonAnswers: {},
     createdAt: now,
     updatedAt: now,
   };
@@ -367,15 +389,19 @@ export async function getLearnerSession(userId: string, pathId: string) {
   if (!(await canAccessPath(userId, path))) {
     throw new BookTutorError('You do not have access to this book tutor.', 403);
   }
-  const generatingTooLong =
-    path.status === 'generating' && Date.now() - new Date(path.updatedAt).getTime() > 15 * 60 * 1000;
-  if (generatingTooLong) {
-    path.status = 'failed';
-    path.error =
-      path.error ||
-      'This book took too long to study. Try an unlocked EPUB, or a PDF you can select text in.';
+  if (path.status === 'generating') {
+    const staleMs = Date.now() - new Date(path.updatedAt).getTime();
+    if (staleMs > 45 * 60 * 1000 && !(path.lessons?.length)) {
+      path.status = 'failed';
+      path.error = path.error || 'This book took too long to study. Try an unlocked EPUB, or a PDF you can select text in.';
+    } else {
+      continuePathBuild(pathId).catch((err) => console.error('book tutor resume failed:', err));
+    }
   }
-  if (path.status !== 'ready') {
+  const stillBuilding =
+    path.status === 'generating' && (path.nextChapterIndex || 0) < Math.max(path.curriculum?.length || 0, 1);
+  const playable = path.status === 'ready' || (path.status === 'generating' && (path.lessons?.length || 0) > 0);
+  if (!playable) {
     return {
       path: {
         id: path.id,
@@ -389,6 +415,10 @@ export async function getLearnerSession(userId: string, pathId: string) {
         isPrivate: path.isPrivate,
         sourceBookId: path.sourceBookId,
         canDelete: path.ownerUserId === userId,
+        buildNote: path.buildNote || null,
+        buildChapter: path.nextChapterIndex || 0,
+        buildChapters: path.curriculum?.length || chapterCountOf(path),
+        stillBuilding,
       },
       progress: null,
       lesson: null,
@@ -396,6 +426,17 @@ export async function getLearnerSession(userId: string, pathId: string) {
   }
   const progress = await getProgress(userId, pathId);
   const idx = Math.min(progress.currentLessonIndex, Math.max(0, path.lessons.length - 1));
+  const furthest = Math.max(progress.furthestLessonIndex ?? 0, idx);
+  const waitingOnBuild = stillBuilding && idx >= path.lessons.length - 1 && progress.phase !== 'complete';
+  const lesson = progress.phase === 'complete' ? null : publicLesson(path.lessons, idx);
+  const saved = lesson ? progress.lessonAnswers?.[lesson.id] : null;
+  if (lesson) {
+    lesson.savedAnswer = saved?.answer || '';
+    lesson.savedFeedback = saved?.feedback || '';
+    lesson.savedCorrect = saved ? saved.isCorrect : null;
+    lesson.canGoBack = idx > 0 || progress.phase === 'complete';
+    lesson.reviewing = idx < furthest;
+  }
   return {
     path: {
       id: path.id,
@@ -409,17 +450,23 @@ export async function getLearnerSession(userId: string, pathId: string) {
       isPrivate: path.isPrivate,
       sourceBookId: path.sourceBookId,
       canDelete: path.ownerUserId === userId,
+      buildNote: stillBuilding ? path.buildNote || null : null,
+      buildChapter: path.nextChapterIndex || 0,
+      buildChapters: path.curriculum?.length || chapterCountOf(path),
+      stillBuilding,
     },
     progress: {
       currentLessonIndex: idx,
       phase: progress.phase,
       completedCount: progress.completedLessonIds.length,
-      lastFeedback: progress.lastFeedback,
-      lastCorrect: progress.lastCorrect,
+      lastFeedback: saved?.feedback || progress.lastFeedback,
+      lastCorrect: saved ? saved.isCorrect : progress.lastCorrect,
       attemptsOnCurrent: progress.attemptsOnCurrent,
       checkpointPassed: progress.checkpointPassed || 0,
+      furthestLessonIndex: furthest,
+      waitingOnBuild,
     },
-    lesson: progress.phase === 'complete' ? null : publicLesson(path.lessons, idx),
+    lesson,
   };
 }
 
@@ -430,8 +477,172 @@ async function savePath(doc: Omit<BookTutorPathDoc, '_id'>): Promise<string> {
   return res.insertedId.toString();
 }
 
-function outlineOf(chapters: ParsedChapter[]): BookTutorChapterOutline[] {
+function outlineOf(chapters: Array<{ id: string; title: string }>): BookTutorChapterOutline[] {
   return chapters.map((c) => ({ id: c.id, title: c.title }));
+}
+
+const building = new Set<string>();
+
+async function sourcesCollection() {
+  const db = await getDb();
+  await db.collection('book_tutor_sources').createIndex({ pathId: 1 }, { unique: true }).catch(() => {});
+  return db.collection('book_tutor_sources');
+}
+
+async function saveSources(pathId: string, chapters: ParsedChapter[]) {
+  const col = await sourcesCollection();
+  await col.updateOne({ pathId }, { $set: { pathId, chapters, updatedAt: new Date() } }, { upsert: true });
+}
+
+async function loadSources(pathId: string): Promise<ParsedChapter[] | null> {
+  const col = await sourcesCollection();
+  const doc = (await col.findOne({ pathId })) as { chapters?: ParsedChapter[] } | null;
+  const chapters = Array.isArray(doc?.chapters) ? doc.chapters : [];
+  return chapters.length ? chapters : null;
+}
+
+async function clearSources(pathId: string) {
+  const col = await sourcesCollection();
+  await col.deleteOne({ pathId });
+}
+
+export async function continuePathBuild(pathId: string) {
+  if (building.has(pathId)) return;
+  building.add(pathId);
+  try {
+    await runPathBuild(pathId);
+  } finally {
+    building.delete(pathId);
+  }
+}
+
+async function runPathBuild(pathId: string) {
+  const db = await getDb();
+  if (!ObjectId.isValid(pathId)) return;
+  const oid = new ObjectId(pathId);
+  const path = await getPath(pathId);
+  if (!path || path.status !== 'generating') return;
+  const sources = await loadSources(pathId);
+  if (!sources?.length) {
+    const done = (path.nextChapterIndex || 0) >= (path.curriculum?.length || 0) && path.lessons.length;
+    if (done) {
+      await db.collection('book_tutor_paths').updateOne(
+        { _id: oid },
+        { $set: { status: 'ready', error: '', buildNote: `Complete · ${path.lessons.length} steps`, updatedAt: new Date() } },
+      );
+      return;
+    }
+    if (path.lessons.length) {
+      await db.collection('book_tutor_paths').updateOne(
+        { _id: oid },
+        {
+          $set: {
+            status: 'ready',
+            error: '',
+            buildNote: `Generated ${path.lessons.length} steps through chapter ${path.nextChapterIndex || 0} of ${path.curriculum?.length || 0}. Re-upload to continue the rest.`,
+            updatedAt: new Date(),
+          },
+        },
+      );
+      return;
+    }
+    await db.collection('book_tutor_paths').updateOne(
+      { _id: oid },
+      {
+        $set: {
+          status: 'failed',
+          error: 'Generation was interrupted and the book text is no longer in memory. Upload the book again.',
+          updatedAt: new Date(),
+        },
+      },
+    );
+    return;
+  }
+  let plan = path.curriculum || [];
+  let teach = sources;
+  if (!plan.length) {
+    const planned = await planBookCurriculum(sources);
+    teach = planned.chapters;
+    plan = planned.plan;
+    await saveSources(pathId, teach);
+    await db.collection('book_tutor_paths').updateOne(
+      { _id: oid },
+      {
+        $set: {
+          curriculum: plan,
+          nextChapterIndex: 0,
+          chapterOutline: outlineOf(teach),
+          buildNote: `Planning ${plan.length} chapters`,
+          updatedAt: new Date(),
+        },
+      },
+    );
+  }
+  let next = path.nextChapterIndex || 0;
+  let lessons = [...(path.lessons || [])];
+  let llm = 0;
+  let heuristic = 0;
+  const started = Date.now();
+  while (next < plan.length) {
+    const chapter = teach.find((c) => c.id === plan[next].id) || teach[next];
+    if (!chapter) {
+      next += 1;
+      continue;
+    }
+    const { lessons: made, plan: updated, engine } = await generateChapterSteps({
+      chapter,
+      plan: plan[next],
+      startIndex: lessons.length,
+    });
+    lessons = lessons.concat(made);
+    plan[next] = { ...updated, status: made.length ? 'complete' : updated.status };
+    next += 1;
+    if (engine === 'llm') llm += 1;
+    else if (engine === 'mixed') {
+      llm += 1;
+      heuristic += 1;
+    } else heuristic += 1;
+    const engineLabel = llm && heuristic ? 'mixed' : llm ? 'llm' : 'heuristic';
+    await db.collection('book_tutor_paths').updateOne(
+      { _id: oid },
+      {
+        $set: {
+          lessons,
+          curriculum: plan,
+          nextChapterIndex: next,
+          engine: engineLabel,
+          chapterOutline: outlineOf(teach),
+          buildNote: `Chapter ${next} of ${plan.length} · ${lessons.length} steps`,
+          updatedAt: new Date(),
+        },
+      },
+    );
+    if (Date.now() - started > 50_000) return;
+  }
+  if (!lessons.length) {
+    await db.collection('book_tutor_paths').updateOne(
+      { _id: oid },
+      { $set: { status: 'failed', error: 'Could not find real chapters to teach — the file looked like a table of contents or title pages.', updatedAt: new Date() } },
+    );
+    await clearSources(pathId);
+    return;
+  }
+  await db.collection('book_tutor_paths').updateOne(
+    { _id: oid },
+    {
+      $set: {
+        status: 'ready',
+        lessons,
+        curriculum: plan,
+        nextChapterIndex: plan.length,
+        engine: llm && heuristic ? 'mixed' : llm ? 'llm' : 'heuristic',
+        buildNote: `Complete · ${lessons.length} steps across ${plan.length} chapters · ${plan.filter((p) => p.status === 'complete').length} chapters covered`,
+        error: '',
+        updatedAt: new Date(),
+      },
+    },
+  );
+  await clearSources(pathId);
 }
 
 export async function createPathFromUpload(opts: {
@@ -492,31 +703,29 @@ async function finishPathFromUpload(
     } finally {
       opts.buffer.fill(0);
     }
-    const huge =
-      (parsed.pageHint || 0) > 160 || parsed.charCount > 160_000 || (parsed.chapters?.length || 0) > 80;
-    const { lessons, engine } = await buildCurriculum(parsed.chapters, {
-      skipLlm: false,
-      deadlineMs: Date.now() + (huge ? 240_000 : 150_000),
-    });
-    if (!lessons.length) throw new BookTutorError('Could not find real chapters to teach — the file looked like a table of contents or title pages.');
-    const chapterOutline = outlineOf(parsed.chapters);
-    for (const ch of parsed.chapters) ch.markdown = '';
+    const { chapters: teach, plan } = await planBookCurriculum(parsed.chapters);
+    if (!teach.length || !plan.length) throw new BookTutorError('Could not find real chapters to teach — the file looked like a table of contents or title pages.');
+    await saveSources(pathId, teach);
     await db.collection('book_tutor_paths').updateOne(
       { _id: oid },
       {
         $set: {
           title: (opts.title || parsed.title).slice(0, 160),
-          status: 'ready',
-          engine,
-          chapterOutline,
-          lessons,
+          status: 'generating',
+          curriculum: plan,
+          nextChapterIndex: 0,
+          chapterOutline: outlineOf(teach),
+          lessons: [],
           pageCount: parsed.pageHint,
           sourceChars: parsed.charCount,
+          buildNote: `Starting ${plan.length} chapters`,
           error: '',
           updatedAt: new Date(),
         },
       },
     );
+    for (const ch of parsed.chapters) ch.markdown = '';
+    await continuePathBuild(pathId);
   } catch (err) {
     const message =
       err instanceof Error ? err.message : 'Could not build a tutor from that file.';
@@ -542,7 +751,7 @@ export async function createOrGetPathFromLibraryBook(opts: {
   const existing = await db.collection('book_tutor_paths').findOne({
     sourceBookId: book.id,
     isPrivate: false,
-    status: 'ready',
+    status: { $in: ['ready', 'generating'] },
   });
   if (existing) return String(existing._id);
 
@@ -550,7 +759,7 @@ export async function createOrGetPathFromLibraryBook(opts: {
     .map((c, i) => ({
       id: `ch_${i + 1}`,
       title: String(c.title || `Chapter ${i + 1}`),
-      markdown: String(c.content || '').trim().slice(0, BOOK_TUTOR_CHAPTER_CHARS),
+      markdown: String(c.content || '').trim(),
     }))
     .filter((c) => c.markdown.length > 40);
 
@@ -562,20 +771,15 @@ export async function createOrGetPathFromLibraryBook(opts: {
   }
 
   const chapters =
-    readable.length > 160
-      ? readable.slice(0, 160)
-      : readable.length > 8
-        ? readable
-        : splitIntoChapters(
-            readable.map((c) => `# ${c.title}\n\n${c.markdown}`).join('\n\n'),
-            book.title,
-          );
-  const { lessons, engine } = await buildCurriculum(chapters.length ? chapters : readable, {
-    deadlineMs: Date.now() + 110_000,
-  });
-  if (!lessons.length) throw new BookTutorError('Could not turn this book into lessons.');
+    readable.length > 8
+      ? readable
+      : splitIntoChapters(
+          readable.map((c) => `# ${c.title}\n\n${c.markdown}`).join('\n\n'),
+          book.title,
+        );
+  const teach = chapters.length ? chapters : readable;
   try {
-    return await savePath({
+    const id = await savePath({
       ownerUserId: book.authorId,
       ownerName: book.authorName,
       sourceBookId: book.id,
@@ -583,13 +787,16 @@ export async function createOrGetPathFromLibraryBook(opts: {
       authorName: book.authorName,
       sourceFilename: null,
       isPrivate: false,
-      status: 'ready',
-      engine,
-      chapterOutline: outlineOf(chapters.length ? chapters : readable),
-      lessons,
+      status: 'generating',
+      engine: 'heuristic',
+      chapterOutline: outlineOf(teach),
+      lessons: [],
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+    await saveSources(id, teach);
+    await continuePathBuild(id);
+    return id;
   } catch {
     const raced = await db.collection('book_tutor_paths').findOne({
       sourceBookId: book.id,
@@ -692,7 +899,7 @@ export async function submitCheckpoint(opts: {
   const path = await getPath(opts.pathId);
   if (!path) throw new BookTutorError('Book tutor not found.', 404);
   if (!(await canAccessPath(opts.userId, path))) throw new BookTutorError('You do not have access to this book tutor.', 403);
-  if (path.status !== 'ready') throw new BookTutorError('This tutor is not ready yet.', 409);
+  if (!pathIsPlayable(path)) throw new BookTutorError('This tutor is not ready yet.', 409);
   const progress = await getProgress(opts.userId, path.id);
   if (progress.phase === 'complete' || progress.phase === 'passed') {
     throw new BookTutorError('This step is already open for the written check.', 400);
@@ -751,7 +958,7 @@ export async function clarifyCheckpoint(opts: {
   const path = await getPath(opts.pathId);
   if (!path) throw new BookTutorError('Book tutor not found.', 404);
   if (!(await canAccessPath(opts.userId, path))) throw new BookTutorError('You do not have access to this book tutor.', 403);
-  if (path.status !== 'ready') throw new BookTutorError('This tutor is not ready yet.', 409);
+  if (!pathIsPlayable(path)) throw new BookTutorError('This tutor is not ready yet.', 409);
   const progress = await getProgress(opts.userId, path.id);
   if (progress.phase === 'complete' || progress.phase === 'passed') {
     throw new BookTutorError('This step is already open for the written check.', 400);
@@ -818,7 +1025,7 @@ export async function submitAnswer(opts: { userId: string; pathId: string; answe
   const path = await getPath(opts.pathId);
   if (!path) throw new BookTutorError('Book tutor not found.', 404);
   if (!(await canAccessPath(opts.userId, path))) throw new BookTutorError('You do not have access to this book tutor.', 403);
-  if (path.status !== 'ready') throw new BookTutorError('This tutor is not ready yet.', 409);
+  if (!pathIsPlayable(path)) throw new BookTutorError('This tutor is not ready yet.', 409);
   const progress = await getProgress(opts.userId, path.id);
   if (progress.phase === 'complete') throw new BookTutorError('You already finished this book.', 400);
   const lesson = path.lessons[progress.currentLessonIndex];
@@ -853,6 +1060,10 @@ export async function submitAnswer(opts: { userId: string; pathId: string; answe
         lastCorrect: result.isCorrect,
         attemptsOnCurrent: (progress.attemptsOnCurrent || 0) + 1,
         completedLessonIds: Array.from(completed),
+        lessonAnswers: {
+          ...(progress.lessonAnswers || {}),
+          [lesson.id]: { answer, feedback: result.feedback, isCorrect: result.isCorrect },
+        },
         updatedAt: new Date(),
       },
     },
@@ -873,27 +1084,69 @@ export async function advanceLesson(opts: { userId: string; pathId: string }) {
   if (!path) throw new BookTutorError('Book tutor not found.', 404);
   if (!(await canAccessPath(opts.userId, path))) throw new BookTutorError('You do not have access to this book tutor.', 403);
   const progress = await getProgress(opts.userId, path.id);
+  const furthest = Math.max(progress.furthestLessonIndex ?? 0, progress.currentLessonIndex);
+  const reviewing = progress.currentLessonIndex < furthest;
   const lesson = path.lessons[progress.currentLessonIndex];
   const skipCheck = lesson && !lessonNeedsCheck(lesson);
-  if (progress.phase !== 'passed' && !skipCheck) {
+  const alreadyDone = Boolean(lesson && progress.completedLessonIds?.includes(lesson.id));
+  if (!reviewing && progress.phase !== 'passed' && !skipCheck && !alreadyDone) {
     throw new BookTutorError('Answer the check question correctly before going to the next step.', 400);
   }
   const nextIndex = progress.currentLessonIndex + 1;
+  const stillBuilding =
+    path.status === 'generating' && (path.nextChapterIndex || 0) < (path.curriculum?.length || 0);
+  if (nextIndex >= path.lessons.length && stillBuilding) {
+    throw new BookTutorError('Later chapters are still being written. Wait a moment, then continue.', 409);
+  }
   const complete = nextIndex >= path.lessons.length;
   const completed = new Set(progress.completedLessonIds || []);
-  if (skipCheck && lesson?.id) completed.add(lesson.id);
+  if ((skipCheck || reviewing || alreadyDone) && lesson?.id) completed.add(lesson.id);
   const db = await getDb();
+  const nextFurthest = complete ? Math.max(furthest, path.lessons.length - 1) : Math.max(furthest, nextIndex);
+  const nextSaved = complete ? null : path.lessons[nextIndex] ? progress.lessonAnswers?.[path.lessons[nextIndex].id] : null;
   await db.collection('book_tutor_progress').updateOne(
     { userId: opts.userId, pathId: path.id },
     {
       $set: {
         currentLessonIndex: complete ? progress.currentLessonIndex : nextIndex,
-        phase: complete ? 'complete' : 'teaching',
-        lastFeedback: complete ? 'You finished this book tutor.' : '',
-        lastCorrect: complete ? true : null,
+        furthestLessonIndex: nextFurthest,
+        phase: complete ? 'complete' : nextSaved?.isCorrect ? 'passed' : 'teaching',
+        lastFeedback: complete ? 'You finished this book tutor.' : nextSaved?.feedback || '',
+        lastCorrect: complete ? true : nextSaved ? nextSaved.isCorrect : null,
         attemptsOnCurrent: 0,
         checkpointPassed: 0,
         completedLessonIds: Array.from(completed),
+        updatedAt: new Date(),
+      },
+    },
+  );
+  return getLearnerSession(opts.userId, path.id);
+}
+
+export async function retreatLesson(opts: { userId: string; pathId: string }) {
+  const path = await getPath(opts.pathId);
+  if (!path) throw new BookTutorError('Book tutor not found.', 404);
+  if (!(await canAccessPath(opts.userId, path))) throw new BookTutorError('You do not have access to this book tutor.', 403);
+  const progress = await getProgress(opts.userId, path.id);
+  const furthest = Math.max(progress.furthestLessonIndex ?? 0, progress.currentLessonIndex);
+  let nextIndex = progress.currentLessonIndex - 1;
+  if (progress.phase === 'complete') nextIndex = Math.max(0, path.lessons.length - 1);
+  if (nextIndex < 0) throw new BookTutorError('This is the first step.', 400);
+  const lesson = path.lessons[nextIndex];
+  const saved = lesson ? progress.lessonAnswers?.[lesson.id] : null;
+  const done = Boolean(lesson && progress.completedLessonIds?.includes(lesson.id));
+  const db = await getDb();
+  await db.collection('book_tutor_progress').updateOne(
+    { userId: opts.userId, pathId: path.id },
+    {
+      $set: {
+        currentLessonIndex: nextIndex,
+        furthestLessonIndex: Math.max(furthest, progress.currentLessonIndex),
+        phase: saved?.isCorrect || done || (lesson && !lessonNeedsCheck(lesson)) ? 'passed' : 'teaching',
+        lastFeedback: saved?.feedback || '',
+        lastCorrect: saved ? saved.isCorrect : done ? true : null,
+        attemptsOnCurrent: 0,
+        checkpointPassed: 0,
         updatedAt: new Date(),
       },
     },
@@ -914,7 +1167,7 @@ export async function listInProgressForUser(userId: string) {
   if (!ids.length) return [];
   const paths = await db
     .collection('book_tutor_paths')
-    .find({ _id: { $in: ids.map((id) => new ObjectId(String(id))) }, status: 'ready' })
+    .find({ _id: { $in: ids.map((id) => new ObjectId(String(id))) }, status: { $in: ['ready', 'generating'] } })
     .project({ title: 1, lessons: 1, authorName: 1 })
     .toArray();
   const byId = new Map(paths.map((p) => [String(p._id), p]));

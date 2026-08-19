@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Fragment } from 'react';
+import { Fragment, type ReactNode } from 'react';
 
 /**
  * Lightweight markdown-ish renderer for book chapters and posts:
@@ -26,11 +26,56 @@ export default function MarkdownLite({ text }: { text: string }) {
   );
 }
 
+function LessonLink({ href, children }: { href: string; children: ReactNode }) {
+  const external = /^https?:\/\//i.test(href);
+  const className =
+    'font-semibold underline decoration-[1.5px] underline-offset-[3px] hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2';
+  const style = { color: 'var(--green-deep)', cursor: 'pointer' as const, textDecorationColor: 'var(--green-deep)' };
+  if (external) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={className} style={style}>
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link href={href} className={className} style={style}>
+      {children}
+    </Link>
+  );
+}
+
+function linkLabel(url: string): string {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, '');
+    return host.charAt(0).toUpperCase() + host.slice(1);
+  } catch {
+    return url;
+  }
+}
+
 function Inline({ text }: { text: string }) {
-  const tokens = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\/dashboard\/[\w/-]+)/g);
+  const tokens = text.split(/(\[[^\]]+\]\(https?:\/\/[^)]+\)|https?:\/\/[^\s<>)"']+|\/dashboard\/[\w/-]+|\*\*[^*]+\*\*|`[^`]+`)/g);
   return (
     <>
       {tokens.map((tok, ti) => {
+        if (!tok) return null;
+        const md = tok.match(/^\[([^\]]+)\]\((https?:\/\/[^)]+)\)$/);
+        if (md) {
+          return (
+            <LessonLink key={ti} href={md[2]}>
+              {md[1]}
+            </LessonLink>
+          );
+        }
+        if (/^https?:\/\//i.test(tok)) {
+          const href = tok.replace(/[.,;:!?)]+$/g, '');
+          return (
+            <LessonLink key={ti} href={href}>
+              {linkLabel(href)}
+            </LessonLink>
+          );
+        }
         if (tok.startsWith('**') && tok.endsWith('**')) {
           return <strong key={ti}>{tok.slice(2, -2)}</strong>;
         }
@@ -47,9 +92,9 @@ function Inline({ text }: { text: string }) {
         }
         if (tok.startsWith('/dashboard/')) {
           return (
-            <Link key={ti} href={tok} className="font-semibold underline" style={{ color: 'var(--green-deep)' }}>
+            <LessonLink key={ti} href={tok}>
               {tok}
-            </Link>
+            </LessonLink>
           );
         }
         return <Fragment key={ti}>{tok}</Fragment>;
