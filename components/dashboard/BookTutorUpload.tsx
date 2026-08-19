@@ -42,8 +42,9 @@ export default function BookTutorUpload() {
       <h2 className="font-display text-[22px]">Bring your own book</h2>
       <p className="mt-1 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
         Upload a copy you own (PDF, EPUB, DOCX, or text). We never save the file — it is read in
-        memory, turned into a compact tutor path (markdown lessons), then discarded. Text PDFs up to
-        about 4,000 pages work; scanned image PDFs do not.
+        memory, turned into a compact tutor path, then discarded. Text PDFs up to about 4,000 pages
+        work; scanned image PDFs do not. Re-upload a title to rebuild a fuller path with new
+        examples and checks.
       </p>
       <input
         value={title}
