@@ -269,12 +269,7 @@ function sniffKind(filename: string, mime: string, buf: Buffer): string {
 async function extractPdfPages(buffer: Buffer): Promise<{ pages: string[]; totalPages: number }> {
   const { getDocumentProxy } = await import('unpdf');
   const shared = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-  const pdf = (await getDocumentProxy(shared, {
-    disableAutoFetch: true,
-    disableStream: true,
-    isEvalSupported: false,
-    useSystemFonts: true,
-  })) as {
+  const pdf = (await getDocumentProxy(shared)) as {
     numPages: number;
     getPage: (n: number) => Promise<{
       getTextContent: () => Promise<{ items: PdfTextItem[] }>;
