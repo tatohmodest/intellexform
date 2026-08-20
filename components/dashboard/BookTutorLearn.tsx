@@ -7,6 +7,7 @@ import MarkdownLite from '@/components/dashboard/MarkdownLite';
 import BookTutorAnswerField, { type TutorUiType } from '@/components/dashboard/BookTutorAnswerField';
 import BookTutorReadAloud from '@/components/dashboard/BookTutorReadAloud';
 import BookTutorContents, { ContentsButton, type ContentsItem } from '@/components/dashboard/BookTutorContents';
+import BookTutorLive, { type LiveTurn } from '@/components/dashboard/BookTutorLive';
 
 type Check = { id: string; prompt: string; placement: 'mid' | 'end' };
 
@@ -65,9 +66,20 @@ type Session = {
     attemptsOnCurrent: number;
     checkpointPassed: number;
     waitingOnBuild?: boolean;
+    canAdvance?: boolean;
   } | null;
   lesson: Lesson | null;
   contents?: ContentsItem[];
+  tutor?: {
+    turns: LiveTurn[];
+    ask: boolean;
+    prompt: string;
+    kind: string;
+    concept: string;
+    passed: boolean;
+    attempts: number;
+    hints: number;
+  } | null;
 };
 
 function Callout({
@@ -256,24 +268,30 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
   const [clarifyReply, setClarifyReply] = useState('');
   const [youSaid, setYouSaid] = useState('');
   const [contentsOpen, setContentsOpen] = useState(false);
+  const [preparing, setPreparing] = useState(() => Boolean(initial.lesson && !initial.tutor?.turns?.length));
+  const [teachFailed, setTeachFailed] = useState(false);
 
   const lesson = session.lesson;
   const progress = session.progress;
-  const passed =
+  const tutor = session.tutor;
+  const tutorReady = Boolean(tutor?.turns?.length);
+  const storedPassed =
     progress?.phase === 'passed' ||
     progress?.lastCorrect === true ||
     lesson?.savedCorrect === true ||
     Boolean(lesson?.reviewing && lesson?.savedCorrect);
+  const passed = tutorReady ? !tutor?.ask || Boolean(tutor?.passed) || storedPassed : storedPassed;
   const complete = progress?.phase === 'complete';
   const stepType =
     lesson?.stepType ||
     (lesson?.kind === 'practice' ? 'guided_practice' : lesson?.kind === 'orient' ? 'introduction' : lesson?.question ? 'assessment' : 'explanation');
   const practice = stepType === 'guided_practice';
   const needsCheck = lesson?.interactionRequired === true || (lesson?.interactionRequired !== false && Boolean(lesson?.question) && stepType !== 'introduction' && stepType !== 'explanation' && stepType !== 'example' && stepType !== 'transition');
-  const teachOnly = !needsCheck;
+  const teachOnly = tutorReady ? !tutor?.ask : !needsCheck;
+  const liveNeedsAnswer = tutorReady ? Boolean(tutor?.ask && !tutor.passed && !passed) : needsCheck && !passed;
   const checks = lesson?.checks || [];
   const checkpointPassed = progress?.checkpointPassed || 0;
-  const currentCheck = passed || teachOnly ? undefined : checks[checkpointPassed];
+  const currentCheck = tutorReady || preparing || passed || teachOnly ? undefined : checks[checkpointPassed];
   const revealRest = !currentCheck || currentCheck.placement === 'end';
   const revealWrite = needsCheck && Boolean(lesson?.question) && (passed || !currentCheck);
   const pct = useMemo(() => {
@@ -313,7 +331,37 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
     setClarifyReply('');
     setYouSaid('');
     setAnswer(lesson?.savedAnswer || '');
+    setTeachFailed(false);
   }, [lesson?.id, lesson?.savedAnswer]);
+
+  useEffect(() => {
+    if (!lesson?.id || tutorReady || teachFailed || complete) {
+      setPreparing(false);
+      return undefined;
+    }
+    let stop = false;
+    setPreparing(true);
+    (async () => {
+      try {
+        const res = await fetch(`/api/learn/book-tutor/${session.path.id}/teach`, { method: 'POST' });
+        const data = await res.json().catch(() => null);
+        if (stop) return;
+        if (!res.ok || !data?.tutor?.turns?.length) {
+          setTeachFailed(true);
+          return;
+        }
+        if (data.lesson?.id && data.lesson.id !== lesson.id) return;
+        setSession(data);
+      } catch {
+        if (!stop) setTeachFailed(true);
+      } finally {
+        if (!stop) setPreparing(false);
+      }
+    })();
+    return () => {
+      stop = true;
+    };
+  }, [lesson?.id, tutorReady, teachFailed, complete, session.path.id]);
 
   function openClarify(seed?: string) {
     setClarifyOpen(true);
@@ -410,6 +458,27 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
       }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not grade that answer.');
+    } finally {
+      setBusy('');
+    }
+  }
+
+  async function checkLive() {
+    if (!answer.trim()) return;
+    setBusy('grade');
+    setError('');
+    try {
+      const res = await fetch(`/api/learn/book-tutor/${session.path.id}/tutor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: answer }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not check that answer.');
+      setSession(data);
+      if (data.lesson?.savedAnswer) setAnswer(data.lesson.savedAnswer);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not check that answer.');
     } finally {
       setBusy('');
     }
@@ -629,45 +698,49 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
           {lesson.title}
         </h2>
         <BookTutorReadAloud
-          lessonId={lesson.id}
+          lessonId={`${lesson.id}:${tutorReady ? 't' : 's'}`}
           title={lesson.title}
-          explanation={lesson.explanation}
-          example={lesson.example}
-          practiceTask={practice ? lesson.practiceTask : ''}
+          explanation={
+            tutorReady
+              ? tutor!.turns
+                  .filter((t) => t.role === 'tutor')
+                  .map((t) => t.text)
+                  .join('\n\n')
+              : lesson.explanation
+          }
+          example={
+            tutorReady ? tutor!.turns.find((t) => t.role === 'tutor' && t.example)?.example || '' : lesson.example
+          }
+          practiceTask={tutorReady ? (tutor?.ask && !passed ? tutor.prompt : '') : practice ? lesson.practiceTask : ''}
         />
-        <div className="mt-5 tutorial-prose">
-          <MarkdownLite text={lesson.explanation} />
-        </div>
-
-        {currentCheck?.placement === 'mid' ? (
-          <YesNo
-            prompt={currentCheck.prompt}
-            busy={busy === 'check'}
-            onPick={pickCheck}
-            onStuck={() => openClarify()}
-          />
+        {preparing ? (
+          <p className="mt-4 flex items-center gap-2 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+            <Loader2 size={14} className="animate-spin" />
+            Your tutor is preparing this step…
+          </p>
         ) : null}
-
-        {revealRest ? (
+        {tutorReady ? (
+          <BookTutorLive
+            turns={tutor!.turns}
+            ask={Boolean(tutor?.ask)}
+            prompt={tutor?.prompt || ''}
+            passed={passed}
+            uiType={lesson.uiType || 'text_input'}
+            language={lesson.language}
+            choices={lesson.choices}
+            answer={answer}
+            busy={busy === 'grade'}
+            error={error}
+            onChange={setAnswer}
+            onCheck={checkLive}
+          />
+        ) : (
           <>
-            {lesson.example ? (
-              /```/.test(lesson.example) ? (
-                <div className="mt-8">
-                  <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
-                    Example
-                  </p>
-                  <MarkdownLite text={lesson.example} />
-                </div>
-              ) : (
-                <Callout tone="tip" label="Example" text={lesson.example} icon={<Lightbulb size={14} />} />
-              )
-            ) : null}
+            <div className="mt-5 tutorial-prose">
+              <MarkdownLite text={lesson.explanation} />
+            </div>
 
-            {practice && lesson.practiceTask ? (
-              <Callout tone="try" label="Your turn" text={lesson.practiceTask} icon={<FlaskConical size={14} />} />
-            ) : null}
-
-            {currentCheck?.placement === 'end' ? (
+            {currentCheck?.placement === 'mid' ? (
               <YesNo
                 prompt={currentCheck.prompt}
                 busy={busy === 'check'}
@@ -675,17 +748,51 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
                 onStuck={() => openClarify()}
               />
             ) : null}
+
+            {revealRest ? (
+              <>
+                {lesson.example ? (
+                  /```/.test(lesson.example) ? (
+                    <div className="mt-8">
+                      <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
+                        Example
+                      </p>
+                      <MarkdownLite text={lesson.example} />
+                    </div>
+                  ) : (
+                    <Callout tone="tip" label="Example" text={lesson.example} icon={<Lightbulb size={14} />} />
+                  )
+                ) : null}
+
+                {practice && lesson.practiceTask ? (
+                  <Callout tone="try" label="Your turn" text={lesson.practiceTask} icon={<FlaskConical size={14} />} />
+                ) : null}
+
+                {currentCheck?.placement === 'end' ? (
+                  <YesNo
+                    prompt={currentCheck.prompt}
+                    busy={busy === 'check'}
+                    onPick={pickCheck}
+                    onStuck={() => openClarify()}
+                  />
+                ) : null}
+              </>
+            ) : null}
           </>
-        ) : null}
+        )}
       </article>
 
-      {teachOnly ? (
+      {tutorReady || teachOnly || preparing ? (
         <div
           className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4"
           style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}
         >
           <p className="text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-            {stepType === 'introduction' ? 'Continue when you have heard this.' : 'Continue when you are ready.'}
+            {liveNeedsAnswer || (preparing && needsCheck)
+              ? 'Check your answer with the tutor before continuing.'
+              : stepType === 'introduction'
+                ? 'Continue when you have heard this.'
+                : 'Continue when you are ready.'}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -701,7 +808,7 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
             <button
               type="button"
               onClick={next}
-              disabled={busy === 'next'}
+              disabled={liveNeedsAnswer || (preparing && needsCheck) || busy === 'next'}
               className="btn btn-primary !px-5 !py-2.5 text-[13.5px]"
             >
               {busy === 'next' ? <Loader2 size={15} className="animate-spin" /> : null}
@@ -709,7 +816,9 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
                 ? 'Write next chapter'
                 : lesson.index + 1 >= lesson.total
                   ? 'Complete course'
-                  : 'Continue'}
+                  : liveNeedsAnswer
+                    ? 'Next'
+                    : 'Continue'}
               <ArrowRight size={15} />
             </button>
           </div>
@@ -814,7 +923,7 @@ export default function BookTutorLearn({ initial }: { initial: Session }) {
         </p>
       ) : null}
 
-      {!teachOnly && !revealWrite ? (
+      {!tutorReady && !teachOnly && !preparing && !revealWrite ? (
         <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
           <button
             type="button"

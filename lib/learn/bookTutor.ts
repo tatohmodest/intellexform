@@ -109,6 +109,41 @@ export type BookTutorPathSummary = {
   updatedAt: Date;
 };
 
+export type BookTutorLiveKind =
+  | 'none'
+  | 'recall'
+  | 'understanding'
+  | 'prediction'
+  | 'application'
+  | 'debug'
+  | 'explanation'
+  | 'guided';
+
+export type BookTutorLiveTurn = {
+  role: 'tutor' | 'student';
+  text: string;
+  example?: string;
+};
+
+export type BookTutorLiveState = {
+  turns: BookTutorLiveTurn[];
+  ask: boolean;
+  prompt: string;
+  kind: BookTutorLiveKind;
+  concept: string;
+  passed: boolean;
+  attempts: number;
+  hints: number;
+};
+
+export type BookTutorSignal = {
+  concept: string;
+  understanding: 'weak' | 'ok' | 'strong';
+  attempts: number;
+  last_result: string;
+  mastery?: number;
+};
+
 export type BookTutorProgressDoc = {
   userId: string;
   pathId: string;
@@ -121,6 +156,8 @@ export type BookTutorProgressDoc = {
   checkpointPassed: number;
   furthestLessonIndex?: number;
   lessonAnswers?: Record<string, { answer: string; feedback: string; isCorrect: boolean }>;
+  tutorTurns?: Record<string, BookTutorLiveState>;
+  signals?: BookTutorSignal[];
   updatedAt: Date;
   createdAt: Date;
 };
@@ -358,7 +395,7 @@ function buildPhaseOf(path: BookTutorPathDoc): BuildPhase {
   return 'analyzing';
 }
 
-function pathIsPlayable(path: Pick<BookTutorPathDoc, 'status' | 'lessons'>): boolean {
+export function pathIsPlayable(path: Pick<BookTutorPathDoc, 'status' | 'lessons'>): boolean {
   return path.status === 'ready' || (path.status === 'generating' && (path.lessons?.length || 0) > 0);
 }
 
@@ -436,6 +473,8 @@ export async function getProgress(userId: string, pathId: string): Promise<BookT
     checkpointPassed: 0,
     furthestLessonIndex: 0,
     lessonAnswers: {},
+    tutorTurns: {},
+    signals: [],
     createdAt: now,
     updatedAt: now,
   };
@@ -484,6 +523,7 @@ export async function getLearnerSession(userId: string, pathId: string) {
       progress: null,
       lesson: null,
       contents: [] as CourseContentsItem[],
+      tutor: null,
     };
   }
   const progress = await getProgress(userId, pathId);
@@ -503,6 +543,8 @@ export async function getLearnerSession(userId: string, pathId: string) {
     lesson.total = path.lessons.length;
   }
   const contents = courseContents(path.lessons, completedIds);
+  const tutor = lesson ? progress.tutorTurns?.[lesson.id] || null : null;
+  const liveBlocks = Boolean(tutor?.ask && !tutor.passed && !alreadyDone);
   return {
     path: {
       id: path.id,
@@ -531,9 +573,11 @@ export async function getLearnerSession(userId: string, pathId: string) {
       attemptsOnCurrent: progress.attemptsOnCurrent,
       checkpointPassed: progress.checkpointPassed || 0,
       waitingOnBuild,
+      canAdvance: !liveBlocks,
     },
     lesson,
     contents,
+    tutor,
   };
 }
 
@@ -1171,8 +1215,18 @@ export async function advanceLesson(opts: { userId: string; pathId: string }) {
   const lesson = path.lessons[progress.currentLessonIndex];
   const skipCheck = lesson && !lessonNeedsCheck(lesson);
   const alreadyDone = Boolean(lesson && progress.completedLessonIds?.includes(lesson.id));
-  if (!alreadyDone && progress.phase !== 'passed' && !skipCheck) {
-    throw new BookTutorError('Answer the check question correctly before going to the next step.', 400);
+  const live = lesson ? progress.tutorTurns?.[lesson.id] : undefined;
+  const liveBlocks = Boolean(live?.ask && !live.passed);
+  const mustAnswer = live
+    ? liveBlocks
+    : Boolean(!alreadyDone && progress.phase !== 'passed' && !skipCheck);
+  if (!alreadyDone && mustAnswer) {
+    throw new BookTutorError(
+      liveBlocks
+        ? 'Check your answer with the tutor before going to the next step.'
+        : 'Answer the check question correctly before going to the next step.',
+      400,
+    );
   }
   let nextIndex = progress.currentLessonIndex + 1;
   if (nextIndex >= path.lessons.length && path.status === 'generating') {
@@ -1184,7 +1238,9 @@ export async function advanceLesson(opts: { userId: string; pathId: string }) {
   }
   const complete = nextIndex >= path.lessons.length;
   const completed = new Set(progress.completedLessonIds || []);
-  if (lesson?.id && (skipCheck || alreadyDone || progress.phase === 'passed')) completed.add(lesson.id);
+  if (lesson?.id && (skipCheck || alreadyDone || progress.phase === 'passed' || (live && (!live.ask || live.passed)))) {
+    completed.add(lesson.id);
+  }
   const db = await getDb();
   const nextSaved = complete ? null : path.lessons[nextIndex] ? progress.lessonAnswers?.[path.lessons[nextIndex].id] : null;
   const nextDone = Boolean(!complete && path.lessons[nextIndex] && completed.has(path.lessons[nextIndex].id));
