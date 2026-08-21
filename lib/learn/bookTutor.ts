@@ -800,6 +800,24 @@ export async function createPathFromUpload(opts: {
   return id;
 }
 
+function wipeUploadBuffer(buf: Buffer) {
+  try {
+    const ab = buf.buffer as ArrayBuffer & { detached?: boolean };
+    if (!buf.length || !ab || ab.byteLength === 0 || ab.detached) return;
+    buf.fill(0);
+  } catch {
+    // pdf.js may have transferred this ArrayBuffer; the original file is already gone.
+  }
+}
+
+function publicBuildError(err: unknown): string {
+  const message = err instanceof Error ? err.message : 'Could not build a tutor from that file.';
+  if (/detached ArrayBuffer|TypedArray.*fill/i.test(message)) {
+    return 'Could not read that file. Try an unlocked EPUB, or a PDF you can select text in.';
+  }
+  return message;
+}
+
 async function finishPathFromUpload(
   pathId: string,
   opts: { buffer: Buffer; filename: string; mime?: string; title?: string },
@@ -820,7 +838,7 @@ async function finishPathFromUpload(
         titleHint: opts.title,
       });
     } finally {
-      opts.buffer.fill(0);
+      wipeUploadBuffer(opts.buffer);
     }
     await saveSources(
       pathId,
@@ -854,8 +872,7 @@ async function finishPathFromUpload(
     for (const ch of parsed.chapters) ch.markdown = '';
     await continuePathBuild(pathId);
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : 'Could not build a tutor from that file.';
+    const message = publicBuildError(err);
     console.error('book tutor finish failed:', err);
     await db.collection('book_tutor_paths').updateOne(
       { _id: oid },

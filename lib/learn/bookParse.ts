@@ -565,8 +565,10 @@ function sniffKind(filename: string, mime: string, buf: Buffer): string {
 
 async function extractPdfPages(buffer: Buffer): Promise<{ pages: string[]; totalPages: number }> {
   const { getDocumentProxy } = await import('unpdf');
-  const shared = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-  const pdf = (await getDocumentProxy(shared)) as {
+  // Copy: pdf.js transfers TypedArrays to a worker and detaches the source.
+  // Sharing the Node Buffer's ArrayBuffer would break the later privacy wipe.
+  const data = Uint8Array.from(buffer);
+  const pdf = (await getDocumentProxy(data)) as {
     numPages: number;
     getPage: (n: number) => Promise<{
       getTextContent: () => Promise<{ items: PdfTextItem[] }>;
