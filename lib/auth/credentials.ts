@@ -815,6 +815,7 @@ async function issueLoginOtp(opts: {
     existing?.createdAt &&
     existing.expiresAt &&
     new Date(existing.expiresAt).getTime() > now &&
+    (existing.attempts || 0) < LOGIN_OTP.maxAttempts &&
     now - new Date(existing.createdAt).getTime() < LOGIN_OTP.resendMs
   ) {
     if (opts.passwordAlreadyOk) {
