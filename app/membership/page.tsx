@@ -137,8 +137,8 @@ export default async function MembershipPage() {
             </div>
             <h2 className="font-display text-[26px]">Start your membership</h2>
             <p className="mt-2 text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-              Pay securely with MoMo, Orange Money, or card via PayUnit. Access unlocks as soon as
-              payment confirms.
+              Pay on this page with MTN MoMo or Orange Money. A prompt is sent to your phone — you
+              stay on InTelleX. Access unlocks as soon as payment confirms.
             </p>
             <ul className="mt-6 space-y-3 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
               <li className="flex items-start gap-2">

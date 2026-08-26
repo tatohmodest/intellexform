@@ -5,12 +5,11 @@ import { buildWhatsappLink, purchaseMessage } from '@/lib/whatsapp';
 import { fulfillPaidOrder } from '@/lib/payments/fulfill';
 
 /**
- * Confirms an order after the buyer returns from PayUnit.
+ * Confirms an in-app direct payment (or a sandbox mock).
  *
- * PayUnit only redirects to the success_url on a genuinely successful payment,
- * so (like the Junior Dev `confirm` endpoint) we trust `outcome=success` and
- * mark the order paid; for live orders we also double-check the gateway status.
- * `outcome=cancel` marks the order failed.
+ * Live PayUnit orders are settled only when the gateway reports SUCCESS
+ * (webhook or paymentstatus poll). The client cannot mark a live order paid.
+ * Mock orders require `outcome=success` via /api/payments/mock-complete.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -40,7 +39,6 @@ export async function POST(req: NextRequest) {
         }
         if (gw === 'SUCCESS') status = 'paid';
         else if (gw === 'FAILED') status = 'failed';
-        else if (outcome === 'success') status = 'paid';
       } else if (order.gateway === 'mock' && outcome === 'success') {
         status = 'paid';
       }

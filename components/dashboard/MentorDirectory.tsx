@@ -7,13 +7,13 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   CalendarClock,
   Loader2,
-  Lock,
   Star,
   Video,
   X,
   XCircle,
 } from 'lucide-react';
 import type { Mentor } from '@/lib/learn/mentors';
+import DirectPayForm from '@/components/payments/DirectPayForm';
 
 export interface BookingView {
   id: string;
@@ -69,28 +69,7 @@ export default function MentorDirectory({
     const slot = booking.slots[slotIdx];
     const scheduledAt = slotDate(slot.dayOffset, slot.time).toISOString();
     const topicText = topic || `Mentorship with ${booking.name}`;
-    const isPaid = (booking.priceXAF || 0) > 0;
     try {
-      if (isPaid) {
-        const res = await fetch('/api/payments/initialize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            kind: 'session_booking',
-            mentorId: booking.id,
-            scheduledAt,
-            topic: topicText,
-          }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.transactionUrl) {
-          setError(data.error || 'Could not start payment. Please try again.');
-          return;
-        }
-        window.location.href = data.transactionUrl;
-        return;
-      }
-
       const res = await fetch('/api/learn/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -356,27 +335,43 @@ export default function MentorDirectory({
                 </p>
               )}
 
-              <button
-                onClick={confirmBooking}
-                disabled={busy}
-                className="btn btn-primary mt-5 w-full !py-3.5 text-[14px]"
-              >
-                {busy ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : booking.priceXAF > 0 ? (
-                  <Lock size={16} />
-                ) : (
-                  <Video size={16} />
-                )}
-                {booking.priceXAF > 0
-                  ? `Pay ${booking.priceXAF.toLocaleString()} XAF & book`
-                  : 'Confirm booking'}
-              </button>
-              <p className="mt-3 text-center text-[11.5px]" style={{ color: 'var(--ink-soft)' }}>
-                {booking.priceXAF > 0
-                  ? 'Payment opens first (PayUnit). Your session is booked only after payment succeeds.'
-                  : "You'll join the session from your dashboard - live HD video powered by Agora."}
-              </p>
+              {booking.priceXAF > 0 && booking.slots[slotIdx] ? (
+                <div className="mt-5">
+                  <DirectPayForm
+                    key={`${booking.id}-${slotIdx}`}
+                    amountXAF={booking.priceXAF}
+                    label="Pay & book"
+                    extraBody={{
+                      kind: 'session_booking',
+                      mentorId: booking.id,
+                      scheduledAt: slotDate(booking.slots[slotIdx].dayOffset, booking.slots[slotIdx].time).toISOString(),
+                      topic: topic || `Mentorship with ${booking.name}`,
+                    }}
+                    onPaid={() => {
+                      setBooking(null);
+                      setTopic('');
+                      router.refresh();
+                    }}
+                  />
+                  <p className="mt-3 text-center text-[11.5px]" style={{ color: 'var(--ink-soft)' }}>
+                    Approve MTN MoMo or Orange Money on your phone. Your session is booked only after payment succeeds.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={confirmBooking}
+                    disabled={busy}
+                    className="btn btn-primary mt-5 w-full !py-3.5 text-[14px]"
+                  >
+                    {busy ? <Loader2 size={16} className="animate-spin" /> : <Video size={16} />}
+                    Confirm booking
+                  </button>
+                  <p className="mt-3 text-center text-[11.5px]" style={{ color: 'var(--ink-soft)' }}>
+                    You&apos;ll join the session from your dashboard - live HD video powered by Agora.
+                  </p>
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}

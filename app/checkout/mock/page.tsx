@@ -41,7 +41,7 @@ function MockInner() {
           </div>
         </div>
         <p className="mb-4 flex items-center gap-2 text-xs" style={{ color: 'var(--ink-soft)' }}>
-          <Smartphone size={14} /> Pay with MTN MoMo, Orange Money or card via PayUnit.
+          <Smartphone size={14} /> Sandbox stand-in for MTN MoMo / Orange Money direct pay.
         </p>
         <button onClick={() => complete('success')} disabled={loading !== null} className="btn btn-primary mb-3 w-full">
           {loading === 'success' ? <Loader2 size={18} className="animate-spin" /> : <Lock size={18} />}
@@ -52,7 +52,7 @@ function MockInner() {
         </button>
         <p className="mt-4 text-center text-[11px]" style={{ color: 'var(--ink-soft)' }}>
           Sandbox checkout - shown because PayUnit API keys aren&apos;t configured yet. Add them to enable
-          real MoMo / Orange / card payments.
+          real MTN MoMo / Orange Money prompts on the checkout page.
         </p>
       </div>
     </div>

@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createOrder, getCourseBySlug } from '@/lib/repo';
-import { initializeCheckout, isPayunitConfigured, resolveCallbackBase } from '@/lib/payunit';
+import { createOrder, getCourseBySlug, updateOrderStatus } from '@/lib/repo';
+import {
+  cleanCameroonPhone,
+  generatePayUnitTransactionId,
+  isPayunitConfigured,
+  isValidCameroonMomo,
+  makeDirectPayment,
+  parsePayOperator,
+  resolveCallbackBase,
+  type PayOperator,
+} from '@/lib/payunit';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getLearner } from '@/lib/learn/repo';
 import {
@@ -13,10 +22,20 @@ import {
 } from '@/lib/learn/ecosystem';
 import { computeCommission } from '@/lib/learn/commission';
 import type { OrderKind } from '@/lib/types';
-import { absoluteUrl } from '@/lib/seo/share';
 
-function newTransactionId() {
-  return `${Math.floor(Math.random() * 1_000_000_000)}`;
+function parseCheckoutContact(body: Record<string, unknown>): {
+  operator: PayOperator;
+  phone: string;
+} | { error: string; status: number } {
+  const operator = parsePayOperator(body.operator || body.paymentOperator);
+  if (!operator) {
+    return { error: 'Choose MTN MoMo or Orange Money.', status: 400 };
+  }
+  const phone = cleanCameroonPhone(String(body.phone || body.whatsapp || ''));
+  if (!isValidCameroonMomo(phone)) {
+    return { error: 'Enter a valid Cameroon mobile number (9 digits, starting with 6).', status: 400 };
+  }
+  return { operator, phone };
 }
 
 export async function POST(req: NextRequest) {
@@ -27,12 +46,17 @@ export async function POST(req: NextRequest) {
     const callbackBase = resolveCallbackBase(origin);
     const useLive = isPayunitConfigured() && Boolean(callbackBase);
     const gateway = useLive ? 'payunit' : 'mock';
-    const transactionId = newTransactionId();
+    const contact = parseCheckoutContact(body);
+    if ('error' in contact) {
+      return NextResponse.json({ error: contact.error }, { status: contact.status });
+    }
+    const { operator, phone } = contact;
+    const transactionId = generatePayUnitTransactionId('INTX', operator);
 
     // ── Catalogue course (individual course checkout) ───────────────────────
     if (kind === 'catalogue' || (!body.kind && body.courseSlug)) {
       const session = getSessionUser();
-      const { courseSlug, phone, whatsapp: inputWhatsapp, fullName: inputName, email: inputEmail } = body;
+      const { courseSlug, whatsapp: inputWhatsapp, fullName: inputName, email: inputEmail } = body;
       const userId = session?.uid || body.userId || null;
 
       if (!courseSlug) {
@@ -46,13 +70,13 @@ export async function POST(req: NextRequest) {
 
       const fullName = session?.name || inputName || 'Learner';
       const email = session?.email || inputEmail || '';
-      const whatsapp = inputWhatsapp || phone || '000000000';
+      const whatsapp = inputWhatsapp || contact.phone;
 
       await createOrder({
         fullName,
         whatsapp,
         email,
-        phone: phone || '',
+        phone: contact.phone,
         courseId: course.id,
         courseSlug: course.slug,
         courseName: course.name,
@@ -68,19 +92,25 @@ export async function POST(req: NextRequest) {
         fulfilled: false,
       });
 
-      const transactionUrl = await buildCheckoutUrl({
+      const pay = await startDirectPay({
         useLive,
         callbackBase,
         origin,
         transactionId,
         amount: course.currentPrice,
-        productName: course.name,
-        productImage: course.courseImage || undefined,
-        about: course.shortDescription || `Intellex - ${course.name}`,
-        meta: { courseSlug: course.slug, fullName, whatsapp, kind: 'catalogue', userId },
+        description: course.name,
+        phone: contact.phone,
+        operator,
       });
+      if (!pay.ok) {
+        await updateOrderStatus(transactionId, 'failed').catch(() => {});
+        return NextResponse.json({ error: pay.error }, { status: 502 });
+      }
 
-      return NextResponse.json({ success: true, transactionId, transactionUrl }, { status: 201 });
+      return NextResponse.json(
+        { success: true, transactionId, direct: true, mock: pay.mock, message: pay.message },
+        { status: 201 },
+      );
     }
 
     // Teacher courses and session bookings require a signed-in student.
@@ -91,8 +121,7 @@ export async function POST(req: NextRequest) {
     const learner = await getLearner(session.uid);
     const fullName = learner?.name || session.name || body.fullName || 'Student';
     const email = learner?.email || session.email || body.email || '';
-    const whatsapp = String(body.whatsapp || '').trim() || '000000000';
-    const phone = String(body.phone || '').trim();
+    const whatsapp = String(body.whatsapp || '').trim() || contact.phone;
 
     // ── Teacher course purchase ─────────────────────────────────────────────
     if (kind === 'teacher_course') {
@@ -132,7 +161,7 @@ export async function POST(req: NextRequest) {
         fullName,
         whatsapp,
         email,
-        phone,
+        phone: contact.phone,
         courseId: course.id,
         courseSlug: course.id,
         courseName: course.title,
@@ -154,25 +183,23 @@ export async function POST(req: NextRequest) {
         fulfilled: false,
       });
 
-      const transactionUrl = await buildCheckoutUrl({
+      const pay = await startDirectPay({
         useLive,
         callbackBase,
         origin,
         transactionId,
         amount: breakdown.priceXAF,
-        productName: course.title,
-        productImage: course.coverUrl || undefined,
-        about: course.subtitle || course.description || course.title,
-        meta: {
-          kind: 'teacher_course',
-          teacherCourseId: course.id,
-          userId: session.uid,
-          isTrial: breakdown.isTrial,
-        },
+        description: course.title,
+        phone: contact.phone,
+        operator,
       });
+      if (!pay.ok) {
+        await updateOrderStatus(transactionId, 'failed').catch(() => {});
+        return NextResponse.json({ error: pay.error }, { status: 502 });
+      }
 
       return NextResponse.json(
-        { success: true, transactionId, transactionUrl, breakdown },
+        { success: true, transactionId, direct: true, mock: pay.mock, message: pay.message, breakdown },
         { status: 201 },
       );
     }
@@ -219,7 +246,7 @@ export async function POST(req: NextRequest) {
         fullName,
         whatsapp,
         email,
-        phone,
+        phone: contact.phone,
         courseId: mentor.id,
         courseSlug: `session-${mentor.id}`,
         courseName: `Session with ${mentor.name}`,
@@ -246,25 +273,23 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      const transactionUrl = await buildCheckoutUrl({
+      const pay = await startDirectPay({
         useLive,
         callbackBase,
         origin,
         transactionId,
         amount: breakdown.priceXAF,
-        productName: `Session with ${mentor.name}`,
-        about: topic,
-        meta: {
-          kind: 'session_booking',
-          mentorId: mentor.id,
-          userId: session.uid,
-          scheduledAt: scheduledAt.toISOString(),
-          isTrial: breakdown.isTrial,
-        },
+        description: `Session with ${mentor.name}`,
+        phone: contact.phone,
+        operator,
       });
+      if (!pay.ok) {
+        await updateOrderStatus(transactionId, 'failed').catch(() => {});
+        return NextResponse.json({ error: pay.error }, { status: 502 });
+      }
 
       return NextResponse.json(
-        { success: true, transactionId, transactionUrl, breakdown },
+        { success: true, transactionId, direct: true, mock: pay.mock, message: pay.message, breakdown },
         { status: 201 },
       );
     }
@@ -284,7 +309,7 @@ export async function POST(req: NextRequest) {
         fullName,
         whatsapp,
         email,
-        phone,
+        phone: contact.phone,
         courseId: `cert-${plan}`,
         courseSlug: `cert-subscription-${plan}`,
         courseName: productName,
@@ -302,21 +327,31 @@ export async function POST(req: NextRequest) {
         fulfilled: false,
       });
 
-      const transactionUrl = await buildCheckoutUrl({
+      const pay = await startDirectPay({
         useLive,
         callbackBase,
         origin,
         transactionId,
         amount,
-        productName,
-        productImage: absoluteUrl('/intellex-student-membership.png'),
-        about:
-          'InTelleX Student membership - 1,000+ courses with certifications, Intermediate to Pro unlock, and free library books.',
-        meta: { kind: 'cert_subscription', plan, userId: session.uid },
+        description: productName,
+        phone: contact.phone,
+        operator,
       });
+      if (!pay.ok) {
+        await updateOrderStatus(transactionId, 'failed').catch(() => {});
+        return NextResponse.json({ error: pay.error }, { status: 502 });
+      }
 
       return NextResponse.json(
-        { success: true, transactionId, transactionUrl, plan, amountXAF: amount },
+        {
+          success: true,
+          transactionId,
+          direct: true,
+          mock: pay.mock,
+          message: pay.message,
+          plan,
+          amountXAF: amount,
+        },
         { status: 201 },
       );
     }
@@ -328,40 +363,40 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function buildCheckoutUrl(opts: {
+async function startDirectPay(opts: {
   useLive: boolean;
   callbackBase: string | null;
   origin: string;
   transactionId: string;
   amount: number;
-  productName: string;
-  productImage?: string;
-  about?: string;
-  meta?: Record<string, unknown>;
-}): Promise<string> {
+  description: string;
+  phone: string;
+  operator: PayOperator;
+}): Promise<{ ok: true; mock?: boolean; message: string } | { ok: false; error: string }> {
   if (opts.useLive && opts.callbackBase) {
-    const successUrl = `${opts.callbackBase}/checkout/return?transaction_id=${opts.transactionId}&outcome=success`;
-    const cancelUrl = `${opts.callbackBase}/checkout/return?transaction_id=${opts.transactionId}&outcome=cancel`;
-    const notifyUrl = `${opts.callbackBase}/api/payments/notify`;
-    const { redirectUrl } = await initializeCheckout({
-      amount: opts.amount,
-      currency: 'XAF',
-      transactionId: opts.transactionId,
-      successUrl,
-      cancelUrl,
-      notifyUrl,
-      productName: opts.productName,
-      productImage: opts.productImage,
-      about: opts.about,
-      meta: opts.meta,
-    });
-    return redirectUrl;
+    try {
+      const result = await makeDirectPayment({
+        amount: opts.amount,
+        transactionId: opts.transactionId,
+        phoneNumber: opts.phone,
+        paymentOperator: opts.operator,
+        returnUrl: `${opts.callbackBase}/checkout/return?transaction_id=${opts.transactionId}&outcome=pending`,
+        notifyUrl: `${opts.callbackBase}/api/payments/notify`,
+        description: opts.description,
+      });
+      if (!result.success) {
+        return { ok: false, error: result.message || 'Could not send the payment prompt.' };
+      }
+      return { ok: true, message: result.message };
+    } catch (err) {
+      console.error('PayUnit direct pay error:', err);
+      return { ok: false, error: 'Could not reach PayUnit. Try again in a moment.' };
+    }
   }
 
-  const params = new URLSearchParams({
-    transaction_id: opts.transactionId,
-    course: opts.productName,
-    amount: String(opts.amount),
-  });
-  return `${opts.origin}/checkout/mock?${params.toString()}`;
+  return {
+    ok: true,
+    mock: true,
+    message: 'Sandbox checkout — confirm the payment on this page.',
+  };
 }
