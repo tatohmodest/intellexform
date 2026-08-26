@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, Mail } from 'lucide-react';
@@ -36,10 +36,11 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
   const sessionExpired = params.get('expired') === '1';
   const isSignup = mode === 'signup';
 
-  const [step, setStep] = useState<'form' | 'check-email'>(isSignup ? 'form' : 'form');
+  const [step, setStep] = useState<'form' | 'otp' | 'check-email'>('form');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(
     !isSignup && justVerified
@@ -52,10 +53,17 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
   );
   const [busy, setBusy] = useState(false);
   const [resendBusy, setResendBusy] = useState(false);
+  const [lockSec, setLockSec] = useState(0);
 
   const loginHref = withParams('/login', next, campus);
   const signupHref = withParams('/signup', next, campus);
   const forgotHref = withParams('/forgot-password', next, campus);
+
+  useEffect(() => {
+    if (lockSec <= 0) return undefined;
+    const id = window.setTimeout(() => setLockSec((s) => Math.max(0, s - 1)), 1000);
+    return () => window.clearTimeout(id);
+  }, [lockSec]);
 
   async function submitForm(e: FormEvent) {
     e.preventDefault();
@@ -66,7 +74,7 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
       const endpoint = isSignup ? '/api/auth/signup' : '/api/auth/login';
       const body = isSignup
         ? { name, email, password }
-        : { email, password, next, campus: campus || undefined };
+        : { email, password };
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -76,11 +84,15 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
         email?: string;
-        next?: string;
+        otpRequired?: boolean;
         unverified?: boolean;
+        retryAfterSec?: number;
       };
       if (!res.ok) {
         setError(data.error || 'Something went wrong. Please try again.');
+        if (typeof data.retryAfterSec === 'number' && data.retryAfterSec > 0) {
+          setLockSec(data.retryAfterSec);
+        }
         if (data.unverified) setStep('check-email');
         return;
       }
@@ -88,6 +100,42 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
         if (data.email) setEmail(data.email);
         setStep('check-email');
         setInfo('We sent a verification link to your email. Open it, then come back and sign in.');
+        return;
+      }
+      if (data.email) setEmail(data.email);
+      setOtp('');
+      setStep('otp');
+      setInfo('We emailed a 6-digit code. Enter it here to finish signing in.');
+    } catch (err) {
+      setError(timedOut(err) ? 'That took too long. Please try again.' : 'Network error. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitOtp(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setInfo(null);
+    setBusy(true);
+    try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: otp, next, campus: campus || undefined }),
+        signal: AbortSignal.timeout(30_000),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        next?: string;
+        remainingAttempts?: number;
+        retryAfterSec?: number;
+      };
+      if (!res.ok) {
+        setError(data.error || 'Incorrect code.');
+        if (typeof data.retryAfterSec === 'number' && data.retryAfterSec > 0) {
+          setLockSec(data.retryAfterSec);
+        }
         return;
       }
       router.replace(data.next || defaultNext);
@@ -123,33 +171,77 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
     }
   }
 
+  async function resendOtp() {
+    setError(null);
+    setInfo(null);
+    setResendBusy(true);
+    try {
+      const res = await fetch('/api/auth/resend-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+        signal: AbortSignal.timeout(30_000),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        retryAfterSec?: number;
+      };
+      if (!res.ok) {
+        setError(data.error || 'Could not resend the code.');
+        if (typeof data.retryAfterSec === 'number' && data.retryAfterSec > 0) {
+          setLockSec(data.retryAfterSec);
+        }
+        return;
+      }
+      setOtp('');
+      setInfo('A new code is on its way to your inbox.');
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setResendBusy(false);
+    }
+  }
+
   const checkingEmail = step === 'check-email';
+  const enteringOtp = step === 'otp';
+  const otpLocked = enteringOtp && lockSec > 0;
 
   return (
     <AuthChrome
       campus={Boolean(campus)}
-      tab={checkingEmail ? 'Check your email' : isSignup ? 'Create your account' : 'Welcome back'}
+      tab={
+        checkingEmail
+          ? 'Check your email'
+          : enteringOtp
+            ? 'Enter your code'
+            : isSignup
+              ? 'Create your account'
+              : 'Welcome back'
+      }
       title={
         checkingEmail
           ? 'Verify your email'
-          : isSignup
-            ? 'Start learning in minutes'
-            : 'Sign in to keep learning'
+          : enteringOtp
+            ? 'Check your inbox'
+            : isSignup
+              ? 'Start learning in minutes'
+              : 'Sign in to keep learning'
       }
       subtitle={
         checkingEmail
           ? `We sent a verification link to ${email || 'you'}. Open it to confirm your account, then sign in.`
-          : isSignup
-            ? 'Email and password — we will send a link so you can verify, then come back and sign in.'
-            : 'Email or matricule, plus the password for this same account.'
+          : enteringOtp
+            ? `We sent a 6-digit code to ${email || 'you'}. You have 4 tries. After 4 misses, wait one minute.`
+            : isSignup
+              ? 'Email and password — we will send a link so you can verify, then come back and sign in.'
+              : 'Email or matricule, plus the password for this same account. We then email a sign-in code.'
       }
       footer={
         <p
           className="mt-10 text-center text-[12px] leading-relaxed"
           style={{ color: 'var(--ink-soft)' }}
         >
-          By continuing you agree to the Intellex terms. We verify your email with a private link —
-          no third-party sign-in required.
+          By continuing you agree to the Intellex terms. Sign-in codes expire in 10 minutes.
         </p>
       }
     >
@@ -200,6 +292,59 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
             </button>
           </div>
         </div>
+      ) : enteringOtp ? (
+        <form onSubmit={submitOtp} className="mt-8 space-y-4">
+          <label className="block">
+            <span className="mb-1.5 block text-[12.5px] font-semibold">6-digit code</span>
+            <input
+              className="form-input tracking-[0.35em]"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              required
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="••••••"
+              disabled={otpLocked}
+            />
+          </label>
+          {otpLocked ? (
+            <p className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+              Wait {lockSec}s, then try again.
+            </p>
+          ) : null}
+          <AuthSubmit
+            busy={busy || otpLocked}
+            label="Confirm code"
+            busyLabel={otpLocked ? `Wait ${lockSec}s` : 'Checking…'}
+          />
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[13px]">
+            <button
+              type="button"
+              onClick={() => {
+                setStep('form');
+                setOtp('');
+                setError(null);
+                setInfo(null);
+                setLockSec(0);
+              }}
+              className="font-semibold"
+              style={{ color: 'var(--ink-soft)' }}
+            >
+              ← Back
+            </button>
+            <button
+              type="button"
+              disabled={resendBusy || otpLocked}
+              onClick={resendOtp}
+              className="font-semibold disabled:opacity-60"
+              style={{ color: 'var(--green-deep)' }}
+            >
+              {resendBusy ? 'Sending…' : 'Resend code'}
+            </button>
+          </div>
+        </form>
       ) : (
         <form onSubmit={submitForm} className="mt-8 space-y-4">
           {isSignup && (
@@ -254,12 +399,12 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
           <AuthSubmit
             busy={busy}
             label={isSignup ? 'Create account' : 'Sign in'}
-            busyLabel={isSignup ? 'Sending link…' : 'Signing in…'}
+            busyLabel={isSignup ? 'Sending link…' : 'Sending code…'}
           />
         </form>
       )}
 
-      {!checkingEmail && (
+      {!checkingEmail && !enteringOtp && (
         <p className="mt-6 text-center text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
           {isSignup ? (
             <>

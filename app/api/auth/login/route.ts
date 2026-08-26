@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { completeLogin } from '@/lib/auth/credentials';
-import { resolveAuthNext } from '@/lib/auth/resolveAuthNext';
-import { writeSessionCookie } from '@/lib/auth/session';
+import { beginLogin } from '@/lib/auth/credentials';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,11 +17,11 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/auth/login
- * Body: { email, password, next?, campus? }
- * Signs in a verified account with email + password.
+ * Body: { email, password }
+ * Verifies the password, then emails a 6-digit OTP. Session is set after verify-otp.
  */
 export async function POST(req: NextRequest) {
-  let body: { email?: string; password?: string; next?: string; campus?: string };
+  let body: { email?: string; password?: string };
   try {
     body = await req.json();
   } catch {
@@ -31,34 +29,29 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await completeLogin({
+    const result = await beginLogin({
       email: String(body.email || ''),
       password: String(body.password || ''),
     });
 
     if ('error' in result) {
       return NextResponse.json(
-        { error: result.error, unverified: result.unverified === true },
+        {
+          error: result.error,
+          unverified: result.unverified === true,
+          remainingAttempts: result.remainingAttempts,
+          retryAfterSec: result.retryAfterSec,
+        },
         { status: result.status },
       );
     }
 
-    const nextPath = await resolveAuthNext({
-      userId: result.user.uid,
-      userName: result.user.name,
-      userEmail: result.user.email || String(body.email || ''),
-      defaultNext: result.nextPath,
-      requestedNext: body.next,
-      campusSlug: body.campus,
-    });
-
-    const res = NextResponse.json({
+    return NextResponse.json({
       ok: true,
-      next: nextPath,
-      user: result.user,
+      otpRequired: true,
+      email: result.email,
+      expiresInSec: result.expiresInSec,
     });
-    writeSessionCookie(res, result.session);
-    return res;
   } catch (err) {
     console.error('login failed:', err);
     return NextResponse.json(

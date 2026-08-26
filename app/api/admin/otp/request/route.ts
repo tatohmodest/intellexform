@@ -72,9 +72,12 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error('admin otp request failed:', err);
-    const msg = err instanceof Error && err.message === 'smtp_not_configured'
-      ? 'Email delivery is not configured.'
-      : 'Could not send code. Please try again.';
+    const msg =
+      err instanceof Error && err.message === 'smtp_not_configured'
+        ? 'Email delivery is not configured.'
+        : err instanceof Error && err.message === 'smtp_auth'
+          ? 'Email credentials were rejected. Check SMTP user, password, and From address.'
+          : 'Could not send code. Please try again.';
     return NextResponse.json({ error: msg }, { status: 503 });
   }
 }

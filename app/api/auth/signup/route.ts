@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { startSignup } from '@/lib/auth/credentials';
-import { requestOrigin } from '@/lib/auth/origin';
+import { emailOrigin } from '@/lib/auth/origin';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       name: String(body.name || ''),
       email: String(body.email || ''),
       password: String(body.password || ''),
-      origin: requestOrigin(req),
+      origin: emailOrigin(req),
     });
 
     if ('error' in result) {

@@ -1,7 +1,7 @@
 /**
  * Email + password auth.
- * Signup emails a verification link. After the learner verifies, they sign in
- * with email and password. Forgot-password uses a one-time reset link.
+ * Signup emails a verification link. Sign-in is password then a 6-digit email OTP.
+ * Forgot-password emails a one-time reset link.
  *
  * Mongo is the source of truth for credentials. Prisma/Postgres is synced
  * when reachable and must never block sending mail.
@@ -10,8 +10,17 @@
 import { createHash, randomBytes } from 'crypto';
 import { getDb } from '@/lib/repo';
 import { prisma } from '@/lib/db/prisma';
-import { hashPassword, normalizeEmail, verifyPassword } from '@/lib/adminAuth';
 import {
+  generateOtpCode,
+  hashOtp,
+  hashPassword,
+  normalizeEmail,
+  verifyOtpCode,
+  verifyPassword,
+} from '@/lib/adminAuth';
+import {
+  isSmtpConfigured,
+  sendLearnerLoginOtpEmail,
   sendLearnerPasswordResetEmail,
   sendLearnerVerifyEmail,
 } from '@/lib/email';
@@ -33,6 +42,25 @@ export const AUTH_LINK = {
   resetTtlMs: 24 * 60 * 60 * 1000,
   resendMs: 60 * 1000,
 } as const;
+
+/** After password succeeds, a 6-digit email OTP must be confirmed. */
+export const LOGIN_OTP = {
+  ttlMs: 10 * 60 * 1000,
+  resendMs: 60 * 1000,
+  lockMs: 60 * 1000,
+  maxAttempts: 4,
+  passwordWindowMs: 15 * 60 * 1000,
+} as const;
+
+type LoginOtpDoc = {
+  email: string;
+  codeHash: string;
+  attempts: number;
+  lockedUntil?: Date | null;
+  passwordOkAt: Date;
+  createdAt: Date;
+  expiresAt: Date;
+};
 
 type PendingSignup = {
   email: string;
@@ -70,7 +98,13 @@ type CredentialAccount = {
   updatedAt: Date;
 };
 
-type AuthError = { error: string; status: number; unverified?: boolean };
+type AuthError = {
+  error: string;
+  status: number;
+  unverified?: boolean;
+  remainingAttempts?: number;
+  retryAfterSec?: number;
+};
 
 function splitName(name: string): { firstName: string | null; lastName: string | null } {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -106,6 +140,9 @@ function smtpErrorMessage(err: unknown) {
   if (err instanceof Error && err.message === 'smtp_timeout') {
     return 'Could not send the email in time. Please try again.';
   }
+  if (err instanceof Error && err.message === 'smtp_auth') {
+    return 'Email credentials were rejected. Check SMTP user, password, and From address.';
+  }
   return 'Could not send the email. Please try again.';
 }
 
@@ -136,6 +173,13 @@ async function linksCol() {
   await db.collection('auth_links').createIndex({ tokenHash: 1 }, { unique: true }).catch(() => {});
   await db.collection('auth_links').createIndex({ email: 1, purpose: 1, createdAt: -1 }).catch(() => {});
   return db.collection('auth_links');
+}
+
+async function loginOtpsCol() {
+  const db = await getDb();
+  await db.collection('login_otps').createIndex({ email: 1 }, { unique: true }).catch(() => {});
+  await db.collection('login_otps').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }).catch(() => {});
+  return db.collection('login_otps');
 }
 
 async function issueAuthLink(opts: {
@@ -699,10 +743,14 @@ export async function verifyEmailToken(
 export async function completeLogin(opts: {
   email: string;
   password: string;
-}): Promise<
-  | { ok: true; session: string; nextPath: string; user: Omit<SessionUser, 'iat'> }
-  | AuthError
-> {
+}): Promise<{ ok: true; email: string; expiresInSec: number } | AuthError> {
+  return beginLogin(opts);
+}
+
+export async function beginLogin(opts: {
+  email: string;
+  password: string;
+}): Promise<{ ok: true; email: string; expiresInSec: number } | AuthError> {
   const identifier = String(opts.email || '').trim();
   if (!identifier) return { error: 'Enter your email or matricule.', status: 400 };
   if (!opts.password) return { error: 'Enter your password.', status: 400 };
@@ -737,6 +785,186 @@ export async function completeLogin(opts: {
       unverified: true,
     };
   }
+
+  return issueLoginOtp({ email, passwordAlreadyOk: true });
+}
+
+async function issueLoginOtp(opts: {
+  email: string;
+  passwordAlreadyOk: boolean;
+}): Promise<{ ok: true; email: string; expiresInSec: number } | AuthError> {
+  const email = normalizeEmail(opts.email);
+  const col = await loginOtpsCol();
+  const existing = (await col.findOne({ email })) as LoginOtpDoc | null;
+  const now = Date.now();
+
+  if (existing?.lockedUntil && new Date(existing.lockedUntil).getTime() > now) {
+    const retryAfterSec = Math.max(
+      1,
+      Math.ceil((new Date(existing.lockedUntil).getTime() - now) / 1000),
+    );
+    return {
+      error: `Too many incorrect codes. Wait ${retryAfterSec} seconds, then try again.`,
+      status: 429,
+      remainingAttempts: 0,
+      retryAfterSec,
+    };
+  }
+
+  if (
+    existing?.createdAt &&
+    existing.expiresAt &&
+    new Date(existing.expiresAt).getTime() > now &&
+    now - new Date(existing.createdAt).getTime() < LOGIN_OTP.resendMs
+  ) {
+    if (opts.passwordAlreadyOk) {
+      return {
+        ok: true,
+        email,
+        expiresInSec: Math.max(
+          1,
+          Math.ceil((new Date(existing.expiresAt).getTime() - now) / 1000),
+        ),
+      };
+    }
+    return {
+      error: 'Please wait a minute before requesting another code.',
+      status: 429,
+      retryAfterSec: Math.max(
+        1,
+        Math.ceil((LOGIN_OTP.resendMs - (now - new Date(existing.createdAt).getTime())) / 1000),
+      ),
+    };
+  }
+
+  const code = generateOtpCode();
+  const codeHash = await hashOtp(code);
+  const createdAt = new Date();
+  await col.updateOne(
+    { email },
+    {
+      $set: {
+        email,
+        codeHash,
+        attempts: 0,
+        lockedUntil: null,
+        passwordOkAt: opts.passwordAlreadyOk
+          ? createdAt
+          : existing?.passwordOkAt || createdAt,
+        createdAt,
+        expiresAt: new Date(createdAt.getTime() + LOGIN_OTP.ttlMs),
+      } satisfies LoginOtpDoc,
+    },
+    { upsert: true },
+  );
+
+  try {
+    await sendLearnerLoginOtpEmail({ to: email, code });
+  } catch (err) {
+    if (!isSmtpConfigured() && process.env.NODE_ENV !== 'production') {
+      console.info(`[dev] login OTP for ${email}: ${code}`);
+    } else {
+      console.error('login OTP email failed:', err);
+      await col.deleteOne({ email }).catch(() => {});
+      return { error: smtpErrorMessage(err), status: 503 };
+    }
+  }
+
+  return {
+    ok: true,
+    email,
+    expiresInSec: Math.floor(LOGIN_OTP.ttlMs / 1000),
+  };
+}
+
+export async function resendLoginOtp(opts: {
+  email: string;
+}): Promise<{ ok: true; email: string; expiresInSec: number } | AuthError> {
+  const email = normalizeEmail(opts.email);
+  if (!email.includes('@')) return { error: 'Enter a valid email.', status: 400 };
+  const col = await loginOtpsCol();
+  const existing = (await col.findOne({ email })) as LoginOtpDoc | null;
+  if (!existing?.passwordOkAt) {
+    return { error: 'Sign in with your password first to get a code.', status: 400 };
+  }
+  if (Date.now() - new Date(existing.passwordOkAt).getTime() > LOGIN_OTP.passwordWindowMs) {
+    await col.deleteOne({ email }).catch(() => {});
+    return { error: 'That sign-in expired. Enter your password again.', status: 400 };
+  }
+  return issueLoginOtp({ email, passwordAlreadyOk: false });
+}
+
+export async function finishLoginWithOtp(opts: {
+  email: string;
+  code: string;
+}): Promise<
+  | { ok: true; session: string; nextPath: string; user: Omit<SessionUser, 'iat'> }
+  | AuthError
+> {
+  const email = normalizeEmail(opts.email);
+  const code = String(opts.code || '').replace(/\s+/g, '');
+  if (!email.includes('@')) return { error: 'Enter your email.', status: 400 };
+  if (!/^\d{6}$/.test(code)) return { error: 'Enter the 6-digit code from your email.', status: 400 };
+
+  const col = await loginOtpsCol();
+  const doc = (await col.findOne({ email })) as LoginOtpDoc | null;
+  if (!doc?.codeHash) {
+    return { error: 'No code pending — sign in with your password first.', status: 400 };
+  }
+
+  const now = Date.now();
+  if (new Date(doc.expiresAt).getTime() < now) {
+    await col.deleteOne({ email });
+    return { error: 'That code expired. Sign in again to get a new one.', status: 400 };
+  }
+
+  if (doc.lockedUntil && new Date(doc.lockedUntil).getTime() > now) {
+    const retryAfterSec = Math.max(
+      1,
+      Math.ceil((new Date(doc.lockedUntil).getTime() - now) / 1000),
+    );
+    return {
+      error: `Too many incorrect codes. Wait ${retryAfterSec} seconds, then try again.`,
+      status: 429,
+      remainingAttempts: 0,
+      retryAfterSec,
+    };
+  }
+
+  if (doc.lockedUntil && new Date(doc.lockedUntil).getTime() <= now) {
+    await col.updateOne({ email }, { $set: { attempts: 0, lockedUntil: null } });
+    doc.attempts = 0;
+    doc.lockedUntil = null;
+  }
+
+  const valid = await verifyOtpCode(code, doc.codeHash);
+  if (!valid) {
+    const attempts = (doc.attempts || 0) + 1;
+    if (attempts >= LOGIN_OTP.maxAttempts) {
+      const lockedUntil = new Date(now + LOGIN_OTP.lockMs);
+      await col.updateOne({ email }, { $set: { attempts, lockedUntil } });
+      return {
+        error: 'Too many incorrect codes. Wait 60 seconds, then try again.',
+        status: 429,
+        remainingAttempts: 0,
+        retryAfterSec: Math.floor(LOGIN_OTP.lockMs / 1000),
+      };
+    }
+    await col.updateOne({ email }, { $set: { attempts } });
+    return {
+      error: `Incorrect code. ${LOGIN_OTP.maxAttempts - attempts} ${LOGIN_OTP.maxAttempts - attempts === 1 ? 'try' : 'tries'} left.`,
+      status: 401,
+      remainingAttempts: LOGIN_OTP.maxAttempts - attempts,
+    };
+  }
+
+  await col.deleteOne({ email });
+
+  const loaded = await loadAccount(email);
+  if (!loaded.account?.passwordHash || !loaded.account.emailVerified) {
+    return { error: 'Could not finish sign-in. Try again.', status: 400 };
+  }
+  const account = loaded.account;
 
   const prismaUser = await syncPrismaUser({
     email,
@@ -808,9 +1036,10 @@ export async function changePassword(opts: {
 export async function requestPasswordReset(opts: {
   email: string;
   origin: string;
-}): Promise<{ ok: true }> {
+}): Promise<{ ok: true } | AuthError> {
   const email = normalizeEmail(opts.email);
-  if (!email.includes('@') || !opts.origin) return { ok: true };
+  if (!email.includes('@')) return { error: 'Enter a valid email.', status: 400 };
+  if (!opts.origin) return { error: 'Could not build a reset link.', status: 500 };
 
   const { account } = await loadAccount(email);
   const pending = await pendingCol();
@@ -823,18 +1052,20 @@ export async function requestPasswordReset(opts: {
     purpose: 'reset',
     ttlMs: AUTH_LINK.resetTtlMs,
   });
-  if ('error' in issued) {
-    // Throttle: still report success so the form cannot probe accounts.
-    return { ok: true };
-  }
+  if ('error' in issued) return issued;
 
   const resetUrl = `${opts.origin.replace(/\/$/, '')}/reset-password?token=${issued.token}`;
   try {
     await sendLearnerPasswordResetEmail({ to: email, resetUrl });
   } catch (err) {
-    console.error('password reset email failed:', err);
-    const col = await linksCol();
-    await col.deleteOne({ tokenHash: hashLinkToken(issued.token) }).catch(() => {});
+    if (!isSmtpConfigured() && process.env.NODE_ENV !== 'production') {
+      console.info(`[dev] password reset link for ${email}: ${resetUrl}`);
+    } else {
+      console.error('password reset email failed:', err);
+      const col = await linksCol();
+      await col.deleteOne({ tokenHash: hashLinkToken(issued.token) }).catch(() => {});
+      return { error: smtpErrorMessage(err), status: 503 };
+    }
   }
   return { ok: true };
 }
