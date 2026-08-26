@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { completeLogin } from '@/lib/auth/credentials';
 import { resolveAuthNext } from '@/lib/auth/resolveAuthNext';
-import { SESSION_COOKIE, sessionCookieOptions } from '@/lib/auth/session';
+import { writeSessionCookie } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       next: nextPath,
       user: result.user,
     });
-    res.cookies.set(SESSION_COOKIE, result.session, sessionCookieOptions());
+    writeSessionCookie(res, result.session);
     return res;
   } catch (err) {
     console.error('login failed:', err);

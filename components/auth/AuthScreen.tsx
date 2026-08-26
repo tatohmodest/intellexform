@@ -33,6 +33,7 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
   const next = params.get('next') || defaultNext;
   const justVerified = params.get('verified') === '1';
   const justReset = params.get('reset') === '1';
+  const sessionExpired = params.get('expired') === '1';
   const isSignup = mode === 'signup';
 
   const [step, setStep] = useState<'form' | 'check-email'>(isSignup ? 'form' : 'form');
@@ -45,7 +46,9 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
       ? 'Email verified. Sign in with your password.'
       : !isSignup && justReset
         ? 'Password updated. Sign in with your new password.'
-        : null,
+        : !isSignup && sessionExpired
+          ? 'Your previous session is no longer valid. Sign in again.'
+          : null,
   );
   const [busy, setBusy] = useState(false);
   const [resendBusy, setResendBusy] = useState(false);

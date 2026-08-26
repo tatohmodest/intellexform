@@ -1,11 +1,11 @@
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import {
   isPlatformHost,
   resolveInstitutionByHost,
 } from '@/lib/learn/institutionDomains';
 import { CANONICAL_SITE_URL } from '@/lib/platformHosts';
-import { cookies } from 'next/headers';
+import { verifySession } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,8 +37,8 @@ export default async function CampusGatewayPage({
     redirect(next);
   }
 
-  const hasSession = Boolean(cookies().get('intellex_session')?.value);
-  if (hasSession) {
+  const session = verifySession(cookies().get('intellex_session')?.value);
+  if (session) {
     redirect(`/dashboard/institutions/${campus.slug}`);
   }
 

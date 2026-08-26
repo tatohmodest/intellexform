@@ -20,7 +20,7 @@ const USERINFO_URL =
   process.env.LB_OAUTH_USERINFO_URL ||
   'https://auth.loopingbinary.com/api/oauth/userinfo';
 
-export const OAUTH_STATE_COOKIE = 'lb_oauth_state';
+export { OAUTH_STATE_COOKIE } from '@/lib/auth/cookies';
 
 export function isOAuthConfigured(): boolean {
   return Boolean(

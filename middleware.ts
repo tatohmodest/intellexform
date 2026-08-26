@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isPlatformHostname } from '@/lib/platformHosts';
 import { localeFromAcceptLanguage, LOCALE_COOKIE } from '@/lib/i18n/locale';
-
-const SESSION_COOKIE = 'intellex_session';
+import {
+  expireAuthCookies,
+  SESSION_COOKIE,
+  sessionCookieIsValid,
+  stripAuthCookiesHeader,
+} from '@/lib/auth/cookies';
 
 function withLocale(req: NextRequest, res: NextResponse) {
   const locale = localeFromAcceptLanguage(req.headers.get('accept-language'));
@@ -25,21 +29,31 @@ function hostnameOf(req: NextRequest): string {
 
 /**
  * - Custom campus hosts rewrite landing paths to the campus gateway
- * - Signed-in visitors on the platform host hitting `/` go to the dashboard
+ * - Valid signed-in visitors on the platform host hitting `/` go to the dashboard
+ * - Guests (or stale cookies after a key rotation) keep public pages
  * - Signed-out visitors hitting `/dashboard` go to login
- * - Other public pages stay reachable while authenticated
  */
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const host = hostnameOf(req);
   const customHost = Boolean(host) && !isPlatformHostname(host);
-  const hasSession = Boolean(req.cookies.get(SESSION_COOKIE)?.value);
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  const canVerify = Boolean(process.env.SESSION_SECRET || process.env.LB_OAUTH_CLIENT_SECRET);
+  const valid = token ? await sessionCookieIsValid(token) : false;
+  const stale = Boolean(token) && canVerify && !valid;
 
-  const requestHeaders = new Headers(req.headers);
+  const requestHeaders = stale ? stripAuthCookiesHeader(req) : new Headers(req.headers);
   requestHeaders.set('x-pathname', pathname);
   if (customHost) {
     requestHeaders.set('x-campus-host', host);
   }
+
+  const isApi = pathname.startsWith('/api/');
+  const finish = (res: NextResponse) => {
+    const out = withLocale(req, res);
+    if (stale && !isApi) expireAuthCookies(out);
+    return out;
+  };
 
   // Custom domain public paths → campus gateway (resolves Host → institution site).
   if (
@@ -52,29 +66,26 @@ export function middleware(req: NextRequest) {
   ) {
     const url = req.nextUrl.clone();
     url.pathname = '/campus-gateway';
-    return withLocale(
-      req,
+    return finish(
       NextResponse.rewrite(url, {
         request: { headers: requestHeaders },
       }),
     );
   }
 
-  // Platform marketing home is for guests only.
-  if (pathname === '/' && hasSession && !customHost) {
-    return withLocale(req, NextResponse.redirect(new URL('/dashboard', req.url)));
+  // Only a *valid* session may skip the marketing home.
+  if (pathname === '/' && valid && !customHost) {
+    return finish(NextResponse.redirect(new URL('/dashboard', req.url)));
   }
 
-  if (pathname.startsWith('/dashboard')) {
-    if (!hasSession) {
-      const login = new URL('/login', req.url);
-      login.searchParams.set('next', pathname);
-      return withLocale(req, NextResponse.redirect(login));
-    }
+  if (pathname.startsWith('/dashboard') && !valid) {
+    const login = new URL('/login', req.url);
+    login.searchParams.set('next', pathname);
+    if (stale) login.searchParams.set('expired', '1');
+    return finish(NextResponse.redirect(login));
   }
 
-  return withLocale(
-    req,
+  return finish(
     NextResponse.next({
       request: { headers: requestHeaders },
     }),

@@ -1,5 +1,5 @@
 /* InTelleX PWA service worker - installable shell + Web Push alerts. */
-const CACHE = 'intellex-shell-v2';
+const CACHE = 'intellex-shell-v3';
 const PRECACHE = ['/', '/manifest.webmanifest', '/pwa/icon-192.png', '/pwa/icon-512.png'];
 
 self.addEventListener('install', (event) => {
@@ -131,7 +131,11 @@ self.addEventListener('fetch', (event) => {
   if (
     url.pathname.startsWith('/api/') ||
     url.pathname.startsWith('/oauth/') ||
-    url.pathname.startsWith('/dashboard/')
+    url.pathname.startsWith('/dashboard/') ||
+    url.pathname.startsWith('/login') ||
+    url.pathname.startsWith('/signup') ||
+    url.pathname.startsWith('/forgot-password') ||
+    url.pathname.startsWith('/reset-password')
   ) {
     return;
   }

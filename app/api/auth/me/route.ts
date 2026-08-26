@@ -1,12 +1,17 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getLearner } from '@/lib/learn/repo';
+import { expireAuthCookies, SESSION_COOKIE } from '@/lib/auth/cookies';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = getSessionUser();
-  if (!session) return NextResponse.json({ user: null }, { status: 401 });
+  if (!session) {
+    const res = NextResponse.json({ user: null }, { status: 401 });
+    if (req.cookies.get(SESSION_COOKIE)?.value) expireAuthCookies(res);
+    return res;
+  }
   const learner = await getLearner(session.uid);
   return NextResponse.json({
     user: {

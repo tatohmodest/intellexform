@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { expireAuthCookies } from '@/lib/auth/cookies';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,5 +8,6 @@ export const dynamic = 'force-dynamic';
  * Keep the route so old bookmarks do not 404; send people to the login form.
  */
 export async function GET(req: NextRequest) {
-  return NextResponse.redirect(new URL('/login', req.url));
+  const res = NextResponse.redirect(new URL('/login', req.url));
+  return expireAuthCookies(res);
 }

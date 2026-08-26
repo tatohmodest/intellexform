@@ -1,12 +1,12 @@
 import crypto from 'crypto';
+import { SESSION_MAX_AGE } from '@/lib/auth/cookies';
+
+export { SESSION_COOKIE, SESSION_MAX_AGE, sessionCookieOptions, writeSessionCookie } from '@/lib/auth/cookies';
 
 /**
  * Learner session - stateless HMAC-signed cookie (same pattern as the admin
  * session in lib/adminAuth.ts).
  */
-
-export const SESSION_COOKIE = 'intellex_session';
-export const SESSION_MAX_AGE = 30 * 24 * 60 * 60; // 30 days (seconds)
 
 export interface SessionUser {
   /** Local account id (Prisma User.id / learner lbId). */
@@ -51,12 +51,6 @@ export function verifySession(token: string | undefined | null): SessionUser | n
   }
 }
 
-export function sessionCookieOptions() {
-  return {
-    httpOnly: true as const,
-    sameSite: 'lax' as const,
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: SESSION_MAX_AGE,
-  };
+export function sessionSecretConfigured(): boolean {
+  return Boolean(process.env.SESSION_SECRET || process.env.LB_OAUTH_CLIENT_SECRET);
 }
