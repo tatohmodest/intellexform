@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resendVerification } from '@/lib/auth/credentials';
-import { requestOrigin } from '@/lib/auth/origin';
+import { emailOrigin } from '@/lib/auth/origin';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   try {
     const result = await resendVerification({
       email: String(body.email || ''),
-      origin: requestOrigin(req),
+      origin: emailOrigin(req),
     });
 
     if ('error' in result) {

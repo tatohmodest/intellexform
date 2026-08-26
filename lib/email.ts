@@ -2,24 +2,71 @@ import nodemailer from 'nodemailer';
 import type { SendMailOptions } from 'nodemailer';
 import { withTimeout } from '@/lib/withTimeout';
 
-const SMTP_SEND_MS = 12_000;
+const SMTP_SEND_MS = 20_000;
+
+function env(name: string, ...alts: string[]) {
+  for (const key of [name, ...alts]) {
+    const v = process.env[key];
+    if (typeof v === 'string' && v.trim()) return v.trim().replace(/^['"]|['"]$/g, '');
+  }
+  return '';
+}
+
+function smtpHost() {
+  return env('SMTP_HOST');
+}
+
+function smtpUser() {
+  return env('SMTP_USER');
+}
+
+/** Gmail app passwords are often copied with spaces; Resend keys may live in RESEND_API_KEY. */
+function smtpPass() {
+  return env('SMTP_PASS', 'RESEND_API_KEY').replace(/\s+/g, '');
+}
+
+export function isSmtpConfigured(): boolean {
+  return Boolean(smtpHost() && smtpUser() && smtpPass());
+}
+
+function mailFromAddress() {
+  const raw = env('EMAIL_FROM', 'SMTP_FROM');
+  const inner = raw.includes('<') ? raw.match(/<([^>]+)>/)?.[1] || raw : raw;
+  const host = smtpHost().toLowerCase();
+  const user = smtpUser();
+  // Gmail rejects a From that does not match the authenticated mailbox.
+  if (host.includes('gmail') && user.includes('@')) return user;
+  if (inner.includes('@')) return inner;
+  if (user.includes('@')) return user;
+  return 'intellexplatform@gmail.com';
+}
+
+function mailFromHeader(name: string) {
+  return `${name} <${mailFromAddress()}>`;
+}
 
 function getTransport() {
-  const host = process.env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT || 465);
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
+  const host = smtpHost();
+  const user = smtpUser();
+  const pass = smtpPass();
   if (!host || !user || !pass) {
     throw new Error('smtp_not_configured');
   }
+  const port = Number(env('SMTP_PORT') || (host.toLowerCase().includes('gmail') ? '587' : '465'));
+  const explicit = env('SMTP_SECURE').toLowerCase();
+  const secure = explicit
+    ? ['1', 'true', 'yes'].includes(explicit)
+    : port === 465;
   return nodemailer.createTransport({
     host,
     port,
-    secure: port === 465,
+    secure,
+    requireTLS: !secure,
     auth: { user, pass },
-    connectionTimeout: 8_000,
-    greetingTimeout: 8_000,
-    socketTimeout: 12_000,
+    connectionTimeout: 12_000,
+    greetingTimeout: 12_000,
+    socketTimeout: 20_000,
+    tls: { minVersion: 'TLSv1.2' },
   });
 }
 
@@ -28,8 +75,21 @@ async function sendMail(opts: SendMailOptions): Promise<void> {
   try {
     await withTimeout(transport.sendMail(opts), SMTP_SEND_MS, 'smtp');
   } catch (err) {
+    const code = err && typeof err === 'object' && 'code' in err ? String((err as { code?: string }).code || '') : '';
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('smtp send failed:', {
+      host: smtpHost(),
+      port: env('SMTP_PORT') || 'default',
+      user: smtpUser() ? `${smtpUser().slice(0, 3)}…` : '',
+      from: mailFromAddress(),
+      code,
+      message: msg.slice(0, 240),
+    });
     if (err instanceof Error && err.message === 'smtp_timeout') {
       throw new Error('smtp_timeout');
+    }
+    if (/eauth|invalid login|badcredentials|535/i.test(`${code} ${msg}`)) {
+      throw new Error('smtp_auth');
     }
     throw err;
   } finally {
@@ -41,9 +101,8 @@ export async function sendAdminOtpEmail(opts: {
   to: string;
   code: string;
 }): Promise<void> {
-  const from = process.env.EMAIL_FROM || 'intellexplatform@gmail.com';
   await sendMail({
-    from: `InTelleX Admin <${from}>`,
+    from: mailFromHeader('InTelleX Admin'),
     to: opts.to,
     subject: `${opts.code} - InTelleX admin sign-in code`,
     text: [
@@ -111,7 +170,6 @@ export async function sendLearnerVerifyEmail(opts: {
   to: string;
   verifyUrl: string;
 }): Promise<void> {
-  const from = process.env.EMAIL_FROM || 'intellexplatform@gmail.com';
   const body = learnerMailShell({
     headline: 'Verify your email',
     intro: 'Confirm this email address to finish creating your InTelleX account. After that you can sign in with your password.',
@@ -120,7 +178,7 @@ export async function sendLearnerVerifyEmail(opts: {
     expireLabel: 'This link expires in 24 hours.',
   });
   await sendMail({
-    from: `InTelleX <${from}>`,
+    from: mailFromHeader('InTelleX'),
     to: opts.to,
     subject: 'Verify your InTelleX email',
     text: body.text,
@@ -128,11 +186,43 @@ export async function sendLearnerVerifyEmail(opts: {
   });
 }
 
+export async function sendLearnerLoginOtpEmail(opts: {
+  to: string;
+  code: string;
+}): Promise<void> {
+  await sendMail({
+    from: mailFromHeader('InTelleX'),
+    to: opts.to,
+    subject: `${opts.code} is your InTelleX sign-in code`,
+    text: [
+      'Your InTelleX sign-in code is:',
+      '',
+      opts.code,
+      '',
+      'It expires in 10 minutes. You have 4 tries. After 4 incorrect codes, wait one minute before trying again.',
+      'If you did not try to sign in, ignore this email.',
+      '',
+      '- InTelleX',
+    ].join('\n'),
+    html: `
+      <div style="font-family:Georgia,serif;max-width:480px;margin:0 auto;padding:24px;color:#1a1a1a">
+        <p style="font-size:14px;color:#666;margin:0 0 16px">InTelleX</p>
+        <h1 style="font-size:22px;margin:0 0 12px">Your sign-in code</h1>
+        <p style="font-size:32px;letter-spacing:0.2em;font-weight:700;margin:24px 0">${opts.code}</p>
+        <p style="font-size:14px;line-height:1.5;color:#444">
+          Expires in <strong>10 minutes</strong>. You can try this code <strong>4 times</strong>.
+          After 4 incorrect attempts, wait one minute before trying again.
+        </p>
+        <p style="font-size:12px;color:#888;margin-top:28px">InTelleX</p>
+      </div>
+    `,
+  });
+}
+
 export async function sendLearnerPasswordResetEmail(opts: {
   to: string;
   resetUrl: string;
 }): Promise<void> {
-  const from = process.env.EMAIL_FROM || 'intellexplatform@gmail.com';
   const body = learnerMailShell({
     headline: 'Reset your password',
     intro: 'Use this link to choose a new password for your InTelleX account.',
@@ -141,7 +231,7 @@ export async function sendLearnerPasswordResetEmail(opts: {
     expireLabel: 'This link expires in 24 hours.',
   });
   await sendMail({
-    from: `InTelleX <${from}>`,
+    from: mailFromHeader('InTelleX'),
     to: opts.to,
     subject: 'Reset your InTelleX password',
     text: body.text,
@@ -155,7 +245,6 @@ export async function sendInstitutionOnboardingInviteEmail(opts: {
   planName: string;
   note?: string | null;
 }): Promise<void> {
-  const from = process.env.EMAIL_FROM || 'intellexplatform@gmail.com';
   const noteBlock = opts.note?.trim()
     ? [
         '',
@@ -165,7 +254,7 @@ export async function sendInstitutionOnboardingInviteEmail(opts: {
     : '';
 
   await sendMail({
-    from: `InTelleX Platform <${from}>`,
+    from: mailFromHeader('InTelleX Platform'),
     to: opts.to,
     subject: `Your InTelleX institution onboarding link is ready`,
     text: [
@@ -214,9 +303,8 @@ export async function sendCampusActivationNoticeEmail(opts: {
   campusName: string;
   planName: string;
 }): Promise<void> {
-  const from = process.env.EMAIL_FROM || 'intellexplatform@gmail.com';
   await sendMail({
-    from: `InTelleX Platform <${from}>`,
+    from: mailFromHeader('InTelleX Platform'),
     to: opts.to,
     subject: `Your campus setup link is ready`,
     text: [
@@ -265,12 +353,11 @@ export async function sendInstitutionOnboardingCompleteEmail(opts: {
   campusUrl: string;
   ownerEmail: string;
 }): Promise<void> {
-  const from = process.env.EMAIL_FROM || 'intellexplatform@gmail.com';
   const subdomainUrl = opts.subdomainUrl || `https://${opts.platformHost}`;
   const shortPathUrl = opts.shortPathUrl || opts.platformUrl;
 
   await sendMail({
-    from: `InTelleX Platform <${from}>`,
+    from: mailFromHeader('InTelleX Platform'),
     to: opts.to,
     subject: `${opts.organizationName} is live — your admin dashboard link`,
     text: [
