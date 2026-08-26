@@ -9,6 +9,7 @@ import {
   CERT_YEARLY_XAF,
   type CertPlan,
 } from '@/lib/learn/certPricing';
+import DirectPayForm from '@/components/payments/DirectPayForm';
 
 const LEVEL_LABEL: Record<LessonLevel, string> = {
   beginner: 'Beginner',
@@ -39,30 +40,7 @@ export default function SubscribePanel({
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState('');
-
-  async function payCert(plan: CertPlan) {
-    setError('');
-    setBusy(plan);
-    try {
-      const res = await fetch('/api/payments/initialize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'cert_subscription', plan }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.status === 401) {
-        router.push(`/login?next=${encodeURIComponent(returnPath)}`);
-        return;
-      }
-      if (!res.ok || !data.transactionUrl) {
-        throw new Error(data.error || 'Could not start payment');
-      }
-      window.location.href = data.transactionUrl;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Payment failed');
-      setBusy(null);
-    }
-  }
+  const [certPlan, setCertPlan] = useState<CertPlan | null>(null);
 
   async function subscribe(scope: 'full' | LessonLevel) {
     setError('');
@@ -116,16 +94,19 @@ export default function SubscribePanel({
             <Sparkles size={15} /> Certification plans
           </div>
           <p className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-            Unlock Intermediate → Pro on free courses. Pay with PayUnit (MoMo, Orange Money, card).
+            Unlock Intermediate → Pro on free courses. Pay on this page with MTN MoMo or Orange Money.
           </p>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <button
               type="button"
               disabled={busy !== null}
-              onClick={() => payCert('monthly')}
+              onClick={() => setCertPlan('monthly')}
               className="border p-4 text-left disabled:opacity-60"
-              style={{ borderColor: 'var(--line)' }}
+              style={{
+                borderColor: certPlan === 'monthly' ? 'var(--green-deep)' : 'var(--line)',
+                background: certPlan === 'monthly' ? 'rgba(0,179,105,0.06)' : undefined,
+              }}
             >
               <div className="font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
                 Monthly
@@ -137,7 +118,7 @@ export default function SubscribePanel({
                 </span>
               </div>
               <div className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold" style={{ color: 'var(--green-deep)' }}>
-                {busy === 'monthly' ? <Loader2 size={14} className="animate-spin" /> : <Lock size={14} />}
+                <Lock size={14} />
                 Pay monthly
               </div>
             </button>
@@ -145,9 +126,12 @@ export default function SubscribePanel({
             <button
               type="button"
               disabled={busy !== null}
-              onClick={() => payCert('yearly')}
+              onClick={() => setCertPlan('yearly')}
               className="border p-4 text-left disabled:opacity-60"
-              style={{ borderColor: 'var(--green-deep)', background: 'rgba(0,179,105,0.06)' }}
+              style={{
+                borderColor: certPlan === 'yearly' ? 'var(--green-deep)' : 'var(--line)',
+                background: 'rgba(0,179,105,0.06)',
+              }}
             >
               <div className="font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: 'var(--green-deep)' }}>
                 Yearly · 10% off
@@ -162,11 +146,25 @@ export default function SubscribePanel({
                 Save {formatXAF(yearlySave)} vs paying monthly
               </p>
               <div className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold" style={{ color: 'var(--green-deep)' }}>
-                {busy === 'yearly' ? <Loader2 size={14} className="animate-spin" /> : <Lock size={14} />}
+                <Lock size={14} />
                 Pay yearly
               </div>
             </button>
           </div>
+
+          {certPlan ? (
+            <DirectPayForm
+              key={certPlan}
+              amountXAF={certPlan === 'yearly' ? CERT_YEARLY_XAF : CERT_MONTHLY_XAF}
+              label={certPlan === 'yearly' ? 'Pay yearly' : 'Pay monthly'}
+              extraBody={{ kind: 'cert_subscription', plan: certPlan }}
+              loginHref={`/login?next=${encodeURIComponent(returnPath)}`}
+              onPaid={() => {
+                router.push(returnPath);
+                router.refresh();
+              }}
+            />
+          ) : null}
         </div>
       )}
 

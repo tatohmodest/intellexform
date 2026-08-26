@@ -641,7 +641,7 @@ export default function CourseStudio({
                     <p className="mt-1 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
                       {campusSalesLocked
                         ? 'Campus courses are free. Your institution admin can enable instructor sales for extra paid courses.'
-                        : '0 = free. Paid courses checkout via PayUnit.'}
+                        : '0 = free. Paid courses collect MTN MoMo / Orange Money on the course page.'}
                     </p>
                   </div>
                   <div>

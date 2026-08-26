@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Lock, Plus } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
 import type { Mentor } from '@/lib/learn/mentors';
+import DirectPayForm from '@/components/payments/DirectPayForm';
 
 function slotDate(dayOffset: number, time: string): Date {
   const [h, m] = time.split(':').map(Number);
@@ -37,26 +38,6 @@ export default function BookInstructorButton({ mentor }: { mentor: Mentor }) {
     const scheduledAt = slotDate(slot.dayOffset, slot.time).toISOString();
     const topicText = topic || `Mentorship with ${mentor.name}`;
     try {
-      if (isPaid) {
-        const res = await fetch('/api/payments/initialize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            kind: 'session_booking',
-            mentorId: mentor.id,
-            scheduledAt,
-            topic: topicText,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok || !data.transactionUrl) {
-          setError(data.error || 'Could not start payment');
-          return;
-        }
-        window.location.href = data.transactionUrl;
-        return;
-      }
-
       const res = await fetch('/api/learn/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -157,29 +138,55 @@ export default function BookInstructorButton({ mentor }: { mentor: Mentor }) {
                 {error}
               </p>
             ) : null}
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className="btn btn-primary flex-1 !rounded-none"
-                disabled={busy || mentor.slots.length === 0}
-                onClick={confirm}
-              >
-                {busy ? <Loader2 size={14} className="animate-spin" /> : isPaid ? <Lock size={14} /> : null}
-                {isPaid ? `Pay ${mentor.priceXAF.toLocaleString()} XAF` : 'Confirm'}
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost !rounded-none"
-                disabled={busy}
-                onClick={() => setOpen(false)}
-              >
-                Cancel
-              </button>
-            </div>
-            {isPaid && (
-              <p className="text-center text-[11.5px]" style={{ color: 'var(--ink-soft)' }}>
-                You pay first with PayUnit. The session is booked only after payment succeeds.
-              </p>
+            {isPaid && mentor.slots[slotIdx] ? (
+              <>
+                <DirectPayForm
+                  key={`${mentor.id}-${slotIdx}`}
+                  amountXAF={mentor.priceXAF}
+                  label="Pay & book"
+                  extraBody={{
+                    kind: 'session_booking',
+                    mentorId: mentor.id,
+                    scheduledAt: slotDate(mentor.slots[slotIdx].dayOffset, mentor.slots[slotIdx].time).toISOString(),
+                    topic: topic || `Mentorship with ${mentor.name}`,
+                  }}
+                  onPaid={() => {
+                    setOpen(false);
+                    router.refresh();
+                    router.push('/dashboard/mentorship');
+                  }}
+                />
+                <p className="text-center text-[11.5px]" style={{ color: 'var(--ink-soft)' }}>
+                  Approve MTN MoMo or Orange Money on your phone. The session is booked only after payment succeeds.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-ghost w-full !rounded-none"
+                  onClick={() => setOpen(false)}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="btn btn-primary flex-1 !rounded-none"
+                  disabled={busy || mentor.slots.length === 0}
+                  onClick={confirm}
+                >
+                  {busy ? <Loader2 size={14} className="animate-spin" /> : null}
+                  Confirm
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost !rounded-none"
+                  disabled={busy}
+                  onClick={() => setOpen(false)}
+                >
+                  Cancel
+                </button>
+              </div>
             )}
           </div>
         </div>

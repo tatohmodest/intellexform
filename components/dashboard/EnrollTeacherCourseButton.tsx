@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Lock } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import DirectPayForm from '@/components/payments/DirectPayForm';
 
 export default function EnrollTeacherCourseButton({
   courseId,
@@ -49,26 +50,6 @@ export default function EnrollTeacherCourseButton({
     }
   }
 
-  async function payAndEnrol() {
-    setBusy(true);
-    setError('');
-    try {
-      const res = await fetch('/api/payments/initialize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'teacher_course', teacherCourseId: courseId }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.transactionUrl) {
-        throw new Error(data.error || 'Could not start payment');
-      }
-      window.location.href = data.transactionUrl;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not start payment');
-      setBusy(false);
-    }
-  }
-
   if (loading) {
     return (
       <button
@@ -100,20 +81,27 @@ export default function EnrollTeacherCourseButton({
 
   return (
     <div className="mt-4">
-      <button
-        type="button"
-        disabled={busy}
-        onClick={isPaid ? payAndEnrol : enrollFree}
-        className="inline-flex w-full items-center justify-center gap-2 px-4 py-2.5 text-[13.5px] font-semibold text-white disabled:opacity-70"
-        style={{ background: accent }}
-      >
-        {busy ? <Loader2 size={14} className="animate-spin" /> : isPaid ? <Lock size={14} /> : null}
-        {isPaid ? `Pay ${priceXAF.toLocaleString()} XAF & enrol` : 'Enrol for free'}
-      </button>
-      {isPaid && (
-        <p className="mt-2 text-center text-[11.5px]" style={{ color: 'var(--ink-soft)' }}>
-          PayUnit · MTN MoMo · Orange Money · Card
-        </p>
+      {isPaid ? (
+        <DirectPayForm
+          amountXAF={priceXAF}
+          label="Pay & enrol"
+          extraBody={{ kind: 'teacher_course', teacherCourseId: courseId }}
+          onPaid={() => {
+            setEnrolled(true);
+            router.refresh();
+          }}
+        />
+      ) : (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={enrollFree}
+          className="inline-flex w-full items-center justify-center gap-2 px-4 py-2.5 text-[13.5px] font-semibold text-white disabled:opacity-70"
+          style={{ background: accent }}
+        >
+          {busy ? <Loader2 size={14} className="animate-spin" /> : null}
+          Enrol for free
+        </button>
       )}
       {error && (
         <p className="mt-2 text-[13px]" style={{ color: '#b91c1c' }}>

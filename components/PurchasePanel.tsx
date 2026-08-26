@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
-import { Award, ExternalLink, Loader2, Lock, Play, ShieldCheck } from 'lucide-react';
+import { Award, Lock, Play, ShieldCheck } from 'lucide-react';
 import { Course } from '@/lib/types';
 import { formatXAF } from '@/lib/format';
 import ShareCourseButton from '@/components/ShareCourseButton';
 import { isIntellexCourse } from '@/lib/googleDrive';
+import DirectPayForm from '@/components/payments/DirectPayForm';
 
 export default function PurchasePanel({
   course,
@@ -21,33 +21,6 @@ export default function PurchasePanel({
   hasAccess?: boolean;
   user?: { uid: string; email?: string | null; name?: string | null } | null;
 }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  async function handleCheckout() {
-    setError('');
-    setLoading(true);
-    try {
-      const res = await fetch('/api/payments/initialize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          courseSlug: course.slug,
-          userId: user?.uid,
-          fullName: user?.name || 'Student',
-          email: user?.email || '',
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.transactionUrl) throw new Error(data.error || 'Could not start payment');
-      // Redirect directly to PayUnit checkout (or mock gateway in sandbox).
-      window.location.href = data.transactionUrl;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not start payment');
-      setLoading(false);
-    }
-  }
-
   const discount =
     course.originalPrice > course.currentPrice && course.originalPrice > 0
       ? Math.round((1 - course.currentPrice / course.originalPrice) * 100)
@@ -118,18 +91,16 @@ export default function PurchasePanel({
         </div>
       ) : (
         <div className="flex flex-col gap-2.5">
-          {error && (
-            <p className="rounded-lg px-3 py-2 text-sm" style={{ background: 'rgba(220,38,38,0.08)', color: '#b91c1c' }}>{error}</p>
-          )}
-          <button
-            type="button"
-            onClick={handleCheckout}
-            disabled={loading}
-            className="btn btn-primary w-full inline-flex items-center justify-center gap-2"
-          >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : <Lock size={17} />}
-            {loading ? 'Redirecting to PayUnit…' : `Buy Course (${formatXAF(course.currentPrice)})`}
-          </button>
+          <DirectPayForm
+            amountXAF={course.currentPrice}
+            label="Pay with MoMo"
+            extraBody={{
+              courseSlug: course.slug,
+              userId: user?.uid,
+              fullName: user?.name || 'Student',
+              email: user?.email || '',
+            }}
+          />
           {isIntellex && (
             <Link
               href="/membership"
