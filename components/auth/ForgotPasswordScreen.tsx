@@ -54,13 +54,13 @@ export default function ForgotPasswordScreen() {
       campus={Boolean(campus)}
       tab="Account recovery"
       title="Forgot your password?"
-      subtitle="Enter the email on your account. If it is verified, we will send a reset link."
+      subtitle="Enter the email on your account. If you first signed in with Looping Binary, this is how you set an Intellex password."
     >
       {error && <AuthAlert kind="error">{error}</AuthAlert>}
       {sent && !error && (
         <AuthAlert kind="info">
-          If an account exists for that email, a reset link is on its way. Check your inbox and spam
-          folder.
+          If an account exists for that email — including older Looping Binary
+          accounts — a reset link is on its way. Check your inbox and spam folder.
         </AuthAlert>
       )}
 

@@ -8,7 +8,7 @@ import ForgotPasswordScreen from '@/components/auth/ForgotPasswordScreen';
 
 export const metadata: Metadata = {
   title: 'Forgot password - Intellex',
-  description: 'Reset your Intellex password by email.',
+  description: 'Set or reset your Intellex password by email. Looping Binary accounts use this to unlock email sign-in.',
 };
 
 export const dynamic = 'force-dynamic';

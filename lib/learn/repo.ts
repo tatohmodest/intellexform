@@ -209,7 +209,6 @@ export async function findLearnerByEmail(email: string): Promise<LearnerDoc | nu
 export async function ensureUniqueLearnerEmails(): Promise<void> {
   const db = await getDb();
   const col = db.collection('learners');
-  const creds = db.collection('auth_credentials');
 
   await col
     .updateMany({ email: { $in: ['', null] } }, { $unset: { email: '' } })
@@ -236,23 +235,7 @@ export async function ensureUniqueLearnerEmails(): Promise<void> {
     .catch(() => []);
 
   for (const g of grouped) {
-    const email = String(g._id || '').toLowerCase();
-    const cred = await creds.findOne({ email });
-    const keep =
-      (cred?.userId && g.ids.includes(String(cred.userId)) ? String(cred.userId) : null) ||
-      String(g.ids[0] || '');
-    if (!keep) continue;
-    await col.updateOne({ lbId: keep }, { $set: { email } });
-    await col.updateMany(
-      {
-        email: { $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' },
-        lbId: { $ne: keep },
-      },
-      { $unset: { email: '' }, $set: { duplicateOfUserId: keep, updatedAt: new Date() } },
-    );
-    if (cred && String(cred.userId) !== keep) {
-      await creds.updateOne({ email }, { $set: { userId: keep, updatedAt: new Date() } }).catch(() => {});
-    }
+    await reconcileDuplicateLearnersForEmail(String(g._id || '')).catch(() => {});
   }
 
   const indexes = await col.indexes().catch(() => [] as Array<{ name?: string; key?: Record<string, number>; unique?: boolean; sparse?: boolean }>);
@@ -263,6 +246,74 @@ export async function ensureUniqueLearnerEmails(): Promise<void> {
     }
   }
   await col.createIndex({ email: 1 }, { unique: true, sparse: true, name: 'learners_email_unique' }).catch(() => {});
+}
+
+function isLocalCredentialId(id: string) {
+  return id.startsWith('usr_');
+}
+
+/**
+ * Keep the original Looping Binary / OAuth learner when the same email later
+ * created a credentials account. Point auth_credentials at that profile.
+ */
+export async function reconcileDuplicateLearnersForEmail(email: string): Promise<string | null> {
+  const normalized = String(email || '').trim().toLowerCase();
+  if (!normalized.includes('@')) return null;
+  const db = await getDb();
+  const col = db.collection('learners');
+  const creds = db.collection('auth_credentials');
+  const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const docs = await col
+    .find(
+      { email: { $regex: `^${escaped}$`, $options: 'i' } },
+      { projection: { lbId: 1, createdAt: 1, email: 1 } },
+    )
+    .toArray();
+  if (docs.length === 0) {
+    const cred = await creds.findOne({ email: normalized });
+    return cred?.userId ? String(cred.userId) : null;
+  }
+
+  const cred = await creds.findOne({ email: normalized });
+  const ids = docs.map((d) => String(d.lbId || '')).filter(Boolean);
+  const oauthIds = ids.filter((id) => !isLocalCredentialId(id));
+  const credId = cred?.userId ? String(cred.userId) : '';
+
+  let keep = '';
+  if (oauthIds.length === 1) keep = oauthIds[0];
+  else if (credId && oauthIds.includes(credId)) keep = credId;
+  else if (oauthIds.length > 1) {
+    const oauthDocs = docs.filter((d) => oauthIds.includes(String(d.lbId)));
+    oauthDocs.sort(
+      (a, b) =>
+        new Date(a.createdAt as Date).getTime() - new Date(b.createdAt as Date).getTime(),
+    );
+    keep = String(oauthDocs[0]?.lbId || oauthIds[0]);
+  } else if (credId && ids.includes(credId)) {
+    keep = credId;
+  } else {
+    const sorted = [...docs].sort(
+      (a, b) =>
+        new Date(a.createdAt as Date).getTime() - new Date(b.createdAt as Date).getTime(),
+    );
+    keep = String(sorted[0]?.lbId || ids[0] || '');
+  }
+  if (!keep) return null;
+
+  await col.updateOne({ lbId: keep }, { $set: { email: normalized } });
+  if (docs.length > 1) {
+    await col.updateMany(
+      {
+        email: { $regex: `^${escaped}$`, $options: 'i' },
+        lbId: { $ne: keep },
+      },
+      { $unset: { email: '' }, $set: { duplicateOfUserId: keep, updatedAt: new Date() } },
+    );
+  }
+  if (cred && String(cred.userId) !== keep) {
+    await creds.updateOne({ email: normalized }, { $set: { userId: keep, updatedAt: new Date() } }).catch(() => {});
+  }
+  return keep;
 }
 
 export async function updateLearnerSettings(

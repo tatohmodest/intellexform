@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
           unverified: result.unverified === true,
           remainingAttempts: result.remainingAttempts,
           retryAfterSec: result.retryAfterSec,
+          needsPassword: result.needsPassword === true,
         },
         { status: result.status },
       );

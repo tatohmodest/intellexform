@@ -59,7 +59,7 @@ export default function ResetPasswordScreen({
       campus={false}
       tab="Account recovery"
       title="Choose a new password"
-      subtitle="Pick a password you will remember, then sign in with it."
+      subtitle="Pick a password you will remember, then sign in with it. This also unlocks accounts that were created with Looping Binary."
     >
       {error && <AuthAlert kind="error">{error}</AuthAlert>}
 

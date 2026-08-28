@@ -30,6 +30,7 @@ import {
   ensureUniqueLearnerEmails,
   findLearnerByEmail,
   getLearner,
+  reconcileDuplicateLearnersForEmail,
   type LearnerDoc,
 } from '@/lib/learn/repo';
 import { PERSONAL_CONTEXT } from '@/lib/learn/identity';
@@ -104,6 +105,7 @@ type AuthError = {
   unverified?: boolean;
   remainingAttempts?: number;
   retryAfterSec?: number;
+  needsPassword?: boolean;
 };
 
 function splitName(name: string): { firstName: string | null; lastName: string | null } {
@@ -292,6 +294,7 @@ async function prismaUserByEmail(email: string): Promise<{
     passwordHash: string | null;
     emailVerified: Date | null;
     image: string | null;
+    loopingBinaryId: string | null;
   } | null;
   timedOut: boolean;
 }> {
@@ -306,6 +309,7 @@ async function prismaUserByEmail(email: string): Promise<{
           passwordHash: true,
           emailVerified: true,
           image: true,
+          loopingBinaryId: true,
         },
       }),
       PRISMA_MS,
@@ -391,6 +395,7 @@ export async function upsertLearnerLocal(opts: {
     await col.createIndex({ lbId: 1 }, { unique: true }).catch(() => {});
     await ensureUniqueLearnerEmails().catch(() => {});
     const email = opts.email.trim().toLowerCase();
+    await reconcileDuplicateLearnersForEmail(email).catch(() => {});
     const existing = await findLearnerByEmail(email);
     if (existing && existing.lbId !== opts.id) {
       await col.updateOne(
@@ -499,6 +504,42 @@ async function loadAccount(email: string): Promise<{
   return { account: existing, timedOut: prismaLookup.timedOut };
 }
 
+type IdentityHit = {
+  email: string;
+  name: string;
+  userId: string | null;
+  hasPassword: boolean;
+};
+
+const OAUTH_SET_PASSWORD =
+  'This email already has an InTelleX account from Looping Binary. Use Forgot password to set a password, then sign in.';
+
+/** Learner, Prisma, or credentials row for this email — including OAuth-only accounts. */
+async function findIdentity(email: string): Promise<IdentityHit | null> {
+  const normalized = normalizeEmail(email);
+  if (!normalized.includes('@')) return null;
+  await reconcileDuplicateLearnersForEmail(normalized).catch(() => {});
+  const { account } = await loadAccount(normalized);
+  const learner = await findLearnerByEmail(normalized);
+  const prismaLookup = await prismaUserByEmail(normalized);
+  if (!account && !learner && !prismaLookup.user) return null;
+  return {
+    email: normalized,
+    name:
+      account?.name ||
+      learner?.name ||
+      prismaLookup.user?.name ||
+      normalized.split('@')[0],
+    userId:
+      learner?.lbId ||
+      prismaLookup.user?.loopingBinaryId ||
+      account?.userId ||
+      prismaLookup.user?.id ||
+      null,
+    hasPassword: Boolean(account?.passwordHash || prismaLookup.user?.passwordHash),
+  };
+}
+
 async function persistAccount(account: CredentialAccount) {
   const creds = await credentialsCol();
   const now = new Date();
@@ -527,7 +568,18 @@ async function activateVerifiedAccount(opts: {
 }): Promise<{ userId: string }> {
   const email = normalizeEmail(opts.email);
   const now = new Date();
+  const keptId = await reconcileDuplicateLearnersForEmail(email).catch(() => null);
   const { account: existingCred } = await loadAccount(email);
+  const existingLearner = await findLearnerByEmail(email);
+  const prismaLookup = await prismaUserByEmail(email);
+  const userId =
+    keptId ||
+    existingLearner?.lbId ||
+    prismaLookup.user?.loopingBinaryId ||
+    existingCred?.userId ||
+    opts.existingUserId ||
+    prismaLookup.user?.id ||
+    newLocalUserId();
   const prismaUser = await syncPrismaUser({
     email,
     name: opts.name,
@@ -535,26 +587,20 @@ async function activateVerifiedAccount(opts: {
     emailVerified: now,
     touchLogin: false,
   });
-  const existingLearner = await findLearnerByEmail(email);
-  const userId =
-    existingLearner?.lbId ||
-    existingCred?.userId ||
-    opts.existingUserId ||
-    prismaUser?.id ||
-    newLocalUserId();
+  const canonicalId = userId || prismaUser?.id || newLocalUserId();
   await persistAccount({
     email,
     passwordHash: opts.passwordHash,
-    userId,
+    userId: canonicalId,
     name: opts.name,
     emailVerified: now,
     createdAt: existingCred?.createdAt || now,
     updatedAt: now,
   });
-  await upsertLearnerLocal({ id: userId, email, name: opts.name });
+  await upsertLearnerLocal({ id: canonicalId, email, name: opts.name });
   const pending = await pendingCol();
   await pending.deleteOne({ email }).catch(() => {});
-  return { userId };
+  return { userId: canonicalId };
 }
 
 async function sendVerificationForPending(opts: {
@@ -616,12 +662,12 @@ export async function startSignup(opts: {
   if (account?.passwordHash) {
     return { error: 'An account with this email already exists. Sign in instead.', status: 409 };
   }
-  const existingLearner = await findLearnerByEmail(email);
-  if (existingLearner?.lbId) {
-    const prismaLookup = await prismaUserByEmail(email);
-    if (prismaLookup.user?.passwordHash) {
-      return { error: 'An account with this email already exists. Sign in instead.', status: 409 };
-    }
+  const identity = await findIdentity(email);
+  if (identity?.hasPassword) {
+    return { error: 'An account with this email already exists. Sign in instead.', status: 409 };
+  }
+  if (identity) {
+    return { error: OAUTH_SET_PASSWORD, status: 409, needsPassword: true };
   }
 
   const passwordHash = await hashPassword(password);
@@ -770,6 +816,10 @@ export async function beginLogin(opts: {
         error: 'Sign-in is taking too long. Please try again in a moment.',
         status: 503,
       };
+    }
+    const identity = await findIdentity(email);
+    if (identity && !identity.hasPassword) {
+      return { error: OAUTH_SET_PASSWORD, status: 403, needsPassword: true };
     }
     return { error: 'Invalid email or password.', status: 401 };
   }
@@ -961,6 +1011,7 @@ export async function finishLoginWithOtp(opts: {
 
   await col.deleteOne({ email });
 
+  const keptId = await reconcileDuplicateLearnersForEmail(email).catch(() => null);
   const loaded = await loadAccount(email);
   if (!loaded.account?.passwordHash || !loaded.account.emailVerified) {
     return { error: 'Could not finish sign-in. Try again.', status: 400 };
@@ -974,7 +1025,7 @@ export async function finishLoginWithOtp(opts: {
     emailVerified: account.emailVerified,
     touchLogin: true,
   });
-  const userId = account.userId || prismaUser?.id || newLocalUserId();
+  const userId = keptId || account.userId || prismaUser?.id || newLocalUserId();
 
   const learner = await upsertLearnerLocal({
     id: userId,
@@ -1045,8 +1096,9 @@ export async function requestPasswordReset(opts: {
   const { account } = await loadAccount(email);
   const pending = await pendingCol();
   const p = (await pending.findOne({ email })) as PendingSignup | null;
-  const hasPassword = Boolean(account?.passwordHash || p?.passwordHash);
-  if (!hasPassword) return { ok: true };
+  const identity = await findIdentity(email);
+  const canReset = Boolean(account?.passwordHash || p?.passwordHash || identity);
+  if (!canReset) return { ok: true };
 
   const issued = await issueAuthLink({
     email,
@@ -1096,17 +1148,19 @@ export async function resetPassword(opts: {
   const loaded = await loadAccount(email);
   const pending = await pendingCol();
   const p = (await pending.findOne({ email })) as PendingSignup | null;
-  if (!loaded.account?.passwordHash && !p?.passwordHash) {
+  const identity = await findIdentity(email);
+  if (!loaded.account?.passwordHash && !p?.passwordHash && !identity) {
     return { error: 'No account found for this reset link.', status: 400 };
   }
 
   const passwordHash = await hashPassword(opts.password);
-  const name = loaded.account?.name || p?.name || email.split('@')[0];
+  const name =
+    loaded.account?.name || p?.name || identity?.name || email.split('@')[0];
   await activateVerifiedAccount({
     email,
     name,
     passwordHash,
-    existingUserId: loaded.account?.userId,
+    existingUserId: identity?.userId || loaded.account?.userId,
   });
   await markLinkUsed(row);
   const resets = await resetsCol();
