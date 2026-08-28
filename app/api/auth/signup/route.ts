@@ -26,7 +26,10 @@ export async function POST(req: NextRequest) {
     });
 
     if ('error' in result) {
-      return NextResponse.json({ error: result.error }, { status: result.status });
+      return NextResponse.json(
+        { error: result.error, needsPassword: result.needsPassword === true },
+        { status: result.status },
+      );
     }
 
     return NextResponse.json({

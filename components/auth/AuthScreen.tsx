@@ -54,6 +54,7 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
   const [busy, setBusy] = useState(false);
   const [resendBusy, setResendBusy] = useState(false);
   const [lockSec, setLockSec] = useState(0);
+  const [needsPassword, setNeedsPassword] = useState(false);
 
   const loginHref = withParams('/login', next, campus);
   const signupHref = withParams('/signup', next, campus);
@@ -69,6 +70,7 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
     e.preventDefault();
     setError(null);
     setInfo(null);
+    setNeedsPassword(false);
     setBusy(true);
     try {
       const endpoint = isSignup ? '/api/auth/signup' : '/api/auth/login';
@@ -87,6 +89,7 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
         otpRequired?: boolean;
         unverified?: boolean;
         retryAfterSec?: number;
+        needsPassword?: boolean;
       };
       if (!res.ok) {
         setError(data.error || 'Something went wrong. Please try again.');
@@ -94,6 +97,10 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
           setLockSec(data.retryAfterSec);
         }
         if (data.unverified) setStep('check-email');
+        if (data.needsPassword) {
+          setNeedsPassword(true);
+          setInfo('Use Forgot password with this email to set a password for your existing account.');
+        }
         return;
       }
       if (isSignup) {
@@ -234,7 +241,7 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
             ? `We sent a 6-digit code to ${email || 'you'}. You have 4 tries. After 4 misses, wait one minute.`
             : isSignup
               ? 'Email and password — we will send a link so you can verify, then come back and sign in.'
-              : 'Email or matricule, plus the password for this same account. We then email a sign-in code.'
+              : 'Email or matricule, plus the password for this same account. We then email a sign-in code. If you used Looping Binary before, set a password with Forgot password first.'
       }
       footer={
         <p
@@ -247,6 +254,13 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
     >
       {error && <AuthAlert kind="error">{error}</AuthAlert>}
       {info && !error && <AuthAlert kind="info">{info}</AuthAlert>}
+      {needsPassword && (
+        <p className="mt-3 text-[13.5px]">
+          <Link href={forgotHref} className="font-semibold" style={{ color: 'var(--green-deep)' }}>
+            Set a password for this email →
+          </Link>
+        </p>
+      )}
 
       {checkingEmail ? (
         <div className="mt-8 space-y-4">
