@@ -38,7 +38,7 @@ export default async function CampusPage({
   const membership = await getMembership(params.slug, session.uid);
   if (inst.visibility === 'private' && !membership) {
     return (
-      <div className="mx-auto flex max-w-[520px] flex-col items-center border p-8 text-center sm:p-10" style={{ borderColor: 'var(--line)' }}>
+      <div className="mx-auto flex max-w-[520px] flex-col items-center card p-8 text-center sm:p-10">
         <span className="mb-4 flex h-14 w-14 items-center justify-center" style={{ background: 'var(--paper-dim)', color: 'var(--ink-soft)' }}>
           <Lock size={24} />
         </span>

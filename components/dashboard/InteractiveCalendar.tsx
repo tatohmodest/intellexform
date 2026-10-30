@@ -479,7 +479,7 @@ export default function InteractiveCalendar({
                 if (locked && e.href && e.href !== '/dashboard/calendar') {
                   return (
                     <li key={e.id}>
-                      <Link href={e.href} className="flex gap-3 border p-3" style={{ borderColor: 'var(--line)' }}>
+                      <Link href={e.href} className="flex gap-3 card p-3">
                         {inner}
                       </Link>
                     </li>

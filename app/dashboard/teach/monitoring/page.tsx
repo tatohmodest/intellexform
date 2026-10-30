@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { AlertTriangle } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getRoles } from '@/lib/learn/ecosystem';
 import { listStudentsNeedingAttention } from '@/lib/learn/studentMonitoring';
 import MessageStudentButton from '@/components/dashboard/MessageStudentButton';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,32 +21,19 @@ export default async function StudentMonitoringPage() {
 
   return (
     <div className="mx-auto max-w-[960px]">
-      <header className="mb-8 border-b pb-6" style={{ borderColor: 'var(--line)' }}>
-        <div className="tab mb-2 inline-flex items-center gap-1.5">
-          <AlertTriangle size={11} /> Monitoring
-        </div>
-        <h1 className="font-display text-[30px] leading-tight">Student monitoring</h1>
-        <p className="mt-2 max-w-[640px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Early-warning signals: inactivity, missing assignments, and low progress. Treat this as a
-          coaching tool, not a judgment.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link
-            href="/dashboard/teach/grading"
-            className="inline-flex items-center border px-3 py-1.5 text-[13px] font-semibold"
-            style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
-          >
-            Grading center
-          </Link>
-          <Link
-            href="/dashboard/students"
-            className="inline-flex items-center border px-3 py-1.5 text-[13px] font-semibold"
-            style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
-          >
-            Full roster
-          </Link>
-        </div>
-      </header>
+      <PageHeader
+        title="Student monitoring"
+        actions={
+          <>
+            <Link href="/dashboard/teach/grading" className="chip">
+              Grading
+            </Link>
+            <Link href="/dashboard/students" className="chip">
+              Roster
+            </Link>
+          </>
+        }
+      />
 
       {atRisk.length === 0 ? (
         <div className="border border-dashed p-10 text-center" style={{ borderColor: 'var(--line)' }}>

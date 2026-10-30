@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowRight, GraduationCap } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getRoles } from '@/lib/learn/ecosystem';
 import { getInstructorCommandCenter } from '@/lib/learn/commandCenter';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,38 +22,31 @@ export default async function TeachHomePage() {
 
   return (
     <div className="mx-auto max-w-[1000px]">
-      <header className="mb-8 border-b pb-6" style={{ borderColor: 'var(--line)' }}>
-        <div className="tab mb-2 inline-flex items-center gap-1.5">
-          <GraduationCap size={11} /> Teaching
-        </div>
-        <h1 className="font-display text-[32px] leading-tight">Good day, {name}.</h1>
-        <p className="mt-2 text-[15px]" style={{ color: 'var(--ink-soft)' }}>
-          Your teaching day — classes, grading, and students who need attention.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2 text-[12.5px] font-semibold">
-          <Link href="/dashboard/teach/courses" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
+      <PageHeader eyebrow="Teaching" title={`Good day, ${name}.`}>
+        <div className="no-scrollbar -mx-4 mt-5 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
+          <Link href="/dashboard/teach/courses" className="chip">
             Course studio
           </Link>
-          <Link href="/dashboard/teach/grading" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
-            Grading center
+          <Link href="/dashboard/teach/grading" className="chip">
+            Grading
           </Link>
-          <Link href="/dashboard/teach/monitoring" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
+          <Link href="/dashboard/teach/monitoring" className="chip">
             Monitoring
           </Link>
-          <Link href="/dashboard/teach/assessments" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
+          <Link href="/dashboard/teach/assessments" className="chip">
             Assignments
           </Link>
-          <Link href="/dashboard/classroom" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
+          <Link href="/dashboard/classroom" className="chip">
             Classroom
           </Link>
-          <Link href="/dashboard/students" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
+          <Link href="/dashboard/students" className="chip">
             My students
           </Link>
-          <Link href="/dashboard/messages" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
+          <Link href="/dashboard/messages" className="chip">
             Messages
           </Link>
         </div>
-      </header>
+      </PageHeader>
 
       {cc.attention.length > 0 ? (
         <section className="mb-10">
@@ -121,8 +115,7 @@ export default async function TeachHomePage() {
               <li key={g.assessmentId}>
                 <Link
                   href={`/dashboard/teach/assessments?assessment=${g.assessmentId}`}
-                  className="flex justify-between border p-4"
-                  style={{ borderColor: 'var(--line)' }}
+                  className="flex justify-between card p-4"
                 >
                   <span className="font-semibold">{g.title}</span>
                   <span className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>

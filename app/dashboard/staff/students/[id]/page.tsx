@@ -43,7 +43,7 @@ export default async function StaffStudentDetailPage({ params }: { params: { id:
           ['Campus', student.record.campusSlug || 'Not set'],
           ['Fees due', canFees ? formatXAF(student.outstandingXAF) : 'Hidden'],
         ].map(([label, value]) => (
-          <div key={label} className="border p-4" style={{ borderColor: 'var(--line)' }}>
+          <div key={label} className="card p-4">
             <p className="font-display text-[20px]">{value}</p>
             <p className="font-mono text-[10px] uppercase tracking-wide" style={{ color: 'var(--ink-soft)' }}>
               {label}
@@ -62,7 +62,7 @@ export default async function StaffStudentDetailPage({ params }: { params: { id:
 
       {canCharge ? <ChargeStudent userId={student.userId} structures={structures} /> : null}
 
-      <section className="border p-4" style={{ borderColor: 'var(--line)' }}>
+      <section className="card p-4">
         <h2 className="mb-3 font-display text-[20px]">Courses</h2>
         {student.courses.length === 0 ? (
           <p className="text-[14px]" style={{ color: 'var(--ink-soft)' }}>
@@ -81,7 +81,7 @@ export default async function StaffStudentDetailPage({ params }: { params: { id:
       </section>
 
       {canFees ? (
-        <section className="border p-4" style={{ borderColor: 'var(--line)' }}>
+        <section className="card p-4">
           <h2 className="mb-3 font-display text-[20px]">Payments</h2>
           {student.payments.length === 0 ? (
             <p className="text-[14px]" style={{ color: 'var(--ink-soft)' }}>

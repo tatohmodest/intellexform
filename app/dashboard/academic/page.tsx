@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { GraduationCap } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getLearner } from '@/lib/learn/repo';
 import { getAcademicOverview } from '@/lib/learn/academicOverview';
 import AcademicPrefsEditor from '@/components/dashboard/AcademicPrefsEditor';
 import StudentGate from '@/components/dashboard/StudentGate';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,31 +29,19 @@ export default async function AcademicOverviewPage() {
   return (
     <StudentGate userId={session.uid}>
     <div className="mx-auto max-w-[920px]">
-      <header className="mb-8 border-b pb-6" style={{ borderColor: 'var(--line)' }}>
-        <div className="tab mb-2 inline-flex items-center gap-1.5">
-          <GraduationCap size={11} /> Academic
-        </div>
-        <h1 className="font-display text-[32px] leading-tight">Academic overview</h1>
-        <p className="mt-2 max-w-[640px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Program journey, cohort, GPA, and credits — when your campus enables them, or soft
-          fields you maintain yourself.{' '}
-          <Link
-            href="/dashboard/fees"
-            className="inline-flex items-center border px-3 py-1.5 text-[13px] font-semibold"
-            style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
-          >
-            View school fees
-          </Link>
-          {' '}
-          <Link
-            href="/dashboard/announcements"
-            className="inline-flex items-center border px-3 py-1.5 text-[13px] font-semibold"
-            style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
-          >
-            Announcements
-          </Link>
-        </p>
-      </header>
+      <PageHeader
+        title="Academic"
+        actions={
+          <>
+            <Link href="/dashboard/fees" className="chip">
+              Fees
+            </Link>
+            <Link href="/dashboard/announcements" className="chip">
+              Announcements
+            </Link>
+          </>
+        }
+      />
 
       <section className="mb-8 grid gap-3 sm:grid-cols-4">
         {[
@@ -67,7 +55,7 @@ export default async function AcademicOverviewPage() {
           ['In progress', String(overview.coursesInProgress)],
           ['Completed', String(overview.coursesCompleted)],
         ].map(([label, value]) => (
-          <div key={label} className="border p-4" style={{ borderColor: 'var(--line)' }}>
+          <div key={label} className="card p-4">
             <p className="font-display text-[24px]">{value}</p>
             <p className="font-mono text-[10px] uppercase tracking-wide" style={{ color: 'var(--ink-soft)' }}>
               {label}
@@ -80,7 +68,7 @@ export default async function AcademicOverviewPage() {
         <section className="mb-8 space-y-3">
           <h2 className="font-display text-[20px]">Programs & campuses</h2>
           {overview.programs.map((p) => (
-            <div key={p.institutionSlug} className="border p-4" style={{ borderColor: 'var(--line)' }}>
+            <div key={p.institutionSlug} className="card p-4">
               <p className="font-semibold">{p.institutionName}</p>
               <p className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
                 {[p.program, p.cohort, p.year, p.department].filter(Boolean).join(' · ') ||
@@ -120,7 +108,7 @@ export default async function AcademicOverviewPage() {
         <ul className="space-y-2">
           {overview.journey.map((j) => (
             <li key={j.label}>
-              <Link href={j.href} className="flex items-center justify-between border p-3" style={{ borderColor: 'var(--line)' }}>
+              <Link href={j.href} className="flex items-center justify-between card p-3">
                 <span>
                   <span className="font-semibold">{j.label}</span>
                   <span className="ml-2 text-[13px]" style={{ color: 'var(--ink-soft)' }}>

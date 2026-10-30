@@ -83,7 +83,7 @@ export function AnnouncementComposer({ slug }: { slug: string }) {
   }
 
   return (
-    <form onSubmit={post} className="border p-5" style={{ borderColor: 'var(--line)' }}>
+    <form onSubmit={post} className="card p-5">
       <div className="mb-3 flex items-center gap-2 text-[13.5px] font-semibold">
         <Megaphone size={15} style={{ color: 'var(--green-deep)' }} />
         Post an announcement

@@ -73,7 +73,7 @@ export default function LessonAiAssist({
   }
 
   return (
-    <div className="border p-3" style={{ borderColor: 'var(--line)' }}>
+    <div className="card p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="inline-flex items-center gap-1.5 text-[13px] font-semibold">
           <Bot size={14} style={{ color: accent }} /> In-course AI

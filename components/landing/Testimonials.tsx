@@ -249,20 +249,12 @@ export default function Testimonials() {
   const [active, setActive] = useState<number | null>(null);
 
   return (
-    <section id="testimonials" className="overflow-hidden py-16 sm:py-24" style={{ background: 'var(--paper-dim)' }}>
+    <section id="testimonials" className="section section-dim overflow-hidden">
       <div className="wrap">
         <Reveal className="mb-8 max-w-2xl sm:mb-10">
-          <div className="tab mb-4">Student stories</div>
-          <h2 className="mb-3 text-[27px] leading-[1.15] sm:text-[38px]">Real learners. Real outcomes.</h2>
-          <p className="text-base" style={{ color: 'var(--ink-soft)' }}>
-            Hear it straight from students - in their own voices. The stories play live; tap any to watch full-screen.
-          </p>
+          <div className="eyebrow mb-2.5">Student stories</div>
+          <h2 className="text-[28px] leading-[1.12] sm:text-[36px]">Real learners. Real outcomes.</h2>
         </Reveal>
-
-        <div className="mb-4 flex items-center gap-3">
-          <span className="font-mono text-[11px] uppercase tracking-[0.14em]" style={{ color: 'var(--green-deep)' }}>Watch their stories</span>
-          <span className="h-px flex-1" style={{ background: 'var(--line)' }} />
-        </div>
 
         {/* mobile: swipeable reel carousel · desktop: grid */}
         <div className="no-scrollbar -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-6 sm:overflow-visible sm:px-0">
@@ -275,10 +267,7 @@ export default function Testimonials() {
       {/* written testimonials band */}
       <div className="mt-12 border-y py-8 sm:mt-16 sm:py-10" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
         <div className="wrap mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="font-display text-[20px] sm:text-[22px]">In their own words</div>
-            <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>A live scroll of what the community is saying - swipe to explore.</p>
-          </div>
+          <div className="font-display text-[20px] sm:text-[22px]">In their own words</div>
           <span className="pill inline-flex items-center gap-2">
             <span className="h-2 w-2 animate-pulse rounded-full" style={{ background: 'var(--green)' }} /> Live from the community
           </span>

@@ -493,8 +493,7 @@ export default function ClassRoomsClient({
                 <button
                   type="button"
                   onClick={() => enterGroup(g.id)}
-                  className="flex w-full items-center gap-3 border p-4 text-left"
-                  style={{ borderColor: 'var(--line)' }}
+                  className="flex w-full items-center gap-3 card p-4 text-left"
                 >
                   <span
                     className="flex h-11 w-11 shrink-0 items-center justify-center text-[13px] font-bold text-white"
@@ -537,8 +536,7 @@ export default function ClassRoomsClient({
         {createOpen ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
             <form
-              className="w-full max-w-md border bg-white p-5"
-              style={{ borderColor: 'var(--line)' }}
+              className="w-full max-w-md card bg-white p-5"
               onSubmit={(e) => {
                 e.preventDefault();
                 void create();
@@ -1019,8 +1017,7 @@ export default function ClassRoomsClient({
       {createOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <form
-            className="w-full max-w-md border bg-white p-5"
-            style={{ borderColor: 'var(--line)' }}
+            className="w-full max-w-md card bg-white p-5"
             onSubmit={(e) => {
               e.preventDefault();
               void create();
@@ -1057,8 +1054,7 @@ export default function ClassRoomsClient({
       {channelOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <form
-            className="w-full max-w-sm border bg-white p-5"
-            style={{ borderColor: 'var(--line)' }}
+            className="w-full max-w-sm card bg-white p-5"
             onSubmit={(e) => {
               e.preventDefault();
               post({ action: 'create_channel', groupId, name: newChannel }, 'ch').then((data) => {
@@ -1093,7 +1089,7 @@ export default function ClassRoomsClient({
 
       {addOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md border bg-white p-5" style={{ borderColor: 'var(--line)' }}>
+          <div className="w-full max-w-md card bg-white p-5">
             <h2 className="font-display text-[20px]">Add course mates</h2>
             <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
               Only students in {groupMeta?.courseTitle || 'this course'} can be added.
@@ -1158,8 +1154,7 @@ export default function ClassRoomsClient({
       {settingsOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <form
-            className="w-full max-w-md border bg-white p-5"
-            style={{ borderColor: 'var(--line)' }}
+            className="w-full max-w-md card bg-white p-5"
             onSubmit={(e) => {
               e.preventDefault();
               post(

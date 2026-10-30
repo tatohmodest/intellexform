@@ -210,7 +210,7 @@ export default function OrgCoursePlayer({
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-        <aside className="space-y-4 border p-3" style={{ borderColor: 'var(--line)' }}>
+        <aside className="space-y-4 card p-3">
           {course.sections.length === 0 ? (
             <p className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
               No lessons yet.
@@ -253,7 +253,7 @@ export default function OrgCoursePlayer({
           )}
         </aside>
 
-        <section className="min-w-0 border p-5" style={{ borderColor: 'var(--line)' }}>
+        <section className="min-w-0 card p-5">
           {!activeLesson ? (
             <p style={{ color: 'var(--ink-soft)' }}>Select a lesson to begin.</p>
           ) : (

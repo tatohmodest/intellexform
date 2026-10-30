@@ -305,7 +305,7 @@ export default async function BookReaderPage({
         >
           Chapter {chIdx + 1} of {chapters.length}
         </div>
-        <h1 className="font-display text-[28px] leading-tight">{chapter?.title || 'Chapter'}</h1>
+        <h1 className="font-display text-[26px] leading-[1.1] tracking-tight sm:text-[32px]">{chapter?.title || 'Chapter'}</h1>
 
         {locked ? (
           <div

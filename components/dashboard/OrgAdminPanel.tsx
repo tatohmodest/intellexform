@@ -57,7 +57,7 @@ export default function OrgAdminPanel({
             ['Published', summary.published],
             ['Enrollments', summary.enrollments],
           ].map(([label, value]) => (
-            <div key={String(label)} className="border p-3" style={{ borderColor: 'var(--line)' }}>
+            <div key={String(label)} className="card p-3">
               <p className="text-[11px] uppercase tracking-wide" style={{ color: 'var(--ink-soft)' }}>
                 {label}
               </p>
@@ -67,7 +67,7 @@ export default function OrgAdminPanel({
         </section>
       ) : null}
 
-      <section className="border p-5" style={{ borderColor: 'var(--line)' }}>
+      <section className="card p-5">
         <h2 className="font-display text-[20px]">Overview</h2>
         <dl className="mt-4 grid gap-3 text-[14px] sm:grid-cols-2">
           <div>
@@ -128,7 +128,7 @@ export default function OrgAdminPanel({
 
       <CampusWebsiteBuilder slug={slug} accent={accent} />
 
-      <section className="border p-5" style={{ borderColor: 'var(--line)' }}>
+      <section className="card p-5">
         <h2 className="font-display text-[20px]">Enabled features</h2>
         <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
           Flags from your Intellex plan. Contact Intellex Admin to change the commercial package.
@@ -158,7 +158,7 @@ export default function OrgAdminPanel({
         </div>
       </section>
 
-      <section className="border p-5" style={{ borderColor: 'var(--line)' }}>
+      <section className="card p-5">
         <h2 className="font-display text-[20px]">Capability modules</h2>
         <ul className="mt-3 space-y-1 text-[13px]">
           {modules.length === 0 ? (

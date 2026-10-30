@@ -138,7 +138,7 @@ export default function CampusWebsiteBuilder({
         </Link>
       </div>
 
-      <form onSubmit={save} className="space-y-4 border p-4" style={{ borderColor: 'var(--line)' }}>
+      <form onSubmit={save} className="space-y-4 card p-4">
         <label className="block text-[13px]">
           <span className="font-semibold">Platform name</span>
           <input

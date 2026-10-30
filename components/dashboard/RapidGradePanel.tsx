@@ -114,7 +114,7 @@ export default function RapidGradePanel({
   }
 
   return (
-    <div className="border p-4" style={{ borderColor: 'var(--line)' }}>
+    <div className="card p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>

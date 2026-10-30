@@ -313,7 +313,7 @@ export default function StudentApplicationWizard() {
         ) : null}
 
         {step === 6 ? (
-          <div className="space-y-3 border p-5 text-[14px]" style={{ borderColor: 'var(--line)' }}>
+          <div className="space-y-3 card p-5 text-[14px]">
             <p>
               <strong>Program:</strong> {app?.programName || 'Not selected'}
             </p>

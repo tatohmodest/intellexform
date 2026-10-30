@@ -6,6 +6,7 @@ import { isOfficialStudent } from '@/lib/learn/studentAccess';
 import { getOrgConfig } from '@/lib/org/config';
 import { listVisibleAnnouncements } from '@/lib/staff/store';
 import AnnouncementCard from '@/components/dashboard/AnnouncementCard';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,43 +41,29 @@ export default async function CommunityPage({
 
   return (
     <div className="mx-auto max-w-[800px]">
-      <header className="mb-6 border-b pb-6" style={{ borderColor: 'var(--line)' }}>
-        <div className="tab mb-2 inline-flex items-center gap-1.5">
-          <Users size={11} /> Community
-        </div>
-        <h1 className="font-display text-[32px] leading-tight">{org.name} community</h1>
-        <p className="mt-2 text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          {isStudent
-            ? 'Public conversation plus official campus, department, and class rooms.'
-            : `Public articles, discussions, and news. Official ${org.name} channels unlock when you become a student.`}
-        </p>
-        <Link
-          href="/dashboard/announcements"
-          className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold text-white"
-          style={{ background: 'var(--green)' }}
-        >
-          <Megaphone size={14} /> Open announcements
-        </Link>
-        <div className="mt-5 flex flex-wrap gap-2">
+      <PageHeader
+        title="Community"
+        actions={
+          <Link href="/dashboard/announcements" className="chip">
+            <Megaphone size={14} /> Announcements
+          </Link>
+        }
+      >
+        <div className="no-scrollbar -mx-4 mt-5 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
           {tabs.map((id) => (
             <Link
               key={id}
               href={`/dashboard/community?tab=${id}`}
-              className="border px-3 py-1.5 text-[12.5px] font-semibold capitalize"
-              style={{
-                borderColor: tab === id ? 'var(--ink)' : 'var(--line)',
-                background: tab === id ? 'var(--ink)' : 'transparent',
-                color: tab === id ? '#fff' : 'var(--ink-soft)',
-              }}
+              className={`chip capitalize ${tab === id ? 'chip-primary' : ''}`}
             >
               {id.replace('-', ' ')}
             </Link>
           ))}
         </div>
-      </header>
+      </PageHeader>
 
       {isStudent && tab === 'class' ? (
-        <section className="mb-8 border p-5" style={{ borderColor: 'var(--line)' }}>
+        <section className="mb-8 card p-5">
           <h2 className="font-display text-[22px]">Class rooms</h2>
           <p className="mt-1 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
             Channels for chat, notes, and ideas. Class advocates create the room and add course mates.
@@ -129,7 +116,7 @@ export default async function CommunityPage({
             { title: 'Messages', href: '/dashboard/messages', body: 'Direct conversations', Icon: MessageSquare },
             { title: 'Notes', href: '/dashboard/notes', body: 'Educational resources', Icon: FileText },
           ].map(({ title, href, body, Icon }) => (
-            <Link key={href} href={href} className="border p-4" style={{ borderColor: 'var(--line)' }}>
+            <Link key={href} href={href} className="card p-4">
               <p className="flex items-center gap-2 font-semibold">
                 <Icon size={16} />
                 {title}

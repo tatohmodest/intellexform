@@ -66,7 +66,7 @@ export default function PortfolioEditor({
   }
 
   return (
-    <div className="mb-8 border p-4" style={{ borderColor: 'var(--line)' }}>
+    <div className="mb-8 card p-4">
       <h2 className="mb-3 font-display text-[20px]">Skills & goals</h2>
       <label className="mb-1.5 block text-[13px] font-semibold">Bio</label>
       <textarea

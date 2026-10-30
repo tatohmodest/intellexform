@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { GraduationCap } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getMyApplication } from '@/lib/learn/applications';
 import { getStudentMembership, isOfficialStudent } from '@/lib/learn/studentAccess';
@@ -52,13 +51,7 @@ export default async function ApplicationStatusPage() {
 
   return (
     <div className="mx-auto max-w-[640px]">
-      <div className="tab mb-2 inline-flex items-center gap-1.5">
-        <GraduationCap size={11} /> My application
-      </div>
-      <h1 className="font-display text-[32px] leading-tight">{org.name}</h1>
-      <p className="mt-2 text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-        Same account. When you are accepted, your student identity is added here — no second login.
-      </p>
+      <h1 className="font-display text-[26px] leading-[1.1] tracking-tight sm:text-[32px]">{org.name}</h1>
 
       <dl className="mt-8 divide-y border" style={{ borderColor: 'var(--line)' }}>
         {[

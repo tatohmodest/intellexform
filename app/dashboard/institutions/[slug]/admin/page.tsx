@@ -113,10 +113,6 @@ export default async function OrgAdminPage({ params }: { params: { slug: string 
           <Settings2 size={12} /> Organization admin
         </p>
         <h1 className="mt-2 font-display text-[32px] leading-none">{inst.name}</h1>
-        <p className="mt-2 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-          Operate your LMS — branding overview, domains, people policies, and enabled features.
-          Intellex master controls stay out of this view.
-        </p>
       </header>
 
       <OrgAdminPanel

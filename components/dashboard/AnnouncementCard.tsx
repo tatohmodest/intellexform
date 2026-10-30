@@ -21,11 +21,7 @@ export default function AnnouncementCard({
   const meta = audienceMeta(item.audience);
   return (
     <article
-      className="overflow-hidden border"
-      style={{
-        borderColor: item.audience === 'students' ? 'rgba(0,179,105,0.28)' : 'rgba(74,144,226,0.28)',
-        background: item.audience === 'students' ? 'rgba(0,179,105,0.05)' : 'rgba(74,144,226,0.05)',
-      }}
+      className="card overflow-hidden"
     >
       {item.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -37,32 +33,32 @@ export default function AnnouncementCard({
       ) : null}
       <div className={compact ? 'p-4' : 'p-5'}>
         <p
-          className="inline-flex font-mono text-[10px] uppercase tracking-[0.14em]"
-          style={{ color: meta.color }}
+          className="inline-flex rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em]"
+          style={{ color: meta.color, background: meta.bg }}
         >
-          {meta.label} announcement
+          {meta.label}
         </p>
-        <h3 className={`mt-1 font-display leading-tight ${compact ? 'text-[18px]' : 'text-[22px]'}`}>
+        <h3 className={`mt-2 font-display leading-tight ${compact ? 'text-[18px]' : 'text-[22px]'}`}>
           {item.title}
         </h3>
         <p className="mt-1 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
           {item.authorName || 'Administration'}
           {item.campusSlug ? ` · ${item.campusSlug}` : ''}
           {' · '}
-          {new Date(item.createdAt).toLocaleString()}
+          {new Date(item.createdAt).toLocaleDateString()}
         </p>
         <p
-          className={`mt-2 whitespace-pre-wrap leading-relaxed ${compact ? 'line-clamp-3 text-[14px]' : 'text-[14.5px]'}`}
+          className={`mt-2 whitespace-pre-wrap leading-relaxed ${compact ? 'line-clamp-2 text-[13.5px]' : 'text-[14.5px]'}`}
         >
           {item.body}
         </p>
         {compact ? (
           <Link
             href="/dashboard/announcements"
-            className="mt-3 inline-flex items-center border px-3 py-1.5 text-[12.5px] font-semibold"
-            style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
+            className="mt-2 inline-flex items-center text-[13px] font-semibold"
+            style={{ color: 'var(--green-deep)' }}
           >
-            Read on Announcements
+            Read more →
           </Link>
         ) : null}
       </div>

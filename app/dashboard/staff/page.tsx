@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { Briefcase } from 'lucide-react';
 import { formatXAF } from '@/lib/staff/permissions';
 import { staffNavFor } from '@/lib/staff/nav';
 import { requireStaffPage } from '@/lib/staff/guard';
@@ -46,21 +45,14 @@ export default async function StaffHomePage() {
   return (
     <div>
       <header className="mb-8">
-        <div className="tab mb-2 inline-flex items-center gap-1.5">
-          <Briefcase size={11} /> Operations
-        </div>
-        <h1 className="font-display text-[32px] leading-tight sm:text-[36px]">
+        <h1 className="font-display text-[26px] leading-[1.1] tracking-tight sm:text-[32px]">
           What needs handling today, {name}?
         </h1>
-        <p className="mt-2 max-w-[640px] text-[15px]" style={{ color: 'var(--ink-soft)' }}>
-          This is your institutional workspace. Navigation is built from the permissions your
-          Director assigned — not from a fixed list of school jobs.
-        </p>
       </header>
 
       <section className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (
-          <Link key={card.label} href={card.href} className="border p-4" style={{ borderColor: 'var(--line)' }}>
+          <Link key={card.label} href={card.href} className="card p-4">
             <p className="font-display text-[26px] leading-none">{card.value}</p>
             <p className="mt-2 font-mono text-[10px] uppercase tracking-wide" style={{ color: 'var(--ink-soft)' }}>
               {card.label}

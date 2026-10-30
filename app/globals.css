@@ -162,6 +162,49 @@ textarea.form-input { resize: vertical; min-height: 100px; }
   .wrap { padding: 0 20px; }
 }
 
+@layer components {
+/* ── Section + card primitives (homepage & dashboard) ────── */
+.section { padding: 72px 0; }
+@media (max-width: 640px) { .section { padding: 52px 0; } }
+.section-dim { background: var(--paper-dim); }
+
+.eyebrow {
+  font-family: var(--font-plex-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--green-deep);
+}
+
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+a.card { transition: border-color 0.2s, box-shadow 0.2s; }
+a.card:hover { border-color: rgba(12, 17, 22, 0.22); box-shadow: 0 10px 30px -22px rgba(12, 17, 22, 0.45); }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--paper);
+  transition: border-color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
+.chip:hover { border-color: rgba(12, 17, 22, 0.28); }
+.chip-primary { background: var(--green); border-color: var(--green); color: #fff; }
+.chip-primary:hover { background: var(--green-deep); border-color: var(--green-deep); }
+
+.muted { color: var(--ink-soft); }
+}
+
 .text-gradient {
   background: linear-gradient(135deg, var(--green) 0%, var(--green-deep) 100%);
   -webkit-background-clip: text;

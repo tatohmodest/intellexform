@@ -141,7 +141,7 @@ export default function CampusOrgCoursesPanel({
         </Link>
       </div>
 
-      <form onSubmit={createCourse} className="space-y-2 border p-4" style={{ borderColor: 'var(--line)' }}>
+      <form onSubmit={createCourse} className="space-y-2 card p-4">
         <p className="text-[13px] font-semibold inline-flex items-center gap-2">
           <Plus size={14} /> Create course (Prisma LMS)
         </p>
@@ -170,7 +170,7 @@ export default function CampusOrgCoursesPanel({
         </button>
       </form>
 
-      <form onSubmit={enroll} className="flex flex-wrap gap-2 border p-4" style={{ borderColor: 'var(--line)' }}>
+      <form onSubmit={enroll} className="flex flex-wrap gap-2 card p-4">
         <p className="w-full text-[13px] font-semibold">Enroll student into course</p>
         <select
           className="form-input !rounded-none"

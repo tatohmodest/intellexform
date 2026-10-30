@@ -38,7 +38,7 @@ export default async function BookTutorSessionPage({ params }: { params: { id: s
         ← Book tutor
       </Link>
       <p className="tab mt-4 mb-2 inline-flex items-center gap-1.5">Step by step</p>
-      <h1 className="font-display text-[30px] leading-tight">{session.path.title}</h1>
+      <h1 className="font-display text-[26px] leading-[1.1] tracking-tight sm:text-[32px]">{session.path.title}</h1>
       <p className="mb-8 mt-1 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
         {session.path.authorName ? `with ${session.path.authorName} · ` : ''}
         {session.path.status === 'ready'

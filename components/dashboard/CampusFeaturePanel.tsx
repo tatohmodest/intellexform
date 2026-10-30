@@ -28,7 +28,7 @@ export default function CampusFeaturePanel({
 }) {
   if (locked) {
     return (
-      <section className="border p-6" style={{ borderColor: 'var(--line)' }}>
+      <section className="card p-6">
         <h2 className="font-display text-[22px]">{title}</h2>
         <p className="mt-3 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
           {lockedReason ||

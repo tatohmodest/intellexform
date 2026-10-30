@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Sparkles } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getStudentCommandCenter } from '@/lib/learn/commandCenter';
 import { hasActiveCertSubscription } from '@/lib/learn/certSubscription';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,65 +32,48 @@ export default async function MyLearningPage({
 
   return (
     <div className="mx-auto max-w-[1080px]">
-      <header className="mb-8 border-b pb-6" style={{ borderColor: 'var(--line)' }}>
-        <div className="tab mb-2 inline-flex items-center gap-1.5">
-          <Sparkles size={11} /> My Learning
-        </div>
-        <h1 className="font-display text-[32px] leading-tight">My Learning</h1>
-        <p className="mt-2 max-w-[560px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Currently learning, upcoming, completed, and recommended — return exactly where you
-          stopped.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3 text-[13px] font-semibold">
-          <Link href="/dashboard/courses" style={{ color: 'var(--green-deep)' }}>
-            Full course browser →
-          </Link>
-          <Link href="/dashboard/library/learn" style={{ color: 'var(--green-deep)' }}>
-            Book tutor →
-          </Link>
-          {isMember ? (
-            <Link href="/dashboard/courses/browse/suggested-catalogue" style={{ color: 'var(--ink-soft)' }}>
-              Explore catalogue
+      <PageHeader
+        title="My Learning"
+        actions={
+          <>
+            <Link href="/dashboard/courses" className="chip">
+              Browse courses
             </Link>
-          ) : (
-            <Link href="/membership" style={{ color: 'var(--ink-soft)' }}>
-              Unlock more with Student plan
+            <Link href="/dashboard/library/learn" className="chip">
+              Book tutor
             </Link>
-          )}
-        </div>
-      </header>
+            {isMember ? (
+              <Link href="/dashboard/courses/browse/suggested-catalogue" className="chip">
+                Catalogue
+              </Link>
+            ) : (
+              <Link href="/membership" className="chip chip-primary">
+                Upgrade
+              </Link>
+            )}
+          </>
+        }
+      />
 
-      <nav className="mb-6 flex gap-2 overflow-x-auto">
+      <nav className="no-scrollbar -mx-4 mb-6 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         {sections.map((s) => {
           const on = active.id === s.id;
           return (
             <Link
               key={s.id}
               href={`/dashboard/my-learning?tab=${s.id}`}
-              className="shrink-0 border px-3 py-2 text-[12.5px] font-semibold"
-              style={{
-                borderColor: on ? 'var(--ink)' : 'var(--line)',
-                background: on ? 'var(--ink)' : 'transparent',
-                color: on ? '#fff' : 'var(--ink-soft)',
-              }}
+              className={`chip shrink-0 ${on ? 'chip-primary' : ''}`}
             >
-              {s.label} ({s.courses.length})
+              {s.label} <span className="opacity-60">{s.courses.length}</span>
             </Link>
           );
         })}
       </nav>
 
       {active.courses.length === 0 ? (
-        <div className="border border-dashed p-10 text-center" style={{ borderColor: 'var(--line)' }}>
-          <p className="font-display text-[20px]">No courses here yet</p>
-          <p className="mt-1 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-            Enroll from My Courses or explore recommendations.
-          </p>
-          <Link
-            href="/dashboard/courses"
-            className="mt-5 inline-block px-4 py-2.5 text-[13px] font-semibold text-white"
-            style={{ background: 'var(--green-deep)' }}
-          >
+        <div className="card p-10 text-center">
+          <p className="font-display text-[19px]">Nothing here yet</p>
+          <Link href="/dashboard/courses" className="chip chip-primary mt-4">
             Browse courses
           </Link>
         </div>
@@ -100,21 +83,20 @@ export default async function MyLearningPage({
             <li key={c.id}>
               <Link
                 href={c.continueHref || c.href}
-                className="block border p-4 hover:shadow-card"
-                style={{ borderColor: 'var(--line)' }}
+                className="card block p-4"
               >
-                <p className="font-semibold">{c.title}</p>
-                <p className="mt-1 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+                <p className="truncate font-semibold">{c.title}</p>
+                <p className="muted mt-1 text-[12.5px] capitalize">
                   {c.kind ? c.kind.replace(/-/g, ' ') : 'Course'}
                   {c.deliveryMode ? ` · ${String(c.deliveryMode).replace(/_/g, ' ')}` : ''}
                   {c.liveSession ? ' · Live now' : ''}
                 </p>
-                <div className="mt-3 h-1.5 w-full" style={{ background: 'var(--paper-dim)' }}>
+                <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full" style={{ background: 'var(--paper-dim)' }}>
                   <div
-                    className="h-full"
+                    className="h-full rounded-full"
                     style={{
                       width: `${Math.min(100, Math.max(0, c.pct))}%`,
-                      background: 'var(--green-deep)',
+                      background: 'var(--green)',
                     }}
                   />
                 </div>

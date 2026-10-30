@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { BookMarked, Sparkles } from 'lucide-react';
+import { BookMarked } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { listInProgressForUser, listPathsForUser } from '@/lib/learn/bookTutor';
 import BookTutorUpload from '@/components/dashboard/BookTutorUpload';
 import BookTutorMineList from '@/components/dashboard/BookTutorMineList';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,20 +25,15 @@ export default async function BookTutorHubPage() {
 
   return (
     <div className="mx-auto max-w-[820px]">
-      <header className="mb-8">
-        <Link href="/dashboard/library" className="text-[13px] font-semibold" style={{ color: 'var(--green-deep)' }}>
-          ← Library
-        </Link>
-        <div className="tab mt-4 mb-2 inline-flex items-center gap-1.5">
-          <Sparkles size={11} /> Book tutor
-        </div>
-        <h1 className="font-display text-[32px] leading-tight">Learn a book with AI</h1>
-        <p className="mt-2 max-w-[640px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          The original file is never stored. Front matter and tables of contents are not lessons.
-          After upload, wait until the complete course is ready — then you learn from stored steps.
-          Locked ebooks and scanned image PDFs will not convert.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow={
+          <Link href="/dashboard/library" style={{ color: 'var(--green-deep)' }}>
+            ← Library
+          </Link>
+        }
+        title="Learn a book with AI"
+        description="Upload a text PDF, EPUB or DOCX. Scanned PDFs won't convert."
+      />
 
       <BookTutorUpload />
 
@@ -50,8 +46,7 @@ export default async function BookTutorHubPage() {
                 <Link
                   key={p.id}
                   href={p.href}
-                  className="block border p-4 hover:shadow-card"
-                  style={{ borderColor: 'var(--line)' }}
+                  className="block card p-4 hover:shadow-card"
                 >
                   <p className="font-semibold">{p.title}</p>
                   <div className="mt-3 h-1.5" style={{ background: 'var(--paper-dim)' }}>

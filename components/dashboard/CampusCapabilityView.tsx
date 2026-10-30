@@ -173,7 +173,7 @@ export default function CampusCapabilityView({
             </div>
           ) : (
             posts.map((p) => (
-              <article key={p.id} className="border p-5" style={{ borderColor: 'var(--line)' }}>
+              <article key={p.id} className="card p-5">
                 <div className="mb-1 text-[15px] font-semibold">{p.title}</div>
                 <div className="mb-3 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
                   {p.authorName} ·{' '}

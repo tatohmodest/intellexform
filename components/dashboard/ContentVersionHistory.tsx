@@ -67,7 +67,7 @@ export default function ContentVersionHistory({
   if (!entityId) return null;
 
   return (
-    <div className="border p-3" style={{ borderColor: 'var(--line)' }}>
+    <div className="card p-3">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

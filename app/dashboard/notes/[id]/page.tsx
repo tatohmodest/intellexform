@@ -34,7 +34,7 @@ export default async function StudentNotePage({ params }: { params: { id: string
 
       <div className="mb-6">
         <div className="tab mb-2">Class notes</div>
-        <h1 className="font-display text-[28px] leading-tight">{note.title}</h1>
+        <h1 className="font-display text-[26px] leading-[1.1] tracking-tight sm:text-[32px]">{note.title}</h1>
         <p className="mt-1 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
           By {note.authorName}
           {' · sent '}

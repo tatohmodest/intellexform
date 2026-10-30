@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Award, CheckCircle2, Clock3, Lock, Sparkles } from 'lucide-react';
+import { CheckCircle2, Clock3, Lock, Sparkles } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import {
   CERT_MONTHLY_XAF,
@@ -10,6 +10,7 @@ import {
 } from '@/lib/learn/certSubscription';
 import { listPublishedBooks } from '@/lib/learn/ecosystem';
 import { TUTORIALS } from '@/lib/tutorials';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,16 +52,9 @@ export default async function SubscriptionPage() {
 
   return (
     <div className="mx-auto max-w-[980px]">
-      <header className="mb-8 border-b pb-6" style={{ borderColor: 'var(--line)' }}>
-        <div className="tab mb-2 inline-flex items-center gap-1.5">
-          <Award size={11} /> Subscription
-        </div>
-        <h1 className="font-display text-[30px] leading-tight">Your subscription</h1>
-        <p className="mt-2 max-w-[680px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          See your current InTelleX student plan, renewal window, and exactly what content is
-          unlocked in your dashboard.
-        </p>
-      </header>
+      <PageHeader
+        title="Subscription"
+      />
 
       {hasActive && activeSub ? (
         <section

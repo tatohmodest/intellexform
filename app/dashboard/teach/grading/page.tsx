@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ClipboardCheck } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getRoles } from '@/lib/learn/ecosystem';
 import {
@@ -8,6 +7,7 @@ import {
   listPendingGradeQueue,
 } from '@/lib/learn/studentMonitoring';
 import RapidGradePanel from '@/components/dashboard/RapidGradePanel';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,29 +27,23 @@ export default async function GradingCenterPage() {
 
   return (
     <div className="mx-auto max-w-[960px]">
-      <header className="mb-8 border-b pb-6" style={{ borderColor: 'var(--line)' }}>
-        <div className="tab mb-2 inline-flex items-center gap-1.5">
-          <ClipboardCheck size={11} /> Grading
-        </div>
-        <h1 className="font-display text-[30px] leading-tight">Grading center</h1>
-        <p className="mt-2 text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          {summary.pendingSubmissionCount} submission
-          {summary.pendingSubmissionCount === 1 ? '' : 's'} awaiting feedback across{' '}
-          {summary.needsGrading.length} assignment
-          {summary.needsGrading.length === 1 ? '' : 's'}. Use rapid grade for keyboard flow.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3 text-[13px] font-semibold">
-          <Link href="/dashboard/teach" style={{ color: 'var(--green-deep)' }}>
-            Teaching home →
-          </Link>
-          <Link href="/dashboard/teach/monitoring" style={{ color: 'var(--ink-soft)' }}>
-            Student monitoring
-          </Link>
-          <Link href="/dashboard/teach/assessments" style={{ color: 'var(--ink-soft)' }}>
-            Assessment studio
-          </Link>
-        </div>
-      </header>
+      <PageHeader
+        title="Grading"
+        description={`${summary.pendingSubmissionCount} awaiting feedback`}
+        actions={
+          <>
+            <Link href="/dashboard/teach" className="chip">
+              Teaching
+            </Link>
+            <Link href="/dashboard/teach/monitoring" className="chip">
+              Monitoring
+            </Link>
+            <Link href="/dashboard/teach/assessments" className="chip">
+              Assessments
+            </Link>
+          </>
+        }
+      />
 
       <section className="mb-10">
         <h2 className="mb-3 font-display text-[22px]">Rapid grade</h2>
@@ -70,8 +64,7 @@ export default async function GradingCenterPage() {
             <li key={g.assessmentId}>
               <Link
                 href={`/dashboard/teach/assessments?assessment=${g.assessmentId}`}
-                className="flex flex-wrap items-center justify-between gap-3 border p-4"
-                style={{ borderColor: 'var(--line)' }}
+                className="flex flex-wrap items-center justify-between gap-3 card p-4"
               >
                 <div>
                   <p className="font-semibold">{g.title}</p>

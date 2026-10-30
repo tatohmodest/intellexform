@@ -110,7 +110,7 @@ export default function AcademicCalendar({ events }: { events: CalendarEvent[] }
       {view === 'month' ? (
         <div className="grid grid-cols-7 gap-1">
           {labeled.map((day) => (
-            <div key={day.key} className="min-h-[84px] border p-1.5" style={{ borderColor: 'var(--line)' }}>
+            <div key={day.key} className="min-h-[84px] card p-1.5">
               <p className="font-mono text-[11px]" style={{ color: 'var(--ink-soft)' }}>
                 {day.label}
               </p>
@@ -144,8 +144,7 @@ export default function AcademicCalendar({ events }: { events: CalendarEvent[] }
                     <li key={e.id}>
                       <Link
                         href={e.href}
-                        className="flex gap-3 border p-3"
-                        style={{ borderColor: 'var(--line)' }}
+                        className="flex gap-3 card p-3"
                       >
                         <span className="w-14 shrink-0 font-mono text-[12px]" style={{ color: 'var(--ink-soft)' }}>
                           {new Date(e.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

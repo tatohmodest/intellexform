@@ -5,12 +5,14 @@ import {
   Bell,
   BookOpen,
   Bot,
+  Briefcase,
+  CalendarDays,
   CheckSquare,
   ClipboardList,
   Flame,
   Megaphone,
-  Sparkles,
   Trophy,
+  Wallet,
   Zap,
 } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
@@ -24,6 +26,7 @@ import { interestLabels } from '@/lib/learn/interests';
 import BecomeStudentBanner from '@/components/dashboard/BecomeStudentBanner';
 import InstitutionForms from '@/components/dashboard/InstitutionForms';
 import AnnouncementCard from '@/components/dashboard/AnnouncementCard';
+import PageHeader from '@/components/dashboard/PageHeader';
 import { listFillableDatasetsForUser } from '@/lib/staff/dataWorkspace';
 import { listVisibleAnnouncements } from '@/lib/staff/store';
 import { listNotifications } from '@/lib/learn/notifications';
@@ -62,192 +65,103 @@ export default async function DashboardOverview() {
     listVisibleAnnouncements({ isStudent }).catch(() => []),
   ]);
 
+  const stats = [
+    { icon: Flame, label: 'Day streak', value: String(cc.stats.streak) },
+    { icon: Zap, label: 'XP', value: cc.stats.xp.toLocaleString() },
+    { icon: BookOpen, label: 'This week', value: `${cc.stats.weeklyHours}h / ${cc.stats.weeklyGoalHours}h` },
+    { icon: Trophy, label: 'Lessons done', value: String(cc.stats.lessonsDone) },
+  ];
+  const assignmentStats = [
+    { label: 'Due today', value: cc.assignmentBuckets.due_today.length },
+    { label: 'This week', value: cc.assignmentBuckets.due_week.length },
+    { label: 'Overdue', value: cc.assignmentBuckets.overdue.length, alert: true },
+    { label: 'Graded', value: cc.assignmentBuckets.graded.length },
+  ];
+
   return (
     <div className="mx-auto max-w-[1080px] overflow-x-hidden">
-      <header className="mb-8 border-b pb-8" style={{ borderColor: 'var(--line)' }}>
-        <p className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: 'var(--ink-soft)' }}>
-          Today
-        </p>
-        <h1 className="mt-2 font-display text-[34px] leading-[0.95] tracking-tight sm:text-[44px]">
-          {greeting()}, {name}.
-        </h1>
-        <p className="mt-3 text-[16px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-          {isStudent ? (
+      <PageHeader
+        title={`${greeting()}, ${name}.`}
+        description={
+          isStudent ? (
             <>
               {membership.program || 'Student'}
               {membership.year ? ` · Year ${membership.year}` : ''}
               {membership.matricule ? ` · ${membership.matricule}` : ''}
             </>
           ) : interests.length ? (
-            <>Based on your interests: {interests.join(' · ')}</>
-          ) : (
-            <>Explore {org.name} — learn, book services, and join the public community.</>
-          )}
-        </p>
-        <div className="mt-5 flex flex-wrap gap-2 text-[12.5px] font-semibold">
-          <Link
-            href="/dashboard/announcements"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-white"
-            style={{ background: 'var(--green)' }}
-          >
-            <Megaphone size={13} /> Announcements
+            interests.join(' · ')
+          ) : null
+        }
+      >
+        <div className="no-scrollbar -mx-4 mt-5 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
+          <Link href="/dashboard/my-learning" className="chip chip-primary">
+            <BookOpen size={14} /> My Learning
           </Link>
-          <Link href="/dashboard/calendar" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
-            Calendar
+          <Link href="/dashboard/assignments" className="chip">
+            <ClipboardList size={14} /> Assignments
           </Link>
-          <Link href="/dashboard/assignments" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
-            Assignments
+          <Link href="/dashboard/calendar" className="chip">
+            <CalendarDays size={14} /> Calendar
           </Link>
-          <Link href="/dashboard/my-learning" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
-            My Learning
+          <Link href="/dashboard/todos" className="chip">
+            <CheckSquare size={14} /> Tasks
           </Link>
-          <Link href="/dashboard/community" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
-            Community
-          </Link>
-          <Link href="/dashboard/notifications" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
-            Notifications
+          <Link href="/dashboard/tutor" className="chip">
+            <Bot size={14} /> AI Tutor
           </Link>
           {isStudent ? (
-            <Link href="/dashboard/fees" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
-              School fees
+            <Link href="/dashboard/fees" className="chip">
+              <Wallet size={14} /> Fees
             </Link>
-          ) : (
-            <Link href="/dashboard/apply" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
-              Become a student
-            </Link>
-          )}
+          ) : null}
           {staffPost ? (
-            <Link href="/dashboard/staff" className="border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>
-              Staff
+            <Link href="/dashboard/staff" className="chip">
+              <Briefcase size={14} /> Staff
             </Link>
           ) : null}
         </div>
-      </header>
+      </PageHeader>
 
-      {!isStudent ? <BecomeStudentBanner institutionName={org.name} /> : null}
-
-      {visibleAnnouncements.length > 0 ? (
-        <section className="mb-10">
-          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: 'var(--green-deep)' }}>
-                From {org.name}
-              </p>
-              <h2 className="font-display text-[22px]">Announcements</h2>
+      <section className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {stats.map((s) => (
+          <div key={s.label} className="card flex items-center gap-3 p-4">
+            <span
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+              style={{ background: 'rgba(0,179,105,0.10)', color: 'var(--green-deep)' }}
+            >
+              <s.icon size={17} />
+            </span>
+            <div className="min-w-0">
+              <p className="truncate font-display text-[20px] leading-none">{s.value}</p>
+              <p className="muted mt-1 truncate text-[12px]">{s.label}</p>
             </div>
-            <Link
-              href="/dashboard/announcements"
-              className="inline-flex items-center gap-1.5 border px-3 py-1.5 text-[13px] font-semibold"
-              style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
-            >
-              All announcements
-            </Link>
           </div>
-          <ul className="space-y-3">
-            {visibleAnnouncements.slice(0, 3).map((item) => (
-              <li key={item.id}>
-                <AnnouncementCard item={item} compact />
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : (
-        <section
-          className="mb-10 border p-5"
-          style={{ borderColor: 'rgba(0,179,105,0.28)', background: 'rgba(0,179,105,0.05)' }}
-        >
-          <p className="inline-flex items-center gap-2 font-semibold">
-            <Megaphone size={16} style={{ color: 'var(--green-deep)' }} /> Announcements
-          </p>
-          <p className="mt-1 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-            Public and institution notices from {org.name} show up here after staff publish them.
-          </p>
-          <Link
-            href="/dashboard/announcements"
-            className="mt-3 inline-flex items-center border px-3 py-1.5 text-[13px] font-semibold"
-            style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
-          >
-            Open announcements
-          </Link>
-        </section>
-      )}
+        ))}
+      </section>
 
-      {recentNotes.length > 0 ? (
-        <section className="mb-10">
-          <div className="mb-4 flex items-end justify-between gap-3">
-            <h2 className="font-display text-[22px]">Recent activity</h2>
-            <Link
-              href="/dashboard/notifications"
-              className="inline-flex items-center gap-1.5 border px-3 py-1.5 text-[13px] font-semibold"
-              style={{ borderColor: 'var(--line)', color: 'var(--blue-ink)' }}
-            >
-              <Bell size={13} /> Notifications
-            </Link>
-          </div>
-          <ul className="divide-y border" style={{ borderColor: 'var(--line)' }}>
-            {recentNotes.map((n) => (
-              <li key={n.id}>
-                <Link
-                  href={n.href || '/dashboard/notifications'}
-                  className="flex items-start justify-between gap-3 px-4 py-3"
-                  style={{ background: n.readAt ? 'transparent' : 'var(--amber-soft)' }}
-                >
-                  <span>
-                    <span className="block font-semibold">{n.title}</span>
-                    <span className="mt-0.5 block text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                      {n.body}
-                    </span>
-                  </span>
-                  <ArrowRight size={14} className="mt-1 shrink-0" style={{ color: 'var(--ink-soft)' }} />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      <InstitutionForms forms={forms} />
-      {!isStudent && application && application.status !== 'draft' ? (
-        <Link
-          href="/dashboard/application"
-          className="mb-8 flex items-center justify-between border p-4"
-          style={{ borderColor: 'var(--line)' }}
-        >
-          <div>
-            <p className="font-semibold">My application {application.applicationCode}</p>
-            <p className="mt-0.5 text-[13px] capitalize" style={{ color: 'var(--ink-soft)' }}>
-              {application.programName || 'Program'} · {application.status.replace(/_/g, ' ')}
-            </p>
-          </div>
-          <ArrowRight size={16} style={{ color: 'var(--ink-soft)' }} />
-        </Link>
-      ) : null}
+      {!isStudent ? <BecomeStudentBanner institutionName={org.name} compact /> : null}
 
       {cc.attention.length > 0 ? (
-        <section className="mb-10">
-          <h2 className="mb-3 font-display text-[20px]">Attention required</h2>
+        <section className="mb-8">
+          <SectionTitle title="Needs attention" />
           <ul className="space-y-2">
             {cc.attention.map((a) => (
               <li key={a.id}>
                 <Link
                   href={a.href}
-                  className="flex items-start justify-between gap-4 border p-4"
-                  style={{
-                    borderColor:
-                      a.severity === 'high'
-                        ? 'rgba(185,28,28,0.35)'
-                        : 'var(--line)',
-                    background:
-                      a.severity === 'high' ? 'rgba(185,28,28,0.04)' : 'transparent',
-                  }}
+                  className="card flex items-center justify-between gap-4 p-4"
+                  style={
+                    a.severity === 'high'
+                      ? { borderColor: 'rgba(185,28,28,0.35)', background: 'rgba(185,28,28,0.04)' }
+                      : undefined
+                  }
                 >
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-semibold">{a.title}</p>
-                    <p className="mt-0.5 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                      {a.detail}
-                    </p>
+                    <p className="muted mt-0.5 truncate text-[13px]">{a.detail}</p>
                   </div>
-                  <ArrowRight size={16} className="mt-1 shrink-0" style={{ color: 'var(--ink-soft)' }} />
+                  <ArrowRight size={16} className="muted shrink-0" />
                 </Link>
               </li>
             ))}
@@ -255,256 +169,190 @@ export default async function DashboardOverview() {
         </section>
       ) : null}
 
-      <section className="mb-10">
-        <div className="mb-4 flex items-end justify-between gap-3">
-          <h2 className="font-display text-[22px]">Today</h2>
-          <Link
-            href="/dashboard/calendar"
-            className="inline-flex items-center border px-3 py-1.5 text-[13px] font-semibold"
-            style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
-          >
-            Full calendar
-          </Link>
-        </div>
-        {cc.today.length === 0 ? (
-          <div className="border border-dashed p-8 text-center" style={{ borderColor: 'var(--line)' }}>
-            <p className="font-display text-[18px]">No timed items today</p>
-            <p className="mt-1 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-              Continue a course or set a personal task.
+      {!isStudent && application && application.status !== 'draft' ? (
+        <Link href="/dashboard/application" className="card mb-8 flex items-center justify-between p-4">
+          <div>
+            <p className="font-semibold">Application {application.applicationCode}</p>
+            <p className="muted mt-0.5 text-[13px] capitalize">
+              {application.programName || 'Program'} · {application.status.replace(/_/g, ' ')}
             </p>
-            <div className="mt-4 flex flex-wrap justify-center gap-3">
-              <Link
-                href="/dashboard/my-learning"
-                className="px-4 py-2.5 text-[13px] font-semibold text-white"
-                style={{ background: 'var(--ink)' }}
-              >
-                Continue learning
-              </Link>
-              <Link
-                href="/dashboard/todos"
-                className="border px-4 py-2.5 text-[13px] font-semibold"
-                style={{ borderColor: 'var(--line)' }}
-              >
-                Add a task
-              </Link>
-            </div>
           </div>
-        ) : (
-          <ul className="divide-y border" style={{ borderColor: 'var(--line)' }}>
-            {cc.today.map((item) => (
-              <li key={item.id} className="flex flex-wrap items-center gap-4 px-4 py-4 sm:flex-nowrap">
-                <div className="w-16 shrink-0 font-mono text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-                  {item.timeLabel}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold">{item.title}</p>
-                  <p className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                    {item.subtitle}
-                  </p>
-                </div>
-                <Link
-                  href={item.href}
-                  className="shrink-0 px-3.5 py-2 text-[13px] font-semibold text-white"
-                  style={{
-                    background: item.urgency === 'now' ? '#b91c1c' : 'var(--green-deep)',
-                  }}
-                >
-                  {item.actionLabel}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+          <ArrowRight size={16} className="muted" />
+        </Link>
+      ) : null}
 
-      <section className="mb-10">
-        <div className="mb-4 flex items-end justify-between">
-          <h2 className="font-display text-[22px]">Continue learning</h2>
-          <Link
-            href="/dashboard/my-learning"
-            className="inline-flex items-center border px-3 py-1.5 text-[13px] font-semibold"
-            style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
-          >
-            My Learning
-          </Link>
-        </div>
-        {cc.continueLearning.length === 0 ? (
-          <div className="border border-dashed p-6" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
-            Enroll in a course to see continue cards here.{' '}
-            <Link
-              href="/dashboard/courses"
-              className="inline-flex items-center border px-2.5 py-1 font-semibold"
-              style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
-            >
-              Browse courses
-            </Link>
-          </div>
-        ) : (
-          <ul className="space-y-3">
-            {cc.continueLearning.map((row) => (
-              <li key={row.course.id}>
-                <Link
-                  href={row.href}
-                  className="block border p-4 transition-shadow hover:shadow-card"
-                  style={{ borderColor: 'var(--line)' }}
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold">{row.course.title}</p>
-                      <p className="mt-0.5 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                        {row.nextTitle}
-                      </p>
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-8">
+          <section>
+            <SectionTitle title="Today" href="/dashboard/calendar" linkLabel="Calendar" />
+            {cc.today.length === 0 ? (
+              <div className="card flex flex-wrap items-center justify-between gap-3 p-5">
+                <p className="muted text-[14px]">Nothing scheduled today.</p>
+                <Link href="/dashboard/todos" className="chip">
+                  <CheckSquare size={14} /> Add a task
+                </Link>
+              </div>
+            ) : (
+              <ul className="card divide-y overflow-hidden" style={{ borderColor: 'var(--line)' }}>
+                {cc.today.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex items-center gap-4 px-4 py-3.5"
+                    style={{ borderColor: 'var(--line)' }}
+                  >
+                    <div className="muted w-14 shrink-0 font-mono text-[12px]">{item.timeLabel}</div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold">{item.title}</p>
+                      <p className="muted truncate text-[13px]">{item.subtitle}</p>
                     </div>
-                    <span
-                      className="inline-flex shrink-0 items-center border px-3 py-1.5 text-[13px] font-semibold"
-                      style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
-                    >
-                      Continue
-                    </span>
-                  </div>
-                  <div className="mt-3 h-1.5 w-full" style={{ background: 'var(--paper-dim)' }}>
-                    <div
-                      className="h-full"
+                    <Link
+                      href={item.href}
+                      className="chip shrink-0 text-white"
                       style={{
-                        width: `${Math.min(100, Math.max(0, row.course.pct))}%`,
-                        background: 'var(--green-deep)',
+                        background: item.urgency === 'now' ? '#b91c1c' : 'var(--green-deep)',
+                        borderColor: 'transparent',
                       }}
-                    />
-                  </div>
-                  <p className="mt-1.5 font-mono text-[11px]" style={{ color: 'var(--ink-soft)' }}>
-                    {Math.round(row.course.pct)}% complete
-                  </p>
+                    >
+                      {item.actionLabel}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section>
+            <SectionTitle title="Continue learning" href="/dashboard/my-learning" linkLabel="All" />
+            {cc.continueLearning.length === 0 ? (
+              <div className="card flex flex-wrap items-center justify-between gap-3 p-5">
+                <p className="muted text-[14px]">No courses in progress.</p>
+                <Link href="/dashboard/courses" className="chip chip-primary">
+                  Browse courses
                 </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {cc.continueLearning.map((row) => {
+                  const pct = Math.min(100, Math.max(0, row.course.pct));
+                  return (
+                    <li key={row.course.id}>
+                      <Link href={row.href} className="card block p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold">{row.course.title}</p>
+                            <p className="muted mt-0.5 truncate text-[13px]">{row.nextTitle}</p>
+                          </div>
+                          <span className="font-mono text-[12px]" style={{ color: 'var(--green-deep)' }}>
+                            {Math.round(pct)}%
+                          </span>
+                        </div>
+                        <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full" style={{ background: 'var(--paper-dim)' }}>
+                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'var(--green)' }} />
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
 
-      <section className="mb-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { icon: Flame, label: 'Day streak', value: String(cc.stats.streak) },
-          { icon: Zap, label: 'XP', value: cc.stats.xp.toLocaleString() },
-          {
-            icon: BookOpen,
-            label: 'Weekly learning',
-            value: `${cc.stats.weeklyHours}h / ${cc.stats.weeklyGoalHours}h`,
-          },
-          { icon: Trophy, label: 'Lessons done', value: String(cc.stats.lessonsDone) },
-        ].map((s) => (
-          <div key={s.label} className="border p-4" style={{ borderColor: 'var(--line)' }}>
-            <s.icon size={16} style={{ color: 'var(--green-deep)' }} />
-            <p className="mt-2 font-display text-[24px] leading-none">{s.value}</p>
-            <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
-              {s.label}
-            </p>
-          </div>
-        ))}
-      </section>
+          {cc.recommended.length > 0 ? (
+            <section>
+              <SectionTitle
+                title={interests.length ? 'Recommended' : 'Explore'}
+                href="/dashboard/courses"
+                linkLabel="Courses"
+              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                {cc.recommended.map((r) => (
+                  <Link key={r.slug} href={r.href} className="card group flex items-center justify-between gap-3 p-4">
+                    <p className="min-w-0 truncate font-semibold">{r.title}</p>
+                    <ArrowRight size={15} className="shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: 'var(--green-deep)' }} />
+                  </Link>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
-      <section className="mb-10 grid gap-6 lg:grid-cols-2">
-        <div className="border p-5" style={{ borderColor: 'var(--line)' }}>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-display text-[18px]">Assignments</h2>
-            <Link
-              href="/dashboard/assignments"
-              className="inline-flex items-center border px-3 py-1.5 text-[12.5px] font-semibold"
-              style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
-            >
-              Center
-            </Link>
-          </div>
-          <ul className="space-y-2 text-[13.5px]">
-            <li>
-              Due today:{' '}
-              <strong>{cc.assignmentBuckets.due_today.length}</strong>
-            </li>
-            <li>
-              This week:{' '}
-              <strong>{cc.assignmentBuckets.due_week.length}</strong>
-            </li>
-            <li>
-              Overdue:{' '}
-              <strong>{cc.assignmentBuckets.overdue.length}</strong>
-            </li>
-            <li>
-              Graded:{' '}
-              <strong>{cc.assignmentBuckets.graded.length}</strong>
-            </li>
-          </ul>
+          <InstitutionForms forms={forms} />
         </div>
-        <div className="border p-5" style={{ borderColor: 'var(--line)' }}>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-display text-[18px]">Quick actions</h2>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Link
-              href="/dashboard/announcements"
-              className="inline-flex items-center gap-2 px-3 py-2 text-[13.5px] font-semibold text-white"
-              style={{ background: 'var(--green)' }}
-            >
-              <Megaphone size={15} /> Announcements
-            </Link>
-            <Link
-              href="/dashboard/todos"
-              className="inline-flex items-center gap-2 border px-3 py-2 text-[13.5px] font-semibold"
-              style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
-            >
-              <CheckSquare size={15} /> My tasks
-            </Link>
-            <Link
-              href="/dashboard/assignments"
-              className="inline-flex items-center gap-2 border px-3 py-2 text-[13.5px] font-semibold"
-              style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
-            >
-              <ClipboardList size={15} /> Assignment center
-            </Link>
-            <Link
-              href="/dashboard/achievements"
-              className="inline-flex items-center gap-2 border px-3 py-2 text-[13.5px] font-semibold"
-              style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
-            >
-              <Trophy size={15} /> Achievements
-            </Link>
-            <Link
-              href="/dashboard/tutor"
-              className="inline-flex items-center gap-2 border px-3 py-2 text-[13.5px] font-semibold"
-              style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
-            >
-              <Bot size={15} /> Ask AI Tutor
-            </Link>
-            <Link
-              href="/dashboard/courses"
-              className="inline-flex items-center gap-2 border px-3 py-2 text-[13.5px] font-semibold"
-              style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
-            >
-              <Sparkles size={15} /> Explore courses
-            </Link>
-          </div>
-        </div>
-      </section>
 
-      {cc.recommended.length > 0 ? (
-        <section className="mb-8">
-          <h2 className="mb-4 font-display text-[22px]">
-            {interests.length ? 'Recommended for you' : 'Explore'}
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {cc.recommended.map((r) => (
-              <Link
-                key={r.slug}
-                href={r.href}
-                className="border p-4"
-                style={{ borderColor: 'var(--line)' }}
-              >
-                <p className="font-semibold">{r.title}</p>
-                <p className="mt-1 text-[12.5px] font-semibold" style={{ color: 'var(--green-deep)' }}>
-                  Start →
-                </p>
-              </Link>
-            ))}
-          </div>
-        </section>
+        <aside className="min-w-0 space-y-8">
+          <section>
+            <SectionTitle title="Assignments" href="/dashboard/assignments" linkLabel="Open" />
+            <div className="card grid grid-cols-2 gap-px overflow-hidden" style={{ background: 'var(--line)' }}>
+              {assignmentStats.map((a) => (
+                <div key={a.label} className="bg-paper p-4">
+                  <p
+                    className="font-display text-[22px] leading-none"
+                    style={a.alert && a.value > 0 ? { color: '#b91c1c' } : undefined}
+                  >
+                    {a.value}
+                  </p>
+                  <p className="muted mt-1.5 text-[12px]">{a.label}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <SectionTitle title="Announcements" href="/dashboard/announcements" linkLabel="All" />
+            {visibleAnnouncements.length > 0 ? (
+              <ul className="space-y-3">
+                {visibleAnnouncements.slice(0, 2).map((item) => (
+                  <li key={item.id}>
+                    <AnnouncementCard item={item} compact />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="card muted flex items-center gap-2.5 p-4 text-[14px]">
+                <Megaphone size={15} style={{ color: 'var(--green-deep)' }} /> No announcements yet.
+              </div>
+            )}
+          </section>
+
+          {recentNotes.length > 0 ? (
+            <section>
+              <SectionTitle title="Activity" href="/dashboard/notifications" linkLabel="All" />
+              <ul className="card divide-y overflow-hidden">
+                {recentNotes.map((n) => (
+                  <li key={n.id} style={{ borderColor: 'var(--line)' }}>
+                    <Link
+                      href={n.href || '/dashboard/notifications'}
+                      className="flex items-start gap-2.5 px-4 py-3"
+                      style={{ background: n.readAt ? 'transparent' : 'var(--amber-soft)' }}
+                    >
+                      <Bell size={14} className="muted mt-1 shrink-0" />
+                      <span className="min-w-0">
+                        <span className="block truncate text-[14px] font-semibold">{n.title}</span>
+                        <span className="muted mt-0.5 line-clamp-2 block text-[12.5px]">{n.body}</span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function SectionTitle({ title, href, linkLabel }: { title: string; href?: string; linkLabel?: string }) {
+  return (
+    <div className="mb-3 flex items-center justify-between gap-3">
+      <h2 className="font-display text-[19px] leading-tight">{title}</h2>
+      {href ? (
+        <Link
+          href={href}
+          className="inline-flex items-center gap-1 text-[13px] font-semibold"
+          style={{ color: 'var(--green-deep)' }}
+        >
+          {linkLabel} <ArrowRight size={13} />
+        </Link>
       ) : null}
     </div>
   );

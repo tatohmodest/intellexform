@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Award, Briefcase } from 'lucide-react';
+import { Award } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getPortfolioSnapshot } from '@/lib/learn/portfolio';
 import PortfolioEditor from '@/components/dashboard/PortfolioEditor';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,28 +16,22 @@ export default async function PortfolioPage() {
 
   return (
     <div className="mx-auto max-w-[920px]">
-      <header className="mb-8 border-b pb-6" style={{ borderColor: 'var(--line)' }}>
-        <div className="tab mb-2 inline-flex items-center gap-1.5">
-          <Briefcase size={11} /> Portfolio
-        </div>
-        <h1 className="font-display text-[34px] leading-tight">{p.name}</h1>
-        <p className="mt-2 text-[15px]" style={{ color: 'var(--ink-soft)' }}>
-          {p.bio || 'Academic identity built from your Intellex learning activity.'}
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3 text-[13px] font-semibold">
-          <Link href="/dashboard/opportunities" style={{ color: 'var(--green-deep)' }}>
-            Opportunities →
-          </Link>
-          <Link href="/dashboard/achievements" style={{ color: 'var(--ink-soft)' }}>
-            Achievements
-          </Link>
-          {p.publicUrl ? (
-            <Link href={p.publicUrl} style={{ color: 'var(--ink-soft)' }}>
-              Public view
+      <PageHeader
+        title={p.name}
+        description={p.bio || null}
+        actions={
+          <>
+            <Link href="/dashboard/opportunities" className="chip">
+              Opportunities
             </Link>
-          ) : null}
-        </div>
-      </header>
+            {p.publicUrl ? (
+              <Link href={p.publicUrl} className="chip">
+                Public view
+              </Link>
+            ) : null}
+          </>
+        }
+      />
 
       <PortfolioEditor
         initialBio={p.bio}
@@ -54,7 +49,7 @@ export default async function PortfolioPage() {
           ['Completed', String(p.coursesCompleted.length)],
           ['Certificates', String(p.certificates.length)],
         ].map(([label, value]) => (
-          <div key={label} className="border p-4" style={{ borderColor: 'var(--line)' }}>
+          <div key={label} className="card p-4">
             <p className="font-display text-[24px]">{value}</p>
             <p className="font-mono text-[10px] uppercase tracking-wide" style={{ color: 'var(--ink-soft)' }}>
               {label}
@@ -99,7 +94,7 @@ export default async function PortfolioPage() {
           <ul className="space-y-2">
             {p.coursesInProgress.map((c) => (
               <li key={c.slug}>
-                <Link href={c.href} className="block border p-3" style={{ borderColor: 'var(--line)' }}>
+                <Link href={c.href} className="block card p-3">
                   <p className="font-semibold">{c.title}</p>
                   <p className="text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
                     {Math.round(c.pct)}% complete
@@ -120,7 +115,7 @@ export default async function PortfolioPage() {
         ) : (
           <ul className="space-y-2">
             {p.certificates.map((c) => (
-              <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 border p-3" style={{ borderColor: 'var(--line)' }}>
+              <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 card p-3">
                 <span className="inline-flex items-center gap-2 font-semibold">
                   <Award size={16} style={{ color: 'var(--green-deep)' }} />
                   {c.title}

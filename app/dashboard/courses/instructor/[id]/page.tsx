@@ -295,7 +295,7 @@ export default async function InstructorCoursePage({
       </header>
 
       {isLive && course.liveSchedule && (
-        <section className="mb-8 border p-4" style={{ borderColor: 'var(--line)' }}>
+        <section className="mb-8 card p-4">
           <h2 className="mb-2 inline-flex items-center gap-2 font-display text-[19px]">
             <Calendar size={16} /> Live schedule
           </h2>
@@ -311,7 +311,7 @@ export default async function InstructorCoursePage({
       )}
 
       {isLive && course.modules && course.modules.length > 0 && (
-        <section className="mb-8 border p-4" style={{ borderColor: 'var(--line)' }}>
+        <section className="mb-8 card p-4">
           <h2 className="mb-3 inline-flex items-center gap-2 font-display text-[19px]">
             <Layers size={16} /> Modules
           </h2>
@@ -343,8 +343,7 @@ export default async function InstructorCoursePage({
             <section>
               <h2 className="font-display text-[21px]">About this course</h2>
               <div
-                className="mt-3 max-h-[340px] overflow-y-auto border p-3"
-                style={{ borderColor: 'var(--line)' }}
+                className="mt-3 max-h-[340px] overflow-y-auto card p-3"
               >
                 <p className="whitespace-pre-wrap text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
                   {course.description}

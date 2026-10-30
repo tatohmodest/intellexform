@@ -3,9 +3,7 @@ import { redirect } from 'next/navigation';
 import {
   BookMarked,
   CalendarClock,
-  GraduationCap,
   PenLine,
-  Plus,
   Users,
   Video,
   Wallet,
@@ -73,11 +71,7 @@ export default async function MentorStudioPage() {
     <div className="mx-auto max-w-[1100px]">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="tab mb-2 inline-flex items-center gap-1.5">
-            <GraduationCap size={11} />
-            Mentor Studio
-          </div>
-          <h1 className="font-display text-[26px] leading-tight sm:text-[30px]">
+          <h1 className="font-display text-[26px] leading-[1.1] tracking-tight sm:text-[32px]">
             Welcome back, {profile.name.split(/\s+/)[0]}.
           </h1>
           <p className="mt-1 text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
@@ -129,7 +123,7 @@ export default async function MentorStudioPage() {
         ))}
       </div>
 
-      <div className="mb-8 border p-4 sm:p-5" style={{ borderColor: 'var(--line)' }}>
+      <div className="mb-8 card p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <h2 className="font-display text-[19px] sm:text-[20px]">Video Course Studio</h2>

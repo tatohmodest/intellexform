@@ -675,7 +675,7 @@ export default function CourseStudio({
                 </label>
 
                 {isLive && (
-                  <section className="border p-4" style={{ borderColor: 'var(--line)' }}>
+                  <section className="card p-4">
                     <p className="mb-2 inline-flex items-center gap-1.5 text-[13px] font-semibold">
                       <Users size={14} /> Live mentorship structure
                     </p>
@@ -744,7 +744,7 @@ export default function CourseStudio({
                     </div>
                     <div className="mb-5 space-y-3">
                       {(draft.modules || []).map((mod, mi) => (
-                        <div key={mod.id} className="border p-3" style={{ borderColor: 'var(--line)' }}>
+                        <div key={mod.id} className="card p-3">
                           <div className="mb-2 flex items-center gap-2">
                             <input
                               className="form-input !rounded-none flex-1 text-[13px] font-semibold"

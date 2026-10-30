@@ -7,6 +7,7 @@ import {
   listInstructorStudentGroups,
 } from '@/lib/learn/ecosystem';
 import MyStudentsPanel from '@/components/dashboard/MyStudentsPanel';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,30 +35,16 @@ export default async function MyStudentsPage() {
         <ArrowLeft size={14} /> Mentor Studio
       </Link>
 
-      <header className="mb-2 border-b pb-8" style={{ borderColor: 'var(--line)' }}>
-        <p
-          className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em]"
-          style={{ color: 'var(--ink-soft)' }}
-        >
-          Teaching · roster
-        </p>
-        <h1 className="font-display text-[40px] leading-[0.95] tracking-tight sm:text-[52px]">
-          My
-          <br />
-          students
-        </h1>
-        <p className="mt-4 max-w-[420px] text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-          Everyone enrolled in your courses, organised by what they signed up for. Assign exams or
-          assignments per course. Start class here, then review past live sessions in My Classroom.
-        </p>
-        <Link
-          href="/dashboard/classroom"
-          className="mt-5 inline-flex border px-3 py-1.5 text-[13.5px] font-semibold"
-          style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
-        >
-          Open My Classroom
-        </Link>
-      </header>
+      <PageHeader
+        title="My students"
+        actions={
+          <>
+            <Link href="/dashboard/classroom" className="chip">
+              My Classroom
+            </Link>
+          </>
+        }
+      />
 
       <MyStudentsPanel groups={payload} totalStudents={totalStudents} />
     </div>

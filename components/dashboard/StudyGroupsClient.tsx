@@ -64,7 +64,7 @@ export default function StudyGroupsClient() {
         </p>
       </header>
 
-      <div className="mb-8 space-y-2 border p-4" style={{ borderColor: 'var(--line)' }}>
+      <div className="mb-8 space-y-2 card p-4">
         <h2 className="font-display text-[18px]">Create a group</h2>
         <input
           className="form-input !rounded-none"
@@ -100,7 +100,7 @@ export default function StudyGroupsClient() {
       ) : (
         <ul className="space-y-3">
           {groups.map((g) => (
-            <li key={g.id} className="flex flex-wrap items-center justify-between gap-3 border p-4" style={{ borderColor: 'var(--line)' }}>
+            <li key={g.id} className="flex flex-wrap items-center justify-between gap-3 card p-4">
               <div>
                 <p className="font-semibold">{g.title}</p>
                 {g.description ? (

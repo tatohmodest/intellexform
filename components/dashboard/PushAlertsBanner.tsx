@@ -215,7 +215,7 @@ export function PushAlertsSettings({ accent = '#00b369' }: { accent?: string }) 
   }
 
   return (
-    <div className="mt-8 border p-4" style={{ borderColor: 'var(--line)' }}>
+    <div className="mt-8 card p-4">
       <h3 className="font-display text-[18px]">Device pop-up alerts</h3>
       <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
         PWA push notifications for messages, assignments, live classes, payments, and campus

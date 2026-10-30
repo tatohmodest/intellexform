@@ -154,7 +154,7 @@ export default function DriveCoursePlayerClient({
         </p>
       ) : null}
 
-      <div className="border p-4" style={{ borderColor: 'var(--line)' }}>
+      <div className="card p-4">
         <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
           {(['quiz', 'notes', 'resources', 'discussion', 'ai'] as const).map((t) => (
             <button

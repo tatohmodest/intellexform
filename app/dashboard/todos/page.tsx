@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { CheckSquare, Circle } from 'lucide-react';
+import { Circle } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getStudentCommandCenter } from '@/lib/learn/commandCenter';
 import PersonalTasksPanel from '@/components/dashboard/PersonalTasksPanel';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,23 +80,14 @@ export default async function StudentTodosPage() {
 
   return (
     <div className="mx-auto max-w-[920px] space-y-10">
-      <header className="border-b pb-6" style={{ borderColor: 'var(--line)' }}>
-        <div className="tab mb-2 inline-flex items-center gap-1.5">
-          <CheckSquare size={11} /> To-do
-        </div>
-        <h1 className="font-display text-[30px] leading-tight">My tasks</h1>
-        <p className="mt-2 max-w-[620px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Academic work from Intellex plus your personal study tasks — visually distinguished.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3 text-[13px] font-semibold">
-          <Link href="/dashboard/calendar" style={{ color: 'var(--green-deep)' }}>
-            Calendar →
+      <PageHeader
+        title="Tasks"
+        actions={
+          <Link href="/dashboard/calendar" className="chip">
+            Calendar
           </Link>
-          <Link href="/dashboard/assignments" style={{ color: 'var(--ink-soft)' }}>
-            Assignments
-          </Link>
-        </div>
-      </header>
+        }
+      />
 
       <section>
         <h2 className="mb-3 font-display text-[18px]">Academic</h2>
@@ -118,8 +110,7 @@ export default async function StudentTodosPage() {
                       <li key={t.id}>
                         <Link
                           href={t.href}
-                          className="flex items-start gap-3 border p-4"
-                          style={{ borderColor: 'var(--line)' }}
+                          className="flex items-start gap-3 card p-4"
                         >
                           <Circle size={14} className="mt-1" style={{ color: 'var(--green-deep)' }} />
                           <div>

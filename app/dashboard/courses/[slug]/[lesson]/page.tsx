@@ -57,7 +57,7 @@ export default async function LessonPlayerPage({
             ? 'Locked · subscribe to get certified'
             : 'Locked · subscribe to continue'}
         </p>
-        <h1 className="font-display text-[28px] leading-tight sm:text-[32px]">{lesson.title}</h1>
+        <h1 className="font-display text-[26px] leading-[1.1] tracking-tight sm:text-[32px]">{lesson.title}</h1>
         <p className="mt-2 text-[15px]" style={{ color: 'var(--ink-soft)' }}>
           {gate.reason === 'cert_required'
             ? 'Beginner is free. Intermediate through Pro unlock with a certification subscription (1,999 XAF/month, or yearly with 10% off).'

@@ -1,6 +1,12 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Award, BookMarked, Feather, FileText, Layers, Sparkles } from 'lucide-react';
+import {
+  Award,
+  Feather,
+  FileText,
+  Layers,
+  Sparkles,
+} from 'lucide-react';
 import BookTutorUpload from '@/components/dashboard/BookTutorUpload';
 import StartBookTutorButton from '@/components/dashboard/StartBookTutorButton';
 import { getSessionUser } from '@/lib/auth/getUser';
@@ -65,15 +71,7 @@ export default async function LibraryPage() {
     <div className="mx-auto max-w-[1100px]">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="tab mb-2 inline-flex items-center gap-1.5">
-            <BookMarked size={11} />
-            Digital library
-          </div>
-          <h1 className="font-display text-[30px] leading-tight">Library</h1>
-          <p className="mt-1 max-w-xl text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-            Books from InTelleX, instructors, and staff. Learn a title step by step with AI, or
-            upload a copy you own. Student members read paid books free.
-          </p>
+          <h1 className="font-display text-[26px] leading-[1.1] tracking-tight sm:text-[32px]">Library</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link

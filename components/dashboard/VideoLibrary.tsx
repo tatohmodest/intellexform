@@ -276,7 +276,7 @@ export default function VideoLibrary({ isAdmin = false }: { isAdmin?: boolean })
       </form>
 
       {isAdmin ? (
-        <div className="mb-6 border p-4" style={{ borderColor: 'var(--line)' }}>
+        <div className="mb-6 card p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <p className="font-display text-[18px]">InTelleX admin</p>

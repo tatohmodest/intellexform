@@ -94,7 +94,7 @@ export default function OrgCourseCurriculumEditor({
   }
 
   return (
-    <div className="space-y-4 border p-4" style={{ borderColor: 'var(--line)' }}>
+    <div className="space-y-4 card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-display text-[18px]">Curriculum · {courseTitle}</h3>
         <Link

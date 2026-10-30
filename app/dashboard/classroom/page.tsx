@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { listClassroomForUser } from '@/lib/learn/courseClassSessions';
 import ClassroomPanel from '@/components/dashboard/ClassroomPanel';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,23 +34,9 @@ export default async function ClassroomPage() {
         </Link>
       </div>
 
-      <header className="mb-2 border-b pb-8" style={{ borderColor: 'var(--line)' }}>
-        <p
-          className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em]"
-          style={{ color: 'var(--ink-soft)' }}
-        >
-          Live learning · history
-        </p>
-        <h1 className="font-display text-[40px] leading-[0.95] tracking-tight sm:text-[52px]">
-          My
-          <br />
-          classroom
-        </h1>
-        <p className="mt-4 max-w-[440px] text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-          Every live class you host or join - ongoing sessions to enter now, and past activity so
-          you can see what happened.
-        </p>
-      </header>
+      <PageHeader
+        title="My classroom"
+      />
 
       <ClassroomPanel
         live={payload.live}

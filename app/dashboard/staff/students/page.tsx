@@ -1,4 +1,3 @@
-import { Users } from 'lucide-react';
 import StudentDesk from '@/components/staff/StudentDesk';
 import { requireStaffPage } from '@/lib/staff/guard';
 
@@ -10,13 +9,7 @@ export default async function StaffStudentsPage() {
   return (
     <div>
       <header className="mb-6">
-        <div className="tab mb-2 inline-flex items-center gap-1.5">
-          <Users size={11} /> Students
-        </div>
-        <h1 className="font-display text-[28px] leading-tight sm:text-[32px]">Student management</h1>
-        <p className="mt-2 max-w-[620px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-        Search enrolled learners by program, level, class, or course — then open a record to update it.
-      </p>
+        <h1 className="font-display text-[26px] leading-[1.1] tracking-tight sm:text-[32px]">Student management</h1>
       </header>
       <StudentDesk />
     </div>

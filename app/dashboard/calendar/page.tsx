@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { CalendarDays } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getStudentCommandCenter } from '@/lib/learn/commandCenter';
 import { getStudentAgenda } from '@/lib/learn/studentAgenda';
@@ -10,6 +9,7 @@ import InteractiveCalendar, {
   type InteractiveCalendarEvent,
 } from '@/components/dashboard/InteractiveCalendar';
 import MentorSchedulesPanel from '@/components/dashboard/MentorSchedulesPanel';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,29 +91,22 @@ export default async function StudentCalendarPage() {
 
   return (
     <div className="mx-auto max-w-[1100px]">
-      <header className="mb-8 border-b pb-6" style={{ borderColor: 'var(--line)' }}>
-        <div className="tab mb-2 inline-flex items-center gap-1.5">
-          <CalendarDays size={11} /> Calendar
-        </div>
-        <h1 className="font-display text-[30px] leading-tight">Your calendar</h1>
-        <p className="mt-2 max-w-[620px] text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Click a day or hour to add your own events — like Google Calendar. Mentor school and call
-          times appear locked; only they can change those.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3 text-[13px] font-semibold">
-          <Link href="/dashboard/todos" style={{ color: 'var(--green-deep)' }}>
-            Tasks →
-          </Link>
-          <Link href="/dashboard/assignments" style={{ color: 'var(--ink-soft)' }}>
-            Assignments
-          </Link>
-          {mentorProfile ? (
-            <Link href="/dashboard/students" style={{ color: 'var(--ink-soft)' }}>
-              My students · weekly times
+      <PageHeader
+        title="Calendar"
+        description="Click a day to add an event."
+        actions={
+          <>
+            <Link href="/dashboard/todos" className="chip">
+              Tasks
             </Link>
-          ) : null}
-        </div>
-      </header>
+            {mentorProfile ? (
+              <Link href="/dashboard/students" className="chip">
+                My students
+              </Link>
+            ) : null}
+          </>
+        }
+      />
 
       {mentorProfile && mentorStudentOptions.length > 0 ? (
         <div className="mb-8">

@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation';
-import { Wallet } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { formatXAF } from '@/lib/staff/permissions';
 import { getOwnFinance } from '@/lib/staff/store';
 import StudentGate from '@/components/dashboard/StudentGate';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,16 +33,10 @@ export default async function StudentFeesPage() {
   return (
     <StudentGate userId={session.uid}>
     <div className="mx-auto max-w-[720px]">
-      <header className="mb-8 border-b pb-6" style={{ borderColor: 'var(--line)' }}>
-        <div className="tab mb-2 inline-flex items-center gap-1.5">
-          <Wallet size={11} /> School fees
-        </div>
-        <h1 className="font-display text-[30px] leading-tight">Your fees</h1>
-        <p className="mt-2 text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
-          Student ID {finance.studentCode || '—'}. Pay via the channels your institution publishes;
-          finance staff record receipts here. New charges also appear in Notifications.
-        </p>
-      </header>
+      <PageHeader
+        title="School fees"
+        description={`Student ID ${finance.studentCode || '—'}`}
+      />
 
       {finance.outstandingXAF > 0 ? (
         <div
@@ -84,7 +78,7 @@ export default async function StudentFeesPage() {
           ['Amount paid', formatXAF(finance.paidXAF)],
           ['Outstanding', formatXAF(finance.outstandingXAF)],
         ].map(([label, value]) => (
-          <div key={label} className="border p-4" style={{ borderColor: 'var(--line)' }}>
+          <div key={label} className="card p-4">
             <p className="font-display text-[22px]">{value}</p>
             <p className="font-mono text-[10px] uppercase tracking-wide" style={{ color: 'var(--ink-soft)' }}>
               {label}

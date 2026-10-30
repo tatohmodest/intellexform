@@ -51,7 +51,7 @@ export default function AcademicPrefsEditor({
   }
 
   return (
-    <div className="border p-4" style={{ borderColor: 'var(--line)' }}>
+    <div className="card p-4">
       <h2 className="mb-2 font-display text-[18px]">Your academic numbers</h2>
       <p className="mb-4 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
         Soft fields until your campus syncs an official transcript. Instructors may override via

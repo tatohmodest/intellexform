@@ -70,7 +70,7 @@ export default function PersonalTasksPanel({ accent = '#00b369' }: { accent?: st
   }
 
   return (
-    <section className="space-y-4 border p-4" style={{ borderColor: 'var(--line)' }}>
+    <section className="space-y-4 card p-4">
       <h2 className="font-display text-[18px]">Personal tasks</h2>
       <p className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
         Study reminders and goals you add yourself — separate from institutional assignments.

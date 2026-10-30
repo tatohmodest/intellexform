@@ -140,7 +140,7 @@ export default function ExamPlayer({
 
   if (!started) {
     return (
-      <div className="mx-auto max-w-xl border p-8" style={{ borderColor: 'var(--line)' }}>
+      <div className="mx-auto max-w-xl card p-8">
         <p className="font-mono text-[11px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
           Locked exam
         </p>

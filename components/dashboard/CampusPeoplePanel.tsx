@@ -157,7 +157,7 @@ export default function CampusPeoplePanel({
       </div>
 
       {mode === 'instructors' ? (
-        <div className="border p-4" style={{ borderColor: 'var(--line)' }}>
+        <div className="card p-4">
           <p className="text-[13px] font-semibold">Search Intellex users</p>
           <p className="mt-1 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
             Add verified mentors or existing accounts without creating duplicates.
@@ -212,7 +212,7 @@ export default function CampusPeoplePanel({
         </div>
       ) : null}
 
-      <form onSubmit={addMember} className="flex flex-wrap gap-2 border p-4" style={{ borderColor: 'var(--line)' }}>
+      <form onSubmit={addMember} className="flex flex-wrap gap-2 card p-4">
         <div className="flex items-center gap-2 text-[13px] font-semibold">
           <UserPlus size={14} /> Add by email
         </div>

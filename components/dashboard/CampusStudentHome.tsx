@@ -145,8 +145,7 @@ export default function CampusStudentHome({
               <Link
                 key={item.id}
                 href={item.href}
-                className="group border p-4 transition-colors hover:border-current"
-                style={{ borderColor: 'var(--line)' }}
+                className="group card p-4 transition-colors hover:border-current"
               >
                 <span
                   className="flex h-10 w-10 items-center justify-center text-white"

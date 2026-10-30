@@ -722,7 +722,7 @@ export default function AssessmentStudio({
                   </div>
                 )}
 
-                <div className="border p-4" style={{ borderColor: 'var(--line)' }}>
+                <div className="card p-4">
                   <div className="mb-2 flex items-center gap-2 font-semibold">
                     <Sparkles size={16} style={{ color: accent }} /> Instructor AI assist
                   </div>
