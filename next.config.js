@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Cloudflare's OpenNext adapter bundles the standalone server output.
+  output: 'standalone',
   images: {
     domains: ['cdn.jsdelivr.net'],
   },

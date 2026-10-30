@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "intellexform",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-23",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "intellexform"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  },
+  // Cloudflare's build step already runs `next build`; this only bundles it for Workers.
+  "build": {
+    "command": "npx opennextjs-cloudflare build --skipNextBuild"
+  }
+}

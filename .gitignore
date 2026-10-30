@@ -49,3 +49,8 @@ next-env.d.ts
 
 # media files
 public/media/
+
+# cloudflare
+.open-next
+.wrangler
+.dev.vars*
