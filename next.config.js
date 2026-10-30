@@ -6,6 +6,12 @@ const nextConfig = {
     domains: ['cdn.jsdelivr.net'],
   },
   experimental: {
+    // Lesson bodies are read from disk outside Cloudflare (lib/tutorials/content.ts).
+    outputFileTracingIncludes: {
+      '/tutorials/**': ['./.tutorial-content/**'],
+      '/dashboard/courses/**': ['./.tutorial-content/**'],
+      '/api/learn/tutor': ['./.tutorial-content/**'],
+    },
     serverActions: {
       bodySizeLimit: '80mb',
     },
@@ -27,8 +33,11 @@ const nextConfig = {
       },
     ];
   },
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     config.resolve.alias.canvas = false;
+    // The Agora SDK is only loaded in the browser (AgoraRoom effects); keep it out of the
+    // server bundle so the Cloudflare Worker stays under its size limit.
+    if (isServer) config.resolve.alias['agora-rtc-sdk-ng'] = false;
     return config;
   },
 };

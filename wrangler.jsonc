@@ -6,7 +6,10 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
     "directory": ".open-next/assets",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    // Lesson bodies (/_tc) are read by the app through ASSETS; public requests go to the
+    // app instead, where middleware.ts returns 404.
+    "run_worker_first": ["/_tc/*"]
   },
   "services": [
     {
@@ -17,8 +20,9 @@
   "observability": {
     "enabled": true
   },
-  // Cloudflare's build step already runs `next build`; this only bundles it for Workers.
+  // Cloudflare's build step already runs `next build`; this bundles it for Workers and
+  // ships the lesson bodies as private assets.
   "build": {
-    "command": "npx opennextjs-cloudflare build --skipNextBuild"
+    "command": "npx opennextjs-cloudflare build --skipNextBuild && cp -R .tutorial-content .open-next/assets/_tc"
   }
 }

@@ -5,6 +5,7 @@ import { getSessionUser } from '@/lib/auth/getUser';
 import { getProgress } from '@/lib/learn/repo';
 import { getCatalogTrack } from '@/lib/learn/catalog';
 import { getTutorial, getTutorialLessons } from '@/lib/tutorials';
+import { getLessonContent } from '@/lib/tutorials/content';
 import LessonBlocks from '@/components/tutorials/LessonBlocks';
 import LessonActions from '@/components/dashboard/LessonActions';
 import LessonCurriculum from '@/components/dashboard/LessonCurriculum';
@@ -130,7 +131,7 @@ export default async function LessonPlayerPage({
         </p>
 
         <div className="mt-8 max-w-full overflow-x-auto">
-          <LessonBlocks blocks={lesson.content} />
+          <LessonBlocks blocks={await getLessonContent(params.slug, params.lesson)} />
         </div>
 
         <LessonActions

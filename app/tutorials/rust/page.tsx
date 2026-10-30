@@ -1,5 +1,7 @@
 import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
-import { rustTutorial } from '@/lib/tutorials/rust';
+import { getTutorial } from '@/lib/tutorials';
+
+const rustTutorial = getTutorial('rust')!;
 
 export const metadata = {
   title: 'Rust Tutorial - Intellex',

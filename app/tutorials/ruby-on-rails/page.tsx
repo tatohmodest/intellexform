@@ -1,5 +1,7 @@
 import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
-import { rubyOnRailsTutorial } from '@/lib/tutorials/ruby-on-rails';
+import { getTutorial } from '@/lib/tutorials';
+
+const rubyOnRailsTutorial = getTutorial('ruby-on-rails')!;
 
 export const metadata = {
   title: 'Ruby on Rails Tutorial - Intellex',

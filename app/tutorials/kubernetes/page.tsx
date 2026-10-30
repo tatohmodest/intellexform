@@ -1,5 +1,7 @@
 import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
-import { kubernetesTutorial } from '@/lib/tutorials/kubernetes';
+import { getTutorial } from '@/lib/tutorials';
+
+const kubernetesTutorial = getTutorial('kubernetes')!;
 
 export const metadata = {
   title: 'Kubernetes Tutorial - Intellex',

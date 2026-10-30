@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import TutorialLessonView from '@/components/tutorials/TutorialLessonView';
 import ContentPaywall from '@/components/content/ContentPaywall';
 import { getTutorial, getTutorialLessonNav } from '@/lib/tutorials';
+import { getLessonContent } from '@/lib/tutorials/content';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { canAccessContent, getContentAccess, type LessonLevel } from '@/lib/contentAccess';
 
@@ -50,7 +51,7 @@ export default async function GatedTutorialLesson({
   return (
     <TutorialLessonView
       course={course}
-      lesson={nav.lesson}
+      lesson={{ ...nav.lesson, content: await getLessonContent(courseSlug, lessonSlug) }}
       prev={nav.prev}
       next={nav.next}
       index={nav.index}

@@ -1,5 +1,7 @@
 import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
-import { pygameTutorial } from '@/lib/tutorials/pygame';
+import { getTutorial } from '@/lib/tutorials';
+
+const pygameTutorial = getTutorial('pygame')!;
 
 export const metadata = {
   title: 'Pygame Tutorial - Intellex',

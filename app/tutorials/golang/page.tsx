@@ -1,5 +1,7 @@
 import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
-import { golangTutorial } from '@/lib/tutorials/golang';
+import { getTutorial } from '@/lib/tutorials';
+
+const golangTutorial = getTutorial('golang')!;
 
 export const metadata = {
   title: 'Go (Golang) Tutorial - Intellex',

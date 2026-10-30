@@ -1,5 +1,7 @@
 import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
-import { networkingTutorial } from '@/lib/tutorials/networking';
+import { getTutorial } from '@/lib/tutorials';
+
+const networkingTutorial = getTutorial('networking')!;
 
 export const metadata = {
   title: 'Networking Tutorial (Beginner to Pro) - Intellex',

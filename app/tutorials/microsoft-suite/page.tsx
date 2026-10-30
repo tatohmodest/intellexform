@@ -1,5 +1,7 @@
 import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
-import { microsoftSuiteTutorial } from '@/lib/tutorials/microsoft-suite';
+import { getTutorial } from '@/lib/tutorials';
+
+const microsoftSuiteTutorial = getTutorial('microsoft-suite')!;
 
 export const metadata = {
   title: 'Microsoft Suite Tutorial - Intellex',

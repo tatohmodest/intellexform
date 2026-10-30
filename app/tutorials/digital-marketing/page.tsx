@@ -1,5 +1,7 @@
 import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
-import { digitalMarketingTutorial } from '@/lib/tutorials/digital-marketing';
+import { getTutorial } from '@/lib/tutorials';
+
+const digitalMarketingTutorial = getTutorial('digital-marketing')!;
 
 export const metadata = {
   title: 'Digital Marketing Tutorial - Intellex',

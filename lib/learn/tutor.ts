@@ -1,5 +1,6 @@
 import { TUTORIALS, getTutorialLessons } from '@/lib/tutorials';
 import type { ContentBlock, TutorialLesson } from '@/lib/tutorials/types';
+import { lessonContentSync } from '@/lib/tutorials/content';
 import { getAllCourses } from '@/lib/repo';
 import type { Course } from '@/lib/types';
 import { GOLDEN_RULE } from '@/lib/eduos/governance';
@@ -111,12 +112,13 @@ export function findRelevantLessons(question: string, limit = 3): ScoredLesson[]
       }
       if (courseHit) score += 1;
       if (score > 2) {
-        const body = lesson.content.map(blockText).join(' ').toLowerCase();
+        const content = lessonContentSync(course.slug, lesson.slug);
+        const body = content.map(blockText).join(' ').toLowerCase();
         for (const t of terms) if (body.includes(t)) score += 1;
         results.push({
           courseSlug: course.slug,
           courseTitle: course.title,
-          lesson,
+          lesson: { ...lesson, content },
           score,
         });
       }

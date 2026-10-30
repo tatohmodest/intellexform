@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, Menu, X } from 'lucide-react';
 import type { TutorialCourse } from '@/lib/tutorials/types';
 import TrackLogo from '@/components/TrackLogo';
-import { getCatalogTrack } from '@/lib/learn/catalog';
+import { getTrackColor } from '@/lib/learn/trackColors';
 
 const LEVEL_LABEL: Record<string, string> = {
   beginner: 'Beginner',
@@ -26,7 +26,6 @@ export default function TutorialSidebar({
 }) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const track = getCatalogTrack(course.slug);
 
   useEffect(() => {
     setExpanded((prev) => {
@@ -67,7 +66,7 @@ export default function TutorialSidebar({
           className="mb-1 inline-flex items-center gap-2.5 text-[13px] font-semibold"
           style={{ color: 'var(--green-deep)' }}
         >
-          <TrackLogo slug={course.slug} color={track?.color} size={28} className="rounded-lg" />
+          <TrackLogo slug={course.slug} color={getTrackColor(course.slug)} size={28} className="rounded-lg" />
           {course.shortTitle} Tutorial
         </Link>
         <p className="text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>

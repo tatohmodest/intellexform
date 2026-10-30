@@ -1,5 +1,7 @@
 import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
-import { djangoTutorial } from '@/lib/tutorials/django';
+import { getTutorial } from '@/lib/tutorials';
+
+const djangoTutorial = getTutorial('django')!;
 
 export const metadata = {
   title: 'Django Tutorial - Intellex',

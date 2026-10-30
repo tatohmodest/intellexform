@@ -35,6 +35,8 @@ function hostnameOf(req: NextRequest): string {
  */
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  // Lesson bodies are private Worker assets (see lib/tutorials/content.ts).
+  if (pathname.startsWith('/_tc/')) return new NextResponse(null, { status: 404 });
   const host = hostnameOf(req);
   const customHost = Boolean(host) && !isPlatformHostname(host);
   const token = req.cookies.get(SESSION_COOKIE)?.value;

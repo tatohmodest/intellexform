@@ -1,5 +1,7 @@
 import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
-import { javascriptTutorial } from '@/lib/tutorials/javascript';
+import { getTutorial } from '@/lib/tutorials';
+
+const javascriptTutorial = getTutorial('javascript')!;
 
 export const metadata = {
   title: 'JavaScript Tutorial - Intellex',

@@ -1,5 +1,7 @@
 import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
-import { reactTutorial } from '@/lib/tutorials/react';
+import { getTutorial } from '@/lib/tutorials';
+
+const reactTutorial = getTutorial('react')!;
 
 export const metadata = {
   title: 'React Tutorial - Intellex',

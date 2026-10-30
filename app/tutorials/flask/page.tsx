@@ -1,5 +1,7 @@
 import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
-import { flaskTutorial } from '@/lib/tutorials/flask';
+import { getTutorial } from '@/lib/tutorials';
+
+const flaskTutorial = getTutorial('flask')!;
 
 export const metadata = {
   title: 'Flask Tutorial - Intellex',

@@ -1,5 +1,7 @@
 import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
-import { flutterTutorial } from '@/lib/tutorials/flutter';
+import { getTutorial } from '@/lib/tutorials';
+
+const flutterTutorial = getTutorial('flutter')!;
 
 export const metadata = {
   title: 'Flutter Tutorial - Intellex',

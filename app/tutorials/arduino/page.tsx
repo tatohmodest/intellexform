@@ -1,5 +1,7 @@
 import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
-import { arduinoTutorial } from '@/lib/tutorials/arduino';
+import { getTutorial } from '@/lib/tutorials';
+
+const arduinoTutorial = getTutorial('arduino')!;
 
 export const metadata = {
   title: 'Arduino Tutorial - Intellex',

@@ -1,5 +1,7 @@
 import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
-import { nodejsExpressTutorial } from '@/lib/tutorials/nodejs-express';
+import { getTutorial } from '@/lib/tutorials';
+
+const nodejsExpressTutorial = getTutorial('nodejs-express')!;
 
 export const metadata = {
   title: 'Node.js & Express Tutorial - Intellex',

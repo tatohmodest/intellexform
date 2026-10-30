@@ -1,5 +1,7 @@
 import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
-import { nextjsTutorial } from '@/lib/tutorials/nextjs';
+import { getTutorial } from '@/lib/tutorials';
+
+const nextjsTutorial = getTutorial('nextjs')!;
 
 export const metadata = {
   title: 'Next.js Tutorial - Intellex',

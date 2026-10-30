@@ -1,5 +1,7 @@
 import TutorialCourseView from '@/components/tutorials/TutorialCourseView';
-import { linuxAdministrationTutorial } from '@/lib/tutorials/linux-administration';
+import { getTutorial } from '@/lib/tutorials';
+
+const linuxAdministrationTutorial = getTutorial('linux-administration')!;
 
 export const metadata = {
   title: 'Linux Administration Tutorial - Intellex',
