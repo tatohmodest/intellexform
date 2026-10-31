@@ -245,7 +245,7 @@ export const PROGRAMS: Program[] = [
       'Intellex Certificate of Completion',
     ],
     accentColor: '#6D28D9',
-    logoUrl: 'https://www.globaledulink.co.uk/wp-content/uploads/2020/03/2EC-Council-logo.png',
+    logoUrl: '/icons/kali.png',
   },
   {
     id: 'cybersecurity-ceh',
@@ -270,7 +270,7 @@ export const PROGRAMS: Program[] = [
       'Exam voucher guidance & registration support',
     ],
     accentColor: '#DC2626',
-    logoUrl: 'https://www.globaledulink.co.uk/wp-content/uploads/2020/03/2EC-Council-logo.png',
+    logoUrl: '/icons/kali.png',
   },
 
   // ── PARTIAL / MODULE PROGRAMS ───────────────────────────────────

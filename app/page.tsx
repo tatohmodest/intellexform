@@ -1,541 +1,565 @@
 import Link from 'next/link';
-import type { ReactNode } from 'react';
-import { ArrowRight, BadgeCheck, Check, Globe, Users, Wallet } from 'lucide-react';
-import { getSessionUser } from '@/lib/auth/getUser';
-import { getAllCourses } from '@/lib/repo';
-import { getMyCourseSections, type MyCourseCard, type MyCourseSection } from '@/lib/learn/myCourses';
+import {
+  ArrowRight,
+  ArrowUpRight,
+  BookOpen,
+  Briefcase,
+  Building2,
+  Check,
+  Library,
+  MessageCircle,
+  Play,
+  Sparkles,
+  Trophy,
+  Wallet,
+} from 'lucide-react';
+import { getAllMentors } from '@/lib/learn/ecosystem';
+import type { Mentor } from '@/lib/learn/mentors';
+import { TESTIMONIALS } from '@/lib/data/testimonials';
+import { orientationWhatsappLink } from '@/lib/contact';
+import {
+  DELIVERY,
+  ENROL_STEPS,
+  FLAGSHIP_PROGRAMMES,
+  PROGRAMMES,
+  dailyXaf,
+  enrolHref,
+  priceNumber,
+  programmeHref,
+} from '@/lib/programmes';
 import TopNav from '@/components/landing/TopNav';
-import Rail from '@/components/landing/Rail';
 import Footer from '@/components/landing/Footer';
 import Testimonials from '@/components/landing/Testimonials';
-import CourseRow from '@/components/CourseRow';
-import CoursesBrowser from '@/components/dashboard/CoursesBrowser';
-import HomeHero from '@/components/landing/HomeHero';
-import HeroCard from '@/components/landing/HeroCard';
-import ContactUsSection from '@/components/landing/ContactUsSection';
-import { ECOSYSTEM, LOOPING_BINARY } from '@/lib/ecosystem';
+import AdvisorDock from '@/components/landing/AdvisorDock';
+import AskAdvisorButton from '@/components/landing/AskAdvisorButton';
+import HeroAsk from '@/components/landing/HeroAsk';
 
 export const dynamic = 'force-dynamic';
 
-const WAYS = [
-  {
-    id: 'self-paced',
-    title: 'Self-paced courses',
-    body: 'Learn on your schedule. Certificate when you finish.',
-    tag: 'Included in every plan',
-    image: '/way_selfpaced.webp',
-    alt: 'Learner watching a self-paced course on a laptop',
-    href: '/courses',
-  },
-  {
-    id: 'live',
-    title: 'Live mentoring',
-    body: 'Approved mentors, online or onsite.',
-    tag: 'Priced per mentor',
-    image: '/way_live.webp',
-    alt: 'Mentor teaching a student in a live session',
-    href: '/contact?type=mentorship',
-  },
-  {
-    id: 'ai',
-    title: 'AI Tutor',
-    body: 'Ask about any skill, course, or next step.',
-    tag: 'Included with your account',
-    image: '/way_ai.webp',
-    alt: 'Student learning with an AI tutor',
-    href: '/signup',
-  },
+const FLAGSHIP_ID = 'fullstack';
+/** Programme order: one strong pick per discipline first, then the rest. */
+const INDEX_IDS = ['data-analysis', 'cybersecurity', 'mern', 'flutter-mobile-design', 'cybersecurity-ceh', 'django'];
+const PULL_QUOTE_ID = 'cm7n7nfvn000221m8b3bashfo';
+
+/** Pastel surface + illustration for each way we teach. */
+const DELIVERY_LOOK: Record<string, { bg: string; image: string }> = {
+  live: { bg: 'var(--pastel-sky)', image: '/way_live.webp' },
+  mentorship: { bg: 'var(--pastel-mint)', image: '/hero_mentor.webp' },
+  materials: { bg: 'var(--pastel-butter)', image: '/way_selfpaced.webp' },
+  projects: { bg: 'var(--pastel-lilac)', image: '/hero_illustration.webp' },
+};
+
+const VETTING = [
+  { title: 'Experience review', body: 'CV and professional background checked against the subjects they will teach.' },
+  { title: 'Identity verified', body: 'Every instructor is a verified, named person. No anonymous accounts.' },
+  { title: 'Teaching sample', body: 'A recorded introduction shows us how they explain before they meet a student.' },
 ];
 
-const PLANS = [
-  {
-    name: 'Monthly',
-    price: '1,999',
-    unit: 'XAF / month',
-    was: null,
-    points: ['Every self-paced course', 'Certificates', 'AI Tutor + tutorials', 'Cancel anytime'],
-    cta: 'Start monthly',
-    href: '/signup',
-    featured: false,
-  },
-  {
-    name: 'Yearly',
-    price: '22,560',
-    unit: 'XAF / year',
-    was: '24,000 XAF',
-    points: ['Everything in Monthly', '6% off', 'One payment a year'],
-    cta: 'Start yearly',
-    href: '/signup',
-    featured: true,
-  },
-  {
-    name: 'Single course',
-    price: '4,999+',
-    unit: 'XAF / course',
-    was: null,
-    points: ['Lifetime access', 'Certificate', 'Upgrade anytime'],
-    cta: 'Browse courses',
-    href: '/courses',
-    featured: false,
-  },
+const RESOURCES = [
+  { href: '/courses', icon: Library, title: 'Self-paced library', bg: 'var(--pastel-sky)' },
+  { href: '/tutorials', icon: BookOpen, title: 'Free tutorials', bg: 'var(--pastel-mint)' },
+  { href: '/books', icon: BookOpen, title: 'Books', bg: 'var(--pastel-butter)' },
+  { href: '/junior-dev', icon: Trophy, title: 'Junior Dev', bg: 'var(--pastel-lilac)' },
+  { href: '/internships', icon: Briefcase, title: 'Internships', bg: 'var(--pastel-mint)' },
+  { href: '/enterprise', icon: Building2, title: 'For institutions', bg: 'var(--pastel-sky)' },
 ];
 
-function SectionHead({
-  eyebrow,
-  title,
-  lead,
-  action,
-}: {
-  eyebrow: string;
-  title: string;
-  lead?: string;
-  action?: ReactNode;
-}) {
+function SectionHead({ eyebrow, title, lead }: { eyebrow: string; title: string; lead?: string }) {
   return (
-    <div className="mb-8 flex flex-wrap items-end justify-between gap-4 sm:mb-10">
-      <div className="max-w-[620px]">
-        <div className="eyebrow mb-2.5">{eyebrow}</div>
-        <h2 className="text-[28px] leading-[1.12] sm:text-[36px]">{title}</h2>
-        {lead && <p className="muted mt-2.5 text-[15px]">{lead}</p>}
-      </div>
-      {action}
+    <div className="max-w-[640px]">
+      <div className="text-[13px] font-semibold text-[var(--green-deep)]">{eyebrow}</div>
+      <h2 className="mt-2 text-[32px] font-bold leading-[1.1] text-[var(--navy)] sm:text-[44px]">{title}</h2>
+      {lead && <p className="mt-4 text-[16px] leading-relaxed text-[var(--ink-soft)] sm:text-[17px]">{lead}</p>}
     </div>
   );
 }
 
-function parseCourseDurationMinutes(raw: string | undefined): number {
-  const m = String(raw || '').match(/(\d+)/);
-  if (!m) return 60;
-  const n = Number(m[1]) || 1;
-  return String(raw).toLowerCase().includes('h') ? n * 60 : n;
+function initials(name: string) {
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 }
 
-function buildFallbackSections(courses: Awaited<ReturnType<typeof getAllCourses>>): MyCourseSection[] {
-  const toCard = (c: (typeof courses)[number]): MyCourseCard => {
-    const priceXaf = Math.max(0, Number(c.currentPrice) || 0);
-    const isSelfPaced = Boolean(c.selfPaced);
-    const kind: MyCourseCard['kind'] =
-      c.featured && !isSelfPaced
-        ? 'tutoring'
-        : isSelfPaced
-          ? 'self-paced'
-          : priceXaf > 0
-            ? 'catalogue'
-            : 'free';
-
-    return {
-      id: String(c.id || c.slug),
-      slug: c.slug,
-      title: c.name,
-      subtitle: c.instructor || '',
-      tagline: c.shortDescription || '',
-      tag: c.type || 'Course',
-      color: '#00b369',
-      thumbnailUrl: c.courseImage || null,
-      totalLessons: 0,
-      totalMinutes: parseCourseDurationMinutes(c.courseDuration),
-      priceXaf,
-      pricingType: priceXaf > 0 ? 'ONE_TIME' : 'FREE',
-      enrolled: false,
-      doneCount: 0,
-      pct: 0,
-      href: `/courses/${c.slug}`,
-      continueHref: `/courses/${c.slug}`,
-      source: 'catalogue',
-      kind,
-    };
-  };
-
-  const safeCourses = courses.filter((c) => String(c.slug || '').trim().length > 0);
-  const trendingCards = safeCourses
-    .filter((c) => c.bestSeller || c.featured)
-    .sort((a, b) => (b.courseNumberOfVotes || 0) - (a.courseNumberOfVotes || 0))
-    .slice(0, 12)
-    .map(toCard);
-  const selfPacedCards = safeCourses
-    .filter((c) => Boolean(c.selfPaced))
-    .slice(0, 12)
-    .map(toCard);
-  const moreCards = safeCourses
-    .filter(
-      (c) => !trendingCards.some((t) => t.slug === c.slug) && !selfPacedCards.some((s) => s.slug === c.slug),
-    )
-    .slice(0, 12)
-    .map(toCard);
-
-  return [
-    {
-      id: 'home-recommended-trending',
-      title: 'Recommended right now',
-      subtitle: 'Popular courses learners are actively joining',
-      courses: trendingCards,
-    },
-    {
-      id: 'home-recommended-self-paced',
-      title: 'Self-paced picks',
-      subtitle: 'Study at your own speed with guided programmes',
-      courses: selfPacedCards,
-    },
-    {
-      id: 'home-recommended-more',
-      title: 'More to explore',
-      subtitle: 'Keep discovering the catalogue like a full learning marketplace',
-      courses: moreCards,
-    },
-  ].filter((section) => section.courses.length > 0);
+function InstructorCard({ m }: { m: Mentor }) {
+  return (
+    <div className="rounded-3xl bg-white p-5">
+      {m.avatarUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={m.avatarUrl} alt={m.name} className="h-20 w-20 rounded-2xl object-cover" />
+      ) : (
+        <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[var(--pastel-mint)] font-display text-[24px] font-bold text-[var(--green-deep)]">
+          {m.initials || initials(m.name)}
+        </div>
+      )}
+      <h3 className="mt-4 text-[18px] font-bold text-[var(--navy)]">{m.name}</h3>
+      {m.title && <p className="mt-0.5 text-[14px] text-[var(--green-deep)]">{m.title}</p>}
+      {m.expertise?.length > 0 && (
+        <p className="mt-2 text-[13.5px] text-[var(--ink-soft)]">{m.expertise.slice(0, 3).join(' · ')}</p>
+      )}
+    </div>
+  );
 }
 
 export default async function HomePage() {
-  const session = getSessionUser();
+  const mentors = (await getAllMentors()).filter((m) => m.name).slice(0, 4);
 
-  let personalizedSections: Awaited<ReturnType<typeof getMyCourseSections>>['sections'] = [];
-  let personalizedTotal = 0;
-  let personalizedInProgress = 0;
-
-  if (session) {
-    try {
-      const data = await getMyCourseSections(session.uid);
-      personalizedSections = data.sections;
-      personalizedTotal = data.total;
-      personalizedInProgress = data.inProgress;
-    } catch (err) {
-      console.error('home personalized courses failed:', err);
-    }
-  }
-
-  const all = await getAllCourses();
-  const trending = all
-    .filter((c) => c.bestSeller || c.featured)
-    .sort((a, b) => (b.courseNumberOfVotes || 0) - (a.courseNumberOfVotes || 0))
-    .slice(0, 6);
-  const mentorLed = all.filter((c) => c.featured && !c.selfPaced).slice(0, 4);
-  const fallbackSections = buildFallbackSections(all);
-  const homeSections = personalizedSections.length > 0 ? personalizedSections : fallbackSections;
-  const homeTotal =
-    personalizedSections.length > 0
-      ? personalizedTotal
-      : homeSections.reduce((sum, section) => sum + section.courses.length, 0);
-  const homeInProgress = personalizedSections.length > 0 ? personalizedInProgress : 0;
-
-  const pillars = [
-    ...ECOSYSTEM.slice(0, 5),
-    {
-      slug: 'tutorials',
-      href: '/tutorials',
-      tab: 'Tutorials',
-      title: 'Free tutorials',
-      short: '26 beginner-to-pro tracks.',
-      image: '/eco_resources.webp',
-      alt: 'Free tutorials illustration',
-    },
-  ];
+  const flagship = FLAGSHIP_PROGRAMMES.find((p) => p.id === FLAGSHIP_ID)!;
+  const morePrograms = INDEX_IDS.map((id) => FLAGSHIP_PROGRAMMES.find((p) => p.id === id)).filter(
+    (p): p is (typeof FLAGSHIP_PROGRAMMES)[number] => Boolean(p),
+  );
+  const lowestPrice = Math.min(...PROGRAMMES.map((p) => p.priceXAF));
+  const quote = TESTIMONIALS.find((t) => t.id === PULL_QUOTE_ID);
+  const faces = TESTIMONIALS.filter((t) => t.photo).slice(0, 4);
 
   return (
-    <>
-      <Rail />
+    <div className="site">
       <TopNav />
-      <HomeHero />
 
-      {session && (
-        <section className="section border-b" style={{ borderColor: 'var(--line)' }}>
-          <div className="wrap">
-            <SectionHead eyebrow="For you" title="Keep learning" />
-            {homeSections.length > 0 ? (
-              <CoursesBrowser sections={homeSections} total={homeTotal} inProgress={homeInProgress} />
-            ) : (
-              <Link href="/courses" className="btn btn-ghost">
-                Browse all courses
-              </Link>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* Trust strip */}
-      <div className="border-b py-5" style={{ borderColor: 'var(--line)' }}>
-        <div className="wrap flex flex-wrap items-center gap-x-8 gap-y-3">
-          {[
-            { icon: Users, label: '360+ learners' },
-            { icon: BadgeCheck, label: 'Certificate on completion' },
-            { icon: Wallet, label: 'MTN MoMo & Orange Money' },
-            { icon: Globe, label: 'Built in Douala' },
-          ].map((t) => (
-            <span key={t.label} className="muted inline-flex items-center gap-2 text-[13px]">
-              <t.icon size={15} style={{ color: 'var(--green-deep)' }} /> {t.label}
+      {/* ── Hero ─────────────────────────────────────────────── */}
+      <section className="px-3 pt-3 sm:px-5 sm:pt-4">
+        <div className="relative mx-auto grid max-w-[1360px] overflow-hidden rounded-[32px] lg:min-h-[640px] lg:grid-cols-[1.05fr_1fr]">
+          <div className="relative flex flex-col justify-center bg-[var(--pastel-sky)] px-6 pb-12 pt-12 sm:px-12 sm:pt-16 lg:py-16 lg:pl-16 lg:pr-14">
+            <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[var(--navy)]">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--green)] text-white">
+                <Check size={12} strokeWidth={3} />
+              </span>
+              Live classes · Mentorship · Certificate
             </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Ways to learn */}
-      <section id="learn" className="section">
-        <div className="wrap">
-          <SectionHead eyebrow="Ways to learn" title="Three ways in, one certificate out" />
-          <div className="grid gap-5 md:grid-cols-3">
-            {WAYS.map((w) => (
-              <Link key={w.id} href={w.href} className="card group flex flex-col overflow-hidden">
-                <div className="overflow-hidden" style={{ background: 'var(--paper-dim)' }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={w.image}
-                    alt={w.alt}
-                    className="aspect-[16/10] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                  />
-                </div>
-                <div className="flex flex-1 flex-col p-5">
-                  <h3 className="font-display text-[19px]">{w.title}</h3>
-                  <p className="muted mt-1.5 text-[14px] leading-relaxed">{w.body}</p>
-                  <span
-                    className="mt-auto pt-4 font-mono text-[11.5px]"
-                    style={{ color: 'var(--green-deep)' }}
-                  >
-                    {w.tag}
-                  </span>
-                </div>
+            <h1 className="mt-6 text-[42px] font-extrabold leading-[1.04] text-[var(--navy)] sm:text-[60px] xl:text-[66px]">
+              Learn skills that move you forward.
+            </h1>
+            <p className="mt-5 max-w-[500px] text-[17px] leading-relaxed text-[var(--navy)]/75 sm:text-[18px]">
+              Join a programme, learn live with an instructor who knows your name, build real projects and
+              finish with a skill you can earn with.
+            </p>
+            <div className="mt-8 max-w-[520px]">
+              <HeroAsk />
+            </div>
+            <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <Link href="/programmes" className="btn btn-dark !px-6">
+                Explore programmes <ArrowRight size={16} />
               </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Catalogue */}
-      {trending.length + mentorLed.length > 0 && (
-        <section id="courses" className="section section-dim">
-          <div className="wrap">
-            <SectionHead
-              eyebrow="Catalogue"
-              title="Skills employers hire for"
-              action={
-                <Link href="/courses" className="btn btn-ghost">
-                  All courses <ArrowRight size={15} />
-                </Link>
-              }
-            />
-            <CourseRow title="Popular now" courses={trending} href="/courses" />
-            {mentorLed.length > 0 && (
-              <CourseRow title="Mentor-led programs" courses={mentorLed} live href="/courses" />
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* Ecosystem */}
-      <section id="ecosystem" className="section">
-        <div className="wrap">
-          <SectionHead
-            eyebrow="Ecosystem"
-            title="One account, many doors"
-            action={
-              <Link href="/ecosystem" className="btn btn-ghost">
-                Full map <ArrowRight size={15} />
-              </Link>
-            }
-          />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {pillars.map((p) => (
-              <Link key={p.slug} href={p.href} className="card group flex items-center gap-4 p-3 pr-5">
-                <div
-                  className="h-20 w-24 shrink-0 overflow-hidden rounded-[10px]"
-                  style={{ background: 'var(--paper-dim)' }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={p.image}
-                    alt={'alt' in p ? p.alt : ''}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.05]"
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="eyebrow mb-1 text-[10px]">{p.tab}</div>
-                  <h3 className="font-display text-[16px] leading-snug">{p.title}</h3>
-                </div>
-                <ArrowRight
-                  size={16}
-                  className="muted shrink-0 transition-transform group-hover:translate-x-0.5"
-                />
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing */}
-      <section id="pricing" className="section section-dim">
-        <div className="wrap">
-          <SectionHead
-            eyebrow="Pricing"
-            title="Priced for students"
-            lead="Pay with MTN MoMo, Orange Money, or card."
-          />
-
-          <div className="grid items-stretch gap-5 md:grid-cols-3">
-            {PLANS.map((plan) => (
-              <div
-                key={plan.name}
-                className={`relative flex flex-col rounded-[18px] p-7 ${plan.featured ? '' : 'card'}`}
-                style={plan.featured ? { background: 'var(--ink)', color: 'var(--paper)' } : undefined}
-              >
-                {plan.featured && (
-                  <span
-                    className="absolute -top-3 right-6 rounded-full px-3 py-1 font-mono text-[10.5px] uppercase tracking-[0.06em] text-white"
-                    style={{ background: 'var(--blue)' }}
-                  >
-                    Best value
-                  </span>
-                )}
-                <h3 className="font-display text-[18px]">{plan.name}</h3>
-                <div className="mt-4 flex items-baseline gap-1.5">
-                  <span className="font-display text-[30px] font-semibold sm:text-[34px]">{plan.price}</span>
-                  <span className="text-[13px]" style={{ opacity: 0.65 }}>
-                    {plan.unit}
-                  </span>
-                </div>
-                {plan.was && (
-                  <div className="font-mono text-[12.5px] line-through opacity-50">{plan.was}</div>
-                )}
-                <ul className="mb-7 mt-5 flex flex-col gap-2.5 text-[14px]">
-                  {plan.points.map((li) => (
-                    <li key={li} className="flex gap-2.5">
-                      <Check
-                        size={16}
-                        className="mt-0.5 shrink-0"
-                        style={{
-                          color: plan.featured ? 'var(--green)' : 'var(--green-deep)',
-                        }}
-                      />
-                      {li}
-                    </li>
+              <div className="flex items-center gap-3">
+                <div className="flex -space-x-2.5">
+                  {faces.map((t) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={t.id} src={t.photo} alt={t.name} className="h-9 w-9 rounded-full object-cover ring-[3px] ring-[var(--pastel-sky)]" />
                   ))}
-                </ul>
-                <Link
-                  href={plan.href}
-                  className={`btn mt-auto ${plan.featured ? 'btn-primary' : 'btn-ghost'}`}
-                >
-                  {plan.cta}
-                </Link>
+                </div>
+                <span className="text-[13.5px] font-medium text-[var(--navy)]/70">Learners across Cameroon</span>
               </div>
-            ))}
+            </div>
           </div>
 
-          <p id="discounts" className="muted mt-6 text-center text-[13.5px]">
-            Junior Dev champions get <strong style={{ color: 'var(--ink)' }}>30% off</strong> their first
-            plan.{' '}
+          <div className="relative min-h-[340px] bg-[#fdfbf3] sm:min-h-[440px]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/hero_illustration.webp"
+              alt="A learner coding on a laptop, surrounded by lessons, progress charts and a graduation cap"
+              className="absolute inset-0 h-full w-full object-cover object-[72%_60%]"
+            />
+            {/* Floating facts, straddling the seam on desktop */}
+            <div className="gentle-float absolute bottom-6 left-4 flex items-center gap-3 rounded-2xl bg-white p-3 pr-5 shadow-[0_16px_40px_-20px_rgba(18,50,79,0.45)] lg:bottom-auto lg:left-[-56px] lg:top-[18%]">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--pastel-mint)] text-[var(--green-deep)]">
+                <Play size={18} fill="currentColor" />
+              </span>
+              <span>
+                <span className="block text-[15px] font-bold text-[var(--navy)]">Live online classes</span>
+                <span className="block text-[12.5px] text-[var(--ink-soft)]">With your instructor and cohort</span>
+              </span>
+            </div>
             <Link
-              href="/junior-dev"
-              className="font-semibold underline"
-              style={{ color: 'var(--green-deep)' }}
+              href={programmeHref(flagship)}
+              className="gentle-float absolute right-4 top-5 hidden items-center gap-3 rounded-2xl bg-white p-3 pr-4 shadow-[0_16px_40px_-20px_rgba(18,50,79,0.45)] transition-transform hover:-translate-y-0.5 sm:flex lg:bottom-10 lg:left-[-40px] lg:right-auto lg:top-auto"
+              style={{ animationDelay: '1.5s' }}
             >
-              Learn more
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--pastel-butter)]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={flagship.logoUrl} alt="" className="h-6 w-6" />
+              </span>
+              <span>
+                <span className="block text-[12px] font-semibold text-[var(--green-deep)]">Enrolling now</span>
+                <span className="block text-[15px] font-bold text-[var(--navy)]">{flagship.shortTitle}</span>
+                <span className="block text-[12.5px] text-[var(--ink-soft)]">
+                  {flagship.duration} · from {priceNumber(flagship.monthlyXAF || flagship.priceXAF)} XAF{flagship.monthlyXAF ? '/mo' : ''}
+                </span>
+              </span>
+              <ArrowUpRight size={16} className="ml-1 text-[var(--navy)]" />
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── For you: bento ───────────────────────────────────── */}
+      <section className="px-3 pt-4 sm:px-5">
+        <div className="mx-auto grid max-w-[1360px] gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {/* Flagship - solid green */}
+          <Link
+            href={programmeHref(flagship)}
+            className="group relative flex min-h-[260px] flex-col overflow-hidden rounded-[28px] bg-[var(--green)] p-7 text-white md:col-span-2"
+          >
+            <div className="pointer-events-none absolute -bottom-16 -right-10 h-64 w-64 rounded-full bg-white/10" />
+            <div className="pointer-events-none absolute -right-24 top-8 h-48 w-48 rounded-full bg-white/[0.07]" />
+            <div className="relative text-[13px] font-semibold text-white/80">Flagship programme</div>
+            <h3 className="relative mt-2 max-w-[420px] text-[30px] font-extrabold leading-[1.1] sm:text-[36px]">{flagship.title}</h3>
+            <p className="relative mt-3 max-w-[440px] text-[15px] leading-relaxed text-white/85">{flagship.description}</p>
+            <div className="relative mt-auto flex items-end justify-between gap-4 pt-6">
+              <div className="text-[14px] text-white/90">
+                {flagship.duration} · from {priceNumber(flagship.monthlyXAF || flagship.priceXAF)} XAF
+                {flagship.monthlyXAF ? '/month' : ''}
+              </div>
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-[var(--green-deep)] transition-transform group-hover:scale-110">
+                <Play size={18} className="ml-0.5" fill="currentColor" />
+              </span>
+            </div>
+          </Link>
+
+          {/* Join a live class */}
+          <Link href="#experience" className="group flex min-h-[260px] flex-col rounded-[28px] bg-[var(--pastel-butter)] p-7">
+            <h3 className="text-[24px] font-bold leading-tight text-[var(--navy)]">Join a live class</h3>
+            <p className="mt-2 text-[14.5px] leading-relaxed text-[var(--navy)]/70">
+              Learn with a real instructor and a group of motivated learners.
+            </p>
+            <div className="mt-auto flex items-center pt-6">
+              <div className="flex -space-x-3">
+                {faces.map((t) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={t.id} src={t.photo} alt="" className="h-11 w-11 rounded-full object-cover ring-4 ring-[var(--pastel-butter)]" />
+                ))}
+              </div>
+              <ArrowRight size={18} className="ml-auto text-[var(--navy)] transition-transform group-hover:translate-x-1" />
+            </div>
+          </Link>
+
+          {/* Ask AI */}
+          <div className="flex min-h-[260px] flex-col overflow-hidden rounded-[28px] bg-[var(--pastel-lilac)]">
+            <div className="p-7 pb-0">
+              <h3 className="text-[24px] font-bold leading-tight text-[var(--navy)]">Not sure where to start?</h3>
+              <p className="mt-2 text-[14.5px] leading-relaxed text-[var(--navy)]/70">
+                Our AI advisor helps you pick the right skill for your goals.
+              </p>
+              <AskAdvisorButton className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-[14px] font-semibold text-[var(--navy)] transition-colors hover:bg-[var(--navy)] hover:text-white">
+                <Sparkles size={16} /> Chat with AI
+              </AskAdvisorButton>
+            </div>
+            <div className="mt-auto flex flex-col gap-2 p-7 pt-5">
+              {['Which skill pays well?', 'Is data analysis for me?'].map((q) => (
+                <AskAdvisorButton
+                  key={q}
+                  question={q}
+                  className="self-start rounded-2xl rounded-bl-md bg-white/70 px-3.5 py-2 text-left text-[13px] font-medium text-[var(--navy)] transition-colors hover:bg-white"
+                >
+                  {q}
+                </AskAdvisorButton>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Programmes ──────────────────────────────────────── */}
+      <section id="programmes" className="scroll-mt-16 py-20 sm:py-28">
+        <div className="wrap !max-w-[1280px]">
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <SectionHead
+              eyebrow="Programmes"
+              title="Find the programme that fits your goals."
+              lead="Every programme has a clear syllabus, a fixed duration, an instructor and an investment you can see before you commit."
+            />
+            <Link href="/programmes" className="btn btn-soft">
+              All {PROGRAMMES.length} programmes <ArrowRight size={16} />
+            </Link>
+          </div>
+
+          <div className="mt-12 grid gap-4 lg:grid-cols-12">
+            <div className="flex flex-col rounded-[28px] bg-[var(--pastel-mint)] p-8 sm:p-10 lg:col-span-7">
+              <div className="flex items-center gap-3">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={flagship.logoUrl} alt="" className="h-7 w-7" />
+                </span>
+                <span className="text-[13px] font-semibold text-[var(--green-deep)]">
+                  Flagship · {flagship.categoryLabel}
+                </span>
+              </div>
+              <h3 className="mt-6 text-[32px] font-extrabold leading-[1.1] text-[var(--navy)] sm:text-[44px]">{flagship.title}</h3>
+              <p className="mt-4 max-w-[540px] text-[16px] leading-relaxed text-[var(--navy)]/75">{flagship.description}</p>
+              <div className="mt-6 flex flex-wrap gap-2">
+                {flagship.technologies.map((t) => (
+                  <span key={t} className="rounded-full bg-white px-3 py-1 text-[12.5px] font-medium text-[var(--navy)]">
+                    {t}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-auto flex flex-wrap items-end justify-between gap-6 pt-10">
+                <div>
+                  <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[var(--navy)]/60">Your investment</div>
+                  <div className="mt-1 font-display text-[40px] font-extrabold leading-none text-[var(--navy)]">
+                    {priceNumber(flagship.priceXAF)} <span className="text-[15px] font-semibold">XAF</span>
+                  </div>
+                  {flagship.monthlyXAF && (
+                    <div className="mt-2 text-[14px] text-[var(--navy)]/70">
+                      or {priceNumber(flagship.monthlyXAF)} XAF/month, about {priceNumber(dailyXaf(flagship.monthlyXAF))} a day
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <Link href={programmeHref(flagship)} className="btn bg-white text-[var(--navy)] hover:bg-white/80">
+                    See syllabus
+                  </Link>
+                  <Link href={enrolHref(flagship)} className="btn btn-primary">
+                    Enrol <ArrowRight size={16} />
+                  </Link>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-[28px] bg-[var(--paper-dim)] p-8 sm:p-10 lg:col-span-5">
+              <div className="text-[13px] font-semibold text-[var(--green-deep)]">What you will leave with</div>
+              <ul className="mt-6 flex flex-col gap-4">
+                {flagship.highlights.map((h) => (
+                  <li key={h} className="flex gap-3.5">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--green)] text-white">
+                      <Check size={14} strokeWidth={3} />
+                    </span>
+                    <span className="text-[16px] leading-snug text-[var(--navy)]">{h}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {morePrograms.map((p) => (
+              <Link
+                key={p.id}
+                href={programmeHref(p)}
+                className="group flex items-center gap-4 rounded-3xl bg-[var(--paper-dim)] p-5 transition-colors hover:bg-[var(--pastel-sky)]"
+              >
+                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.logoUrl} alt="" className="h-8 w-8 object-contain" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[12.5px] font-medium text-[var(--ink-soft)]">
+                    {p.categoryLabel} · {p.duration}
+                  </span>
+                  <span className="mt-0.5 block font-display text-[17px] font-bold leading-snug text-[var(--navy)]">{p.title}</span>
+                  <span className="mt-1 block text-[13.5px] font-semibold text-[var(--green-deep)]">
+                    {priceNumber(p.priceXAF)} XAF
+                    {p.monthlyXAF ? <span className="font-normal text-[var(--ink-soft)]"> · or {priceNumber(p.monthlyXAF)}/mo</span> : null}
+                  </span>
+                </span>
+                <ArrowUpRight size={18} className="shrink-0 text-[var(--navy)] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+              </Link>
+            ))}
+          </div>
+          <p className="mt-6 text-center text-[15px] text-[var(--ink-soft)]">
+            Plus short Foundations programmes for complete beginners, from {priceNumber(lowestPrice)} XAF.{' '}
+            <AskAdvisorButton
+              question="Which InTelleX programme fits me best?"
+              className="font-semibold text-[var(--green-deep)] underline-offset-4 hover:underline"
+            >
+              Not sure which one? Ask the AI advisor.
+            </AskAdvisorButton>
           </p>
         </div>
       </section>
 
-      {/* AI Tutor */}
-      <section id="ai" className="section">
-        <div className="wrap grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
-          <div>
-            <div className="eyebrow mb-3">AI Tutor</div>
-            <h2 className="text-[28px] leading-[1.12] sm:text-[36px]">An AI that knows your next lesson</h2>
-            <p className="muted mt-3 max-w-[440px] text-[15px] leading-relaxed">
-              Ask about a skill, a course, or what to learn next.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link href="/signup" className="btn btn-primary">
-                Try AI Tutor
-              </Link>
-              <Link href="/contact?type=mentorship" className="btn btn-ghost">
-                Book a mentor
-              </Link>
-            </div>
+      {/* ── Experience ──────────────────────────────────────── */}
+      <section id="experience" className="scroll-mt-16 pb-20 sm:pb-28">
+        <div className="wrap !max-w-[1280px]">
+          <SectionHead
+            eyebrow="The InTelleX experience"
+            title="More than watching videos."
+            lead="You learn the way people actually get good at things: a teacher, a group, honest feedback and real work to show for it."
+          />
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {DELIVERY.map((d) => {
+              const look = DELIVERY_LOOK[d.id];
+              return (
+                <div key={d.id} className="flex flex-col overflow-hidden rounded-[28px]" style={{ background: look.bg }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={look.image} alt="" className="illo aspect-[4/3] w-full object-cover" loading="lazy" />
+                  <div className="p-6 pt-4">
+                    <h3 className="text-[20px] font-bold text-[var(--navy)]">{d.title}</h3>
+                    <p className="mt-2 text-[14.5px] leading-relaxed text-[var(--navy)]/70">{d.body}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <HeroCard />
         </div>
       </section>
 
-      {/* Junior Dev callout */}
-      <section className="pb-4">
-        <div className="wrap">
-          <div
-            className="flex flex-col items-start justify-between gap-6 rounded-[20px] p-7 sm:flex-row sm:items-center sm:p-10"
-            style={{ background: 'var(--green-deep)', color: 'var(--paper)' }}
-          >
+      {/* ── Instructors ─────────────────────────────────────── */}
+      <section id="instructors" className="scroll-mt-16 px-3 sm:px-5">
+        <div className="mx-auto max-w-[1360px] overflow-hidden rounded-[32px] bg-[var(--pastel-mint)]">
+          <div className="grid items-center gap-8 px-6 py-14 sm:px-12 lg:grid-cols-2 lg:py-20 lg:pl-16">
             <div>
-              <h3 className="font-display text-[22px] sm:text-[26px]">
-                In Junior Dev? Your access may be earned.
-              </h3>
-              <p className="mt-1.5 text-[14.5px]" style={{ color: 'rgba(255,255,255,0.82)' }}>
-                Builder tier includes InTelleX courses.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Link href="/junior-dev" className="btn btn-light">
-                See benefits
+              <SectionHead
+                eyebrow="Our instructors"
+                title="Taught by people who know their craft."
+                lead="Our instructors teach under the InTelleX name and to our standards. Nobody teaches here until our team has reviewed and approved them."
+              />
+              <ol className="mt-8 flex flex-col gap-3">
+                {VETTING.map((v, i) => (
+                  <li key={v.title} className="flex gap-4 rounded-2xl bg-white/70 p-4">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--green)] text-[15px] font-bold text-white">
+                      {i + 1}
+                    </span>
+                    <div>
+                      <h3 className="text-[16px] font-bold text-[var(--navy)]">{v.title}</h3>
+                      <p className="mt-0.5 text-[14px] leading-relaxed text-[var(--navy)]/70">{v.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              <Link href="/dashboard/mentor" className="mt-6 inline-flex items-center gap-2 text-[15px] font-semibold text-[var(--green-deep)]">
+                Apply to teach with us <ArrowRight size={16} />
               </Link>
-              <a
-                href={LOOPING_BINARY.juniorDev}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-ghost"
-                style={{
-                  color: 'var(--paper)',
-                  borderColor: 'rgba(255,255,255,0.35)',
-                }}
-              >
-                Open Junior Dev
-              </a>
             </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/hero_mentor.webp" alt="An instructor guiding a student through a lesson" className="illo w-full" loading="lazy" />
           </div>
+          {mentors.length > 0 && (
+            <div className="grid gap-4 px-6 pb-14 sm:grid-cols-2 sm:px-12 lg:grid-cols-4 lg:px-16">
+              {mentors.map((m) => (
+                <InstructorCard key={m.id} m={m} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
+
+      {/* ── Student voices ──────────────────────────────────── */}
+      {quote && (
+        <section className="py-20 sm:py-28">
+          <div className="wrap !max-w-[1100px]">
+            <figure className="grid items-center gap-8 rounded-[32px] bg-[var(--pastel-butter)] p-8 sm:p-12 md:grid-cols-[200px_1fr]">
+              {quote.photo && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={quote.photo} alt={quote.name} className="aspect-square w-40 rounded-3xl object-cover md:w-full" />
+              )}
+              <div>
+                <blockquote className="font-display text-[22px] font-semibold leading-[1.4] text-[var(--navy)] sm:text-[26px]">
+                  “{quote.testimonial}”
+                </blockquote>
+                <figcaption className="mt-6">
+                  <span className="block text-[16px] font-bold text-[var(--navy)]">{quote.name}</span>
+                  <span className="block text-[14px] text-[var(--navy)]/65">InTelleX student · {quote.fieldOfInterest}</span>
+                </figcaption>
+              </div>
+            </figure>
+          </div>
+        </section>
+      )}
 
       <Testimonials />
 
-      <ContactUsSection />
-
-      <section className="section">
-        <div className="wrap">
-          <div
-            className="flex flex-col items-start justify-between gap-6 overflow-hidden rounded-[20px] p-8 sm:flex-row sm:items-center sm:p-10"
-            style={{
-              background: 'linear-gradient(135deg, var(--ink) 0%, #0d3d2a 100%)',
-              color: 'var(--paper)',
-            }}
-          >
-            <div className="max-w-[560px]">
-              <div
-                className="mb-2 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em]"
-                style={{ color: '#9AFFC8' }}
-              >
-                <BadgeCheck size={14} /> Start today
+      {/* ── How it works ────────────────────────────────────── */}
+      <section id="how-it-works" className="scroll-mt-16 py-20 sm:py-28">
+        <div className="wrap !max-w-[1280px]">
+          <div className="grid items-center gap-10 lg:grid-cols-2">
+            <div>
+              <SectionHead
+                eyebrow="How it works"
+                title="From first message to finished project."
+                lead="You always know what you are investing in and what happens next. Pay in full or spread it monthly with MTN MoMo, Orange Money or card."
+              />
+              <ol className="mt-8 flex flex-col gap-3">
+                {ENROL_STEPS.map((s, i) => (
+                  <li key={s.title} className="flex gap-4 rounded-2xl bg-[var(--paper-dim)] p-4">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--pastel-sky)] text-[15px] font-bold text-[var(--navy)]">
+                      {i + 1}
+                    </span>
+                    <div>
+                      <h3 className="text-[16px] font-bold text-[var(--navy)]">{s.title}</h3>
+                      <p className="mt-0.5 text-[14px] leading-relaxed text-[var(--ink-soft)]">{s.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <div className="overflow-hidden rounded-[32px] bg-[var(--pastel-sky)] p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/join_cta.webp" alt="A path of completed steps leading to a certificate" className="illo w-full" loading="lazy" />
+              <div className="flex items-center gap-3 px-4 pb-3 pt-2">
+                <Wallet size={18} className="text-[var(--navy)]" />
+                <span className="text-[14px] font-medium text-[var(--navy)]">MTN MoMo · Orange Money · Card</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/mtn.png" alt="" className="ml-auto h-8 w-8 rounded-lg object-contain" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/orange.png" alt="" className="h-8 w-8 rounded-lg object-contain" />
               </div>
-              <h2 className="font-display text-[26px] leading-tight sm:text-[32px]">
-                Ready to learn with InTelleX?
-              </h2>
-              <p className="mt-2 text-[14.5px]" style={{ color: 'rgba(251,248,240,0.75)' }}>
-                Free account. Upgrade any time.
-              </p>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <Link href="/signup" className="btn btn-primary">
-                Create free account
-              </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Beyond your programme ───────────────────────────── */}
+      <section id="resources" className="scroll-mt-16 pb-20 sm:pb-28">
+        <div className="wrap !max-w-[1280px]">
+          <SectionHead
+            eyebrow="Also at InTelleX"
+            title="Resources for every learner."
+            lead="Alongside your programme or on their own. Library membership from 1,999 XAF/month."
+          />
+          <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {RESOURCES.map((r) => (
               <Link
-                href="/enterprise"
-                className="btn btn-ghost"
-                style={{
-                  color: 'var(--paper)',
-                  borderColor: 'rgba(251,248,240,0.25)',
-                }}
+                key={r.title}
+                href={r.href}
+                className="group flex flex-col justify-between gap-8 rounded-3xl p-5 transition-transform hover:-translate-y-1"
+                style={{ background: r.bg }}
               >
-                For institutions
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[var(--navy)]">
+                  <r.icon size={18} />
+                </span>
+                <span className="flex items-center justify-between gap-2 text-[15px] font-bold text-[var(--navy)]">
+                  {r.title}
+                  <ArrowUpRight size={16} className="opacity-50 transition-opacity group-hover:opacity-100" />
+                </span>
               </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Final CTA ───────────────────────────────────────── */}
+      <section className="px-3 pb-6 sm:px-5">
+        <div className="relative mx-auto grid max-w-[1360px] items-center overflow-hidden rounded-[32px] bg-[var(--green)] lg:grid-cols-2">
+          <div className="pointer-events-none absolute -left-20 -top-24 h-72 w-72 rounded-full bg-white/10" />
+          <div className="relative px-7 py-14 text-white sm:px-14 sm:py-20">
+            <h2 className="text-[40px] font-extrabold leading-[1.05] sm:text-[60px]">Your next skill starts here.</h2>
+            <p className="mt-4 max-w-[440px] text-[17px] leading-relaxed text-white/85">
+              Pick a programme, or tell us your goal and we will help you choose the right one.
+            </p>
+            <div className="mt-9 flex flex-wrap gap-3">
+              <Link href="/programmes" className="btn bg-white !px-6 text-[var(--green-deep)] hover:bg-white/90">
+                Explore programmes <ArrowRight size={17} />
+              </Link>
+              <a
+                href={orientationWhatsappLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn !px-6 bg-[var(--green-deep)] text-white hover:bg-[#00804b]"
+              >
+                <MessageCircle size={17} /> WhatsApp us
+              </a>
             </div>
+          </div>
+          <div className="relative hidden h-full min-h-[420px] bg-[#fdfbf3] lg:block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/hero_career.webp" alt="" className="absolute inset-0 h-full w-full object-cover object-[70%_50%]" loading="lazy" />
           </div>
         </div>
       </section>
 
       <Footer />
-    </>
+      <AdvisorDock />
+    </div>
   );
 }

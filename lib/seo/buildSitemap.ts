@@ -3,6 +3,7 @@ import { getAllCourses } from '@/lib/repo';
 import { listPublicTeacherCourses } from '@/lib/learn/ecosystem';
 import { TUTORIALS, getTutorialLessons } from '@/lib/tutorials';
 import { CANONICAL_SITE_URL } from '@/lib/platformHosts';
+import { PROGRAMMES } from '@/lib/programmes';
 import { getSiteUrl } from '@/lib/seo/share';
 
 type Entry = MetadataRoute.Sitemap[number];
@@ -54,6 +55,7 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: Entry['changeFrequency'];
   }[] = [
     { path: '/', priority: 1, changeFrequency: 'daily' },
+    { path: '/programmes', priority: 0.98, changeFrequency: 'weekly' },
     { path: '/about', priority: 0.95, changeFrequency: 'monthly' },
     { path: '/membership', priority: 0.95, changeFrequency: 'weekly' },
     { path: '/register/student', priority: 0.85, changeFrequency: 'monthly' },
@@ -78,6 +80,10 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
   const out: MetadataRoute.Sitemap = staticPaths.map((p) =>
     entry(p.path, { priority: p.priority, changeFrequency: p.changeFrequency }),
   );
+
+  for (const p of PROGRAMMES) {
+    out.push(entry(`/programmes/${p.id}`, { priority: 0.95, changeFrequency: 'weekly' }));
+  }
 
   for (const course of TUTORIALS) {
     out.push(

@@ -30,23 +30,28 @@ export const TUTORIAL_NAV = [
   { href: '/tutorials/arduino', label: 'Arduino', tag: 'Embedded' },
 ] as const;
 
+export const PROGRAMMES_NAV = [
+  { href: '/programmes?category=software', label: 'Software Development', desc: 'Web, backend and mobile' },
+  { href: '/programmes?category=data', label: 'Data & AI', desc: 'Analysis and visualisation' },
+  { href: '/programmes?category=security', label: 'Cybersecurity', desc: 'Fundamentals and CEH prep' },
+  { href: '/programmes?category=foundations', label: 'Foundations', desc: 'Short starter programmes' },
+  { href: '/#how-it-works', label: 'How enrolment works', desc: 'Choose, enrol, pay, learn' },
+] as const;
+
 export const LEARN_NAV = [
-  { href: '/courses', label: 'All courses', desc: 'Browse the full catalogue' },
-  { href: '/tutorials', label: 'Tutorials', desc: 'Step-by-step learning paths' },
+  { href: '/courses', label: 'Self-paced library', desc: 'Recorded courses to study alone' },
+  { href: '/tutorials', label: 'Free tutorials', desc: 'Step-by-step learning paths' },
+  { href: '/books', label: 'Books', desc: 'AI-guided book learning' },
   { href: '/certifications', label: 'Certificates', desc: 'Certification tracks' },
-  { href: '/junior-dev', label: 'Junior Dev', desc: 'Career pathway program' },
-  { href: '/#learn', label: 'Ways to learn', desc: 'Self-paced, live, AI tutor' },
-  { href: '/#pricing', label: 'Pricing', desc: 'Plans that fit your pace' },
+  { href: '/resources', label: 'Free resources', desc: 'Guides and checklists' },
+  { href: '/membership', label: 'Library membership', desc: '1,999 XAF/mo · library & AI Tutor' },
 ] as const;
 
 export const EXPLORE_NAV = [
-  { href: '/membership', label: 'Become a Student', desc: '1,999 XAF/mo · courses, certs & library' },
-  { href: '/about', label: 'About & CEO', desc: 'Tatoh Modest Wilton · Looping Binary' },
-  { href: '/ecosystem', label: 'Ecosystem', desc: 'How InTelleX fits together' },
-  { href: '/enterprise', label: 'For institutions', desc: 'Campus plans, pricing & onboarding' },
+  { href: '/about', label: 'About InTelleX', desc: 'Who we are · Looping Binary' },
+  { href: '/junior-dev', label: 'Junior Dev', desc: 'Community tournaments' },
   { href: '/internships', label: 'Internships', desc: 'Real-world experience' },
-  { href: '/books', label: 'Books', desc: 'AI-powered book learning' },
-  { href: '/resources', label: 'Free resources', desc: 'Guides and checklists' },
-  { href: '/learning', label: 'Learning environment', desc: 'Finish what you start' },
-  { href: '/contact', label: 'Contact us', desc: 'Learners, mentors & institutions' },
+  { href: '/enterprise', label: 'For institutions', desc: 'InTelleX for schools and campuses' },
+  { href: '/ecosystem', label: 'Ecosystem', desc: 'How everything fits together' },
+  { href: '/contact', label: 'Contact us', desc: 'Learners, instructors & institutions' },
 ] as const;

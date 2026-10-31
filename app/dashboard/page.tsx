@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import {
   ArrowRight,
+  ArrowUpRight,
   Bell,
   BookOpen,
   Bot,
@@ -9,8 +10,10 @@ import {
   CalendarDays,
   CheckSquare,
   ClipboardList,
+  Clock,
   Flame,
   Megaphone,
+  Sparkles,
   Trophy,
   Wallet,
   Zap,
@@ -26,12 +29,15 @@ import { interestLabels } from '@/lib/learn/interests';
 import BecomeStudentBanner from '@/components/dashboard/BecomeStudentBanner';
 import InstitutionForms from '@/components/dashboard/InstitutionForms';
 import AnnouncementCard from '@/components/dashboard/AnnouncementCard';
-import PageHeader from '@/components/dashboard/PageHeader';
 import { listFillableDatasetsForUser } from '@/lib/staff/dataWorkspace';
 import { listVisibleAnnouncements } from '@/lib/staff/store';
 import { listNotifications } from '@/lib/learn/notifications';
 
 export const dynamic = 'force-dynamic';
+
+/** Rotating pastel surfaces, as in the reference dashboards. */
+const PASTELS = ['var(--pastel-sky)', 'var(--pastel-mint)', 'var(--pastel-butter)', 'var(--pastel-lilac)'];
+const DOTS = ['#7cc4f4', '#5fd39a', '#ffd25e', '#a99bf0'];
 
 function firstName(name: string): string {
   return name.split(/\s+/)[0] || name;
@@ -66,10 +72,10 @@ export default async function DashboardOverview() {
   ]);
 
   const stats = [
-    { icon: Flame, label: 'Day streak', value: String(cc.stats.streak) },
-    { icon: Zap, label: 'XP', value: cc.stats.xp.toLocaleString() },
-    { icon: BookOpen, label: 'This week', value: `${cc.stats.weeklyHours}h / ${cc.stats.weeklyGoalHours}h` },
-    { icon: Trophy, label: 'Lessons done', value: String(cc.stats.lessonsDone) },
+    { icon: Flame, label: 'Day streak', value: String(cc.stats.streak), bg: 'var(--pastel-butter)' },
+    { icon: Zap, label: 'XP earned', value: cc.stats.xp.toLocaleString(), bg: 'var(--pastel-mint)' },
+    { icon: Clock, label: 'This week', value: `${cc.stats.weeklyHours}h / ${cc.stats.weeklyGoalHours}h`, bg: 'var(--pastel-sky)' },
+    { icon: Trophy, label: 'Lessons done', value: String(cc.stats.lessonsDone), bg: 'var(--pastel-lilac)' },
   ];
   const assignmentStats = [
     { label: 'Due today', value: cc.assignmentBuckets.due_today.length },
@@ -77,198 +83,218 @@ export default async function DashboardOverview() {
     { label: 'Overdue', value: cc.assignmentBuckets.overdue.length, alert: true },
     { label: 'Graded', value: cc.assignmentBuckets.graded.length },
   ];
+  const quickLinks = [
+    { href: '/dashboard/my-learning', icon: BookOpen, label: 'My Learning' },
+    { href: '/dashboard/assignments', icon: ClipboardList, label: 'Assignments' },
+    { href: '/dashboard/calendar', icon: CalendarDays, label: 'Calendar' },
+    { href: '/dashboard/todos', icon: CheckSquare, label: 'Tasks' },
+    { href: '/dashboard/tutor', icon: Bot, label: 'AI Tutor' },
+    ...(isStudent ? [{ href: '/dashboard/fees', icon: Wallet, label: 'Fees' }] : []),
+    ...(staffPost ? [{ href: '/dashboard/staff', icon: Briefcase, label: 'Staff' }] : []),
+  ];
+  const subtitle = isStudent
+    ? [membership.program || 'Student', membership.year ? `Year ${membership.year}` : '', membership.matricule || '']
+        .filter(Boolean)
+        .join(' · ')
+    : interests.join(' · ');
 
   return (
-    <div className="mx-auto max-w-[1080px] overflow-x-hidden">
-      <PageHeader
-        title={`${greeting()}, ${name}.`}
-        description={
-          isStudent ? (
-            <>
-              {membership.program || 'Student'}
-              {membership.year ? ` · Year ${membership.year}` : ''}
-              {membership.matricule ? ` · ${membership.matricule}` : ''}
-            </>
-          ) : interests.length ? (
-            interests.join(' · ')
-          ) : null
-        }
-      >
-        <div className="no-scrollbar -mx-4 mt-5 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
-          <Link href="/dashboard/my-learning" className="chip chip-primary">
-            <BookOpen size={14} /> My Learning
-          </Link>
-          <Link href="/dashboard/assignments" className="chip">
-            <ClipboardList size={14} /> Assignments
-          </Link>
-          <Link href="/dashboard/calendar" className="chip">
-            <CalendarDays size={14} /> Calendar
-          </Link>
-          <Link href="/dashboard/todos" className="chip">
-            <CheckSquare size={14} /> Tasks
-          </Link>
-          <Link href="/dashboard/tutor" className="chip">
-            <Bot size={14} /> AI Tutor
-          </Link>
-          {isStudent ? (
-            <Link href="/dashboard/fees" className="chip">
-              <Wallet size={14} /> Fees
-            </Link>
-          ) : null}
-          {staffPost ? (
-            <Link href="/dashboard/staff" className="chip">
-              <Briefcase size={14} /> Staff
-            </Link>
-          ) : null}
-        </div>
-      </PageHeader>
-
-      <section className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {stats.map((s) => (
-          <div key={s.label} className="card flex items-center gap-3 p-4">
-            <span
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-              style={{ background: 'rgba(0,179,105,0.10)', color: 'var(--green-deep)' }}
+    <div className="mx-auto max-w-[1180px] overflow-x-hidden">
+      {/* ── Welcome banner ────────────────────────────────────── */}
+      <section className="relative grid overflow-hidden rounded-[28px] bg-[var(--pastel-sky)] md:grid-cols-[1.3fr_1fr]">
+        <div className="relative z-10 p-6 sm:p-8">
+          <p className="text-[14px] font-medium text-[var(--navy)]/65">{greeting()}</p>
+          <h1 className="mt-1 text-[30px] font-extrabold leading-tight text-[var(--navy)] sm:text-[38px]">
+            Hi, {name} 👋
+          </h1>
+          <p className="mt-2 max-w-[440px] text-[15.5px] text-[var(--navy)]/75">
+            {subtitle || 'What would you like to learn today?'}
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              href={cc.continueLearning[0]?.href || '/dashboard/courses'}
+              className="inline-flex items-center gap-2 rounded-xl bg-[var(--navy)] px-5 py-3 text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90"
             >
-              <s.icon size={17} />
+              {cc.continueLearning.length ? 'Continue learning' : 'Get started'} <ArrowRight size={16} />
+            </Link>
+            <Link
+              href="/programmes"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-[14.5px] font-semibold text-[var(--navy)] transition-colors hover:bg-white/80"
+            >
+              Explore programmes
+            </Link>
+          </div>
+        </div>
+        <div className="relative hidden md:block">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/way_selfpaced.webp"
+            alt=""
+            className="illo absolute bottom-0 right-0 h-[118%] max-w-none object-contain object-bottom"
+          />
+        </div>
+      </section>
+
+      {/* Quick links */}
+      <nav className="no-scrollbar -mx-3 mt-4 flex gap-2 overflow-x-auto px-3 sm:mx-0 sm:flex-wrap sm:px-0" aria-label="Quick links">
+        {quickLinks.map((q) => (
+          <Link
+            key={q.href}
+            href={q.href}
+            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-4 py-2 text-[13.5px] font-semibold text-[var(--navy)] shadow-[0_4px_14px_-10px_rgba(18,50,79,0.4)] transition-colors hover:bg-[var(--pastel-mint)]"
+          >
+            <q.icon size={15} /> {q.label}
+          </Link>
+        ))}
+      </nav>
+
+      {/* Stats */}
+      <section className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {stats.map((s) => (
+          <div key={s.label} className="flex items-center gap-3.5 rounded-3xl p-4" style={{ background: s.bg }}>
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--navy)]">
+              <s.icon size={19} />
             </span>
             <div className="min-w-0">
-              <p className="truncate font-display text-[20px] leading-none">{s.value}</p>
-              <p className="muted mt-1 truncate text-[12px]">{s.label}</p>
+              <p className="truncate font-display text-[20px] font-extrabold leading-none text-[var(--navy)]">{s.value}</p>
+              <p className="mt-1 truncate text-[12.5px] text-[var(--navy)]/65">{s.label}</p>
             </div>
           </div>
         ))}
       </section>
 
-      {!isStudent ? <BecomeStudentBanner institutionName={org.name} compact /> : null}
-
-      {cc.attention.length > 0 ? (
-        <section className="mb-8">
-          <SectionTitle title="Needs attention" />
-          <ul className="space-y-2">
-            {cc.attention.map((a) => (
-              <li key={a.id}>
-                <Link
-                  href={a.href}
-                  className="card flex items-center justify-between gap-4 p-4"
-                  style={
-                    a.severity === 'high'
-                      ? { borderColor: 'rgba(185,28,28,0.35)', background: 'rgba(185,28,28,0.04)' }
-                      : undefined
-                  }
-                >
-                  <div className="min-w-0">
-                    <p className="font-semibold">{a.title}</p>
-                    <p className="muted mt-0.5 truncate text-[13px]">{a.detail}</p>
-                  </div>
-                  <ArrowRight size={16} className="muted shrink-0" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
+      {!isStudent ? (
+        <div className="mt-6">
+          <BecomeStudentBanner institutionName={org.name} compact />
+        </div>
       ) : null}
 
       {!isStudent && application && application.status !== 'draft' ? (
-        <Link href="/dashboard/application" className="card mb-8 flex items-center justify-between p-4">
+        <Link
+          href="/dashboard/application"
+          className="mt-6 flex items-center justify-between rounded-3xl bg-white p-5 transition-shadow hover:shadow-[0_14px_34px_-24px_rgba(18,50,79,0.5)]"
+        >
           <div>
-            <p className="font-semibold">Application {application.applicationCode}</p>
-            <p className="muted mt-0.5 text-[13px] capitalize">
+            <p className="font-bold text-[var(--navy)]">Application {application.applicationCode}</p>
+            <p className="mt-0.5 text-[13px] capitalize text-[var(--ink-soft)]">
               {application.programName || 'Program'} · {application.status.replace(/_/g, ' ')}
             </p>
           </div>
-          <ArrowRight size={16} className="muted" />
+          <ArrowRight size={16} className="text-[var(--navy)]" />
         </Link>
       ) : null}
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="min-w-0 space-y-8">
+      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-9">
+          {/* ── My courses ──────────────────────────────────── */}
           <section>
-            <SectionTitle title="Today" href="/dashboard/calendar" linkLabel="Calendar" />
-            {cc.today.length === 0 ? (
-              <div className="card flex flex-wrap items-center justify-between gap-3 p-5">
-                <p className="muted text-[14px]">Nothing scheduled today.</p>
-                <Link href="/dashboard/todos" className="chip">
-                  <CheckSquare size={14} /> Add a task
-                </Link>
+            <SectionTitle title="My courses" href="/dashboard/my-learning" linkLabel="See all" />
+            {cc.continueLearning.length === 0 ? (
+              <div className="grid items-center gap-4 overflow-hidden rounded-3xl bg-white sm:grid-cols-[1fr_220px]">
+                <div className="p-6">
+                  <p className="text-[17px] font-bold text-[var(--navy)]">No courses in progress yet</p>
+                  <p className="mt-1 text-[14px] text-[var(--ink-soft)]">
+                    Pick a programme or a self-paced course to get started.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Link href="/programmes" className="btn btn-primary">
+                      Explore programmes
+                    </Link>
+                    <Link href="/dashboard/courses" className="btn btn-soft">
+                      Browse courses
+                    </Link>
+                  </div>
+                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/eco_learning.webp" alt="" className="illo hidden h-full w-full object-cover sm:block" />
               </div>
             ) : (
-              <ul className="card divide-y overflow-hidden" style={{ borderColor: 'var(--line)' }}>
-                {cc.today.map((item) => (
-                  <li
-                    key={item.id}
-                    className="flex items-center gap-4 px-4 py-3.5"
-                    style={{ borderColor: 'var(--line)' }}
-                  >
-                    <div className="muted w-14 shrink-0 font-mono text-[12px]">{item.timeLabel}</div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold">{item.title}</p>
-                      <p className="muted truncate text-[13px]">{item.subtitle}</p>
-                    </div>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {cc.continueLearning.map((row, i) => {
+                  const pct = Math.min(100, Math.max(0, Math.round(row.course.pct)));
+                  return (
                     <Link
-                      href={item.href}
-                      className="chip shrink-0 text-white"
-                      style={{
-                        background: item.urgency === 'now' ? '#b91c1c' : 'var(--green-deep)',
-                        borderColor: 'transparent',
-                      }}
+                      key={row.course.id}
+                      href={row.href}
+                      className="group flex flex-col rounded-3xl bg-white p-4 transition-shadow hover:shadow-[0_18px_40px_-26px_rgba(18,50,79,0.55)]"
                     >
-                      {item.actionLabel}
+                      <div
+                        className="relative flex h-28 items-center justify-center overflow-hidden rounded-2xl"
+                        style={{ background: PASTELS[i % PASTELS.length] }}
+                      >
+                        <BookOpen size={30} className="text-[var(--navy)]/60" />
+                      </div>
+                      <p className="mt-4 line-clamp-2 text-[15.5px] font-bold leading-snug text-[var(--navy)]">{row.course.title}</p>
+                      <div className="mt-auto pt-4">
+                        <div className="flex items-center justify-between text-[12.5px]">
+                          <span className="text-[var(--ink-soft)]">Progress</span>
+                          <span className="font-bold text-[var(--green-deep)]">{pct}%</span>
+                        </div>
+                        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[var(--paper-dim)]">
+                          <div className="h-full rounded-full bg-[var(--navy)]" style={{ width: `${pct}%` }} />
+                        </div>
+                        {row.nextTitle ? (
+                          <p className="mt-3 truncate text-[12.5px] text-[var(--navy)]/70">
+                            Next: <span className="font-semibold">{row.nextTitle}</span>
+                          </p>
+                        ) : null}
+                      </div>
                     </Link>
-                  </li>
-                ))}
-              </ul>
+                  );
+                })}
+              </div>
             )}
           </section>
 
-          <section>
-            <SectionTitle title="Continue learning" href="/dashboard/my-learning" linkLabel="All" />
-            {cc.continueLearning.length === 0 ? (
-              <div className="card flex flex-wrap items-center justify-between gap-3 p-5">
-                <p className="muted text-[14px]">No courses in progress.</p>
-                <Link href="/dashboard/courses" className="chip chip-primary">
-                  Browse courses
-                </Link>
-              </div>
-            ) : (
-              <ul className="space-y-3">
-                {cc.continueLearning.map((row) => {
-                  const pct = Math.min(100, Math.max(0, row.course.pct));
+          {/* ── Needs attention: colourful task cards ─────────── */}
+          {cc.attention.length > 0 ? (
+            <section>
+              <SectionTitle title="Needs your attention" />
+              <div className="grid gap-4 sm:grid-cols-2">
+                {cc.attention.map((a, i) => {
+                  const dark = a.severity === 'high' || i % 2 === 0;
                   return (
-                    <li key={row.course.id}>
-                      <Link href={row.href} className="card block p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate font-semibold">{row.course.title}</p>
-                            <p className="muted mt-0.5 truncate text-[13px]">{row.nextTitle}</p>
-                          </div>
-                          <span className="font-mono text-[12px]" style={{ color: 'var(--green-deep)' }}>
-                            {Math.round(pct)}%
-                          </span>
-                        </div>
-                        <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full" style={{ background: 'var(--paper-dim)' }}>
-                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'var(--green)' }} />
-                        </div>
-                      </Link>
-                    </li>
+                    <Link
+                      key={a.id}
+                      href={a.href}
+                      className="group flex min-h-[150px] flex-col rounded-3xl p-5 transition-transform hover:-translate-y-0.5"
+                      style={dark ? { background: 'var(--navy)', color: '#fff' } : { background: 'var(--pastel-butter)', color: 'var(--navy)' }}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-[16px] font-bold leading-snug">{a.title}</p>
+                        {a.severity === 'high' ? (
+                          <span className="shrink-0 rounded-full bg-[#ff7a59] px-2.5 py-0.5 text-[11.5px] font-bold text-white">Urgent</span>
+                        ) : null}
+                      </div>
+                      <p className={`mt-1.5 line-clamp-2 text-[13.5px] ${dark ? 'text-white/70' : 'text-[var(--navy)]/70'}`}>{a.detail}</p>
+                      <span className="mt-auto inline-flex items-center gap-1.5 pt-4 text-[13.5px] font-semibold">
+                        Open <ArrowUpRight size={15} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                      </span>
+                    </Link>
                   );
                 })}
-              </ul>
-            )}
-          </section>
+              </div>
+            </section>
+          ) : null}
 
           {cc.recommended.length > 0 ? (
             <section>
-              <SectionTitle
-                title={interests.length ? 'Recommended' : 'Explore'}
-                href="/dashboard/courses"
-                linkLabel="Courses"
-              />
+              <SectionTitle title={interests.length ? 'Recommended for you' : 'Explore'} href="/dashboard/courses" linkLabel="Courses" />
               <div className="grid gap-3 sm:grid-cols-2">
-                {cc.recommended.map((r) => (
-                  <Link key={r.slug} href={r.href} className="card group flex items-center justify-between gap-3 p-4">
-                    <p className="min-w-0 truncate font-semibold">{r.title}</p>
-                    <ArrowRight size={15} className="shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: 'var(--green-deep)' }} />
+                {cc.recommended.map((r, i) => (
+                  <Link
+                    key={r.slug}
+                    href={r.href}
+                    className="group flex items-center gap-3 rounded-2xl bg-white p-4 transition-colors hover:bg-[var(--pastel-mint)]"
+                  >
+                    <span
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[var(--navy)]"
+                      style={{ background: PASTELS[i % PASTELS.length] }}
+                    >
+                      <BookOpen size={17} />
+                    </span>
+                    <p className="min-w-0 flex-1 truncate font-semibold text-[var(--navy)]">{r.title}</p>
+                    <ArrowRight size={15} className="shrink-0 text-[var(--navy)] transition-transform group-hover:translate-x-0.5" />
                   </Link>
                 ))}
               </div>
@@ -278,19 +304,62 @@ export default async function DashboardOverview() {
           <InstitutionForms forms={forms} />
         </div>
 
+        {/* ── Right column ────────────────────────────────────── */}
         <aside className="min-w-0 space-y-8">
           <section>
+            <SectionTitle title="Today" href="/dashboard/calendar" linkLabel="Calendar" />
+            {cc.today.length === 0 ? (
+              <div className="rounded-3xl bg-white p-5">
+                <p className="text-[14px] text-[var(--ink-soft)]">Nothing scheduled today.</p>
+                <Link href="/dashboard/todos" className="mt-3 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-[var(--green-deep)]">
+                  <CheckSquare size={14} /> Add a task
+                </Link>
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {cc.today.map((item, i) => (
+                  <li key={item.id}>
+                    <Link
+                      href={item.href}
+                      className="flex items-center gap-4 rounded-2xl py-3.5 pl-4 pr-3"
+                      style={{
+                        background: PASTELS[i % PASTELS.length],
+                        boxShadow: `inset 4px 0 0 ${item.urgency === 'now' ? '#e5484d' : 'var(--navy)'}`,
+                      }}
+                    >
+                      <div className="w-14 shrink-0 text-[14px] font-bold text-[var(--navy)]">{item.timeLabel}</div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[14px] font-semibold text-[var(--navy)]">{item.title}</p>
+                        <p className="truncate text-[12.5px] text-[var(--navy)]/65">{item.subtitle}</p>
+                      </div>
+                      <span
+                        className="shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-bold text-white"
+                        style={{ background: item.urgency === 'now' ? '#e5484d' : 'var(--green-deep)' }}
+                      >
+                        {item.actionLabel}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section>
             <SectionTitle title="Assignments" href="/dashboard/assignments" linkLabel="Open" />
-            <div className="card grid grid-cols-2 gap-px overflow-hidden" style={{ background: 'var(--line)' }}>
-              {assignmentStats.map((a) => (
-                <div key={a.label} className="bg-paper p-4">
+            <div className="grid grid-cols-2 gap-3">
+              {assignmentStats.map((a, i) => (
+                <div key={a.label} className="rounded-2xl bg-white p-4">
                   <p
-                    className="font-display text-[22px] leading-none"
-                    style={a.alert && a.value > 0 ? { color: '#b91c1c' } : undefined}
+                    className="font-display text-[24px] font-extrabold leading-none"
+                    style={{ color: a.alert && a.value > 0 ? '#e5484d' : 'var(--navy)' }}
                   >
                     {a.value}
                   </p>
-                  <p className="muted mt-1.5 text-[12px]">{a.label}</p>
+                  <p className="mt-1.5 flex items-center gap-1.5 text-[12.5px] text-[var(--ink-soft)]">
+                    <span className="h-2 w-2 rounded-full" style={{ background: DOTS[i % DOTS.length] }} />
+                    {a.label}
+                  </p>
                 </div>
               ))}
             </div>
@@ -307,27 +376,34 @@ export default async function DashboardOverview() {
                 ))}
               </ul>
             ) : (
-              <div className="card muted flex items-center gap-2.5 p-4 text-[14px]">
-                <Megaphone size={15} style={{ color: 'var(--green-deep)' }} /> No announcements yet.
+              <div className="flex items-center gap-3 rounded-2xl bg-white p-4 text-[14px] text-[var(--ink-soft)]">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--pastel-butter)] text-[var(--navy)]">
+                  <Megaphone size={16} />
+                </span>
+                No announcements yet.
               </div>
             )}
           </section>
 
           {recentNotes.length > 0 ? (
             <section>
-              <SectionTitle title="Activity" href="/dashboard/notifications" linkLabel="All" />
-              <ul className="card divide-y overflow-hidden">
+              <SectionTitle title="Reminders" href="/dashboard/notifications" linkLabel="All" />
+              <ul className="space-y-2.5">
                 {recentNotes.map((n) => (
-                  <li key={n.id} style={{ borderColor: 'var(--line)' }}>
+                  <li key={n.id}>
                     <Link
                       href={n.href || '/dashboard/notifications'}
-                      className="flex items-start gap-2.5 px-4 py-3"
-                      style={{ background: n.readAt ? 'transparent' : 'var(--amber-soft)' }}
+                      className="flex items-start gap-3 rounded-2xl bg-white p-3.5"
                     >
-                      <Bell size={14} className="muted mt-1 shrink-0" />
+                      <span
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[var(--navy)]"
+                        style={{ background: n.readAt ? 'var(--paper-dim)' : 'var(--pastel-sky)' }}
+                      >
+                        <Bell size={15} />
+                      </span>
                       <span className="min-w-0">
-                        <span className="block truncate text-[14px] font-semibold">{n.title}</span>
-                        <span className="muted mt-0.5 line-clamp-2 block text-[12.5px]">{n.body}</span>
+                        <span className="block truncate text-[14px] font-semibold text-[var(--navy)]">{n.title}</span>
+                        <span className="mt-0.5 line-clamp-2 block text-[12.5px] text-[var(--ink-soft)]">{n.body}</span>
                       </span>
                     </Link>
                   </li>
@@ -335,6 +411,21 @@ export default async function DashboardOverview() {
               </ul>
             </section>
           ) : null}
+
+          {/* Help card */}
+          <Link
+            href="/dashboard/tutor"
+            className="block overflow-hidden rounded-3xl bg-[var(--navy)] p-5 text-white transition-transform hover:-translate-y-0.5"
+          >
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--pastel-butter)] text-[var(--navy)]">
+              <Sparkles size={19} />
+            </span>
+            <p className="mt-4 text-[17px] font-bold">Need a hand?</p>
+            <p className="mt-1 text-[13.5px] text-white/70">Ask the AI Tutor about any lesson, exercise or career question.</p>
+            <span className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-[13.5px] font-semibold text-[var(--navy)]">
+              Open AI Tutor <ArrowRight size={14} />
+            </span>
+          </Link>
         </aside>
       </div>
     </div>
@@ -343,14 +434,10 @@ export default async function DashboardOverview() {
 
 function SectionTitle({ title, href, linkLabel }: { title: string; href?: string; linkLabel?: string }) {
   return (
-    <div className="mb-3 flex items-center justify-between gap-3">
-      <h2 className="font-display text-[19px] leading-tight">{title}</h2>
+    <div className="mb-4 flex items-center justify-between gap-3">
+      <h2 className="text-[20px] font-bold leading-tight text-[var(--navy)]">{title}</h2>
       {href ? (
-        <Link
-          href={href}
-          className="inline-flex items-center gap-1 text-[13px] font-semibold"
-          style={{ color: 'var(--green-deep)' }}
-        >
+        <Link href={href} className="inline-flex items-center gap-1 text-[13.5px] font-semibold text-[var(--green-deep)]">
           {linkLabel} <ArrowRight size={13} />
         </Link>
       ) : null}

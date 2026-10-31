@@ -20,6 +20,7 @@ import {
   Users,
 } from 'lucide-react';
 import type { ContactType } from '@/lib/types';
+import { getProgramme } from '@/lib/programmes';
 
 const LEARNER_TOPICS = [
   'Orientation — help me choose a path',
@@ -91,6 +92,8 @@ function normalizeType(raw: string | null): Intent | null {
 export default function ContactWizard() {
   const params = useSearchParams();
   const preset = normalizeType(params.get('type'));
+  const programme = getProgramme(params.get('programme') || '');
+  const programmeTopic = programme ? `Enrol: ${programme.title}` : '';
 
   const [step, setStep] = useState(preset ? 1 : 0);
   const [dir, setDir] = useState(1);
@@ -98,8 +101,8 @@ export default function ContactWizard() {
   const [fullName, setFullName] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [email, setEmail] = useState('');
-  const [field, setField] = useState('');
-  const [plan, setPlan] = useState('');
+  const [field, setField] = useState(programmeTopic);
+  const [plan, setPlan] = useState(programme ? 'Programme enrolment' : '');
   const [message, setMessage] = useState('');
   const [institutionName, setInstitutionName] = useState('');
   const [roleTitle, setRoleTitle] = useState('');
@@ -368,7 +371,9 @@ export default function ContactWizard() {
                         ? INSTITUTION_INTERESTS
                         : isMentorship
                           ? MENTORSHIP_MODES
-                          : LEARNER_TOPICS
+                          : programmeTopic
+                            ? [programmeTopic, ...LEARNER_TOPICS]
+                            : LEARNER_TOPICS
                       ).map((f) => (
                         <OptionCard
                           key={f}

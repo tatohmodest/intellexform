@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -14,14 +14,25 @@
   --ink: #0C1116;
   --ink-soft: #56606E;
   --paper: #FFFFFF;
-  --paper-dim: #F2F6FB;
+  --paper-dim: #F4F6F8;
+  --paper-deep: #EAEEF2;
   --green: #00b369;
   --green-deep: #009a5a;
   --amber: #4a90e2;
   --amber-soft: #E7F1FC;
   --blue: #4a90e2;
   --blue-ink: #1f5fa8;
-  --line: rgba(12, 17, 22, 0.10);
+  /* Logo sky blue - the public site's signature surface colour */
+  --sky: #0097b2;
+  --sky-deep: #007a91;
+  --sky-soft: #e5f5f8;
+  /* Warm pastel surfaces + navy headings used by the public site and dashboard */
+  --navy: #12324f;
+  --pastel-sky: #dcedfa;
+  --pastel-mint: #e2f4e9;
+  --pastel-butter: #fff2c6;
+  --pastel-lilac: #ebe7fa;
+  --line: rgba(12, 17, 22, 0.07);
   --line-soft: rgba(255, 255, 255, 0.16);
 }
 
@@ -112,7 +123,12 @@ h1, h2, h3, .display {
 .btn-light { background: #ffffff; color: var(--ink); }
 .btn-light:hover { background: var(--paper-dim); }
 .btn-ghost { border-color: var(--line); color: var(--ink); background: transparent; }
-.btn-ghost:hover { border-color: var(--ink); }
+.btn-ghost:hover { border-color: rgba(12, 17, 22, 0.3); }
+/* borderless variants used by the public marketing pages */
+.btn-soft { background: var(--paper-dim); color: var(--ink); }
+.btn-soft:hover { background: var(--paper-deep); }
+.btn-dark { background: var(--ink); color: #ffffff; }
+.btn-dark:hover { background: #1d252d; }
 
 /* ── Tabs / pills ────────────────────────────────────────── */
 .tab {
@@ -182,7 +198,7 @@ textarea.form-input { resize: vertical; min-height: 100px; }
   border-radius: 16px;
 }
 a.card { transition: border-color 0.2s, box-shadow 0.2s; }
-a.card:hover { border-color: rgba(12, 17, 22, 0.22); box-shadow: 0 10px 30px -22px rgba(12, 17, 22, 0.45); }
+a.card:hover { border-color: rgba(12, 17, 22, 0.14); box-shadow: 0 12px 32px -24px rgba(12, 17, 22, 0.4); }
 
 .chip {
   display: inline-flex;
@@ -198,7 +214,7 @@ a.card:hover { border-color: rgba(12, 17, 22, 0.22); box-shadow: 0 10px 30px -22
   transition: border-color 0.2s, background 0.2s;
   white-space: nowrap;
 }
-.chip:hover { border-color: rgba(12, 17, 22, 0.28); }
+.chip:hover { border-color: rgba(12, 17, 22, 0.2); }
 .chip-primary { background: var(--green); border-color: var(--green); color: #fff; }
 .chip-primary:hover { background: var(--green-deep); border-color: var(--green-deep); }
 
@@ -227,50 +243,6 @@ a.card:hover { border-color: rgba(12, 17, 22, 0.22); box-shadow: 0 10px 30px -22
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* ── Hero card: continuous "computerized" checklist loop (CSS-driven so it
-   keeps running smoothly and isn't throttled like JS timers) ─────────────── */
-@keyframes hc-fill {
-  0%, 8% { width: 0%; }
-  12% { width: 20%; }
-  26% { width: 40%; }
-  40% { width: 60%; }
-  54% { width: 80%; }
-  68%, 90% { width: 100%; }
-  96%, 100% { width: 0%; }
-}
-.hc-bar { animation: hc-fill 6s ease-in-out infinite; }
-
-@keyframes hc-tick-1 { 0%,12%{opacity:0;transform:scale(0)} 15%,90%{opacity:1;transform:scale(1)} 96%,100%{opacity:0;transform:scale(0)} }
-@keyframes hc-tick-2 { 0%,26%{opacity:0;transform:scale(0)} 29%,90%{opacity:1;transform:scale(1)} 96%,100%{opacity:0;transform:scale(0)} }
-@keyframes hc-tick-3 { 0%,40%{opacity:0;transform:scale(0)} 43%,90%{opacity:1;transform:scale(1)} 96%,100%{opacity:0;transform:scale(0)} }
-@keyframes hc-tick-4 { 0%,54%{opacity:0;transform:scale(0)} 57%,90%{opacity:1;transform:scale(1)} 96%,100%{opacity:0;transform:scale(0)} }
-@keyframes hc-tick-5 { 0%,68%{opacity:0;transform:scale(0)} 71%,90%{opacity:1;transform:scale(1)} 96%,100%{opacity:0;transform:scale(0)} }
-.hc-check { animation-duration: 6s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
-.hc-check-1 { animation-name: hc-tick-1; }
-.hc-check-2 { animation-name: hc-tick-2; }
-.hc-check-3 { animation-name: hc-tick-3; }
-.hc-check-4 { animation-name: hc-tick-4; }
-.hc-check-5 { animation-name: hc-tick-5; }
-
-/* processing highlight that sweeps each row just before it ticks */
-@keyframes hc-proc-1 { 0%,7%{background:rgba(251,248,240,0.06)} 9%,12%{background:rgba(74,144,226,0.16)} 14%,100%{background:rgba(251,248,240,0.06)} }
-@keyframes hc-proc-2 { 0%,21%{background:rgba(251,248,240,0.06)} 23%,26%{background:rgba(74,144,226,0.16)} 28%,100%{background:rgba(251,248,240,0.06)} }
-@keyframes hc-proc-3 { 0%,35%{background:rgba(251,248,240,0.06)} 37%,40%{background:rgba(74,144,226,0.16)} 42%,100%{background:rgba(251,248,240,0.06)} }
-@keyframes hc-proc-4 { 0%,49%{background:rgba(251,248,240,0.06)} 51%,54%{background:rgba(74,144,226,0.16)} 56%,100%{background:rgba(251,248,240,0.06)} }
-@keyframes hc-proc-5 { 0%,63%{background:rgba(251,248,240,0.06)} 65%,68%{background:rgba(74,144,226,0.16)} 70%,100%{background:rgba(251,248,240,0.06)} }
-.hc-row { animation-duration: 6s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
-.hc-row-1 { animation-name: hc-proc-1; }
-.hc-row-2 { animation-name: hc-proc-2; }
-.hc-row-3 { animation-name: hc-proc-3; }
-.hc-row-4 { animation-name: hc-proc-4; }
-.hc-row-5 { animation-name: hc-proc-5; }
-
-@media (prefers-reduced-motion: reduce) {
-  .hc-bar, .hc-check, .hc-row { animation: none; }
-  .hc-check { opacity: 1; transform: none; }
-  .hc-bar { width: 100%; }
-}
 
 /* ── Syntax highlight tokens (AI tutor + code blocks) ─────── */
 .tok-keyword { color: #c792ea; }
@@ -305,3 +277,18 @@ a.card:hover { border-color: rgba(12, 17, 22, 0.22); box-shadow: 0 10px 30px -22
   text-decoration-color: rgba(61, 107, 138, 0.35);
 }
 .tutor-link-amber:hover { color: #2c5269; }
+
+/* Public marketing pages (wrapped in .site): crisper 12px buttons */
+.site .btn { border-radius: 12px; }
+
+/* ── Public pages: warm, illustrated, pastel ─────────────────────────────── */
+.site h1, .site h2, .site h3, .site .font-display { font-family: 'Plus Jakarta Sans', var(--font-public-sans); letter-spacing: -0.025em; }
+/* Flat illustrations ship on a cream background; multiply lets them sit on any pastel card. */
+.illo { mix-blend-mode: multiply; }
+.gentle-float { animation: gentle-float 6s ease-in-out infinite; }
+@keyframes gentle-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.wa-pulse { animation: wa-pulse 2.4s ease-out infinite; }
+@keyframes wa-pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 179, 105, 0.45); } 100% { box-shadow: 0 0 0 14px rgba(0, 179, 105, 0); } }
+@media (prefers-reduced-motion: reduce) {
+  .gentle-float, .wa-pulse { animation: none; }
+}

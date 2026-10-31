@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, X, ArrowRight, MessageCircle, ChevronDown } from 'lucide-react';
 import { buildWhatsappLink } from '@/lib/whatsapp';
-import { EXPLORE_NAV, LEARN_NAV, TUTORIAL_NAV } from '@/lib/tutorials/nav';
+import { EXPLORE_NAV, LEARN_NAV, PROGRAMMES_NAV } from '@/lib/tutorials/nav';
 import HeaderSearch from '@/components/landing/HeaderSearch';
 import BrandLogo from '@/components/BrandLogo';
 import { useT } from '@/components/i18n/I18nRoot';
@@ -21,45 +21,44 @@ type NavGroup = {
   id: string;
   label: string;
   href: string;
+  allLabel: string;
   items: readonly NavItem[];
 };
 
 const NAV_GROUPS: NavGroup[] = [
   {
-    id: 'learn',
-    label: 'Learn',
+    id: 'programmes',
+    label: 'Programmes',
+    href: '/programmes',
+    allLabel: 'All programmes →',
+    items: PROGRAMMES_NAV,
+  },
+  {
+    id: 'resources',
+    label: 'Resources',
     href: '/courses',
+    allLabel: 'Browse the library →',
     items: LEARN_NAV,
   },
   {
-    id: 'tutorials',
-    label: 'Tutorials',
-    href: '/tutorials',
-    items: TUTORIAL_NAV.map((t) => ({
-      href: t.href,
-      label: t.label,
-      desc: t.tag,
-    })),
-  },
-  {
-    id: 'explore',
-    label: 'Explore',
-    href: '/#ecosystem',
+    id: 'more',
+    label: 'More',
+    href: '/about',
+    allLabel: 'About InTelleX →',
     items: EXPLORE_NAV,
   },
 ];
 
 const FLAT_LINKS = [
-  { href: '/certifications', label: 'Certificates' },
-  { href: '/#pricing', label: 'Pricing' },
-  { href: '/contact', label: 'Contact' },
+  { href: '/#instructors', label: 'Instructors' },
+  { href: '/#how-it-works', label: 'How it works' },
 ];
 
 export default function TopNav() {
   const t = useT();
   const [open, setOpen] = useState(false);
   const [desktopMenu, setDesktopMenu] = useState<string | null>(null);
-  const [mobileSection, setMobileSection] = useState<string | null>('tutorials');
+  const [mobileSection, setMobileSection] = useState<string | null>('programmes');
   const [authed, setAuthed] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
@@ -100,8 +99,8 @@ export default function TopNav() {
     <>
       <nav
         ref={navRef}
-        className="sticky top-0 z-[100] overflow-visible border-b backdrop-blur"
-        style={{ background: 'rgba(255,255,255,0.95)', borderColor: 'var(--line)' }}
+        className="sticky top-0 z-[100] overflow-visible backdrop-blur-md"
+        style={{ background: 'rgba(255,255,255,0.88)' }}
         aria-label="Primary"
       >
         <div className="mx-auto flex w-full max-w-[1140px] items-center justify-between gap-3 overflow-visible px-5 py-3 sm:gap-4 sm:px-6 sm:py-4 md:pl-12">
@@ -124,7 +123,7 @@ export default function TopNav() {
                   >
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm opacity-75 transition-opacity hover:opacity-100"
+                      className="inline-flex rounded-lg items-center gap-1 px-3 py-2 text-sm opacity-75 transition-opacity hover:opacity-100"
                       aria-expanded={isOpen}
                       aria-haspopup="true"
                       onClick={() => setDesktopMenu(isOpen ? null : group.id)}
@@ -147,21 +146,19 @@ export default function TopNav() {
                           className="absolute left-0 top-full z-[120] pt-2"
                         >
                           <div
-                            className="w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border shadow-card"
-                            style={{ background: 'var(--paper)', borderColor: 'var(--line)' }}
+                            className="w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl shadow-[0_24px_60px_-24px_rgba(12,17,22,0.35)]"
+                            style={{ background: 'var(--paper)' }}
                           >
                             <Link
                               href={group.href}
-                              className="block border-b px-4 py-3 text-sm font-semibold transition-colors hover:bg-[var(--paper-dim)]"
-                              style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
+                              className="block px-5 pb-1 pt-4 text-sm font-semibold transition-colors hover:opacity-80"
+                              style={{ color: 'var(--green-deep)' }}
                               onClick={() => setDesktopMenu(null)}
                             >
-                              {t(`All ${group.label} →`)}
+                              {t(group.allLabel)}
                             </Link>
                             <ul
-                              className={`grid gap-0.5 p-2 ${
-                                group.id === 'tutorials' ? 'max-h-[22rem] overflow-y-auto' : ''
-                              }`}
+                              className="grid gap-0.5 p-2"
                             >
                               {group.items.map((item) => (
                                 <li key={item.href}>
@@ -192,7 +189,7 @@ export default function TopNav() {
                 <Link
                   key={l.href}
                   href={l.href}
-                  className="rounded-full px-3 py-2 text-sm opacity-75 transition-opacity hover:opacity-100"
+                  className="rounded-lg px-3 py-2 text-sm opacity-75 transition-opacity hover:opacity-100"
                 >
                   {t(l.label)}
                 </Link>
@@ -202,7 +199,7 @@ export default function TopNav() {
             {authed ? (
               <Link
                 href="/dashboard"
-                className="hidden whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-semibold text-white sm:inline-block"
+                className="hidden whitespace-nowrap rounded-xl px-5 py-2.5 text-sm font-semibold text-white sm:inline-block"
                 style={{ background: 'var(--green)' }}
               >
                 {t('Dashboard')}
@@ -211,21 +208,21 @@ export default function TopNav() {
               <>
                 <Link
                   href="/login"
-                  className="hidden whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold opacity-80 transition-opacity hover:opacity-100 sm:inline-block"
+                  className="hidden whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold opacity-80 transition-opacity hover:opacity-100 sm:inline-block"
                 >
                   {t('Sign in')}
                 </Link>
                 <Link
-                  href="/signup"
-                  className="hidden whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-semibold text-paper sm:inline-block"
-                  style={{ background: 'var(--ink)' }}
+                  href="/programmes"
+                  className="hidden whitespace-nowrap rounded-xl px-5 py-2.5 text-sm font-semibold text-white sm:inline-block"
+                  style={{ background: 'var(--green)' }}
                 >
-                  {t('Sign up')}
+                  {t('Explore programmes')}
                 </Link>
               </>
             )}
             <button
-              className="flex h-10 w-10 items-center justify-center rounded-full lg:hidden"
+              className="flex h-10 w-10 rounded-xl items-center justify-center lg:hidden"
               style={{ background: 'var(--paper-dim)' }}
               onClick={() => setOpen((o) => !o)}
               aria-label={t('Menu')}
@@ -248,10 +245,10 @@ export default function TopNav() {
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.22, ease: 'easeOut' }}
           >
-            <div className="flex items-center justify-between border-b px-5 py-3" style={{ borderColor: 'var(--line)' }}>
+            <div className="flex items-center justify-between px-5 py-3">
               <BrandLogo href="/" height={32} onClick={() => setOpen(false)} />
               <button
-                className="flex h-10 w-10 items-center justify-center rounded-full"
+                className="flex h-10 w-10 rounded-xl items-center justify-center"
                 style={{ background: 'var(--paper-dim)' }}
                 onClick={() => setOpen(false)}
                 aria-label={t('Close menu')}
@@ -269,8 +266,8 @@ export default function TopNav() {
                     initial={{ opacity: 0, x: -16 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.04 * i + 0.05 }}
-                    className="rounded-2xl border"
-                    style={{ borderColor: 'var(--line)' }}
+                    className="rounded-2xl"
+                    style={{ background: 'var(--paper-dim)' }}
                   >
                     <button
                       type="button"
@@ -286,14 +283,14 @@ export default function TopNav() {
                       />
                     </button>
                     {isOpen ? (
-                      <div className="border-t px-2 py-2" style={{ borderColor: 'var(--line)' }}>
+                      <div className="px-2 pb-2">
                         <Link
                           href={group.href}
                           onClick={() => setOpen(false)}
                           className="block rounded-xl px-3 py-2.5 text-sm font-semibold"
                           style={{ color: 'var(--green-deep)' }}
                         >
-                          {t(`All ${group.label} →`)}
+                          {t(group.allLabel)}
                         </Link>
                         {group.items.map((item) => (
                           <Link
@@ -329,8 +326,7 @@ export default function TopNav() {
                   <Link
                     href={l.href}
                     onClick={() => setOpen(false)}
-                    className="flex items-center justify-between border-b py-4 font-display text-[22px]"
-                    style={{ borderColor: 'var(--line)' }}
+                    className="flex items-center justify-between px-4 py-3.5 font-display text-[20px]"
                   >
                     {t(l.label)}
                     <ArrowRight size={18} style={{ color: 'var(--ink-soft)' }} />
@@ -339,17 +335,17 @@ export default function TopNav() {
               ))}
             </div>
 
-            <div className="flex flex-col gap-3 border-t p-5" style={{ borderColor: 'var(--line)' }}>
+            <div className="flex flex-col gap-3 p-5">
               {authed ? (
                 <Link href="/dashboard" onClick={() => setOpen(false)} className="btn btn-primary w-full">
                   {t('Go to Dashboard')} <ArrowRight size={18} />
                 </Link>
               ) : (
                 <>
-                  <Link href="/signup" onClick={() => setOpen(false)} className="btn btn-primary w-full">
-                    {t('Create account')} <ArrowRight size={18} />
+                  <Link href="/programmes" onClick={() => setOpen(false)} className="btn btn-primary w-full">
+                    {t('Explore programmes')} <ArrowRight size={18} />
                   </Link>
-                  <Link href="/login" onClick={() => setOpen(false)} className="btn btn-ghost w-full">
+                  <Link href="/login" onClick={() => setOpen(false)} className="btn btn-soft w-full">
                     {t('Sign in')}
                   </Link>
                 </>
@@ -359,7 +355,7 @@ export default function TopNav() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setOpen(false)}
-                className="btn btn-ghost w-full"
+                className="btn btn-soft w-full"
               >
                 <MessageCircle size={18} /> {t('Chat on WhatsApp')}
               </a>

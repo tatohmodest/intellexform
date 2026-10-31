@@ -176,8 +176,8 @@ function NavLinks({
   const mentorActive =
     pathname.startsWith('/dashboard/mentor') &&
     !pathname.startsWith('/dashboard/mentorship');
-  const activeBg = `${accent}1a`;
-  const activeColor = accent;
+  const activeBg = `${accent}1f`;
+  const activeColor = 'var(--navy)';
   const currentTab = searchParams.get('tab');
 
   if (campusSlug) {
@@ -204,7 +204,7 @@ function NavLinks({
               className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
               style={
                 active
-                  ? { background: activeBg, color: activeColor }
+                  ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
                   : { color: 'var(--ink-soft)' }
               }
             >
@@ -229,7 +229,7 @@ function NavLinks({
             className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
             style={
               pathname.startsWith('/dashboard/staff')
-                ? { background: activeBg, color: activeColor }
+                ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
                 : { color: 'var(--ink-soft)' }
             }
           >
@@ -269,7 +269,7 @@ function NavLinks({
                 className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
                 style={
                   active
-                    ? { background: activeBg, color: activeColor }
+                    ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
                     : { color: 'var(--ink-soft)' }
                 }
               >
@@ -310,7 +310,7 @@ function NavLinks({
               className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
               style={
                 pathname.startsWith('/dashboard/teach/courses')
-                  ? { background: activeBg, color: activeColor }
+                  ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
                   : { color: 'var(--ink-soft)' }
               }
             >
@@ -326,7 +326,7 @@ function NavLinks({
               className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
               style={
                 pathname.startsWith('/dashboard/students')
-                  ? { background: activeBg, color: activeColor }
+                  ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
                   : { color: 'var(--ink-soft)' }
               }
             >
@@ -342,7 +342,7 @@ function NavLinks({
               className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
               style={
                 pathname.startsWith('/dashboard/classroom')
-                  ? { background: activeBg, color: activeColor }
+                  ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
                   : { color: 'var(--ink-soft)' }
               }
             >
@@ -358,7 +358,7 @@ function NavLinks({
               className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
               style={
                 pathname.startsWith('/dashboard/teach/grading')
-                  ? { background: activeBg, color: activeColor }
+                  ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
                   : { color: 'var(--ink-soft)' }
               }
             >
@@ -374,7 +374,7 @@ function NavLinks({
               className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
               style={
                 pathname.startsWith('/dashboard/teach/monitoring')
-                  ? { background: activeBg, color: activeColor }
+                  ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
                   : { color: 'var(--ink-soft)' }
               }
             >
@@ -390,7 +390,7 @@ function NavLinks({
               className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
               style={
                 pathname.startsWith('/dashboard/teach/assessments')
-                  ? { background: activeBg, color: activeColor }
+                  ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
                   : { color: 'var(--ink-soft)' }
               }
             >
@@ -406,7 +406,7 @@ function NavLinks({
               className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
               style={
                 pathname.startsWith('/dashboard/teach/notes')
-                  ? { background: activeBg, color: activeColor }
+                  ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
                   : { color: 'var(--ink-soft)' }
               }
             >
@@ -437,7 +437,7 @@ function NavLinks({
                 className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
                 style={
                   active
-                    ? { background: activeBg, color: activeColor }
+                    ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
                     : { color: 'var(--ink-soft)' }
                 }
               >
@@ -770,10 +770,22 @@ export default function DashboardShell({
         />
       </div>
 
-      <div
-        className="shrink-0 space-y-1 border-t pt-3"
-        style={{ borderColor: 'var(--line)' }}
-      >
+      {!inCampus && (
+        <Link
+          href="/dashboard/tutor"
+          onClick={() => setMobileOpen(false)}
+          className="mb-3 mt-2 block shrink-0 overflow-hidden rounded-2xl bg-[var(--pastel-sky)] transition-transform hover:-translate-y-0.5"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/way_selfpaced.webp" alt="" className="illo h-20 w-full object-cover object-top" />
+          <div className="px-3.5 pb-3.5 pt-1">
+            <div className="text-[14px] font-bold text-[var(--navy)]">{t('Stuck on something?')}</div>
+            <div className="mt-0.5 text-[12px] text-[var(--navy)]/70">{t('Ask the AI Tutor any time.')}</div>
+          </div>
+        </Link>
+      )}
+
+      <div className="shrink-0 space-y-1 pt-1">
         {inCampus && (
           <p className="mono px-3.5 pb-2 text-[9.5px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
             {t('Powered by InTelleX')}
@@ -819,13 +831,10 @@ export default function DashboardShell({
     : undefined;
 
   return (
-    <div className="min-h-screen bg-paper" style={themeStyle}>
+    <div className="site min-h-screen bg-paper" style={themeStyle}>
       <aside
-        className="fixed inset-y-0 left-0 z-30 hidden h-dvh max-h-dvh w-[240px] flex-col overflow-hidden border-r px-4 py-6 lg:flex"
-        style={{
-          borderColor: 'var(--line)',
-          background: inCampus ? `${accent}08` : 'var(--paper)',
-        }}
+        className="fixed inset-y-0 left-0 z-30 hidden h-dvh max-h-dvh w-[240px] flex-col overflow-hidden px-4 py-6 lg:flex"
+        style={{ background: inCampus ? `${accent}08` : 'var(--paper)' }}
       >
         {sidebarInner}
       </aside>
@@ -846,15 +855,11 @@ export default function DashboardShell({
       )}
 
       <header
-        className="sticky top-0 z-20 flex h-[64px] items-center gap-3 border-b px-4 backdrop-blur lg:pl-[264px] lg:pr-8"
-        style={{
-          borderColor: 'var(--line)',
-          background: inCampus ? `${accent}0d` : 'rgba(255,255,255,0.92)',
-        }}
+        className="sticky top-0 z-20 flex h-[64px] items-center gap-3 px-4 backdrop-blur lg:pl-[264px] lg:pr-8"
+        style={{ background: inCampus ? `${accent}0d` : 'rgba(255,255,255,0.92)' }}
       >
         <button
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border lg:hidden"
-          style={{ borderColor: 'var(--line)' }}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--paper-dim)] lg:hidden"
           onClick={() => setMobileOpen((v) => !v)}
           aria-label={t('Toggle navigation')}
         >
@@ -925,10 +930,12 @@ export default function DashboardShell({
       </header>
       <PushAlertsBanner accent={accent} />
 
-      <main className="px-4 pb-28 pt-6 sm:px-6 lg:pb-16 lg:pl-[268px] lg:pr-10">
-        <OngoingClassBanner accent={accent} />
-        <CampusReturnBanner accent={accent} />
-        {children}
+      <main className="px-2 pb-28 pt-2 sm:px-4 lg:pb-6 lg:pl-[252px] lg:pr-6">
+        <div className="min-h-[calc(100dvh-90px)] rounded-[28px] bg-[#f4f6f9] px-3 pb-10 pt-5 sm:px-6 sm:pt-7 lg:px-8">
+          <OngoingClassBanner accent={accent} />
+          <CampusReturnBanner accent={accent} />
+          {children}
+        </div>
       </main>
       <MobileBottomNav
         accent={accent}

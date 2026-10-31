@@ -15,7 +15,8 @@ const config: Config = {
         },
         paper: {
           DEFAULT: '#FFFFFF',
-          dim: '#F2F6FB',
+          dim: '#F4F6F8',
+          deep: '#EAEEF2',
         },
         green: {
           DEFAULT: '#00b369',
@@ -25,6 +26,11 @@ const config: Config = {
         amber: {
           DEFAULT: '#4a90e2',
           soft: '#E7F1FC',
+        },
+        sky: {
+          DEFAULT: '#0097b2',
+          deep: '#007a91',
+          soft: '#e5f5f8',
         },
         blue: {
           DEFAULT: '#4a90e2',

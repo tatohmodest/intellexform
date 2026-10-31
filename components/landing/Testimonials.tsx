@@ -34,10 +34,8 @@ function PreviewCard({ t, index, onOpen }: { t: T; index: number; onOpen: () => 
       transition={{ duration: 0.5, delay: index * 0.1 }}
       whileHover={{ y: -6 }}
       className="group relative aspect-[9/16] w-[78%] flex-shrink-0 snap-center overflow-hidden rounded-[24px] text-left shadow-book sm:aspect-[3/4] sm:w-full"
-      style={{ background: 'var(--ink)', border: '1px solid var(--line)' }}
+      style={{ background: 'var(--ink)' }}
     >
-      {/* gradient ring accent */}
-      <span className="pointer-events-none absolute inset-0 z-20 rounded-[24px]" style={{ boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.08)' }} />
       {t.video ? (
         // eslint-disable-next-line jsx-a11y/media-has-caption
         <video
@@ -203,8 +201,8 @@ function QuoteMarquee({ quotes }: { quotes: T[] }) {
 
   return (
     <div className="relative">
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 sm:w-16" style={{ background: 'linear-gradient(to right, var(--paper), transparent)' }} />
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 sm:w-16" style={{ background: 'linear-gradient(to left, var(--paper), transparent)' }} />
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 sm:w-16" style={{ background: 'linear-gradient(to right, var(--paper-dim), transparent)' }} />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 sm:w-16" style={{ background: 'linear-gradient(to left, var(--paper-dim), transparent)' }} />
       <div
         ref={ref}
         className="no-scrollbar flex cursor-grab gap-4 overflow-x-auto pb-2 active:cursor-grabbing sm:gap-5"
@@ -218,8 +216,8 @@ function QuoteMarquee({ quotes }: { quotes: T[] }) {
         {items.map((t, i) => (
           <div
             key={`${t.id}-${i}`}
-            className="flex w-[280px] flex-shrink-0 flex-col rounded-[18px] border p-6 transition-transform duration-300 hover:-translate-y-1 sm:w-[320px]"
-            style={{ background: 'var(--paper)', borderColor: 'var(--line)' }}
+            className="flex w-[280px] flex-shrink-0 flex-col rounded-[20px] p-6 transition-transform duration-300 hover:-translate-y-1 sm:w-[320px]"
+            style={{ background: 'var(--paper)' }}
           >
             <Quote size={22} className="mb-3" style={{ color: 'var(--green)' }} />
             <p className="mb-5 flex-1 text-sm leading-relaxed line-clamp-3" style={{ color: 'var(--ink-soft)' }}>{t.testimonial}</p>
@@ -252,8 +250,11 @@ export default function Testimonials() {
     <section id="testimonials" className="section section-dim overflow-hidden">
       <div className="wrap">
         <Reveal className="mb-8 max-w-2xl sm:mb-10">
-          <div className="eyebrow mb-2.5">Student stories</div>
-          <h2 className="text-[28px] leading-[1.12] sm:text-[36px]">Real learners. Real outcomes.</h2>
+          <div className="eyebrow mb-3">Video stories</div>
+          <h2 className="text-[30px] leading-[1.08] tracking-[-0.02em] sm:text-[44px]">Watch them tell it.</h2>
+          <p className="muted mt-4 text-[16px] leading-relaxed sm:text-[17px]">
+            Shared with their permission, in their own words.
+          </p>
         </Reveal>
 
         {/* mobile: swipeable reel carousel · desktop: grid */}
@@ -265,13 +266,7 @@ export default function Testimonials() {
       </div>
 
       {/* written testimonials band */}
-      <div className="mt-12 border-y py-8 sm:mt-16 sm:py-10" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
-        <div className="wrap mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div className="font-display text-[20px] sm:text-[22px]">In their own words</div>
-          <span className="pill inline-flex items-center gap-2">
-            <span className="h-2 w-2 animate-pulse rounded-full" style={{ background: 'var(--green)' }} /> Live from the community
-          </span>
-        </div>
+      <div className="mt-12 sm:mt-16">
         <QuoteMarquee quotes={quotes} />
       </div>
 
