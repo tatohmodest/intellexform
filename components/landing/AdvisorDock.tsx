@@ -5,6 +5,8 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ArrowUp, MessageCircle, Sparkles, X } from 'lucide-react';
 import { PLATFORM_CONTACT, generalWhatsappLink } from '@/lib/contact';
 import { OPEN_ADVISOR_EVENT } from '@/lib/advisor';
+import { useLocale, useT } from '@/components/i18n/I18nRoot';
+import { translateUiText } from '@/lib/i18n/translate';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
@@ -88,11 +90,15 @@ function Markdown({ text }: { text: string }) {
 }
 
 export default function AdvisorDock() {
+  const locale = useLocale();
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const historyRef = useRef<Msg[]>([]);
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -100,7 +106,8 @@ export default function AdvisorDock() {
     function onOpen(e: Event) {
       setOpen(true);
       const q = (e as CustomEvent<string | undefined>).detail;
-      if (q) void send(q);
+      // Preset questions are written in English; show and send them in the visitor's language.
+      if (q) void send(translateUiText(q, localeRef.current));
     }
     window.addEventListener(OPEN_ADVISOR_EVENT, onOpen);
     return () => window.removeEventListener(OPEN_ADVISOR_EVENT, onOpen);
@@ -133,11 +140,11 @@ export default function AdvisorDock() {
       const res = await fetch('/api/orientation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: history }),
+        body: JSON.stringify({ messages: history, locale }),
       });
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Something went wrong. Please try again.');
+        throw new Error(data.error || t('Something went wrong. Please try again.'));
       }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -148,8 +155,11 @@ export default function AdvisorDock() {
         setMessages([...history, { role: 'assistant', content: acc }]);
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Something went wrong.';
-      acc = `${msg} You can also WhatsApp us on ${PLATFORM_CONTACT.phoneDisplay}.`;
+      const msg = err instanceof Error ? err.message : t('Something went wrong. Please try again.');
+      acc =
+        locale === 'fr'
+          ? `${msg} Vous pouvez aussi nous écrire sur WhatsApp au ${PLATFORM_CONTACT.phoneDisplay}.`
+          : `${msg} You can also WhatsApp us on ${PLATFORM_CONTACT.phoneDisplay}.`;
       setMessages([...history, { role: 'assistant', content: acc }]);
     } finally {
       historyRef.current = [...history, { role: 'assistant', content: acc }];
@@ -202,7 +212,7 @@ export default function AdvisorDock() {
                   <button
                     key={s}
                     type="button"
-                    onClick={() => send(s)}
+                    onClick={() => send(t(s))}
                     className="rounded-xl bg-[var(--sky-soft)] px-4 py-2.5 text-left text-[14px] font-medium text-[var(--sky-deep)] transition-colors hover:bg-[var(--sky)] hover:text-white"
                   >
                     {s}
@@ -214,11 +224,11 @@ export default function AdvisorDock() {
             <div className="flex flex-col gap-3">
               {messages.map((m, i) =>
                 m.role === 'user' ? (
-                  <div key={i} className="ml-auto max-w-[85%] rounded-2xl rounded-tr-md bg-[var(--green)] px-4 py-2.5 text-white">
+                  <div key={i} data-no-i18n className="ml-auto max-w-[85%] rounded-2xl rounded-tr-md bg-[var(--green)] px-4 py-2.5 text-white">
                     {m.content}
                   </div>
                 ) : (
-                  <div key={i} className="max-w-[92%] rounded-2xl rounded-tl-md bg-[var(--paper-dim)] px-4 py-3">
+                  <div key={i} data-no-i18n className="max-w-[92%] rounded-2xl rounded-tl-md bg-[var(--paper-dim)] px-4 py-3">
                     {m.content ? (
                       <Markdown text={m.content} />
                     ) : (
@@ -254,7 +264,7 @@ export default function AdvisorDock() {
             }}
             rows={1}
             maxLength={2000}
-            placeholder="Ask about skills, careers, courses..."
+            placeholder={t('Ask about skills, careers, courses...')}
             className="max-h-28 min-h-[44px] flex-1 resize-none rounded-xl bg-[var(--paper-dim)] px-4 py-3 text-[14.5px] outline-none placeholder:text-[var(--ink-soft)] focus:ring-2 focus:ring-[var(--sky)]/40"
           />
           <button

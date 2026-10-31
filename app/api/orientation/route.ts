@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isLocale, LOCALE_COOKIE, type Locale } from '@/lib/i18n/locale';
 import {
   fallbackOrientationAnswer,
   orientationStream,
@@ -32,7 +33,15 @@ function limited(ip: string) {
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'anon';
   if (limited(ip)) {
-    return NextResponse.json({ error: 'Too many messages. Please try again in a few minutes.' }, { status: 429 });
+    const fr = req.cookies.get(LOCALE_COOKIE)?.value === 'fr';
+    return NextResponse.json(
+      {
+        error: fr
+          ? 'Trop de messages. Veuillez réessayer dans quelques minutes.'
+          : 'Too many messages. Please try again in a few minutes.',
+      },
+      { status: 429 },
+    );
   }
 
   const body = await req.json().catch(() => ({}));
@@ -48,10 +57,12 @@ export async function POST(req: NextRequest) {
   if (!messages.some((m) => m.role === 'user')) {
     return NextResponse.json({ error: 'empty' }, { status: 400 });
   }
+  const cookieLocale = req.cookies.get(LOCALE_COOKIE)?.value;
+  const locale: Locale = isLocale(body.locale) ? body.locale : isLocale(cookieLocale) ? cookieLocale : 'en';
 
   if (process.env.OPENAI_API_KEY) {
     try {
-      const stream = await orientationStream(messages);
+      const stream = await orientationStream(messages, locale);
       return new Response(stream, {
         headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Orientation-Engine': 'llm' },
       });
@@ -60,7 +71,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return new Response(fallbackOrientationAnswer(messages), {
+  return new Response(fallbackOrientationAnswer(messages, locale), {
     headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Orientation-Engine': 'fallback' },
   });
 }

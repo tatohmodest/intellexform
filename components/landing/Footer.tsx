@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { PLATFORM_CONTACT, generalWhatsappLink, platformMailto } from '@/lib/contact';
 import BrandLogo from '@/components/BrandLogo';
 import { useT } from '@/components/i18n/I18nRoot';
+import LanguageSwitch from '@/components/i18n/LanguageSwitch';
 
 const COLUMNS: { title: string; links: { href: string; label: string; external?: boolean }[] }[] = [
   {
@@ -97,7 +98,8 @@ export default function Footer() {
         </div>
         <div className="flex flex-wrap justify-between gap-3 pt-6 text-[12.5px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
           <span>{tr('© 2026 InTelleX, a Looping Binary company.')}</span>
-          <span className="flex gap-5">
+          <span className="flex items-center gap-5">
+            <LanguageSwitch dark />
             <Link href="/about" className="hover:text-white">{tr('About')}</Link>
             <a href="/sitemap.xml" className="hover:text-white">{tr('Sitemap')}</a>
           </span>

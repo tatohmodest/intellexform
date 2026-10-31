@@ -1,9 +1,12 @@
 import { PLATFORM_CONTACT } from '@/lib/contact';
+import { translateUiText } from '@/lib/i18n/translate';
+import type { Locale } from '@/lib/i18n/locale';
 import { PROGRAMMES, priceNumber, type Programme } from '@/lib/programmes';
 
 /**
  * Public "Chat with AI" orientation advisor. Helps visitors choose a path and
  * understand why a programme is worth it. Grounded in the real programme list.
+ * Answers in the visitor's language (English by default, French when detected).
  */
 
 export type OrientationMessage = { role: 'user' | 'assistant'; content: string };
@@ -13,7 +16,11 @@ function programmeLine(p: Programme) {
   return `- ${p.title} [${p.categoryLabel}] - ${p.duration}, ${p.level}, ${priceNumber(p.priceXAF)} XAF${monthly}, registration ${priceNumber(p.registrationFee)} XAF. Covers: ${p.technologies.slice(0, 8).join(', ')}. Link: /programmes/${p.id}`;
 }
 
-export function orientationSystemPrompt() {
+export function orientationSystemPrompt(locale: Locale = 'en') {
+  const language =
+    locale === 'fr'
+      ? '7. Reply in French (the visitor browses InTelleX in French). Translate programme titles naturally but keep the links unchanged. If the visitor clearly writes in English, reply in English.'
+      : "7. Reply in English unless the visitor writes in French, then reply in French.";
   return `You are the InTelleX orientation advisor - a warm, sharp career and learning guide on the InTelleX website.
 InTelleX is an online school by Looping Binary (Douala, Cameroon). Students enrol in structured programmes taught live by approved instructors, with mentorship, practical projects and a certificate. Payment: in full or monthly via MTN MoMo, Orange Money or card.
 
@@ -26,73 +33,112 @@ Rules:
 4. Be honest. Do not invent statistics, salaries, job guarantees or employment rates. You may describe general market demand (e.g. "web developers and data analysts are widely hired, including remotely") without precise numbers. If asked for exact salaries, say they vary by country, level and employer, and explain what drives higher pay.
 5. For enrolment, start dates, or anything you are unsure about, point them to WhatsApp ${PLATFORM_CONTACT.phoneDisplay} or the Enrol button on the programme page.
 6. Stay on topic (learning, careers, technology, InTelleX). Politely decline unrelated requests.
+${language}
 
 InTelleX programmes:
 ${PROGRAMMES.map(programmeLine).join('\n')}`;
 }
 
-const TOPICS: { keys: string[]; ids: string[]; why: string }[] = [
+type Topic = { keys: string[]; ids: string[]; why: Record<Locale, string> };
+
+const TOPICS: Topic[] = [
   {
-    keys: ['web', 'website', 'frontend', 'front-end', 'react', 'next', 'javascript', 'full stack', 'fullstack', 'backend', 'node'],
+    keys: ['web', 'website', 'site', 'frontend', 'front-end', 'react', 'next', 'javascript', 'full stack', 'fullstack', 'backend', 'node'],
     ids: ['fullstack', 'mern', 'javascript'],
-    why: 'Web development is one of the most widely hired tech skills and works well for remote jobs and freelancing.',
+    why: {
+      en: 'Web development is one of the most widely hired tech skills and works well for remote jobs and freelancing.',
+      fr: 'Le développement web est l’une des compétences tech les plus recherchées, idéale pour le télétravail et le freelance.',
+    },
   },
   {
-    keys: ['data', 'analyst', 'analysis', 'excel', 'power bi', 'sql', 'statistics', 'ai', 'machine learning', 'ml'],
+    keys: ['data', 'données', 'donnees', 'analyst', 'analyste', 'analysis', 'analyse', 'excel', 'power bi', 'sql', 'statistics', 'statistiques', 'ai', 'ia', 'machine learning', 'ml'],
     ids: ['data-analysis', 'python'],
-    why: 'Data skills are needed in almost every industry, from banks and telecoms to NGOs and startups.',
+    why: {
+      en: 'Data skills are needed in almost every industry, from banks and telecoms to NGOs and startups.',
+      fr: 'Les compétences en données sont utiles dans presque tous les secteurs : banques, télécoms, ONG, startups.',
+    },
   },
   {
-    keys: ['security', 'cyber', 'hacking', 'hacker', 'ceh', 'network', 'ethical'],
+    keys: ['security', 'sécurité', 'securite', 'cyber', 'cybersécurité', 'hacking', 'hacker', 'ceh', 'network', 'réseau', 'reseau', 'ethical', 'éthique'],
     ids: ['cybersecurity', 'cybersecurity-ceh'],
-    why: 'Every organisation going digital needs people who can protect it, and certification prep makes your skills easy to prove.',
+    why: {
+      en: 'Every organisation going digital needs people who can protect it, and certification prep makes your skills easy to prove.',
+      fr: 'Chaque organisation qui se numérise a besoin de personnes capables de la protéger, et la préparation à la certification rend vos compétences faciles à prouver.',
+    },
   },
   {
-    keys: ['mobile', 'android', 'ios', 'app', 'flutter', 'react native'],
+    keys: ['mobile', 'android', 'ios', 'app', 'application', 'flutter', 'react native'],
     ids: ['flutter-mobile-design', 'react-native-mobile-design'],
-    why: 'Mobile apps are how most people in Africa use the internet, so mobile developers are in steady demand.',
+    why: {
+      en: 'Mobile apps are how most people in Africa use the internet, so mobile developers are in steady demand.',
+      fr: 'En Afrique, la plupart des gens utilisent Internet via des applications mobiles : les développeurs mobiles sont donc très demandés.',
+    },
   },
   {
-    keys: ['python', 'django', 'automation'],
+    keys: ['python', 'django', 'automation', 'automatisation'],
     ids: ['python', 'django'],
-    why: 'Python is beginner-friendly and opens doors to backend development, automation and data.',
+    why: {
+      en: 'Python is beginner-friendly and opens doors to backend development, automation and data.',
+      fr: 'Python est accessible aux débutants et ouvre les portes du backend, de l’automatisation et des données.',
+    },
   },
   {
-    keys: ['beginner', 'start', 'zero', 'new to', 'no experience', 'never coded', 'cheap', 'budget', 'affordable'],
+    keys: ['beginner', 'débutant', 'debutant', 'start', 'commencer', 'début', 'zero', 'zéro', 'new to', 'no experience', 'never coded', 'jamais codé', 'cheap', 'budget', 'affordable', 'pas cher'],
     ids: ['webfundamentals', 'python-basics', 'htmlcss'],
-    why: 'Starting with a short Foundations programme is a low-cost way to build confidence before a full programme.',
+    why: {
+      en: 'Starting with a short Foundations programme is a low-cost way to build confidence before a full programme.',
+      fr: 'Commencer par un programme court « Fondamentaux » est un moyen peu coûteux de prendre confiance avant un programme complet.',
+    },
   },
 ];
 
+const CAREER_RE =
+  /(trend|demand|hot|future|best skill|high income|high-income|pay well|money|job|career|tendance|demand[ée]|avenir|salaire|argent|emploi|travail|m[ée]tier|carri[eè]re|bien pay|rentable)/;
+
 /** Rule-based answer used when no LLM is configured or the LLM call fails. */
-export function fallbackOrientationAnswer(messages: OrientationMessage[]): string {
+export function fallbackOrientationAnswer(messages: OrientationMessage[], locale: Locale = 'en'): string {
   const last = [...messages].reverse().find((m) => m.role === 'user')?.content.toLowerCase() || '';
-  const hasWord = (k: string) => new RegExp(`(^|[^a-z])${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z]|$)`).test(last);
-  const matches = (t: (typeof TOPICS)[number]) => t.keys.some(hasWord);
+  const hasWord = (k: string) => new RegExp(`(^|[^a-zà-ÿ])${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-zà-ÿ]|$)`).test(last);
+  const matches = (t: Topic) => t.keys.some(hasWord);
   const beginner = TOPICS[TOPICS.length - 1];
-  const careerQuestion = /(trend|demand|hot|future|best skill|high income|high-income|pay well|money|job|career)/.test(last);
+  const careerQuestion = CAREER_RE.test(last);
   // A named technology wins; then career questions; the beginner track is the last resort.
   const topic =
     TOPICS.slice(0, -1).find(matches) || (!careerQuestion && matches(beginner) ? beginner : undefined);
-  const wa = `WhatsApp us on ${PLATFORM_CONTACT.phoneDisplay}`;
+  const fr = locale === 'fr';
+  const tr = (s: string) => translateUiText(s, locale);
+  const wa = fr ? `écrivez-nous sur WhatsApp au ${PLATFORM_CONTACT.phoneDisplay}` : `WhatsApp us on ${PLATFORM_CONTACT.phoneDisplay}`;
 
   if (topic) {
     const picks = topic.ids.map((id) => PROGRAMMES.find((p) => p.id === id)).filter(Boolean) as Programme[];
     const lines = picks.map((p) => {
-      const monthly = p.monthlyXAF ? ` (or ${priceNumber(p.monthlyXAF)} XAF/month)` : '';
-      return `- **[${p.title}](/programmes/${p.id})** - ${p.duration}, ${p.level}. ${priceNumber(p.priceXAF)} XAF${monthly}.`;
+      const monthly = p.monthlyXAF
+        ? fr
+          ? ` (ou ${priceNumber(p.monthlyXAF)} XAF/mois)`
+          : ` (or ${priceNumber(p.monthlyXAF)} XAF/month)`
+        : '';
+      return `- **[${tr(p.title)}](/programmes/${p.id})** - ${tr(p.duration)}, ${tr(p.level)}. ${priceNumber(p.priceXAF)} XAF${monthly}.`;
     });
-    return `${topic.why}\n\nGood places to start at InTelleX:\n${lines.join('\n')}\n\nEach programme is taught live by an instructor, with real projects for your portfolio and a certificate at the end. Think of it as an investment in a skill you can earn with.\n\nWhat is your current level, and is your goal a job, freelancing or your own project? For start dates, ${wa}.`;
+    return fr
+      ? `${topic.why.fr}\n\nPour bien démarrer chez InTelleX :\n${lines.join('\n')}\n\nChaque programme est enseigné en direct par un formateur, avec de vrais projets pour votre portfolio et un certificat à la fin. Voyez-le comme un investissement dans une compétence qui rapporte.\n\nQuel est votre niveau actuel, et visez-vous un emploi, le freelance ou votre propre projet ? Pour les dates de rentrée, ${wa}.`
+      : `${topic.why.en}\n\nGood places to start at InTelleX:\n${lines.join('\n')}\n\nEach programme is taught live by an instructor, with real projects for your portfolio and a certificate at the end. Think of it as an investment in a skill you can earn with.\n\nWhat is your current level, and is your goal a job, freelancing or your own project? For start dates, ${wa}.`;
   }
 
   if (careerQuestion) {
-    return `Some of the most in-demand, well-paid tech skills right now:\n\n- **Web development** - every business needs a website or web app. [Full Stack Web Development](/programmes/fullstack)\n- **Data analysis** - companies want people who turn data into decisions. [Data Analysis & Visualization](/programmes/data-analysis)\n- **Cybersecurity** - growing fast as everything goes online. [Cybersecurity Fundamentals](/programmes/cybersecurity)\n- **Mobile development** - apps are how most people get online. [Flutter](/programmes/flutter-mobile-design)\n\nPay depends on your level, portfolio and whether you work locally, remotely or freelance, which is why InTelleX programmes focus on real projects you can show.\n\nWhich of these sounds most like you?`;
+    return fr
+      ? `Quelques-unes des compétences tech les plus demandées et les mieux payées en ce moment :\n\n- **Développement web** - chaque entreprise a besoin d’un site ou d’une application web. [${tr('Full Stack Web Development')}](/programmes/fullstack)\n- **Analyse de données** - les entreprises veulent des personnes qui transforment les données en décisions. [${tr('Data Analysis & Visualization')}](/programmes/data-analysis)\n- **Cybersécurité** - en forte croissance avec la numérisation. [${tr('Cybersecurity Fundamentals')}](/programmes/cybersecurity)\n- **Développement mobile** - les applications sont la porte d’entrée d’Internet pour la plupart des gens. [Flutter](/programmes/flutter-mobile-design)\n\nLa rémunération dépend de votre niveau, de votre portfolio et du fait de travailler localement, à distance ou en freelance. C’est pourquoi les programmes InTelleX misent sur de vrais projets à montrer.\n\nLaquelle de ces voies vous ressemble le plus ?`
+      : `Some of the most in-demand, well-paid tech skills right now:\n\n- **Web development** - every business needs a website or web app. [Full Stack Web Development](/programmes/fullstack)\n- **Data analysis** - companies want people who turn data into decisions. [Data Analysis & Visualization](/programmes/data-analysis)\n- **Cybersecurity** - growing fast as everything goes online. [Cybersecurity Fundamentals](/programmes/cybersecurity)\n- **Mobile development** - apps are how most people get online. [Flutter](/programmes/flutter-mobile-design)\n\nPay depends on your level, portfolio and whether you work locally, remotely or freelance, which is why InTelleX programmes focus on real projects you can show.\n\nWhich of these sounds most like you?`;
   }
 
-  return `I can help you choose. InTelleX teaches four disciplines:\n\n- **Software Development** - web, backend and mobile\n- **Data & AI** - analysis and visualisation\n- **Cybersecurity** - fundamentals and CEH prep\n- **Foundations** - short starter programmes for complete beginners\n\nTell me a bit about you: what do you enjoy, what is your current level, and what do you want this skill to do for you (a job, freelancing, your own business)? You can also browse [all programmes](/programmes) or ${wa}.`;
+  return fr
+    ? `Je peux vous aider à choisir. InTelleX enseigne quatre disciplines :\n\n- **Développement logiciel** - web, backend et mobile\n- **Données et IA** - analyse et visualisation\n- **Cybersécurité** - fondamentaux et préparation CEH\n- **Fondamentaux** - programmes courts pour grands débutants\n\nParlez-moi un peu de vous : qu’aimez-vous faire, quel est votre niveau, et qu’attendez-vous de cette compétence (un emploi, du freelance, votre propre entreprise) ? Vous pouvez aussi parcourir [tous les programmes](/programmes) ou ${wa}.`
+    : `I can help you choose. InTelleX teaches four disciplines:\n\n- **Software Development** - web, backend and mobile\n- **Data & AI** - analysis and visualisation\n- **Cybersecurity** - fundamentals and CEH prep\n- **Foundations** - short starter programmes for complete beginners\n\nTell me a bit about you: what do you enjoy, what is your current level, and what do you want this skill to do for you (a job, freelancing, your own business)? You can also browse [all programmes](/programmes) or ${wa}.`;
 }
 
-export async function orientationStream(messages: OrientationMessage[]): Promise<ReadableStream<Uint8Array>> {
+export async function orientationStream(
+  messages: OrientationMessage[],
+  locale: Locale = 'en',
+): Promise<ReadableStream<Uint8Array>> {
   const res = await fetch(`${process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -104,7 +150,7 @@ export async function orientationStream(messages: OrientationMessage[]): Promise
       stream: true,
       temperature: 0.6,
       max_tokens: 600,
-      messages: [{ role: 'system', content: orientationSystemPrompt() }, ...messages.slice(-12)],
+      messages: [{ role: 'system', content: orientationSystemPrompt(locale) }, ...messages.slice(-12)],
     }),
   });
   if (!res.ok || !res.body) {

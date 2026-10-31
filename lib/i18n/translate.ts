@@ -1,8 +1,12 @@
 import { FR_UI } from '@/lib/i18n/fr';
+import { FR_SITE } from '@/lib/i18n/frSite';
 import type { Locale } from '@/lib/i18n/locale';
 
+/** App chrome (FR_UI) wins over the public-site dictionary when both define a key. */
+const FR: Record<string, string> = { ...FR_SITE, ...FR_UI };
+
 const FR_LOWER = new Map<string, string>();
-for (const [en, fr] of Object.entries(FR_UI)) {
+for (const [en, fr] of Object.entries(FR)) {
   FR_LOWER.set(en.toLowerCase(), fr);
 }
 
@@ -17,12 +21,12 @@ export function looksLikeCode(text: string): boolean {
 }
 
 function lookupFr(core: string): string | null {
-  const exact = FR_UI[core];
+  const exact = FR[core];
   if (exact) return exact;
   const punct = core.match(/^(.*?)([:?!…]+)$/);
   if (punct) {
     const head = punct[1].trimEnd();
-    if (head && FR_UI[head]) return FR_UI[head] + punct[2];
+    if (head && FR[head]) return FR[head] + punct[2];
   }
   const lessons = core.match(/^(\d+)\s+lessons\s+·\s+beginner to pro$/i);
   if (lessons) return `${lessons[1]} leçons · du débutant au pro`;

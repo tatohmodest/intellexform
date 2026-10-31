@@ -11,15 +11,29 @@ import {
 } from 'react';
 import {
   detectBrowserLocale,
+  isLocale,
+  LOCALE_COOKIE,
   persistLocaleCookie,
   type Locale,
 } from '@/lib/i18n/locale';
 import { translateUiText, TRANSLATABLE_ATTRS } from '@/lib/i18n/translate';
 
 const LocaleContext = createContext<Locale>('en');
+const SetLocaleContext = createContext<(locale: Locale) => void>(() => {});
 
 export function useLocale(): Locale {
   return useContext(LocaleContext);
+}
+
+/** Switch language. Saved in the locale cookie, which then wins over browser detection. */
+export function useSetLocale() {
+  return useContext(SetLocaleContext);
+}
+
+function cookieLocale(): Locale | null {
+  const match = document.cookie.match(new RegExp(`(?:^|; )${LOCALE_COOKIE}=([^;]*)`));
+  const value = match ? decodeURIComponent(match[1]) : null;
+  return isLocale(value) ? value : null;
 }
 
 export function useT() {
@@ -136,8 +150,15 @@ export default function I18nRoot({
   const [locale, setLocale] = useState<Locale>(initialLocale);
   const localeRef = useRef<Locale>(initialLocale);
 
+  const changeLocale = useCallback((next: Locale) => {
+    persistLocaleCookie(next);
+    // Reload so English text replaced by the DOM translator comes back cleanly.
+    window.location.reload();
+  }, []);
+
   useEffect(() => {
-    const resolved = detectBrowserLocale();
+    // A saved choice (manual, or set by middleware from Accept-Language) wins; otherwise ask the browser.
+    const resolved = cookieLocale() ?? detectBrowserLocale();
     localeRef.current = resolved;
     setLocale(resolved);
     persistLocaleCookie(resolved);
@@ -184,5 +205,9 @@ export default function I18nRoot({
     return () => observer.disconnect();
   }, [initialLocale]);
 
-  return <LocaleContext.Provider value={locale}>{children}</LocaleContext.Provider>;
+  return (
+    <SetLocaleContext.Provider value={changeLocale}>
+      <LocaleContext.Provider value={locale}>{children}</LocaleContext.Provider>
+    </SetLocaleContext.Provider>
+  );
 }

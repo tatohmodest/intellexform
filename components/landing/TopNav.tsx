@@ -9,6 +9,7 @@ import { EXPLORE_NAV, LEARN_NAV, PROGRAMMES_NAV } from '@/lib/tutorials/nav';
 import HeaderSearch from '@/components/landing/HeaderSearch';
 import BrandLogo from '@/components/BrandLogo';
 import { useT } from '@/components/i18n/I18nRoot';
+import LanguageSwitch from '@/components/i18n/LanguageSwitch';
 
 type NavItem = {
   href: string;
@@ -103,7 +104,7 @@ export default function TopNav() {
         style={{ background: 'rgba(255,255,255,0.88)' }}
         aria-label="Primary"
       >
-        <div className="mx-auto flex w-full max-w-[1140px] items-center justify-between gap-3 overflow-visible px-5 py-3 sm:gap-4 sm:px-6 sm:py-4 md:pl-12">
+        <div className="mx-auto flex w-full max-w-[1360px] items-center justify-between gap-3 overflow-visible px-5 py-3 sm:gap-4 sm:px-8 sm:py-4">
           <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
             <BrandLogo href="/" height={34} priority onClick={() => setOpen(false)} />
             <HeaderSearch />
@@ -196,6 +197,7 @@ export default function TopNav() {
               ))}
             </div>
 
+            <LanguageSwitch className="hidden md:inline-flex" />
             {authed ? (
               <Link
                 href="/dashboard"
@@ -336,6 +338,10 @@ export default function TopNav() {
             </div>
 
             <div className="flex flex-col gap-3 p-5">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-semibold text-[var(--ink-soft)]">Language / Langue</span>
+                <LanguageSwitch />
+              </div>
               {authed ? (
                 <Link href="/dashboard" onClick={() => setOpen(false)} className="btn btn-primary w-full">
                   {t('Go to Dashboard')} <ArrowRight size={18} />

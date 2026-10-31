@@ -19,6 +19,8 @@ import AdvisorDock from '@/components/landing/AdvisorDock';
 import AskAdvisorButton from '@/components/landing/AskAdvisorButton';
 import ProgrammeCard, { CATEGORY_TINT } from '@/components/programmes/ProgrammeCard';
 import { buildWhatsappLink } from '@/lib/whatsapp';
+import { getRequestLocale } from '@/lib/i18n/server';
+import { translateUiText } from '@/lib/i18n/translate';
 import {
   DELIVERY,
   ENROL_STEPS,
@@ -51,10 +53,12 @@ export function generateStaticParams() {
 
 export function generateMetadata({ params }: { params: { id: string } }): Metadata {
   const p = getProgramme(params.id);
-  if (!p) return { title: 'Programme not found - InTelleX' };
+  const locale = getRequestLocale();
+  const tr = (text: string) => translateUiText(text, locale);
+  if (!p) return { title: locale === 'fr' ? 'Programme introuvable - InTelleX' : 'Programme not found - InTelleX' };
   return {
-    title: `${p.title} - InTelleX programme`,
-    description: `${p.description} ${p.duration}, ${p.level}. ${priceNumber(p.priceXAF)} XAF.`,
+    title: locale === 'fr' ? `${tr(p.title)} - programme InTelleX` : `${p.title} - InTelleX programme`,
+    description: `${tr(p.description)} ${tr(p.duration)}, ${tr(p.level)}. ${priceNumber(p.priceXAF)} XAF.`,
   };
 }
 

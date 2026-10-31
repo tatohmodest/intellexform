@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isPlatformHostname } from '@/lib/platformHosts';
-import { localeFromAcceptLanguage, LOCALE_COOKIE } from '@/lib/i18n/locale';
+import { isLocale, localeFromAcceptLanguage, LOCALE_COOKIE } from '@/lib/i18n/locale';
 import {
   expireAuthCookies,
   SESSION_COOKIE,
@@ -8,7 +8,9 @@ import {
   stripAuthCookiesHeader,
 } from '@/lib/auth/cookies';
 
+/** First visit: pick en/fr from the browser. Never overwrite an existing (possibly manual) choice. */
 function withLocale(req: NextRequest, res: NextResponse) {
+  if (isLocale(req.cookies.get(LOCALE_COOKIE)?.value)) return res;
   const locale = localeFromAcceptLanguage(req.headers.get('accept-language'));
   res.cookies.set(LOCALE_COOKIE, locale, {
     path: '/',

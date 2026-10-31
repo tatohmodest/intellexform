@@ -7,13 +7,22 @@ import AdvisorDock from '@/components/landing/AdvisorDock';
 import AskAdvisorButton from '@/components/landing/AskAdvisorButton';
 import ProgrammeCard, { CATEGORY_TINT } from '@/components/programmes/ProgrammeCard';
 import { orientationWhatsappLink } from '@/lib/contact';
+import { getRequestLocale } from '@/lib/i18n/server';
 import { PROGRAMMES, PROGRAMME_CATEGORIES, priceNumber, type ProgrammeCategory } from '@/lib/programmes';
 
-export const metadata: Metadata = {
-  title: 'Programmes - InTelleX',
-  description:
-    'Instructor-led online programmes in software development, data analysis and cybersecurity. Live classes, mentorship, projects and a certificate. Pay monthly with mobile money.',
-};
+export function generateMetadata(): Metadata {
+  return getRequestLocale() === 'fr'
+    ? {
+        title: 'Programmes - InTelleX',
+        description:
+          'Des programmes en ligne avec formateur en développement logiciel, analyse de données et cybersécurité. Cours en direct, mentorat, projets et certificat. Paiement mensuel par mobile money.',
+      }
+    : {
+        title: 'Programmes - InTelleX',
+        description:
+          'Instructor-led online programmes in software development, data analysis and cybersecurity. Live classes, mentorship, projects and a certificate. Pay monthly with mobile money.',
+      };
+}
 
 const CATEGORY_ILLUSTRATION: Record<ProgrammeCategory, string> = {
   software: '/hero_illustration.webp',
