@@ -154,15 +154,15 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="relative min-h-[340px] bg-[#fdfbf3] sm:min-h-[440px]">
+          <div className="relative order-first min-h-[340px] bg-white sm:min-h-[460px] lg:order-none">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/hero_illustration.webp"
-              alt="A learner coding on a laptop, surrounded by lessons, progress charts and a graduation cap"
-              className="absolute inset-0 h-full w-full object-cover object-[72%_60%]"
+              src="/hero_programmer.png"
+              alt="A happy learner sitting with a laptop as ideas, code and conversations branch out above"
+              className="absolute inset-0 h-full w-full object-contain object-bottom px-3 pt-10 sm:px-6 lg:pt-16"
             />
             {/* Floating facts, straddling the seam on desktop */}
-            <div className="gentle-float absolute bottom-6 left-4 flex items-center gap-3 rounded-2xl bg-white p-3 pr-5 shadow-[0_16px_40px_-20px_rgba(18,50,79,0.45)] lg:bottom-auto lg:left-[-56px] lg:top-[18%]">
+            <div className="gentle-float absolute left-4 top-4 flex items-center gap-3 rounded-2xl bg-white p-3 pr-5 shadow-[0_16px_40px_-20px_rgba(18,50,79,0.45)] lg:left-[-56px] lg:top-[12%]">
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--pastel-mint)] text-[var(--green-deep)]">
                 <Play size={18} fill="currentColor" />
               </span>
@@ -173,7 +173,7 @@ export default async function HomePage() {
             </div>
             <Link
               href={programmeHref(flagship)}
-              className="gentle-float absolute right-4 top-5 hidden items-center gap-3 rounded-2xl bg-white p-3 pr-4 shadow-[0_16px_40px_-20px_rgba(18,50,79,0.45)] transition-transform hover:-translate-y-0.5 sm:flex lg:bottom-10 lg:left-[-40px] lg:right-auto lg:top-auto"
+              className="gentle-float absolute right-4 top-24 hidden items-center gap-3 rounded-2xl bg-white p-3 pr-4 shadow-[0_16px_40px_-20px_rgba(18,50,79,0.45)] ring-1 ring-black/5 transition-transform hover:-translate-y-0.5 sm:flex lg:right-6 lg:top-[30%]"
               style={{ animationDelay: '1.5s' }}
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--pastel-butter)]">

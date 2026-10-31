@@ -493,6 +493,8 @@ export const FR_SITE: Record<string, string> = {
   'Learn. Teach. Empower. An online school by Looping Binary, built in Douala, Cameroon.':
     'Apprendre. Enseigner. Autonomiser. Une école en ligne de Looping Binary, conçue à Douala, au Cameroun.',
   '© 2026 InTelleX, a Looping Binary company.': '© 2026 InTelleX, une entreprise Looping Binary.',
+  'A happy learner sitting with a laptop as ideas, code and conversations branch out above':
+    'Un apprenant heureux assis avec un ordinateur portable, entouré d’idées, de code et de conversations',
   'Video stories': 'Témoignages vidéo',
   'Tap to watch with sound': 'Touchez pour regarder avec le son',
   'Watch them tell it.': 'Écoutez-les raconter.',
