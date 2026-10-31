@@ -286,6 +286,16 @@ async function markLinkUsed(row: AuthLinkDoc & { source: 'links' | 'pending' | '
   await resets.deleteMany({ tokenHash: row.tokenHash }).catch(() => {});
 }
 
+let prismaCooldownUntil = 0;
+
+function isPrismaConfigured(): boolean {
+  if (Date.now() < prismaCooldownUntil) return false;
+  const url = (process.env.DATABASE_URL || '').trim();
+  if (!url) return false;
+  if (url.includes('[PROJECT]') || url.includes('[PASSWORD]')) return false;
+  return url.startsWith('postgres://') || url.startsWith('postgresql://');
+}
+
 async function prismaUserByEmail(email: string): Promise<{
   user: {
     id: string;
@@ -298,6 +308,7 @@ async function prismaUserByEmail(email: string): Promise<{
   } | null;
   timedOut: boolean;
 }> {
+  if (!isPrismaConfigured()) return { user: null, timedOut: false };
   try {
     const user = await withTimeout(
       prisma.user.findUnique({
@@ -317,8 +328,10 @@ async function prismaUserByEmail(email: string): Promise<{
     );
     return { user, timedOut: false };
   } catch (err) {
+    prismaCooldownUntil = Date.now() + 60_000;
     console.error('prisma user lookup failed:', err);
-    return { user: null, timedOut: true };
+    // Mongo is the source of truth; Prisma being unreachable must never block sign-in.
+    return { user: null, timedOut: false };
   }
 }
 
@@ -329,6 +342,7 @@ async function syncPrismaUser(opts: {
   emailVerified?: Date | null;
   touchLogin?: boolean;
 }): Promise<{ id: string } | null> {
+  if (!isPrismaConfigured()) return null;
   const { firstName, lastName } = splitName(opts.name);
   const now = new Date();
   const verifiedAt = opts.emailVerified === undefined ? now : opts.emailVerified;
@@ -361,6 +375,7 @@ async function syncPrismaUser(opts: {
     );
     return user;
   } catch (err) {
+    prismaCooldownUntil = Date.now() + 60_000;
     console.error('prisma user sync failed:', err);
     return null;
   }
@@ -461,13 +476,63 @@ export async function upsertLearnerLocal(opts: {
   }
 }
 
-async function loadAccount(email: string): Promise<{
+async function loadAccount(rawEmail: string): Promise<{
   account: CredentialAccount | null;
   timedOut: boolean;
 }> {
+  const email = normalizeEmail(rawEmail);
   const creds = await credentialsCol();
-  const existing = (await creds.findOne({ email })) as CredentialAccount | null;
+  let existing = (await creds.findOne({ email })) as CredentialAccount | null;
+  if (!existing && email.includes('@')) {
+    const escaped = email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    existing = (await creds.findOne({
+      email: { $regex: `^${escaped}$`, $options: 'i' },
+    })) as CredentialAccount | null;
+  }
   if (existing?.passwordHash) return { account: existing, timedOut: false };
+
+  // Pending signups whose verification email never arrived can still sign in - but only
+  // when no other account owns this email, and the email stays unverified.
+  const pending = await pendingCol();
+  const pendingRow = (await pending.findOne({ email })) as PendingSignup | null;
+  if (pendingRow?.passwordHash && !existing && !(await findLearnerByEmail(email))) {
+    const now = new Date();
+    const account: CredentialAccount = {
+      email,
+      passwordHash: pendingRow.passwordHash,
+      userId: newLocalUserId(),
+      name: pendingRow.name || email.split('@')[0],
+      emailVerified: null,
+      createdAt: pendingRow.createdAt || now,
+      updatedAt: now,
+    };
+    return { account, timedOut: false };
+  }
+
+  // Check legacy passwordHash on learners collection if present.
+  try {
+    const db = await getDb();
+    const escaped = email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const learnerWithHash = await db.collection('learners').findOne({
+      email: { $regex: `^${escaped}$`, $options: 'i' },
+      passwordHash: { $type: 'string', $ne: '' },
+    });
+    if (learnerWithHash?.passwordHash) {
+      const now = new Date();
+      const account: CredentialAccount = {
+        email,
+        passwordHash: String(learnerWithHash.passwordHash),
+        userId: String(learnerWithHash.lbId || newLocalUserId()),
+        name: String(learnerWithHash.name || email.split('@')[0]),
+        emailVerified: learnerWithHash.emailVerified ? new Date(learnerWithHash.emailVerified) : null,
+        createdAt: now,
+        updatedAt: now,
+      };
+      return { account, timedOut: false };
+    }
+  } catch {
+    /* ignore */
+  }
 
   const prismaLookup = await prismaUserByEmail(email);
   if (prismaLookup.user?.passwordHash) {
@@ -515,11 +580,15 @@ const OAUTH_SET_PASSWORD =
   'This email already has an InTelleX account from Looping Binary. Use Forgot password to set a password, then sign in.';
 
 /** Learner, Prisma, or credentials row for this email — including OAuth-only accounts. */
-async function findIdentity(email: string): Promise<IdentityHit | null> {
+async function findIdentity(
+  email: string,
+  preloadedAccount?: CredentialAccount | null,
+): Promise<IdentityHit | null> {
   const normalized = normalizeEmail(email);
   if (!normalized.includes('@')) return null;
   await reconcileDuplicateLearnersForEmail(normalized).catch(() => {});
-  const { account } = await loadAccount(normalized);
+  const account =
+    preloadedAccount !== undefined ? preloadedAccount : (await loadAccount(normalized)).account;
   const learner = await findLearnerByEmail(normalized);
   const prismaLookup = await prismaUserByEmail(normalized);
   if (!account && !learner && !prismaLookup.user) return null;
@@ -565,9 +634,12 @@ async function activateVerifiedAccount(opts: {
   name: string;
   passwordHash: string;
   existingUserId?: string;
+  /** False for instant signups: the account works, but the email is not proven yet. */
+  verified?: boolean;
 }): Promise<{ userId: string }> {
   const email = normalizeEmail(opts.email);
   const now = new Date();
+  const verifiedAt = opts.verified === false ? null : now;
   const keptId = await reconcileDuplicateLearnersForEmail(email).catch(() => null);
   const { account: existingCred } = await loadAccount(email);
   const existingLearner = await findLearnerByEmail(email);
@@ -584,7 +656,7 @@ async function activateVerifiedAccount(opts: {
     email,
     name: opts.name,
     passwordHash: opts.passwordHash,
-    emailVerified: now,
+    emailVerified: verifiedAt,
     touchLogin: false,
   });
   const canonicalId = userId || prismaUser?.id || newLocalUserId();
@@ -593,7 +665,7 @@ async function activateVerifiedAccount(opts: {
     passwordHash: opts.passwordHash,
     userId: canonicalId,
     name: opts.name,
-    emailVerified: now,
+    emailVerified: verifiedAt,
     createdAt: existingCred?.createdAt || now,
     updatedAt: now,
   });
@@ -601,6 +673,63 @@ async function activateVerifiedAccount(opts: {
   const pending = await pendingCol();
   await pending.deleteOne({ email }).catch(() => {});
   return { userId: canonicalId };
+}
+
+async function buildSessionForAccount(
+  rawEmail: string,
+  account: CredentialAccount,
+): Promise<{
+  ok: true;
+  email: string;
+  session: string;
+  nextPath: string;
+  user: Omit<SessionUser, 'iat'>;
+  expiresInSec: number;
+}> {
+  const email = normalizeEmail(rawEmail);
+  const now = new Date();
+  const verifiedAt = account.emailVerified ?? null;
+  const keptId = await reconcileDuplicateLearnersForEmail(email).catch(() => null);
+  const prismaUser = await syncPrismaUser({
+    email,
+    name: account.name,
+    passwordHash: account.passwordHash,
+    emailVerified: verifiedAt,
+    touchLogin: true,
+  });
+  const userId = keptId || account.userId || prismaUser?.id || newLocalUserId();
+  const learner = await upsertLearnerLocal({
+    id: userId,
+    email,
+    name: account.name || email.split('@')[0],
+  });
+  const canonicalId = learner.lbId || userId;
+  await persistAccount({
+    ...account,
+    email,
+    userId: canonicalId,
+    emailVerified: verifiedAt,
+    updatedAt: now,
+  }).catch(() => {});
+  const pending = await pendingCol();
+  await pending.deleteOne({ email }).catch(() => {});
+
+  const sessionUser = {
+    uid: canonicalId,
+    name: learner.name || account.name || 'Learner',
+    email,
+    ev: Boolean(verifiedAt),
+  };
+  const session = createSession(sessionUser);
+  const nextPath = isOnboardingComplete(learner) ? '/dashboard' : '/dashboard/onboarding';
+  return {
+    ok: true,
+    email,
+    session,
+    nextPath,
+    user: sessionUser,
+    expiresInSec: Math.floor(LOGIN_OTP.ttlMs / 1000),
+  };
 }
 
 async function sendVerificationForPending(opts: {
@@ -648,7 +777,16 @@ export async function startSignup(opts: {
   email: string;
   password: string;
   origin: string;
-}): Promise<{ ok: true; email: string } | AuthError> {
+}): Promise<
+  | {
+      ok: true;
+      email: string;
+      session: string;
+      nextPath: string;
+      user: Omit<SessionUser, 'iat'>;
+    }
+  | AuthError
+> {
   const email = normalizeEmail(opts.email);
   const name = opts.name.trim().slice(0, 120);
   const password = opts.password;
@@ -656,42 +794,60 @@ export async function startSignup(opts: {
   if (name.length < 2) return { error: 'Enter your name.', status: 400 };
   if (!email.includes('@')) return { error: 'Enter a valid email.', status: 400 };
   if (password.length < 8) return { error: 'Password must be at least 8 characters.', status: 400 };
-  if (!opts.origin) return { error: 'Could not build a verification link.', status: 500 };
 
   const { account } = await loadAccount(email);
   if (account?.passwordHash) {
+    // If the learner entered the correct password for their existing account on
+    // the signup screen, sign them right in instead of showing an error.
+    if (await verifyPassword(password, account.passwordHash)) {
+      return buildSessionForAccount(email, account);
+    }
     return { error: 'An account with this email already exists. Sign in instead.', status: 409 };
   }
-  const identity = await findIdentity(email);
+  const identity = await findIdentity(email, account);
   if (identity?.hasPassword) {
     return { error: 'An account with this email already exists. Sign in instead.', status: 409 };
   }
   if (identity) {
+    // Claiming an existing account needs proof of the inbox (Forgot password link).
     return { error: OAUTH_SET_PASSWORD, status: 409, needsPassword: true };
   }
 
   const passwordHash = await hashPassword(password);
-  const pending = await pendingCol();
   const now = new Date();
-  await pending.updateOne(
-    { email },
-    {
-      $set: {
-        email,
-        name,
-        passwordHash,
-        createdAt: now,
-        expiresAt: new Date(now.getTime() + AUTH_LINK.verifyTtlMs),
-      } satisfies Omit<PendingSignup, 'tokenHash' | 'tokenSentAt'>,
-    },
-    { upsert: true },
-  );
-  const row = (await pending.findOne({ email })) as PendingSignup | null;
-  if (!row) return { error: 'Could not start signup. Please try again.', status: 500 };
+  const activated = await activateVerifiedAccount({
+    email,
+    name,
+    passwordHash,
+    verified: false,
+  });
 
-  const sent = await sendVerificationForPending({ pending: row, origin: opts.origin });
-  if ('error' in sent) return sent;
-  return { ok: true, email };
+  // Best-effort verification email if SMTP is configured; never block signup.
+  if (isSmtpConfigured() && opts.origin) {
+    void issueAuthLink({
+      email,
+      purpose: 'verify',
+      ttlMs: AUTH_LINK.verifyTtlMs,
+    })
+      .then((issued) => {
+        if ('token' in issued) {
+          const verifyUrl = `${opts.origin.replace(/\/$/, '')}/verify-email?token=${issued.token}`;
+          return sendLearnerVerifyEmail({ to: email, verifyUrl });
+        }
+        return undefined;
+      })
+      .catch(() => {});
+  }
+
+  return buildSessionForAccount(email, {
+    email,
+    passwordHash,
+    userId: activated.userId,
+    name,
+    emailVerified: null,
+    createdAt: now,
+    updatedAt: now,
+  });
 }
 
 export async function resendVerification(opts: {
@@ -789,14 +945,24 @@ export async function verifyEmailToken(
 export async function completeLogin(opts: {
   email: string;
   password: string;
-}): Promise<{ ok: true; email: string; expiresInSec: number } | AuthError> {
+}) {
   return beginLogin(opts);
 }
 
 export async function beginLogin(opts: {
   email: string;
   password: string;
-}): Promise<{ ok: true; email: string; expiresInSec: number } | AuthError> {
+}): Promise<
+  | {
+      ok: true;
+      email: string;
+      expiresInSec: number;
+      session: string;
+      nextPath: string;
+      user: Omit<SessionUser, 'iat'>;
+    }
+  | AuthError
+> {
   const identifier = String(opts.email || '').trim();
   if (!identifier) return { error: 'Enter your email or matricule.', status: 400 };
   if (!opts.password) return { error: 'Enter your password.', status: 400 };
@@ -811,14 +977,9 @@ export async function beginLogin(opts: {
 
   const loaded = await loadAccount(email);
   if (!loaded.account?.passwordHash) {
-    if (loaded.timedOut) {
-      return {
-        error: 'Sign-in is taking too long. Please try again in a moment.',
-        status: 503,
-      };
-    }
-    const identity = await findIdentity(email);
+    const identity = await findIdentity(email, loaded.account);
     if (identity && !identity.hasPassword) {
+      // Account exists without a password (e.g. old Looping Binary sign-in): set one via Forgot password.
       return { error: OAUTH_SET_PASSWORD, status: 403, needsPassword: true };
     }
     return { error: 'Invalid email or password.', status: 401 };
@@ -828,15 +989,7 @@ export async function beginLogin(opts: {
   const ok = await verifyPassword(opts.password, account.passwordHash);
   if (!ok) return { error: 'Invalid email or password.', status: 401 };
 
-  if (!account.emailVerified) {
-    return {
-      error: 'Verify your email first. Open the link we sent, then come back and sign in.',
-      status: 403,
-      unverified: true,
-    };
-  }
-
-  return issueLoginOtp({ email, passwordAlreadyOk: true });
+  return buildSessionForAccount(email, account);
 }
 
 async function issueLoginOtp(opts: {
@@ -1041,6 +1194,8 @@ export async function finishLoginWithOtp(opts: {
     uid: canonicalId,
     name: learner.name || account.name || 'Learner',
     email,
+    // An emailed code was just entered, so the inbox is proven.
+    ev: true,
   };
   const session = createSession(sessionUser);
   const nextPath = isOnboardingComplete(learner) ? '/dashboard' : '/dashboard/onboarding';

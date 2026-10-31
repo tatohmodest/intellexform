@@ -1,10 +1,11 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, Mail } from 'lucide-react';
 import AuthChrome, { AuthAlert, AuthSubmit } from '@/components/auth/AuthChrome';
+import { useT } from '@/components/i18n/I18nRoot';
 
 function withParams(path: string, next: string, campus: string | null) {
   const q = new URLSearchParams();
@@ -26,8 +27,8 @@ function timedOut(err: unknown) {
  * Optional `campus` query binds the session to an institution after login.
  */
 export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
+  const t = useT();
   const params = useSearchParams();
-  const router = useRouter();
   const campus = (params.get('campus') || '').trim().toLowerCase().slice(0, 64) || null;
   const defaultNext = campus ? `/dashboard/institutions/${campus}` : '/dashboard';
   const next = params.get('next') || defaultNext;
@@ -72,11 +73,12 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
     setInfo(null);
     setNeedsPassword(false);
     setBusy(true);
+    const cleanEmail = email.trim();
     try {
       const endpoint = isSignup ? '/api/auth/signup' : '/api/auth/login';
       const body = isSignup
-        ? { name, email, password }
-        : { email, password };
+        ? { name: name.trim(), email: cleanEmail, password, next, campus: campus || undefined }
+        : { email: cleanEmail, password, next, campus: campus || undefined };
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -86,6 +88,8 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
         email?: string;
+        next?: string;
+        sessionCreated?: boolean;
         otpRequired?: boolean;
         unverified?: boolean;
         retryAfterSec?: number;
@@ -101,6 +105,13 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
           setNeedsPassword(true);
           setInfo('Use Forgot password with this email to set a password for your existing account.');
         }
+        return;
+      }
+      if (data.next || data.sessionCreated || data.otpRequired === false) {
+        const target = data.next || defaultNext;
+        window.location.assign(
+          target.startsWith('/') && !target.startsWith('//') ? target : defaultNext,
+        );
         return;
       }
       if (isSignup) {
@@ -145,8 +156,11 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
         }
         return;
       }
-      router.replace(data.next || defaultNext);
-      router.refresh();
+      // Full page load so the new session cookie is used everywhere. A soft
+      // router.replace can reuse a cached pre-login redirect (/dashboard → /login).
+      const target = data.next || defaultNext;
+      window.location.assign(target.startsWith('/') && !target.startsWith('//') ? target : defaultNext);
+      return;
     } catch (err) {
       setError(timedOut(err) ? 'That took too long. Please try again.' : 'Network error. Please try again.');
     } finally {

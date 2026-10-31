@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isPlatformHostname } from '@/lib/platformHosts';
 import { isLocale, localeFromAcceptLanguage, LOCALE_COOKIE } from '@/lib/i18n/locale';
 import {
+  cookieValues,
   expireAuthCookies,
   SESSION_COOKIE,
   sessionCookieIsValid,
@@ -18,6 +19,24 @@ function withLocale(req: NextRequest, res: NextResponse) {
     sameSite: 'lax',
   });
   return res;
+}
+
+/** Find a valid session among (possibly duplicated) session cookies. */
+async function resolveSession(req: NextRequest) {
+  const tokens = cookieValues(req.headers.get('cookie'), SESSION_COOKIE);
+  const canVerify = Boolean(process.env.SESSION_SECRET || process.env.LB_OAUTH_CLIENT_SECRET);
+  if (!tokens.length) return { hasToken: false, valid: false, stale: false, validToken: null, duplicates: false };
+  if (!canVerify) {
+    // Edge runtime can't see the secret: let server pages (which can) decide.
+    // Redirecting here would loop with /login's own "already signed in" redirect.
+    return { hasToken: true, valid: true, stale: false, validToken: null, duplicates: false };
+  }
+  for (const token of tokens) {
+    if (await sessionCookieIsValid(token)) {
+      return { hasToken: true, valid: true, stale: false, validToken: token, duplicates: tokens.length > 1 };
+    }
+  }
+  return { hasToken: true, valid: false, stale: true, validToken: null, duplicates: tokens.length > 1 };
 }
 
 function hostnameOf(req: NextRequest): string {
@@ -41,12 +60,14 @@ export async function middleware(req: NextRequest) {
   if (pathname.startsWith('/_tc/')) return new NextResponse(null, { status: 404 });
   const host = hostnameOf(req);
   const customHost = Boolean(host) && !isPlatformHostname(host);
-  const token = req.cookies.get(SESSION_COOKIE)?.value;
-  const canVerify = Boolean(process.env.SESSION_SECRET || process.env.LB_OAUTH_CLIENT_SECRET);
-  const valid = token ? await sessionCookieIsValid(token) : false;
-  const stale = Boolean(token) && canVerify && !valid;
+  const session = await resolveSession(req);
+  const { valid, stale } = session;
 
-  const requestHeaders = stale ? stripAuthCookiesHeader(req) : new Headers(req.headers);
+  // Forward only the valid token (or none, if every cookie is stale) so server code sees one clean session.
+  const requestHeaders =
+    stale || session.duplicates
+      ? stripAuthCookiesHeader(req, session.validToken)
+      : new Headers(req.headers);
   requestHeaders.set('x-pathname', pathname);
   if (customHost) {
     requestHeaders.set('x-campus-host', host);
@@ -55,6 +76,7 @@ export async function middleware(req: NextRequest) {
   const isApi = pathname.startsWith('/api/');
   const finish = (res: NextResponse) => {
     const out = withLocale(req, res);
+    // Must run last: it appends raw Set-Cookie lines that a later cookies.set() would drop.
     if (stale && !isApi) expireAuthCookies(out);
     return out;
   };

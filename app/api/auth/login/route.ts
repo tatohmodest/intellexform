@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { beginLogin } from '@/lib/auth/credentials';
+import { resolveAuthNext } from '@/lib/auth/resolveAuthNext';
+import { writeSessionCookie } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,11 +19,11 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/auth/login
- * Body: { email, password }
- * Verifies the password, then emails a 6-digit OTP. Session is set after verify-otp.
+ * Body: { email, password, next?, campus? }
+ * Verifies the password and signs the learner in immediately.
  */
 export async function POST(req: NextRequest) {
-  let body: { email?: string; password?: string };
+  let body: { email?: string; password?: string; next?: string; campus?: string };
   try {
     body = await req.json();
   } catch {
@@ -47,12 +49,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    const nextPath = await resolveAuthNext({
+      userId: result.user.uid,
+      userName: result.user.name,
+      userEmail: result.user.email || result.email,
+      defaultNext: result.nextPath,
+      requestedNext: body.next,
+      campusSlug: body.campus,
+    });
+
+    const res = NextResponse.json({
       ok: true,
-      otpRequired: true,
+      otpRequired: false,
       email: result.email,
+      next: nextPath,
+      user: result.user,
       expiresInSec: result.expiresInSec,
     });
+    writeSessionCookie(res, result.session);
+    return res;
   } catch (err) {
     console.error('login failed:', err);
     return NextResponse.json(

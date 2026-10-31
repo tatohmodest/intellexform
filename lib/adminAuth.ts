@@ -19,10 +19,14 @@ const OTP_TTL_MS = 10 * 60 * 1000;
 const OTP_RESEND_MS = 60 * 1000;
 const OTP_MAX_ATTEMPTS = 5;
 
+import { cookieValues, resolveSessionSecret } from '@/lib/auth/cookies';
+
 function getSecret(): string {
-  const s = process.env.ADMIN_SECRET;
-  if (!s) throw new Error('ADMIN_SECRET environment variable is not set');
-  return s;
+  const s = (process.env.ADMIN_SECRET || '').trim();
+  if (s) return s;
+  const session = resolveSessionSecret();
+  if (!session) throw new Error('ADMIN_SECRET environment variable is not set');
+  return `admin:${session}`;
 }
 
 export function normalizeEmail(email: string): string {
@@ -37,6 +41,17 @@ export function getAdminEmails(): string[] {
     .filter(Boolean);
   const set = new Set<string>([...DEFAULT_ADMIN_EMAILS.map(normalizeEmail), ...fromEnv]);
   return Array.from(set);
+}
+
+/**
+ * A learner session may act as admin only if its email is on the allowlist AND was
+ * proven. Signing up no longer requires verification, so an unverified session for
+ * an admin address must never unlock admin tools.
+ */
+export function isVerifiedAdminSession(
+  session: { email?: string | null; ev?: boolean } | null | undefined,
+): session is { email: string; ev: true } {
+  return Boolean(session?.ev && session.email && isAdminEmail(session.email));
 }
 
 export function isAdminEmail(email: string | null | undefined): boolean {
@@ -141,18 +156,28 @@ export function adminCookieOptions() {
 export function getAdminAccess(req: NextRequest):
   | { ok: true; email: string; via: 'admin_cookie' | 'learner_session' }
   | { ok: false } {
-  const admin = readAdminSession(req.cookies.get(COOKIE_NAME)?.value);
-  if (admin) {
-    return { ok: true, email: admin.email, via: 'admin_cookie' };
+  for (const rawAdmin of [
+    req.cookies.get(COOKIE_NAME)?.value,
+    ...cookieValues(req.headers.get('cookie'), COOKIE_NAME),
+  ]) {
+    const admin = readAdminSession(rawAdmin);
+    if (admin) {
+      return { ok: true, email: admin.email, via: 'admin_cookie' };
+    }
   }
 
-  const learner = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
-  if (learner?.email && isAdminEmail(learner.email)) {
-    return {
-      ok: true,
-      email: normalizeEmail(learner.email),
-      via: 'learner_session',
-    };
+  for (const rawLearner of [
+    req.cookies.get(SESSION_COOKIE)?.value,
+    ...cookieValues(req.headers.get('cookie'), SESSION_COOKIE),
+  ]) {
+    const learner = verifySession(rawLearner);
+    if (isVerifiedAdminSession(learner)) {
+      return {
+        ok: true,
+        email: normalizeEmail(learner.email),
+        via: 'learner_session',
+      };
+    }
   }
 
   return { ok: false };

@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { SESSION_MAX_AGE } from '@/lib/auth/cookies';
+import { resolveSessionSecret, SESSION_MAX_AGE } from '@/lib/auth/cookies';
 
 export { SESSION_COOKIE, SESSION_MAX_AGE, sessionCookieOptions, writeSessionCookie } from '@/lib/auth/cookies';
 
@@ -14,12 +14,14 @@ export interface SessionUser {
   name: string;
   email: string;
   avatar?: string;
+  /** True only when the email was proven (verification link, reset link or emailed code). */
+  ev?: boolean;
   iat: number;
 }
 
 function getSecret(): string {
-  const s = process.env.SESSION_SECRET || process.env.LB_OAUTH_CLIENT_SECRET;
-  if (!s) throw new Error('SESSION_SECRET (or LB_OAUTH_CLIENT_SECRET) is not set');
+  const s = resolveSessionSecret();
+  if (!s) throw new Error('SESSION_SECRET (or another server secret) is not set');
   return s;
 }
 
@@ -52,5 +54,5 @@ export function verifySession(token: string | undefined | null): SessionUser | n
 }
 
 export function sessionSecretConfigured(): boolean {
-  return Boolean(process.env.SESSION_SECRET || process.env.LB_OAUTH_CLIENT_SECRET);
+  return Boolean(resolveSessionSecret());
 }

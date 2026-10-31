@@ -205,47 +205,68 @@ export async function findLearnerByEmail(email: string): Promise<LearnerDoc | nu
   }
 }
 
+let uniqueEmailsEnsured: Promise<void> | null = null;
+
 /** One email = one learner profile. Collapse extras so a unique index can be applied. */
 export async function ensureUniqueLearnerEmails(): Promise<void> {
-  const db = await getDb();
-  const col = db.collection('learners');
+  if (uniqueEmailsEnsured) return uniqueEmailsEnsured;
+  uniqueEmailsEnsured = (async () => {
+    const db = await getDb();
+    const col = db.collection('learners');
 
-  await col
-    .updateMany({ email: { $in: ['', null] } }, { $unset: { email: '' } })
-    .catch(() => {});
-  await col
-    .updateMany({ email: { $type: 'string' } }, [
-      { $set: { email: { $toLower: { $trim: { input: '$email' } } } } },
-    ])
-    .catch(() => {});
+    await col
+      .updateMany({ email: { $in: ['', null] } }, { $unset: { email: '' } })
+      .catch(() => {});
+    await col
+      .updateMany({ email: { $type: 'string' } }, [
+        { $set: { email: { $toLower: { $trim: { input: '$email' } } } } },
+      ])
+      .catch(() => {});
 
-  const grouped = await col
-    .aggregate<{ _id: string; ids: string[]; n: number }>([
-      { $match: { email: { $type: 'string', $nin: ['', null] } } },
-      {
-        $group: {
-          _id: { $toLower: '$email' },
-          ids: { $addToSet: '$lbId' },
-          n: { $sum: 1 },
+    const grouped = await col
+      .aggregate<{ _id: string; ids: string[]; n: number }>([
+        { $match: { email: { $type: 'string', $nin: ['', null] } } },
+        {
+          $group: {
+            _id: { $toLower: '$email' },
+            ids: { $addToSet: '$lbId' },
+            n: { $sum: 1 },
+          },
         },
-      },
-      { $match: { n: { $gt: 1 } } },
-    ])
-    .toArray()
-    .catch(() => []);
+        { $match: { n: { $gt: 1 } } },
+      ])
+      .toArray()
+      .catch(() => []);
 
-  for (const g of grouped) {
-    await reconcileDuplicateLearnersForEmail(String(g._id || '')).catch(() => {});
-  }
-
-  const indexes = await col.indexes().catch(() => [] as Array<{ name?: string; key?: Record<string, number>; unique?: boolean; sparse?: boolean }>);
-  for (const idx of indexes) {
-    const keys = Object.keys(idx.key || {});
-    if (keys.length === 1 && keys[0] === 'email' && idx.name && (!idx.unique || !idx.sparse)) {
-      await col.dropIndex(idx.name).catch(() => {});
+    for (const g of grouped) {
+      await reconcileDuplicateLearnersForEmail(String(g._id || '')).catch(() => {});
     }
-  }
-  await col.createIndex({ email: 1 }, { unique: true, sparse: true, name: 'learners_email_unique' }).catch(() => {});
+
+    const indexes = await col
+      .indexes()
+      .catch(
+        () =>
+          [] as Array<{
+            name?: string;
+            key?: Record<string, number>;
+            unique?: boolean;
+            sparse?: boolean;
+          }>,
+      );
+    for (const idx of indexes) {
+      const keys = Object.keys(idx.key || {});
+      if (keys.length === 1 && keys[0] === 'email' && idx.name && (!idx.unique || !idx.sparse)) {
+        await col.dropIndex(idx.name).catch(() => {});
+      }
+    }
+    await col
+      .createIndex({ email: 1 }, { unique: true, sparse: true, name: 'learners_email_unique' })
+      .catch(() => {});
+  })().catch((err) => {
+    uniqueEmailsEnsured = null;
+    throw err;
+  });
+  return uniqueEmailsEnsured;
 }
 
 function isLocalCredentialId(id: string) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/getUser';
-import { isAdminEmail } from '@/lib/adminAuth';
+import { isVerifiedAdminSession } from '@/lib/adminAuth';
 import {
   addAdminVideo,
   listVideoHall,
@@ -14,13 +14,13 @@ export async function GET() {
   const session = getSessionUser();
   if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const videos = await listVideoHall();
-  return NextResponse.json({ videos, isAdmin: isAdminEmail(session.email) });
+  return NextResponse.json({ videos, isAdmin: isVerifiedAdminSession(session) });
 }
 
 export async function POST(req: NextRequest) {
   const session = getSessionUser();
   if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  if (!isAdminEmail(session.email)) {
+  if (!isVerifiedAdminSession(session)) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
   const body = await req.json().catch(() => ({}));
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const session = getSessionUser();
   if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  if (!isAdminEmail(session.email)) {
+  if (!isVerifiedAdminSession(session)) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
   const id = new URL(req.url).searchParams.get('id') || '';

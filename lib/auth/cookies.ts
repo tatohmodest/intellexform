@@ -6,37 +6,47 @@ export const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
 
 const AUTH_COOKIE_NAMES = [SESSION_COOKIE, OAUTH_STATE_COOKIE] as const;
 
-function expireVariants(): Array<{
-  httpOnly: true;
-  sameSite: 'lax';
-  path: string;
-  maxAge: number;
-  expires: Date;
-  secure?: boolean;
-  domain?: string;
-}> {
-  const base = {
-    httpOnly: true as const,
-    sameSite: 'lax' as const,
-    path: '/',
-    maxAge: 0,
-    expires: new Date(0),
-  };
-  return [
-    { ...base },
-    { ...base, secure: true },
-    { ...base, secure: process.env.NODE_ENV === 'production' },
-    { ...base, domain: '.loopingbinary.com', secure: true },
-    { ...base, domain: 'intellex.loopingbinary.com', secure: true },
-    { ...base, domain: '.intellex.loopingbinary.com', secure: true },
+/** Domains older builds may have written auth cookies on. */
+const LEGACY_DOMAINS = ['.loopingbinary.com', 'intellex.loopingbinary.com', '.intellex.loopingbinary.com'];
+
+function isProd() {
+  return process.env.NODE_ENV === 'production';
+}
+
+/**
+ * Serialize an expiry Set-Cookie line.
+ * NOTE: `res.cookies.set` keys cookies by name only, so writing several
+ * variants of the same cookie through it keeps just the last one. We append
+ * raw headers instead so every variant actually reaches the browser.
+ */
+function expiryLine(name: string, opts: { domain?: string; secure?: boolean }): string {
+  const parts = [
+    `${name}=`,
+    'Path=/',
+    'Max-Age=0',
+    'Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+    'HttpOnly',
+    'SameSite=Lax',
   ];
+  if (opts.domain) parts.push(`Domain=${opts.domain}`);
+  if (opts.secure) parts.push('Secure');
+  return parts.join('; ');
+}
+
+function appendExpiry(res: NextResponse, includeHostOnly: boolean, names: readonly string[]) {
+  for (const name of names) {
+    if (includeHostOnly) res.headers.append('set-cookie', expiryLine(name, { secure: isProd() }));
+    for (const domain of LEGACY_DOMAINS) {
+      res.headers.append('set-cookie', expiryLine(name, { domain, secure: true }));
+    }
+  }
 }
 
 export function sessionCookieOptions() {
   return {
     httpOnly: true as const,
     sameSite: 'lax' as const,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProd(),
     path: '/',
     maxAge: SESSION_MAX_AGE,
   };
@@ -44,21 +54,45 @@ export function sessionCookieOptions() {
 
 /** Drop every leftover session cookie, then write a fresh host-only one. */
 export function writeSessionCookie(res: NextResponse, token: string): NextResponse {
-  expireAuthCookies(res);
   res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
+  // Appended after `cookies.set` (which rewrites Set-Cookie headers) so they survive.
+  // Host-only expiry is skipped: the fresh cookie above replaces it.
+  appendExpiry(res, false, [SESSION_COOKIE]);
+  appendExpiry(res, true, [OAUTH_STATE_COOKIE]);
   return res;
 }
 
+/**
+ * Expire auth cookies on every host/domain variant.
+ * Call this LAST on a response: a later `res.cookies.set(...)` rewrites the
+ * Set-Cookie header list and would drop these lines.
+ */
 export function expireAuthCookies(res: NextResponse): NextResponse {
-  for (const name of AUTH_COOKIE_NAMES) {
-    for (const opts of expireVariants()) {
-      res.cookies.set(name, '', opts);
+  appendExpiry(res, true, AUTH_COOKIE_NAMES);
+  return res;
+}
+
+/** Every value sent for `name` (browsers send duplicates when host + domain cookies coexist). */
+export function cookieValues(rawCookieHeader: string | null | undefined, name: string): string[] {
+  if (!rawCookieHeader) return [];
+  const out: string[] = [];
+  for (const part of rawCookieHeader.split(';')) {
+    const pair = part.trim();
+    const eq = pair.indexOf('=');
+    if (eq === -1 || pair.slice(0, eq) !== name) continue;
+    const value = pair.slice(eq + 1);
+    if (!value) continue;
+    try {
+      out.push(decodeURIComponent(value));
+    } catch {
+      out.push(value);
     }
   }
-  return res;
+  return out;
 }
 
-export function stripAuthCookiesHeader(req: NextRequest): Headers {
+/** Rebuild the request Cookie header with auth cookies removed, optionally keeping one session token. */
+export function stripAuthCookiesHeader(req: NextRequest, keepSession?: string | null): Headers {
   const headers = new Headers(req.headers);
   const raw = headers.get('cookie');
   if (!raw) return headers;
@@ -69,6 +103,7 @@ export function stripAuthCookiesHeader(req: NextRequest): Headers {
       const name = part.split('=')[0];
       return name !== SESSION_COOKIE && name !== OAUTH_STATE_COOKIE;
     });
+  if (keepSession) kept.push(`${SESSION_COOKIE}=${keepSession}`);
   if (kept.length) headers.set('cookie', kept.join('; '));
   else headers.delete('cookie');
   return headers;
@@ -78,10 +113,28 @@ function hex(bytes: ArrayBuffer): string {
   return Array.from(new Uint8Array(bytes), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-/** Edge-safe HMAC check. Returns false for missing/rotated secrets or stale cookies. */
+/**
+ * Resolve the HMAC signing secret for learner sessions: SESSION_SECRET, then other
+ * dedicated server secrets. Returns '' when none is set - never a hard-coded or
+ * guessable value, or anyone could forge a session.
+ */
+export function resolveSessionSecret(): string {
+  const candidates = [
+    process.env.SESSION_SECRET,
+    process.env.LB_OAUTH_CLIENT_SECRET,
+    process.env.NEXTAUTH_SECRET,
+    process.env.ADMIN_SECRET,
+  ];
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim()) return c.trim();
+  }
+  return '';
+}
+
+/** Edge-safe HMAC check. Returns false for rotated secrets or stale cookies. */
 export async function sessionCookieIsValid(token: string | undefined | null): Promise<boolean> {
   if (!token) return false;
-  const secret = process.env.SESSION_SECRET || process.env.LB_OAUTH_CLIENT_SECRET;
+  const secret = resolveSessionSecret();
   if (!secret) return false;
   try {
     const dot = token.lastIndexOf('.');

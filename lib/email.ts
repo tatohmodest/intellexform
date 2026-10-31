@@ -25,8 +25,20 @@ function smtpPass() {
   return env('SMTP_PASS', 'RESEND_API_KEY').replace(/\s+/g, '');
 }
 
+function resendApiKey(): string {
+  const explicit = env('RESEND_API_KEY').replace(/\s+/g, '');
+  if (explicit) return explicit;
+  const pass = smtpPass();
+  const host = smtpHost().toLowerCase();
+  const user = smtpUser().toLowerCase();
+  if (pass && (host.includes('resend.com') || user === 'resend' || pass.startsWith('re_'))) {
+    return pass;
+  }
+  return '';
+}
+
 export function isSmtpConfigured(): boolean {
-  return Boolean(smtpHost() && smtpUser() && smtpPass());
+  return Boolean(resendApiKey() || (smtpHost() && smtpUser() && smtpPass()));
 }
 
 function mailFromAddress() {
@@ -38,11 +50,57 @@ function mailFromAddress() {
   if (host.includes('gmail') && user.includes('@')) return user;
   if (inner.includes('@')) return inner;
   if (user.includes('@')) return user;
-  return 'intellexplatform@gmail.com';
+  return 'intellex@loopingbinary.com';
 }
 
 function mailFromHeader(name: string) {
   return `${name} <${mailFromAddress()}>`;
+}
+
+async function sendViaResendHttp(apiKey: string, opts: SendMailOptions): Promise<boolean> {
+  const toRaw = opts.to;
+  const to = Array.isArray(toRaw)
+    ? toRaw.map((t) => (typeof t === 'string' ? t : t.address))
+    : typeof toRaw === 'string'
+      ? [toRaw]
+      : toRaw && typeof toRaw === 'object' && 'address' in toRaw
+        ? [toRaw.address]
+        : [];
+  if (!to.length) return false;
+  const from =
+    typeof opts.from === 'string'
+      ? opts.from
+      : opts.from && typeof opts.from === 'object' && 'address' in opts.from
+        ? opts.from.name
+          ? `${opts.from.name} <${opts.from.address}>`
+          : opts.from.address
+        : mailFromHeader('InTelleX');
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from,
+      to,
+      subject: String(opts.subject || 'InTelleX'),
+      html: typeof opts.html === 'string' ? opts.html : undefined,
+      text: typeof opts.text === 'string' ? opts.text : undefined,
+      reply_to: typeof opts.replyTo === 'string' ? opts.replyTo : undefined,
+    }),
+    signal: AbortSignal.timeout(12_000),
+  });
+  if (res.ok) return true;
+  const detail = await res.text().catch(() => '');
+  console.warn('resend http send non-200:', res.status, detail.slice(0, 200));
+  if (res.status === 401 || res.status === 403) {
+    // If SMTP is not separately configured, surface auth error; otherwise let SMTP fallback try.
+    if (!smtpHost() || smtpHost().toLowerCase().includes('resend.com')) {
+      throw new Error('smtp_auth');
+    }
+  }
+  return false;
 }
 
 function getTransport() {
@@ -71,6 +129,19 @@ function getTransport() {
 }
 
 async function sendMail(opts: SendMailOptions): Promise<void> {
+  const resendKey = resendApiKey();
+  if (resendKey) {
+    try {
+      const sent = await sendViaResendHttp(resendKey, opts);
+      if (sent) return;
+    } catch (err) {
+      if (err instanceof Error && err.message === 'smtp_auth') throw err;
+      console.warn('resend http send failed, trying SMTP fallback:', err);
+    }
+    if (!smtpHost() || !smtpUser()) {
+      throw new Error('smtp_timeout');
+    }
+  }
   const transport = getTransport();
   try {
     await withTimeout(transport.sendMail(opts), SMTP_SEND_MS, 'smtp');

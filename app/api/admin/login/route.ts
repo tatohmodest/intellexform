@@ -5,6 +5,7 @@ import {
   createSessionToken,
   getAdminAccess,
   isAdminEmail,
+  isVerifiedAdminSession,
   normalizeEmail,
 } from '@/lib/adminAuth';
 import { SESSION_COOKIE, verifySession } from '@/lib/auth/session';
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     const learner = verifySession(req.cookies.get(SESSION_COOKIE)?.value);
     const email = normalizeEmail(String(body.email || learner?.email || ''));
-    if (learner?.email && isAdminEmail(learner.email)) {
+    if (isVerifiedAdminSession(learner)) {
       const res = NextResponse.json({
         success: true,
         email: normalizeEmail(learner.email),

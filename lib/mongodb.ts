@@ -6,13 +6,29 @@ declare global {
 }
 
 function connect(): Promise<MongoClient> {
-  const uri = process.env.MONGODB_URL;
+  const uri = (process.env.MONGODB_URL || process.env.MONGODB_URI || "").trim();
   if (!uri) {
     return Promise.reject(
       new Error("Please define the MONGODB_URL environment variable"),
     );
   }
-  return new MongoClient(uri).connect();
+  return new MongoClient(uri, {
+    serverSelectionTimeoutMS: 8_000,
+    connectTimeoutMS: 8_000,
+  })
+    .connect()
+    .catch((err) => {
+      // Never cache a failed connection promise across future requests.
+      global._mongoClientPromise = undefined;
+      throw err;
+    });
+}
+
+function getClientPromise(): Promise<MongoClient> {
+  if (!global._mongoClientPromise) {
+    global._mongoClientPromise = connect();
+  }
+  return global._mongoClientPromise;
 }
 
 /**
@@ -25,18 +41,12 @@ const clientPromise = {
     onfulfilled?: ((value: MongoClient) => TResult1 | PromiseLike<TResult1>) | null,
     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
   ) {
-    if (!global._mongoClientPromise) {
-      global._mongoClientPromise = connect();
-    }
-    return global._mongoClientPromise.then(onfulfilled, onrejected);
+    return getClientPromise().then(onfulfilled, onrejected);
   },
   catch<TResult = never>(
     onrejected?: ((reason: unknown) => TResult | PromiseLike<TResult>) | null,
   ) {
-    if (!global._mongoClientPromise) {
-      global._mongoClientPromise = connect();
-    }
-    return global._mongoClientPromise.catch(onrejected);
+    return getClientPromise().catch(onrejected);
   },
 } as Promise<MongoClient>;
 

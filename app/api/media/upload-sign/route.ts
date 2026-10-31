@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { assertAdmin, isAdminEmail } from '@/lib/adminAuth';
+import { assertAdmin, isVerifiedAdminSession } from '@/lib/adminAuth';
 import { getSessionUser } from '@/lib/auth/getUser';
 import {
   isCloudinaryConfigured,
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   }
 
   const learner = getSessionUser();
-  const adminOk = assertAdmin(req) || (learner?.email ? isAdminEmail(learner.email) : false);
+  const adminOk = assertAdmin(req) || isVerifiedAdminSession(learner);
 
   if (ADMIN_KINDS.includes(kind) && (kind === 'logo' || kind === 'cover' || kind === 'course_image')) {
     if (!adminOk) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });

@@ -127,9 +127,8 @@ export default function SettingsForm({
   }
 
   async function logout() {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/');
-    router.refresh();
+    await fetch('/api/auth/logout', { method: 'POST', cache: 'no-store' }).catch(() => {});
+    window.location.assign('/');
   }
 
   async function changePassword() {

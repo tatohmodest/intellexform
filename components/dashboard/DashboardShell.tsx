@@ -695,9 +695,9 @@ export default function DashboardShell({
       : undefined;
 
   async function logout() {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    router.push(inCampus && campusBrand ? `/site/${campusBrand.slug}` : '/');
-    router.refresh();
+    await fetch('/api/auth/logout', { method: 'POST', cache: 'no-store' }).catch(() => {});
+    // Full page load: the client router cache may still hold signed-in pages.
+    window.location.assign(inCampus && campusBrand ? `/site/${campusBrand.slug}` : '/');
   }
 
   if (minimal) {
