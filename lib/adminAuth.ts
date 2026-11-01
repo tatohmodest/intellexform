@@ -59,7 +59,7 @@ export function isAdminEmail(email: string | null | undefined): boolean {
   return getAdminEmails().includes(normalizeEmail(email));
 }
 
-// ── Password hashing (kept for legacy Mongo admin docs) ───────────────────────
+// ── Password hashing for credentials and one-time codes ───────────────────────
 
 export async function hashPassword(password: string): Promise<string> {
   const salt = crypto.randomBytes(16).toString('hex');

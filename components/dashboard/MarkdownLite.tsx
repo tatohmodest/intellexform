@@ -55,12 +55,12 @@ function linkLabel(url: string): string {
 }
 
 function Inline({ text }: { text: string }) {
-  const tokens = text.split(/(\[[^\]]+\]\(https?:\/\/[^)]+\)|https?:\/\/[^\s<>)"']+|\/dashboard\/[\w/-]+|\*\*[^*]+\*\*|`[^`]+`)/g);
+  const tokens = text.split(/(\[[^\]]+\]\((?:https?:\/\/[^)\s]+|\/(?!\/)[^)\s]*)\)|https?:\/\/[^\s<>)"']+|\/dashboard\/[\w/-]+|\*\*[^*]+\*\*|`[^`]+`)/g);
   return (
     <>
       {tokens.map((tok, ti) => {
         if (!tok) return null;
-        const md = tok.match(/^\[([^\]]+)\]\((https?:\/\/[^)]+)\)$/);
+        const md = tok.match(/^\[([^\]]+)\]\(((?:https?:\/\/|\/(?!\/))[^)\s]+)\)$/);
         if (md) {
           return (
             <LessonLink key={ti} href={md[2]}>
@@ -77,7 +77,7 @@ function Inline({ text }: { text: string }) {
           );
         }
         if (tok.startsWith('**') && tok.endsWith('**')) {
-          return <strong key={ti}>{tok.slice(2, -2)}</strong>;
+          return <strong key={ti}><Inline text={tok.slice(2, -2)} /></strong>;
         }
         if (tok.startsWith('`') && tok.endsWith('`')) {
           return (

@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId } from '@/lib/db/documentStore';
 import { getDb } from '@/lib/repo';
 import { classHeadFlags } from '@/lib/learn/studentAccess';
 import { type Mentor, type MentorSlot } from '@/lib/learn/mentors';

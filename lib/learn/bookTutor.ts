@@ -7,7 +7,7 @@
  * progress row for that curriculum path.
  */
 
-import { ObjectId } from 'mongodb';
+import { ObjectId } from '@/lib/db/documentStore';
 import { getDb } from '@/lib/repo';
 import { awardXp } from '@/lib/learn/repo';
 import { XP } from '@/lib/learn/xp';

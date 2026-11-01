@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import clientPromise from '@/lib/mongodb';
+import { getDb } from '@/lib/repo';
 import {
   ADMIN_OTP,
   COOKIE_NAME,
@@ -29,8 +29,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
     }
 
-    const client = await clientPromise;
-    const db = client.db('intellex');
+    const db = await getDb();
     const otps = db.collection('admin_otps');
     const doc = await otps.findOne({ email });
 

@@ -1,23 +1,22 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, Search } from 'lucide-react';
-import { OPEN_ADVISOR_EVENT } from '@/lib/advisor';
-import { useLocale, useT } from '@/components/i18n/I18nRoot';
+import { useT } from '@/components/i18n/I18nRoot';
 
-const SUGGESTIONS = ['Web development', 'Data analysis', 'Cybersecurity', 'Which skill pays well?'];
+const SUGGESTIONS = ['Web development', 'Data analysis', 'Cybersecurity', 'Full Stack Development'];
 
 /** Hero search box: the visitor's question goes straight to the AI advisor. */
 export default function HeroAsk() {
-  const locale = useLocale();
+  const router = useRouter();
   const t = useT();
   const [q, setQ] = useState('');
 
-  function ask(text: string) {
-    const question = text.trim();
-    if (!question) return;
-    window.dispatchEvent(new CustomEvent(OPEN_ADVISOR_EVENT, { detail: question }));
-    setQ('');
+  function search(text: string) {
+    const query = text.trim();
+    if (!query) return;
+    router.push(`/search?q=${encodeURIComponent(query)}`);
   }
 
   return (
@@ -26,7 +25,7 @@ export default function HeroAsk() {
         className="flex items-center gap-2 rounded-2xl bg-white p-2 shadow-[0_12px_32px_-18px_rgba(18,50,79,0.35)]"
         onSubmit={(e) => {
           e.preventDefault();
-          ask(q);
+          search(q);
         }}
       >
         <Search size={19} className="ml-3 shrink-0 text-[var(--ink-soft)]" />
@@ -35,14 +34,14 @@ export default function HeroAsk() {
           onChange={(e) => setQ(e.target.value)}
           maxLength={300}
           placeholder={t('What will you learn?')}
-          aria-label={t('Ask what you want to learn')}
+          aria-label={t('Search courses and tutorials')}
           className="min-w-0 flex-1 bg-transparent px-1 py-2.5 text-[15.5px] outline-none placeholder:text-[var(--ink-soft)]"
         />
         <button
           type="submit"
           className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[var(--green)] px-4 py-2.5 text-[14.5px] font-semibold text-white transition-colors hover:bg-[var(--green-deep)]"
         >
-          Ask <ArrowRight size={16} />
+          Search <ArrowRight size={16} />
         </button>
       </form>
       <div className="mt-3 flex flex-wrap gap-2">
@@ -50,18 +49,10 @@ export default function HeroAsk() {
           <button
             key={s}
             type="button"
-            onClick={() =>
-              ask(
-                s.endsWith('?')
-                  ? t(s)
-                  : locale === 'fr'
-                    ? `Parlez-moi de l’apprentissage de ${t(s).toLowerCase()} chez InTelleX`
-                    : `Tell me about learning ${s.toLowerCase()} at InTelleX`,
-              )
-            }
+            onClick={() => search(s)}
             className="rounded-full bg-white/70 px-3.5 py-1.5 text-[13px] font-medium text-[var(--navy)] transition-colors hover:bg-white"
           >
-            {s}
+            {t(s)}
           </button>
         ))}
       </div>

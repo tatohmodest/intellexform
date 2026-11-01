@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { MongoClient } from 'mongodb';
+import { prisma } from '../lib/db/prisma';
+import { getDb } from '../lib/repo';
 
 interface UdemyCourseImport {
   title: string;
@@ -17,7 +18,7 @@ interface UdemyCourseImport {
 }
 
 /**
- * Script to bulk-import 1,000+ Udemy courses into Intellex MongoDB database.
+ * Script to bulk-import Udemy courses into the PostgreSQL-backed course store.
  * Usage:
  *   npx tsx scripts/import-udemy-courses.ts [path-to-json-or-csv]
  *
@@ -79,12 +80,7 @@ async function main() {
     process.exit(1);
   }
 
-  const mongoUrl = process.env.MONGODB_URL || 'mongodb://127.0.0.1:27017';
-  console.log(`🔌 Connecting to MongoDB at ${mongoUrl}...`);
-
-  const client = new MongoClient(mongoUrl);
-  await client.connect();
-  const db = client.db('intellex');
+  const db = await getDb();
   const collection = db.collection('courses');
 
   let insertedCount = 0;
@@ -161,10 +157,9 @@ async function main() {
   console.log(`   - Existing courses updated: ${updatedCount}`);
   console.log(`   - Total processed: ${coursesInput.length}`);
 
-  await client.close();
 }
 
 main().catch((err) => {
   console.error('Fatal error during import:', err);
-  process.exit(1);
-});
+  process.exitCode = 1;
+}).finally(() => prisma.$disconnect());

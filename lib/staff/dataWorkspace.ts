@@ -1,9 +1,9 @@
 /**
  * Institutional Data Workspace — dynamic datasets, forms, records.
- * Structured Mongo documents (not a spreadsheet blob) with search, audit, and permissions.
+ * Structured PostgreSQL documents with search, audit, and permissions.
  */
 
-import { ObjectId, type Filter } from 'mongodb';
+import { ObjectId, type Filter } from '@/lib/db/documentStore';
 import { getDb } from '@/lib/repo';
 import { getLearner } from '@/lib/learn/repo';
 import { getStudentMembership } from '@/lib/learn/studentAccess';

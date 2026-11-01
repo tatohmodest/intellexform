@@ -1855,7 +1855,7 @@ model CatalogPlan {
   @@index([kind, status])
 }
 
-/// Platform-issued onboarding invitations (Prisma source of truth; Mongo may mirror).
+/// Platform-issued onboarding invitations (Prisma source of truth).
 model OnboardingInvitation {
   id                 String   @id @default(cuid())
   token              String   @unique
@@ -1924,4 +1924,19 @@ model CrossInstitutionVerification {
 
   @@index([targetInstitutionId, status])
   @@index([subjectGlobalUserId])
+}
+
+/// PostgreSQL-backed records for application domains not yet represented by
+/// dedicated relational models. Collection names are bounded by the app code;
+/// identity and uniqueness are enforced by the composite primary key.
+model AppDocument {
+  collection String
+  id         String
+  payload    Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@id([collection, id])
+  @@index([collection, updatedAt])
+  @@map("app_documents")
 }

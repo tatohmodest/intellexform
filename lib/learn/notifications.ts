@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId } from '@/lib/db/documentStore';
 import { getDb } from '@/lib/repo';
 import { ensureLearnCollections } from '@/lib/learn/ecosystem';
 import { getLearner } from '@/lib/learn/repo';

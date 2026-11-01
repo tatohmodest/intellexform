@@ -45,7 +45,7 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Pro
 }
 
 /**
- * Build the full public sitemap. Mongo lookups are time-capped so Googlebot
+ * Build the full public sitemap. PostgreSQL lookups are time-capped so Googlebot
  * never hits a hung edge function (common GSC "Couldn't fetch" cause).
  */
 export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {

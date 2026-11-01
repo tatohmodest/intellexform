@@ -2,7 +2,7 @@
  * Per-lesson personal study notes (linked to course + lesson).
  */
 
-import { ObjectId } from 'mongodb';
+import { ObjectId } from '@/lib/db/documentStore';
 import { getDb } from '@/lib/repo';
 import { ensureLearnCollections } from '@/lib/learn/ecosystem';
 

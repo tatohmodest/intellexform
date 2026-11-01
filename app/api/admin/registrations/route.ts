@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
 import { assertAdmin } from "@/lib/adminAuth";
+import { getDb } from "@/lib/repo";
 
 export async function GET(req: NextRequest) {
   if (!assertAdmin(req)) {
@@ -8,8 +8,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const client = await clientPromise;
-    const db = client.db("intellex");
+    const db = await getDb();
     const registrations = await db
       .collection("registrations")
       .find({})

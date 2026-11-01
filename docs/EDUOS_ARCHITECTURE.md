@@ -79,7 +79,9 @@ Preferred tenant operations for people/courses/enrollments/progress use **Prisma
 | Dedicated DB secrets | `lib/eduos/secretsDb.ts` (`env:`, `intellex-secret:`, `TENANT_DB_URLS`) |
 | Learner dashboard merge | `lib/orgLms/learnerPlane.ts` → `getEnrollments` / `getProgress` |
 
-Mongo `teacher_courses` remains available in Teaching Studio during migration. Catalogue enrollments may still use Mongo; org LMS enrollments/progress prefer Prisma.
+Application collections that have not yet been converted to dedicated Prisma models are stored as PostgreSQL JSONB documents in `app_documents`. The app uses one PostgreSQL database for identity, teaching studio, catalogue, and tenant data.
+
+Apply the Prisma schema before deploying this storage change with `npm run db:push` (or execute `prisma/sql/20261101_app_documents.sql` for the document table). MongoDB is no longer read or written. Existing MongoDB-only accounts and records are not imported; learners create accounts again in PostgreSQL.
 
 ## Hierarchy of authority
 
@@ -121,7 +123,7 @@ Preferred tenant data plane for people/courses/enrollments is **Prisma** via `li
 | Public website | `/site/[slug]` (custom domains → guests) |
 | Dedicated DB secrets | `lib/eduos/secretsDb.ts` (`env:` / `intellex-secret:` / `TENANT_DB_URLS`) |
 
-Mongo `teacher_courses` / campus docs remain for legacy teach studio during migration.
+Legacy application records use the PostgreSQL `app_documents` table until moved into dedicated relational models.
 
 
 Subscription prices live in `CatalogPlan` (seeded). Student resource membership defaults to **1,999 XAF / month** — editable from Platform Admin, not hard-coded in checkout long-term (`lib/eduos/subscriptionCatalog.ts`, client fallback in `lib/learn/certPricing.ts`).

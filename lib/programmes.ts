@@ -101,9 +101,9 @@ export function programmeHref(p: Pick<Program, 'id'>) {
   return `/programmes/${p.id}`;
 }
 
-/** Enrolment goes through the contact wizard so the team confirms the cohort and payment plan. */
+/** Step-by-step enrolment for this programme; the team then confirms cohort and payment on WhatsApp. */
 export function enrolHref(p: Pick<Program, 'id'>) {
-  return `/contact?type=learner&programme=${encodeURIComponent(p.id)}`;
+  return `/programmes/${encodeURIComponent(p.id)}/enrol`;
 }
 
 export function priceLabel(xaf: number) {

@@ -2,7 +2,7 @@
  * Content revision snapshots for teacher courses & assessments.
  */
 
-import { ObjectId } from 'mongodb';
+import { ObjectId } from '@/lib/db/documentStore';
 import { getDb } from '@/lib/repo';
 import { ensureLearnCollections } from '@/lib/learn/ecosystem';
 

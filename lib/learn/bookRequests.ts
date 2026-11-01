@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId } from '@/lib/db/documentStore';
 import { getDb } from '@/lib/repo';
 
 export type BookRequestStatus = 'pending' | 'fulfilled' | 'rejected';

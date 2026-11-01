@@ -1,7 +1,7 @@
 /**
  * Client-safe mentor application types & constants.
  * Keep Mongo / Node-only code out of this module so dashboard client
- * components can import labels and types without pulling in `mongodb`.
+ * components can import labels and types without pulling in the document store.
  */
 
 import type { MentorSlot } from '@/lib/learn/mentors';

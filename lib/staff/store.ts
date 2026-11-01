@@ -3,7 +3,7 @@
  * All privileged writes go through requireStaff / requirePlatformAdmin.
  */
 
-import { ObjectId } from 'mongodb';
+import { ObjectId } from '@/lib/db/documentStore';
 import { getDb } from '@/lib/repo';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getLearner } from '@/lib/learn/repo';

@@ -1,16 +1,12 @@
-import { ObjectId } from 'mongodb';
-import clientPromise from '@/lib/mongodb';
+import { getDocumentDatabase, ObjectId } from '@/lib/db/documentStore';
 import { Course, ContactRequest, Order } from '@/lib/types';
 
-const DB_NAME = 'intellex';
-
 export async function getDb() {
-  const client = await clientPromise;
-  return client.db(DB_NAME);
+  return getDocumentDatabase();
 }
 
 /**
- * Live Mongo catalogue only - no static / imported seed fallback.
+ * Live PostgreSQL catalogue only - no static / imported seed fallback.
  * Courses are created by admins or instructors, not auto-seeded from mock files.
  */
 export async function getAllCourses(): Promise<Course[]> {
@@ -32,7 +28,7 @@ export async function getFeaturedCourses(): Promise<Course[]> {
   return courses.filter((c) => c.featured);
 }
 
-/** Admin view: full catalogue including the Mongo `_id` (as string) for editing. */
+/** Admin view: full catalogue including the document `_id` (as string) for editing. */
 export async function getAllCoursesAdmin(): Promise<(Course & { _id: string })[]> {
   const db = await getDb();
   const docs = await db.collection('courses').find({}).sort({ featured: -1, name: 1 }).toArray();

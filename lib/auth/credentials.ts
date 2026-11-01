@@ -180,7 +180,7 @@ async function linksCol() {
 async function loginOtpsCol() {
   const db = await getDb();
   await db.collection('login_otps').createIndex({ email: 1 }, { unique: true }).catch(() => {});
-  await db.collection('login_otps').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }).catch(() => {});
+  await db.collection('login_otps').createIndex({ expiresAt: 1 }).catch(() => {});
   return db.collection('login_otps');
 }
 

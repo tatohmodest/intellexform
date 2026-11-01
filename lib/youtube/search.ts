@@ -46,10 +46,7 @@ function cacheKey(q: string, lang: string, pageToken: string): string {
 
 async function cacheCol() {
   const db = await getDb();
-  await db
-    .collection('youtube_search_cache')
-    .createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 })
-    .catch(() => {});
+  await db.collection('youtube_search_cache').createIndex({ expiresAt: 1 }).catch(() => {});
   await db
     .collection('youtube_search_cache')
     .createIndex({ cacheKey: 1 }, { unique: true })

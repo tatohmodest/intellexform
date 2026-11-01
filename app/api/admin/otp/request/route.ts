@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import clientPromise from '@/lib/mongodb';
+import { getDb } from '@/lib/repo';
 import {
   ADMIN_OTP,
   generateOtpCode,
@@ -30,8 +30,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const client = await clientPromise;
-    const db = client.db('intellex');
+    const db = await getDb();
     const otps = db.collection('admin_otps');
 
     const existing = await otps.findOne({ email });

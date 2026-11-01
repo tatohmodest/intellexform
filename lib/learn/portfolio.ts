@@ -6,7 +6,7 @@ import { getLearner, getEnrollments, getProgress, getBookings, updateLearnerSett
 import { getCatalogTrack } from '@/lib/learn/catalog';
 import { getMyCourseSections } from '@/lib/learn/myCourses';
 import { listPublishedBooks, getPurchasedBookIds } from '@/lib/learn/ecosystem';
-import { ObjectId } from 'mongodb';
+import { ObjectId } from '@/lib/db/documentStore';
 import { getDb } from '@/lib/repo';
 import { ensureLearnCollections } from '@/lib/learn/ecosystem';
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ObjectId } from 'mongodb';
+import { ObjectId } from '@/lib/db/documentStore';
 import { assertAdmin } from '@/lib/adminAuth';
 import { isCloudinaryConfigured } from '@/lib/cloudinary';
 import {

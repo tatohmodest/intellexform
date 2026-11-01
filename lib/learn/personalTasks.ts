@@ -2,7 +2,7 @@
  * Personal student tasks (study goals / reminders) — distinct from academic todos.
  */
 
-import { ObjectId } from 'mongodb';
+import { ObjectId } from '@/lib/db/documentStore';
 import { getDb } from '@/lib/repo';
 import { ensureLearnCollections } from '@/lib/learn/ecosystem';
 

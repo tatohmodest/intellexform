@@ -2,7 +2,7 @@
  * Simple 1:1 messaging between learners and instructors/mentors.
  */
 
-import { ObjectId } from 'mongodb';
+import { ObjectId } from '@/lib/db/documentStore';
 import { getDb } from '@/lib/repo';
 import { ensureLearnCollections } from '@/lib/learn/ecosystem';
 import { createNotification } from '@/lib/learn/notifications';

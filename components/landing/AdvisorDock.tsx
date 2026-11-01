@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ArrowUp, MessageCircle, Sparkles, X } from 'lucide-react';
+import { ArrowUp, ArrowUpRight, MessageCircle, Sparkles, X } from 'lucide-react';
 import { PLATFORM_CONTACT, generalWhatsappLink } from '@/lib/contact';
 import { OPEN_ADVISOR_EVENT } from '@/lib/advisor';
 import { useLocale, useT } from '@/components/i18n/I18nRoot';
@@ -18,30 +18,36 @@ const STARTERS = [
   'Is Full Stack Web Development worth it?',
 ];
 
+const LINK_CLASS =
+  'font-semibold text-[var(--green-deep)] underline decoration-[var(--green)] decoration-2 underline-offset-[3px] hover:text-[var(--navy)]';
+
 /** Renders **bold** and [label](url) safely - no raw HTML. */
 function inline(text: string, keyBase: string): ReactNode[] {
   const out: ReactNode[] = [];
-  const re = /\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)\s]+)\)/g;
+  const re = /\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)\s]+)\)|(https?:\/\/[^\s<>)"']+)/g;
   let last = 0;
   let m: RegExpExecArray | null;
   let i = 0;
   while ((m = re.exec(text))) {
     if (m.index > last) out.push(text.slice(last, m.index));
     if (m[1]) {
-      out.push(<strong key={`${keyBase}-b${i}`}>{m[1]}</strong>);
+      // Bold can wrap a link (**[Title](/programmes/x)**), so render its inside too.
+      out.push(<strong key={`${keyBase}-b${i}`}>{inline(m[1], `${keyBase}-b${i}`)}</strong>);
     } else {
-      const href = m[3];
-      const label = m[2];
+      const href = (m[3] || m[4] || '').replace(/[.,;:!?]+$/, '');
+      const label = m[2] || href;
       if (href.startsWith('/')) {
         out.push(
-          <Link key={`${keyBase}-l${i}`} href={href} className="font-semibold text-[var(--sky-deep)] underline underline-offset-2">
+          <Link key={`${keyBase}-l${i}`} href={href} className={LINK_CLASS}>
             {label}
+            <ArrowUpRight size={13} className="ml-0.5 inline-block align-[-1px]" />
           </Link>,
         );
-      } else if (/^https:\/\//.test(href)) {
+      } else if (/^https?:\/\//i.test(href)) {
         out.push(
-          <a key={`${keyBase}-l${i}`} href={href} target="_blank" rel="noopener noreferrer nofollow" className="font-semibold text-[var(--sky-deep)] underline underline-offset-2">
+          <a key={`${keyBase}-l${i}`} href={href} target="_blank" rel="noopener noreferrer nofollow" className={LINK_CLASS}>
             {label}
+            <ArrowUpRight size={13} className="ml-0.5 inline-block align-[-1px]" />
           </a>,
         );
       } else {

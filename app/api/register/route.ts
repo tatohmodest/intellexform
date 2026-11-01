@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import { getDb } from "@/lib/repo";
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,8 +28,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const client = await clientPromise;
-    const db = client.db("intellex");
+    const db = await getDb();
     const collection = db.collection("registrations");
 
     const doc = {
