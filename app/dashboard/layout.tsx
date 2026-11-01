@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getLearner } from '@/lib/learn/repo';
-import { getInstitution } from '@/lib/learn/ecosystem';
+import { getInstitution, reconcileMentorAccess } from '@/lib/learn/ecosystem';
 import { isOnboardingComplete, type CampusBrand } from '@/lib/learn/identity';
 import { type ModuleId } from '@/lib/eduos/capabilities';
 import { getCampusTierInfo } from '@/lib/campus/tier';
@@ -28,6 +28,7 @@ export default async function DashboardLayout({
   if (!session) redirect('/login?next=/dashboard');
 
   const learner = await getLearner(session.uid);
+  const roles = await reconcileMentorAccess(session.uid, learner?.roles ?? ['student']);
   const pathname = headers().get('x-pathname') || '';
   const onOnboarding = pathname.startsWith('/dashboard/onboarding');
 
@@ -81,7 +82,7 @@ export default async function DashboardLayout({
         avatar: learner?.avatar ?? session.avatar ?? null,
         xp: learner?.xp ?? 0,
         streakCount: learner?.streakCount ?? 0,
-        roles: learner?.roles ?? ['student'],
+        roles,
         primaryIntent: learner?.primaryIntent ?? null,
         affiliations,
         activeContext: ctx,

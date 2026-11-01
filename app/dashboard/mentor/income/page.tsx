@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ArrowLeft, BookMarked, GraduationCap, Video, Wallet } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
-import { getInstructorIncome, getMentorProfile } from '@/lib/learn/ecosystem';
+import { getInstructorIncome, getMentorProfile, reconcileMentorAccess } from '@/lib/learn/ecosystem';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +10,7 @@ export default async function MentorIncomePage() {
   const session = getSessionUser();
   if (!session) redirect('/login?next=/dashboard/mentor/income');
 
+  await reconcileMentorAccess(session.uid);
   const profile = await getMentorProfile(session.uid);
   if (!profile) redirect('/dashboard/mentor');
 

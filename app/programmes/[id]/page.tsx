@@ -7,6 +7,7 @@ import {
   BadgeCheck,
   Check,
   Clock,
+  Download,
   Gauge,
   Laptop,
   MessageCircle,
@@ -158,8 +159,19 @@ export default function ProgrammePage({ params }: { params: { id: string } }) {
               </div>
 
               <div>
-                <h2 className="text-[28px] font-bold text-[var(--navy)] sm:text-[34px]">Curriculum</h2>
-                <p className="mt-2 text-[15px] text-[var(--ink-soft)]">The tools and topics this programme covers.</p>
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <h2 className="text-[28px] font-bold text-[var(--navy)] sm:text-[34px]">Curriculum</h2>
+                    <p className="mt-2 text-[15px] text-[var(--ink-soft)]">The tools and topics this programme covers.</p>
+                  </div>
+                  <a
+                    href={`/api/programmes/${p.id}/curriculum`}
+                    download
+                    className="inline-flex items-center gap-2 rounded-full bg-[var(--navy)] px-5 py-2.5 text-[14px] font-semibold text-white"
+                  >
+                    <Download size={15} /> Download curriculum (PDF)
+                  </a>
+                </div>
                 <ol className="mt-6 grid gap-2.5 sm:grid-cols-2">
                   {p.technologies.map((t, i) => (
                     <li key={t} className="flex items-center gap-4 rounded-2xl bg-[var(--paper-dim)] px-4 py-3.5">

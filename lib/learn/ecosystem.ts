@@ -119,9 +119,52 @@ export async function getRoles(lbId: string): Promise<LearnerRole[]> {
       .collection('learners')
       .findOne({ lbId }, { projection: { roles: 1 } });
     const roles = (doc?.roles as LearnerRole[] | undefined) ?? [];
-    return roles.length ? roles : ['student'];
+    const base: LearnerRole[] = roles.length ? roles : ['student'];
+    if (base.includes('mentor')) return base;
+    const profile = await db.collection('mentor_profiles').findOne({ lbId }, { projection: { _id: 1 } });
+    return profile ? [...base, 'mentor'] : base;
   } catch {
     return ['student'];
+  }
+}
+
+/**
+ * Mentor access lives in two places: the `mentor` role on the learner and a
+ * `mentor_profiles` document. When they disagree the dashboard shows "Apply to
+ * mentor" while the apply flow bounces the person to Mentor Studio. Repair
+ * whichever half is missing so both agree.
+ */
+export async function reconcileMentorAccess(
+  lbId: string,
+  knownRoles?: LearnerRole[],
+): Promise<LearnerRole[]> {
+  try {
+    const db = await getDb();
+    const roles = knownRoles ?? ((await getRoles(lbId)) as LearnerRole[]);
+    const hasRole = roles.includes('mentor');
+    const profile = await db
+      .collection('mentor_profiles')
+      .findOne({ lbId }, { projection: { _id: 0, name: 1 } });
+    if (profile && !hasRole) {
+      await grantRole(lbId, 'mentor', String(profile.name || 'Mentor'));
+      return [...roles.filter((r) => r !== 'student' || roles.length > 1), 'mentor'];
+    }
+    if (!profile && hasRole) {
+      const learner = await db.collection('learners').findOne({ lbId }, { projection: { name: 1 } });
+      await becomeMentor({
+        lbId,
+        name: String(learner?.name || 'Instructor'),
+        title: 'Instructor',
+        expertise: [],
+        bio: '',
+        priceXAF: 0,
+        sessionMinutes: 45,
+        slots: [],
+      });
+    }
+    return roles;
+  } catch {
+    return knownRoles ?? ['student'];
   }
 }
 

@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import {
   getMentorProfile,
+  reconcileMentorAccess,
   listInstructorStudentGroups,
 } from '@/lib/learn/ecosystem';
 import MyStudentsPanel from '@/components/dashboard/MyStudentsPanel';
@@ -15,6 +16,7 @@ export default async function MyStudentsPage() {
   const session = getSessionUser();
   if (!session) redirect('/login?next=/dashboard/students');
 
+  await reconcileMentorAccess(session.uid);
   const profile = await getMentorProfile(session.uid);
   if (!profile) redirect('/dashboard/mentor');
 

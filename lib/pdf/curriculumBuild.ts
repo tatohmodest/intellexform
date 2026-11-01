@@ -1,6 +1,7 @@
 import { getCatalogTrack } from '@/lib/learn/catalog';
 import { getTutorial } from '@/lib/tutorials';
 import { courseDurationHours, deliveryModeLabel, type TeacherCourseView } from '@/lib/learn/courseTypes';
+import { getProgramme, priceLabel } from '@/lib/programmes';
 import type { CurriculumDoc } from '@/lib/pdf/curriculumTypes';
 
 function today() {
@@ -85,6 +86,38 @@ export function buildTeacherCourseCurriculum(
       minutes: l.durationMinutes ?? undefined,
     })),
     preparedFor,
+    generatedAt: today(),
+  };
+}
+
+export function buildProgrammeCurriculum(id: string): CurriculumDoc | null {
+  const p = getProgramme(id);
+  if (!p) return null;
+  const facts: CurriculumDoc['facts'] = [
+    { label: 'Duration', value: p.duration },
+    { label: 'Level', value: p.level },
+    { label: 'Format', value: p.short ? 'Live + self-paced' : 'Live + mentorship' },
+    { label: 'Tools & topics', value: String(p.technologies.length) },
+    { label: 'Tuition', value: priceLabel(p.priceXAF) },
+  ];
+  return {
+    kind: p.categoryLabel,
+    title: p.title,
+    subtitle: p.badge || p.shortTitle,
+    description: p.description,
+    accent: p.accentColor,
+    facts,
+    outcomes: p.highlights,
+    requirements: [p.prerequisites, ...p.equipment],
+    modules: [
+      {
+        title: 'Tools and topics you will cover',
+        summary: `${p.format}. Taught in cohorts with hands-on projects.`,
+        badge: p.level,
+        items: p.technologies.map((t) => ({ title: t })),
+      },
+    ],
+    lessons: [],
     generatedAt: today(),
   };
 }

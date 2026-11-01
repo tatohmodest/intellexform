@@ -14,6 +14,7 @@ import {
   getInstructorIncome,
   getMentorBookings,
   getMentorProfile,
+  reconcileMentorAccess,
   getPendingMentorApplication,
   listBooksByAuthor,
 } from '@/lib/learn/ecosystem';
@@ -27,6 +28,7 @@ export default async function MentorStudioPage() {
   const session = getSessionUser();
   if (!session) redirect('/login?next=/dashboard/mentor');
 
+  await reconcileMentorAccess(session.uid);
   const profile = await getMentorProfile(session.uid);
   if (!profile) {
     // Resolve the pending application on the server so applicants never see the
