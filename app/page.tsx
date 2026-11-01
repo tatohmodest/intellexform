@@ -43,10 +43,10 @@ const PULL_QUOTE_ID = 'cm7n7nfvn000221m8b3bashfo';
 
 /** Pastel surface + illustration for each way we teach. */
 const DELIVERY_LOOK: Record<string, { bg: string; image: string }> = {
-  live: { bg: 'var(--pastel-sky)', image: '/way_live.webp' },
-  mentorship: { bg: 'var(--pastel-mint)', image: '/hero_mentor.webp' },
-  materials: { bg: 'var(--pastel-butter)', image: '/way_selfpaced.webp' },
-  projects: { bg: 'var(--pastel-lilac)', image: '/hero_illustration.webp' },
+  live: { bg: 'var(--pastel-sky)', image: '/illustrations/teaching.png' },
+  mentorship: { bg: 'var(--pastel-mint)', image: '/illustrations/studying.png' },
+  materials: { bg: 'var(--pastel-butter)', image: '/illustrations/reading.png' },
+  projects: { bg: 'var(--pastel-lilac)', image: '/illustrations/building.png' },
 };
 
 const VETTING = [
@@ -382,7 +382,7 @@ export default async function HomePage() {
               return (
                 <div key={d.id} className="flex flex-col overflow-hidden rounded-[28px]" style={{ background: look.bg }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={look.image} alt="" className="illo aspect-[4/3] w-full object-cover" loading="lazy" />
+                  <img src={look.image} alt="" className="illo aspect-[4/3] w-full object-contain" loading="lazy" />
                   <div className="p-6 pt-4">
                     <h3 className="text-[20px] font-bold text-[var(--navy)]">{d.title}</h3>
                     <p className="mt-2 text-[14.5px] leading-relaxed text-[var(--navy)]/70">{d.body}</p>
@@ -422,7 +422,7 @@ export default async function HomePage() {
               </Link>
             </div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/hero_mentor.webp" alt="An instructor guiding a student through a lesson" className="illo w-full" loading="lazy" />
+            <img src="/illustrations/multitasking.png" alt="A technology learner balancing a laptop, code and research materials" className="illo w-full" loading="lazy" />
           </div>
           {mentors.length > 0 && (
             <div className="grid gap-4 px-6 pb-14 sm:grid-cols-2 sm:px-12 lg:grid-cols-4 lg:px-16">
@@ -485,7 +485,7 @@ export default async function HomePage() {
             </div>
             <div className="overflow-hidden rounded-[32px] bg-[var(--pastel-sky)] p-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/join_cta.webp" alt="A path of completed steps leading to a certificate" className="illo w-full" loading="lazy" />
+              <img src="/illustrations/launching.png" alt="A developer moving through a digital interface toward a new opportunity" className="illo w-full" loading="lazy" />
               <div className="flex items-center gap-3 px-4 pb-3 pt-2">
                 <Wallet size={18} className="text-[var(--navy)]" />
                 <span className="text-[14px] font-medium text-[var(--navy)]">MTN MoMo · Orange Money · Card</span>
