@@ -33,8 +33,7 @@ function VideoGrid({
       {videos.map((v) => (
         <div
           key={v.id}
-          className="group overflow-hidden rounded-2xl border text-left transition-shadow hover:shadow-card"
-          style={{ borderColor: 'var(--line)' }}
+          className="group overflow-hidden rounded-3xl bg-white shadow-[0_14px_40px_-28px_rgba(18,50,79,0.45)] text-left transition-shadow hover:shadow-card" style={{ borderColor: 'transparent' }}
         >
           <button type="button" onClick={() => onPlay(v)} className="block w-full text-left">
             <div className="relative aspect-video overflow-hidden" style={{ background: '#0C1116' }}>
@@ -245,7 +244,7 @@ export default function VideoLibrary({ isAdmin = false }: { isAdmin?: boolean })
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search YouTube — results play here in InTelleX"
-            className="w-full border py-2.5 pl-9 pr-3 text-[14px]"
+            className="w-full rounded-xl border py-2.5 pl-9 pr-3 text-[14px]"
             style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}
           />
         </label>
@@ -267,7 +266,7 @@ export default function VideoLibrary({ isAdmin = false }: { isAdmin?: boolean })
               setSearchError('');
               setNextPageToken(null);
             }}
-            className="border px-4 py-2.5 text-[13px] font-semibold"
+            className="rounded-xl border px-4 py-2.5 text-[13px] font-semibold"
             style={{ borderColor: 'var(--line)' }}
           >
             Clear
@@ -300,7 +299,7 @@ export default function VideoLibrary({ isAdmin = false }: { isAdmin?: boolean })
                 value={form.youtubeUrl}
                 onChange={(e) => setForm((f) => ({ ...f, youtubeUrl: e.target.value }))}
                 placeholder="YouTube URL or video id"
-                className="border px-3 py-2 text-[13.5px] sm:col-span-2"
+                className="rounded-xl border px-3 py-2 text-[13.5px] sm:col-span-2"
                 style={{ borderColor: 'var(--line)' }}
               />
               <input
@@ -308,20 +307,20 @@ export default function VideoLibrary({ isAdmin = false }: { isAdmin?: boolean })
                 value={form.title}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                 placeholder="Title"
-                className="border px-3 py-2 text-[13.5px]"
+                className="rounded-xl border px-3 py-2 text-[13.5px]"
                 style={{ borderColor: 'var(--line)' }}
               />
               <input
                 value={form.channel}
                 onChange={(e) => setForm((f) => ({ ...f, channel: e.target.value }))}
                 placeholder="Channel"
-                className="border px-3 py-2 text-[13.5px]"
+                className="rounded-xl border px-3 py-2 text-[13.5px]"
                 style={{ borderColor: 'var(--line)' }}
               />
               <select
                 value={form.category}
                 onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                className="border px-3 py-2 text-[13.5px]"
+                className="rounded-xl border px-3 py-2 text-[13.5px]"
                 style={{ borderColor: 'var(--line)' }}
               >
                 {VIDEO_CATEGORIES.filter((c) => c !== 'All').map((c) => (
@@ -333,7 +332,7 @@ export default function VideoLibrary({ isAdmin = false }: { isAdmin?: boolean })
               <select
                 value={form.level}
                 onChange={(e) => setForm((f) => ({ ...f, level: e.target.value as VideoLevel }))}
-                className="border px-3 py-2 text-[13.5px]"
+                className="rounded-xl border px-3 py-2 text-[13.5px]"
                 style={{ borderColor: 'var(--line)' }}
               >
                 {LEVELS.map((l) => (
@@ -346,7 +345,7 @@ export default function VideoLibrary({ isAdmin = false }: { isAdmin?: boolean })
                 value={form.duration}
                 onChange={(e) => setForm((f) => ({ ...f, duration: e.target.value }))}
                 placeholder="Duration (e.g. 2h)"
-                className="border px-3 py-2 text-[13.5px]"
+                className="rounded-xl border px-3 py-2 text-[13.5px]"
                 style={{ borderColor: 'var(--line)' }}
               />
               <textarea
@@ -354,7 +353,7 @@ export default function VideoLibrary({ isAdmin = false }: { isAdmin?: boolean })
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 placeholder="Short description"
                 rows={2}
-                className="border px-3 py-2 text-[13.5px] sm:col-span-2"
+                className="rounded-xl border px-3 py-2 text-[13.5px] sm:col-span-2"
                 style={{ borderColor: 'var(--line)' }}
               />
               {adminError ? (
@@ -395,7 +394,7 @@ export default function VideoLibrary({ isAdmin = false }: { isAdmin?: boolean })
                 type="button"
                 onClick={() => void loadMore()}
                 disabled={loadingMore}
-                className="border px-4 py-2.5 text-[13px] font-semibold"
+                className="rounded-xl border px-4 py-2.5 text-[13px] font-semibold"
                 style={{ borderColor: 'var(--line)' }}
               >
                 {loadingMore ? 'Loading…' : 'Load more'}

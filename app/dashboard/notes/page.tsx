@@ -46,7 +46,7 @@ export default async function StudentNotesPage({
   return (
     <div className="mx-auto max-w-[1180px]">
       <PageHeader
-        art="/eco_resources.webp"
+        art="/illustrations/studying.png"
         tone="butter"
         title="My notes"
         description="Class notes from your instructors, all in one place."

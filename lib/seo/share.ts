@@ -35,6 +35,21 @@ export function getSiteUrl(): string {
   return fromEnv || CANONICAL_SITE_URL;
 }
 
+/**
+ * WhatsApp skips previews for large or odd-ratio images. Cloudinary covers get a
+ * 1200x630 JPEG crop so every course card previews reliably.
+ */
+function optimizeShareImage(url: string): string {
+  try {
+    const u = new URL(url);
+    if (!u.hostname.endsWith('cloudinary.com')) return url;
+    if (!u.pathname.includes('/image/upload/') || u.pathname.includes('/upload/c_fill,w_1200,h_630')) return url;
+    return url.replace('/image/upload/', '/image/upload/c_fill,w_1200,h_630,g_auto,f_jpg,q_auto:good/');
+  } catch {
+    return url;
+  }
+}
+
 /** Resolve a path or URL to an absolute HTTPS URL for link previews. */
 export function absoluteUrl(
   pathOrUrl: string | null | undefined,
@@ -60,7 +75,7 @@ export function absoluteUrl(
     return `${site}${v.startsWith('/') ? v : `/${v}`}`;
   };
 
-  const abs = pick(pathOrUrl || '');
+  const abs = optimizeShareImage(pick(pathOrUrl || ''));
   // WhatsApp / many crawlers ignore SVG for link previews.
   if (/\.svg(\?|#|$)/i.test(abs)) return pick(fallback);
   return abs;

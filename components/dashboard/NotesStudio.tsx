@@ -233,7 +233,7 @@ export default function NotesStudio({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
-      <aside className="rounded-2xl border p-3" style={{ borderColor: 'var(--line)' }}>
+      <aside className="rounded-3xl bg-white shadow-[0_14px_40px_-28px_rgba(18,50,79,0.45)] p-3" style={{ borderColor: 'transparent' }}>
         <button
           type="button"
           onClick={() => void createNote()}
@@ -375,7 +375,7 @@ export default function NotesStudio({
             </div>
           </div>
 
-          <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--line)' }}>
+          <div className="rounded-3xl bg-white shadow-[0_14px_40px_-28px_rgba(18,50,79,0.45)] p-4" style={{ borderColor: 'transparent' }}>
             <label className="mb-1.5 block text-[13px] font-semibold">Who should receive this note?</label>
             <select
               className="form-input !rounded-xl text-[13px]"
@@ -440,7 +440,7 @@ export default function NotesStudio({
             Also list in student Library for discovery / purchase
           </label>
 
-          <section className="rounded-2xl border p-4" style={{ borderColor: 'var(--line)' }}>
+          <section className="rounded-3xl bg-white shadow-[0_14px_40px_-28px_rgba(18,50,79,0.45)] p-4" style={{ borderColor: 'transparent' }}>
             <h3 className="mb-3 font-display text-[18px]">Attachment</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>

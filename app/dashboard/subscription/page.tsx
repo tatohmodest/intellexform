@@ -8,7 +8,7 @@ import {
   getActiveCertSubscription,
   hasActiveCertSubscription,
 } from '@/lib/learn/certSubscription';
-import { listPublishedBooks } from '@/lib/learn/ecosystem';
+import { listPublishedBooks, listStudentCourseEnrollments } from '@/lib/learn/ecosystem';
 import { TUTORIALS } from '@/lib/tutorials';
 import PageHeader from '@/components/dashboard/PageHeader';
 
@@ -39,12 +39,14 @@ export default async function SubscriptionPage() {
   const session = getSessionUser();
   if (!session) redirect('/login?next=/dashboard/subscription');
 
-  const [{ beginner, intermediate, advanced, total }, hasActive, activeSub, books] = await Promise.all([
+  const [{ beginner, intermediate, advanced, total }, hasActive, activeSub, books, enrollments] = await Promise.all([
     Promise.resolve(countLessonsByLevel()),
     hasActiveCertSubscription(session.uid),
     getActiveCertSubscription(session.uid),
     listPublishedBooks(),
+    listStudentCourseEnrollments(session.uid),
   ]);
+  const assigned = enrollments.filter((e) => e.source === 'instructor');
 
   const paidBooksCount = books.filter((b) => (Number(b.priceXAF) || 0) > 0).length;
   const unlockedLessons = hasActive ? total : beginner;
@@ -52,13 +54,13 @@ export default async function SubscriptionPage() {
 
   return (
     <div className="mx-auto max-w-[980px]">
-      <PageHeader art="/eco_cert.webp" tone="butter"
+      <PageHeader art="/illustrations/studying.png" tone="butter"
         title="Subscription"
       />
 
       {hasActive && activeSub ? (
         <section
-          className="mb-7 rounded-2xl border p-5 sm:p-6"
+          className="mb-7 rounded-3xl bg-white shadow-[0_14px_40px_-28px_rgba(18,50,79,0.45)] p-5 sm:p-6"
           style={{ borderColor: 'rgba(0,179,105,0.38)', background: 'rgba(0,179,105,0.08)' }}
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -83,7 +85,7 @@ export default async function SubscriptionPage() {
           </div>
         </section>
       ) : (
-        <section className="mb-7 rounded-2xl border p-5 sm:p-6" style={{ borderColor: 'var(--line)' }}>
+        <section className="mb-7 rounded-3xl bg-white shadow-[0_14px_40px_-28px_rgba(18,50,79,0.45)] p-5 sm:p-6" style={{ borderColor: 'var(--line)' }}>
           <div className="flex flex-wrap items-start justify-between gap-5">
             <div>
               <div className="inline-flex items-center gap-2 text-[13px] font-semibold" style={{ color: 'var(--ink-soft)' }}>
@@ -107,8 +109,32 @@ export default async function SubscriptionPage() {
         </section>
       )}
 
+      {assigned.length > 0 && (
+        <section className="mb-7 rounded-3xl p-5 sm:p-6" style={{ background: 'var(--pastel-mint)' }}>
+          <h3 className="font-display text-[22px]">Assigned to you</h3>
+          <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+            Courses and teachers assigned to you by the InTelleX team. Access is included, no payment needed.
+          </p>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+            {assigned.map((e) => (
+              <li key={e.id}>
+                <Link
+                  href={`/dashboard/courses/instructor/${e.courseId}`}
+                  className="block rounded-2xl bg-white p-4 transition-transform hover:-translate-y-0.5"
+                >
+                  <div className="text-[14.5px] font-semibold">{e.courseTitle}</div>
+                  <p className="mt-1 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
+                    Teacher assigned · since {new Date(e.createdAt).toLocaleDateString()}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="mb-7 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--line)' }}>
+        <div className="rounded-3xl bg-white shadow-[0_14px_40px_-28px_rgba(18,50,79,0.45)] p-4" style={{ borderColor: 'var(--line)' }}>
           <div className="text-[12px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
             Lessons unlocked
           </div>
@@ -117,7 +143,7 @@ export default async function SubscriptionPage() {
             Out of {total} total guided lessons
           </p>
         </div>
-        <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--line)' }}>
+        <div className="rounded-3xl bg-white shadow-[0_14px_40px_-28px_rgba(18,50,79,0.45)] p-4" style={{ borderColor: 'var(--line)' }}>
           <div className="text-[12px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
             Locked lessons
           </div>
@@ -126,7 +152,7 @@ export default async function SubscriptionPage() {
             Intermediate + advanced progression
           </p>
         </div>
-        <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--line)' }}>
+        <div className="rounded-3xl bg-white shadow-[0_14px_40px_-28px_rgba(18,50,79,0.45)] p-4" style={{ borderColor: 'var(--line)' }}>
           <div className="text-[12px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
             Paid books included
           </div>
@@ -137,28 +163,28 @@ export default async function SubscriptionPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border p-5 sm:p-6" style={{ borderColor: 'var(--line)' }}>
+      <section className="rounded-3xl bg-white shadow-[0_14px_40px_-28px_rgba(18,50,79,0.45)] p-5 sm:p-6" style={{ borderColor: 'var(--line)' }}>
         <h3 className="font-display text-[22px]">What is unlocked</h3>
         <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-          <li className="rounded-xl border p-3" style={{ borderColor: 'var(--line)' }}>
+          <li className="rounded-2xl p-3" style={{ background: 'var(--pastel-sky)' }}>
             <div className="text-[14px] font-semibold">Beginner tutorials</div>
             <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
               {beginner} lessons are always open for registered students.
             </p>
           </li>
-          <li className="rounded-xl border p-3" style={{ borderColor: 'var(--line)' }}>
+          <li className="rounded-2xl p-3" style={{ background: 'var(--pastel-sky)' }}>
             <div className="text-[14px] font-semibold">Intermediate tutorials</div>
             <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
               {hasActive ? `${intermediate} lessons unlocked` : `${intermediate} lessons locked until you subscribe`}.
             </p>
           </li>
-          <li className="rounded-xl border p-3" style={{ borderColor: 'var(--line)' }}>
+          <li className="rounded-2xl p-3" style={{ background: 'var(--pastel-sky)' }}>
             <div className="text-[14px] font-semibold">Advanced tutorials</div>
             <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
               {hasActive ? `${advanced} lessons unlocked` : `${advanced} lessons locked until you subscribe`}.
             </p>
           </li>
-          <li className="rounded-xl border p-3" style={{ borderColor: 'var(--line)' }}>
+          <li className="rounded-2xl p-3" style={{ background: 'var(--pastel-sky)' }}>
             <div className="text-[14px] font-semibold">Library paid books</div>
             <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
               {hasActive

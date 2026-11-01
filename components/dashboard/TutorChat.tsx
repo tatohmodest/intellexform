@@ -250,55 +250,16 @@ export default function TutorChat() {
     <div className="relative mx-auto flex min-h-[calc(100dvh-140px)] max-w-[1080px] flex-col overflow-x-hidden">
       {/* Editorial header - same language as My Courses */}
       <header
-        className={`shrink-0 ${empty ? 'mb-2 border-b pb-8' : 'mb-0 border-b pb-5'}`}
-        style={{ borderColor: 'var(--line)' }}
+        className={`shrink-0 ${empty ? 'mb-0' : 'mb-0 pb-3'}`}
       >
         {empty ? (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          <Link
+            href="/dashboard/library/learn"
+            className="inline-block text-[13.5px] font-semibold"
+            style={{ color: 'var(--green-deep)' }}
           >
-            <p
-              className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em]"
-              style={{ color: 'var(--ink-soft)' }}
-            >
-              Your curriculum · interactive tutor
-            </p>
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-              <div className="max-w-[520px]">
-                <h1 className="font-display text-[40px] leading-[0.95] tracking-tight sm:text-[52px]">
-                  InTelleX
-                  <br />
-                  AI
-                </h1>
-                <p
-                  className="mt-4 text-[15px] leading-relaxed"
-                  style={{ color: 'var(--ink-soft)' }}
-                >
-                  Quiz you. Build a plan. Explain anything. Debug with you. Same editorial feel as
-                  My Courses - built to make you want the next question.
-                </p>
-                <Link
-                  href="/dashboard/library/learn"
-                  className="mt-3 inline-block text-[13.5px] font-semibold"
-                  style={{ color: 'var(--green-deep)' }}
-                >
-                  Learn a whole book step by step →
-                </Link>
-              </div>
-              <div
-                className="flex flex-wrap gap-2 font-mono text-[11px] uppercase tracking-[0.12em]"
-                style={{ color: 'var(--ink-soft)' }}
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  <Bot size={12} /> Live
-                </span>
-                <span style={{ color: 'var(--line)' }}>·</span>
-                <span>Grounded answers</span>
-              </div>
-            </div>
-          </motion.div>
+            Learn a whole book step by step →
+          </Link>
         ) : (
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -349,13 +310,13 @@ export default function TutorChat() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.05 + i * 0.04, duration: 0.3 }}
                     onClick={() => send(s.prompt)}
-                    className="group flex h-full min-w-0 flex-col bg-paper p-4 text-left transition-shadow hover:shadow-card"
-                    style={{ border: '1px solid var(--ink)' }}
+                    className="group flex h-full min-w-0 flex-col rounded-3xl p-4 text-left transition-transform hover:-translate-y-0.5"
+                    style={{ background: ['var(--pastel-sky)', 'var(--pastel-mint)', 'var(--pastel-butter)', 'var(--pastel-lilac)'][i % 4] }}
                   >
                     <span
-                      className="mb-3 inline-flex h-9 w-9 items-center justify-center"
+                      className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-full"
                       style={{
-                        background: 'var(--paper-dim)',
+                        background: 'rgba(255,255,255,0.75)',
                         color: 'var(--ink)',
                       }}
                     >
@@ -394,8 +355,8 @@ export default function TutorChat() {
                   {m.role === 'user' ? (
                     <div className="flex justify-end">
                       <div
-                        className="max-w-[88%] px-4 py-3 text-[14.5px] leading-relaxed text-white sm:max-w-[75%]"
-                        style={{ background: 'var(--ink)' }}
+                        className="max-w-[88%] rounded-3xl rounded-br-md px-4 py-3 text-[14.5px] leading-relaxed text-white sm:max-w-[75%]"
+                        style={{ background: 'var(--navy, #12324f)' }}
                       >
                         {m.content}
                       </div>
@@ -403,12 +364,12 @@ export default function TutorChat() {
                   ) : (
                     <div className="flex gap-3">
                       <span
-                        className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center"
-                        style={{ background: 'var(--paper-dim)', color: 'var(--ink)' }}
+                        className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                        style={{ background: 'var(--pastel-lilac)', color: 'var(--ink)' }}
                       >
                         <Bot size={15} />
                       </span>
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1 rounded-3xl rounded-tl-md bg-white px-4 py-3 shadow-[0_10px_30px_-24px_rgba(18,50,79,0.5)]">
                         <p
                           className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.14em]"
                           style={{ color: 'var(--ink-soft)' }}

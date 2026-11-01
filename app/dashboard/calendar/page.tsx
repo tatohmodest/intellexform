@@ -91,7 +91,7 @@ export default async function StudentCalendarPage() {
 
   return (
     <div className="mx-auto max-w-[1100px]">
-      <PageHeader art="/eco_learning.webp" tone="sky"
+      <PageHeader art="/illustrations/multitasking.png" tone="sky"
         title="Calendar"
         description="Click a day to add an event."
         actions={

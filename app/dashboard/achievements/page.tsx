@@ -147,7 +147,7 @@ export default async function AchievementsPage() {
   return (
     <div className="mx-auto max-w-[1180px]">
       <PageHeader
-        art="/eco_junior.webp"
+        art="/illustrations/launching.png"
         tone="butter"
         title="Your progress"
         description="Levels, streaks and badges you earn as you learn. Every lesson counts."

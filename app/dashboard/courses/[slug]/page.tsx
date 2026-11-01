@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft, BookOpen, CheckCircle2, Circle, Clock, GraduationCap, Lock } from 'lucide-react';
+import { ArrowLeft, BookOpen, Download, CheckCircle2, Circle, Clock, GraduationCap, Lock } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getEnrollments, getProgress } from '@/lib/learn/repo';
 import { getCatalogTrack, getNextLesson } from '@/lib/learn/catalog';
@@ -50,7 +50,7 @@ export default async function CourseDetailPage({
       </Link>
 
       {/* Campus-style hero - stacks on mobile so nothing gets squished */}
-      <header className="relative mb-8 overflow-hidden text-white">
+      <header className="relative mb-8 overflow-hidden rounded-[28px] text-white">
         <div
           className="absolute inset-0"
           style={{
@@ -119,7 +119,17 @@ export default async function CourseDetailPage({
         )}
       </p>
 
-      <h2 className="mb-4 font-display text-[22px] sm:text-[24px]">Curriculum</h2>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-[22px] sm:text-[24px]">Curriculum</h2>
+        <a
+          href={`/api/learn/curriculum?track=${encodeURIComponent(params.slug)}`}
+          download
+          className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-white"
+          style={{ background: 'var(--navy, #12324f)' }}
+        >
+          <Download size={14} /> Download curriculum (PDF)
+        </a>
+      </div>
       <div className="space-y-3 sm:space-y-4">
         {course.sections.map((section, si) => {
           const sectionDone = section.lessons.filter((l) => done.has(l.slug)).length;

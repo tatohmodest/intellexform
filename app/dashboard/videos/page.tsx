@@ -13,7 +13,7 @@ export default function VideosPage() {
   return (
     <div className="mx-auto max-w-[1100px]">
       <PageHeader
-        art="/way_selfpaced.webp"
+        art="/illustrations/reading.png"
         tone="peach"
         title="Video Hall"
         description="Hand-picked video tutorials to watch alongside your courses."

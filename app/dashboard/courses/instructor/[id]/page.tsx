@@ -7,6 +7,7 @@ import {
   Calendar,
   Check,
   Clock,
+  Download,
   Globe2,
   Layers,
   Radio,
@@ -211,6 +212,15 @@ export default async function InstructorCoursePage({
               </span>
             )}
           </div>
+
+          <a
+            href={`/api/learn/curriculum?course=${encodeURIComponent(course.id)}`}
+            download
+            className="mt-5 inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-white"
+            style={{ background: 'var(--navy, #12324f)' }}
+          >
+            <Download size={14} /> Download curriculum (PDF)
+          </a>
 
           {mentor && (
             <Link

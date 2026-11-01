@@ -14,7 +14,6 @@ export default async function MessageThreadPage({
 
   return (
     <div className="mx-auto max-w-[1100px]">
-      <h1 className="mb-4 font-display text-[28px]">Conversation</h1>
       <MessagesInbox userId={session.uid} initialThreadId={params.threadId} />
     </div>
   );

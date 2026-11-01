@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/auth/getUser';
 import MessagesInbox from '@/components/dashboard/MessagesInbox';
-import PageHeader from '@/components/dashboard/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,9 +14,6 @@ export default async function MessagesPage({
 
   return (
     <div className="mx-auto max-w-[1100px]">
-      <PageHeader art="/mentor_session.webp" tone="sky"
-        title="Messages"
-      />
       <MessagesInbox userId={session.uid} />
     </div>
   );

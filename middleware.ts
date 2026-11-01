@@ -21,6 +21,9 @@ function withLocale(req: NextRequest, res: NextResponse) {
   return res;
 }
 
+const SOCIAL_BOT =
+  /WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|Slackbot|TelegramBot|Discordbot|Pinterest|SkypeUriPreview|iMessage|Applebot|Googlebot|bingbot/i;
+
 /** Find a valid session among (possibly duplicated) session cookies. */
 async function resolveSession(req: NextRequest) {
   const tokens = cookieValues(req.headers.get('cookie'), SESSION_COOKIE);
@@ -102,6 +105,22 @@ export async function middleware(req: NextRequest) {
   // Only a *valid* session may skip the marketing home.
   if (pathname === '/' && valid && !customHost) {
     return finish(NextResponse.redirect(new URL('/dashboard', req.url)));
+  }
+
+  // Link-preview crawlers can't sign in: serve them the public course page so shares show the course card.
+  if (!valid && pathname.startsWith('/dashboard/courses/') && SOCIAL_BOT.test(req.headers.get('user-agent') || '')) {
+    const rest = pathname.slice('/dashboard/courses/'.length).split('/').filter(Boolean);
+    const publicPath =
+      rest[0] === 'instructor' && rest[1]
+        ? `/courses/instructor/${rest[1]}`
+        : rest[0] && rest[0] !== 'browse'
+          ? `/courses/${rest[0]}`
+          : '';
+    if (publicPath) {
+      const url = req.nextUrl.clone();
+      url.pathname = publicPath;
+      return finish(NextResponse.rewrite(url, { request: { headers: requestHeaders } }));
+    }
   }
 
   if (pathname.startsWith('/dashboard') && !valid) {

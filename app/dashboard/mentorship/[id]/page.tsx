@@ -48,7 +48,7 @@ export default async function InstructorDetailPage({
       </Link>
 
       <header
-        className="mb-8 overflow-hidden text-white"
+        className="mb-8 overflow-hidden rounded-[28px] text-white"
         style={{
           background: `linear-gradient(120deg, ${mentor.accent || '#00b369'} 0%, #0C1116 72%)`,
         }}

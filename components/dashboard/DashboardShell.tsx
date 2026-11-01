@@ -38,6 +38,7 @@ import {
   Megaphone,
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
+import { NAV_GROUPS } from '@/components/dashboard/navConfig';
 import MobileBottomNav from '@/components/dashboard/MobileBottomNav';
 import CampusReturnBanner from '@/components/dashboard/CampusReturnBanner';
 import NotificationBell from '@/components/dashboard/NotificationBell';
@@ -71,73 +72,6 @@ export interface ShellUser {
   isStudent?: boolean;
   matricule?: string | null;
 }
-
-type NavItem = {
-  href: string;
-  label: string;
-  icon: typeof LayoutDashboard;
-  exact?: boolean;
-};
-
-type NavGroup = { label: string; items: NavItem[] };
-
-const NAV_GROUPS: NavGroup[] = [
-  {
-    label: 'Home',
-    items: [
-      { href: '/dashboard', label: 'Today', icon: LayoutDashboard, exact: true },
-      { href: '/dashboard/announcements', label: 'Announcements', icon: Megaphone },
-    ],
-  },
-  {
-    label: 'Learn',
-    items: [
-      { href: '/dashboard/my-learning', label: 'My Learning', icon: Sparkles },
-      { href: '/dashboard/courses', label: 'My Courses', icon: BookOpen },
-      { href: '/dashboard/library', label: 'Library', icon: BookMarked },
-      { href: '/dashboard/library/learn', label: 'Book tutor', icon: ScrollText },
-      { href: '/dashboard/classroom', label: 'Classroom', icon: School },
-    ],
-  },
-  {
-    label: 'Academic',
-    items: [
-      { href: '/dashboard/academic', label: 'Overview', icon: GraduationCap },
-      { href: '/dashboard/calendar', label: 'Calendar', icon: CalendarDays },
-      { href: '/dashboard/assignments', label: 'Assignments', icon: ClipboardList },
-      { href: '/dashboard/todos', label: 'Tasks', icon: CheckSquare },
-      { href: '/dashboard/fees', label: 'School fees', icon: Wallet },
-    ],
-  },
-  {
-    label: 'Community',
-    items: [
-      { href: '/dashboard/messages', label: 'Messages', icon: MessageSquare },
-      { href: '/dashboard/community', label: 'Community', icon: Users },
-      { href: '/dashboard/study-groups', label: 'Groups', icon: Users },
-      { href: '/dashboard/mentorship', label: 'Mentorship', icon: Users },
-      { href: '/dashboard/notes', label: 'Notes', icon: FileText },
-    ],
-  },
-  {
-    label: 'Career',
-    items: [
-      { href: '/dashboard/portfolio', label: 'Portfolio', icon: Award },
-      { href: '/dashboard/opportunities', label: 'Opportunities', icon: Sparkles },
-      { href: '/dashboard/achievements', label: 'Progress', icon: Trophy },
-    ],
-  },
-  {
-    label: 'Personal',
-    items: [
-      { href: '/dashboard/tutor', label: 'AI Tutor', icon: Bot },
-      { href: '/dashboard/videos', label: 'Video Hall', icon: Youtube },
-      { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
-      { href: '/dashboard/subscription', label: 'Subscription', icon: Award },
-      { href: '/dashboard/settings', label: 'Settings', icon: Settings },
-    ],
-  },
-];
 
 function initials(name: string): string {
   return name
@@ -639,7 +573,27 @@ export default function DashboardShell({
   const pathname = usePathname();
   const router = useRouter();
   const t = useT();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    try {
+      setCollapsed(window.localStorage.getItem('ix-sidebar-collapsed') === '1');
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  function toggleSidebar() {
+    setCollapsed((v) => {
+      const next = !v;
+      try {
+        window.localStorage.setItem('ix-sidebar-collapsed', next ? '1' : '0');
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }
   const [navCounts, setNavCounts] = useState<NavCounts>(ZERO_NAV_COUNTS);
 
   const loadNavCounts = useCallback(async () => {
@@ -752,7 +706,7 @@ export default function DashboardShell({
 
       {user.onboardingComplete !== false && (
         <div className="shrink-0">
-          <ContextSwitcher user={user} accent={accent} onSwitched={() => setMobileOpen(false)} />
+          <ContextSwitcher user={user} accent={accent} onSwitched={() => undefined} />
         </div>
       )}
 
@@ -766,14 +720,13 @@ export default function DashboardShell({
           campusRole={campusRole}
           staffPermissions={staff?.permissions || null}
           counts={navCounts}
-          onNavigate={() => setMobileOpen(false)}
+          onNavigate={() => undefined}
         />
       </div>
 
       {!inCampus && (
         <Link
           href="/dashboard/tutor"
-          onClick={() => setMobileOpen(false)}
           className="mb-3 mt-2 block shrink-0 overflow-hidden rounded-2xl bg-[var(--pastel-sky)] transition-transform hover:-translate-y-0.5"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -833,37 +786,23 @@ export default function DashboardShell({
   return (
     <div className="site dash min-h-screen bg-[#fbfaf7]" style={themeStyle}>
       <aside
-        className="fixed inset-y-0 left-0 z-30 hidden h-dvh max-h-dvh w-[240px] flex-col overflow-hidden px-4 py-6 lg:flex"
+        className={`fixed inset-y-0 left-0 z-30 hidden h-dvh max-h-dvh w-[240px] flex-col overflow-hidden px-4 py-6 ${collapsed ? '' : 'lg:flex'}`}
         style={{ background: inCampus ? `${accent}08` : '#fbfaf7' }}
       >
         {sidebarInner}
       </aside>
 
-      {mobileOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setMobileOpen(false)}
-          />
-          <aside
-            className="absolute inset-y-0 left-0 flex h-dvh max-h-dvh w-[min(280px,88vw)] flex-col overflow-hidden px-4 py-6 shadow-xl"
-            style={{ background: 'var(--paper)' }}
-          >
-            {sidebarInner}
-          </aside>
-        </div>
-      )}
-
       <header
-        className="sticky top-0 z-20 flex h-[64px] items-center gap-3 px-4 backdrop-blur lg:pl-[264px] lg:pr-8"
+        className={`sticky top-0 z-20 flex h-[64px] items-center gap-3 px-4 backdrop-blur lg:pr-8 ${collapsed ? 'lg:pl-6' : 'lg:pl-[264px]'}`}
         style={{ background: inCampus ? `${accent}0d` : 'rgba(251,250,247,0.92)' }}
       >
         <button
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--paper-dim)] lg:hidden"
-          onClick={() => setMobileOpen((v) => !v)}
+          className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--paper-dim)] lg:flex"
+          onClick={toggleSidebar}
           aria-label={t('Toggle navigation')}
+          aria-pressed={collapsed}
         >
-          {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+          {collapsed ? <Menu size={18} /> : <X size={18} />}
         </button>
 
         {inCampus && campusBrand ? (
@@ -930,7 +869,7 @@ export default function DashboardShell({
       </header>
       <PushAlertsBanner accent={accent} />
 
-      <main className="px-2 pb-28 pt-2 sm:px-4 lg:pb-6 lg:pl-[252px] lg:pr-6">
+      <main className={`px-2 pb-28 pt-2 sm:px-4 lg:pb-6 lg:pr-6 ${collapsed ? 'lg:pl-4' : 'lg:pl-[252px]'}`}>
         <div className="min-h-[calc(100dvh-90px)] rounded-[28px] bg-[#f2f1ec] px-3 pb-10 pt-5 sm:px-6 sm:pt-7 lg:px-8">
           <OngoingClassBanner accent={accent} />
           <CampusReturnBanner accent={accent} />
@@ -945,6 +884,12 @@ export default function DashboardShell({
         campusModules={(campusBrand?.enabledModules as string[]) || []}
         campusRole={campusRole || 'student'}
         counts={navCounts}
+        onSignOut={logout}
+        contextSlot={
+          user.onboardingComplete !== false ? (
+            <ContextSwitcher user={user} accent={accent} onSwitched={() => undefined} />
+          ) : null
+        }
       />
     </div>
   );

@@ -20,6 +20,7 @@ import {
   Menu,
   X,
   Award,
+  UserPlus,
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 
@@ -29,6 +30,7 @@ const NAV = [
   { href: '/admin/intellex-institution', label: 'Intellex Institution', icon: GraduationCap },
   { href: '/admin/personnel', label: 'Personnel', icon: Users },
   { href: '/admin/staff', label: 'Directors', icon: Users },
+  { href: '/admin/assignments', label: 'Assign students', icon: UserPlus },
   { href: '/admin/finance', label: 'Finance', icon: Wallet },
   { href: '/admin/applications', label: 'Applications', icon: ClipboardCheck },
   { href: '/admin/onboarding', label: 'Onboarding', icon: ClipboardCheck },

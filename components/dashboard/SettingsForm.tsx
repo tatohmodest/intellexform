@@ -162,7 +162,7 @@ export default function SettingsForm({
 
   return (
     <div className="space-y-10">
-      <section className="border-t pt-6" style={{ borderColor: 'var(--line)' }}>
+      <section className="rounded-3xl bg-white p-5 shadow-[0_14px_40px_-28px_rgba(18,50,79,0.45)] sm:p-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
           Profile
         </p>
@@ -170,7 +170,7 @@ export default function SettingsForm({
 
         <div className="mb-6 flex flex-wrap items-center gap-5">
           <span
-            className="relative flex h-20 w-20 items-center justify-center overflow-hidden border text-[22px] font-bold"
+            className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border text-[22px] font-bold"
             style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}
           >
             {avatar ? (
@@ -191,7 +191,7 @@ export default function SettingsForm({
             <button
               type="button"
               disabled={uploading}
-              className="inline-flex items-center gap-2 border px-4 py-2 text-[13px] font-semibold"
+              className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[13px] font-semibold"
               style={{ borderColor: 'var(--ink)' }}
               onClick={() => fileRef.current?.click()}
             >
@@ -240,7 +240,7 @@ export default function SettingsForm({
         </p>
       </section>
 
-      <section className="border-t pt-6" style={{ borderColor: 'var(--line)' }}>
+      <section className="rounded-3xl bg-white p-5 shadow-[0_14px_40px_-28px_rgba(18,50,79,0.45)] sm:p-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
           Preferences
         </p>
@@ -327,7 +327,7 @@ export default function SettingsForm({
         <PushAlertsSettings />
       </section>
 
-      <section className="border-t pt-6" style={{ borderColor: 'var(--line)' }}>
+      <section className="rounded-3xl bg-white p-5 shadow-[0_14px_40px_-28px_rgba(18,50,79,0.45)] sm:p-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
           Security
         </p>

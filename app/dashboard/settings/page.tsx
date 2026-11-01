@@ -15,15 +15,15 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-[760px] overflow-x-hidden">
-      <PageHeader tone="sky" title="Settings" />
+      <PageHeader art="/illustrations/multitasking.png" tone="sky" title="Settings" description="Your profile, notifications and account preferences." />
 
       <div
-        className="mb-10 flex flex-wrap items-center gap-4 border-b pb-8"
-        style={{ borderColor: 'var(--line)' }}
+        className="mb-6 flex flex-wrap items-center gap-4 rounded-3xl p-5"
+        style={{ background: 'var(--pastel-mint)' }}
       >
         <span
-          className="flex h-10 w-10 items-center justify-center"
-          style={{ background: 'rgba(0,179,105,0.12)', color: 'var(--green-deep)' }}
+          className="flex h-10 w-10 items-center justify-center rounded-full"
+          style={{ background: 'rgba(255,255,255,0.8)', color: 'var(--green-deep)' }}
         >
           <ShieldCheck size={19} />
         </span>

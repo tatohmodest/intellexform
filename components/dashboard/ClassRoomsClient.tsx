@@ -4,6 +4,7 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
+  ChevronLeft,
   ChevronRight,
   FileText,
   Hash,
@@ -76,6 +77,22 @@ function timeLabel(iso: string) {
     ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : d.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
+
+const NAME_COLORS = ['#1f7aec', '#c2570a', '#8b3fd9', '#00806b', '#d6336c', '#2b8a3e', '#b5651d', '#0b7285'];
+function nameColor(id: string) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return NAME_COLORS[h % NAME_COLORS.length];
+}
+
+/** WhatsApp-style chat wallpaper. */
+const WA_WALLPAPER: React.CSSProperties = {
+  backgroundColor: '#efeae2',
+  backgroundImage:
+    'radial-gradient(rgba(11,20,26,0.035) 1px, transparent 1px), radial-gradient(rgba(11,20,26,0.025) 1px, transparent 1px)',
+  backgroundSize: '22px 22px, 38px 38px',
+  backgroundPosition: '0 0, 11px 11px',
+};
 
 function isImageName(name: string, url: string) {
   return /\.(png|jpe?g|gif|webp)$/i.test(name) || /\.(png|jpe?g|gif|webp)(\?|$)/i.test(url);
@@ -577,7 +594,7 @@ export default function ClassRoomsClient({
     <div className="-mx-4 -mt-6 mb-[-7rem] flex h-[calc(100dvh-64px)] min-h-[520px] overflow-hidden border-t sm:-mx-6 lg:-mr-10 lg:mb-[-4rem]" style={{ borderColor: 'var(--line)' }}>
       <aside
         className={`${mobilePane === 'groups' ? 'flex' : 'hidden'} w-[72px] shrink-0 flex-col items-center gap-2 overflow-y-auto py-3 md:flex`}
-        style={{ background: '#0C1116' }}
+        style={{ background: '#f0f2f5' }}
       >
         {groups.map((g) => (
           <button
@@ -585,10 +602,12 @@ export default function ClassRoomsClient({
             type="button"
             title={g.title}
             onClick={() => enterGroup(g.id)}
-            className="relative flex h-12 w-12 items-center justify-center text-[13px] font-bold text-white"
+            className="relative flex h-12 w-12 items-center justify-center text-[13px] font-bold"
             style={{
-              background: groupId === g.id ? '#00B369' : '#1c2430',
-              borderRadius: groupId === g.id ? 16 : 999,
+              background: groupId === g.id ? '#00a884' : '#fff',
+              color: groupId === g.id ? '#fff' : '#3b4a54',
+              borderRadius: 999,
+              boxShadow: groupId === g.id ? '0 0 0 3px rgba(0,168,132,0.25)' : '0 1px 2px rgba(11,20,26,0.15)',
             }}
           >
             {initials(g.title)}
@@ -605,7 +624,7 @@ export default function ClassRoomsClient({
             title="New group"
             onClick={() => setCreateOpen(true)}
             className="flex h-12 w-12 items-center justify-center rounded-full text-white"
-            style={{ background: '#1c2430', color: '#00B369' }}
+            style={{ background: '#fff', color: '#00a884', boxShadow: '0 1px 2px rgba(11,20,26,0.15)' }}
           >
             <Plus size={20} />
           </button>
@@ -614,25 +633,25 @@ export default function ClassRoomsClient({
 
       <aside
         className={`${mobilePane === 'channels' ? 'flex' : 'hidden'} w-full shrink-0 flex-col md:flex md:w-[240px]`}
-        style={{ background: '#141b24', color: '#e8edf3' }}
+        style={{ background: '#fff', color: '#111b21', borderRight: '1px solid #e9edef' }}
       >
-        <div className="border-b px-4 py-3" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+        <div className="border-b px-4 py-3" style={{ borderColor: '#e9edef' }}>
           <button
             type="button"
             onClick={leaveToList}
-            className="mb-2 inline-flex items-center border px-2.5 py-1 text-[11px] font-semibold"
-            style={{ borderColor: 'rgba(255,255,255,0.2)', color: '#e8edf3' }}
+            className="mb-2 inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold"
+            style={{ borderColor: '#d1d7db', color: '#111b21' }}
           >
             All groups
           </button>
           <p className="truncate font-semibold">{groupMeta?.title || 'Class rooms'}</p>
-          <p className="truncate text-[11.5px]" style={{ color: '#8b97a8' }}>
+          <p className="truncate text-[11.5px]" style={{ color: '#667781' }}>
             {groupMeta?.courseTitle || 'Pick a group to start talking'}
           </p>
         </div>
         <div className="flex-1 overflow-y-auto px-2 py-3">
-          <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: '#8b97a8' }}>
-            Text channels
+          <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: '#667781' }}>
+            Channels
           </p>
           {channels.map((ch) => (
             <button
@@ -646,16 +665,16 @@ export default function ClassRoomsClient({
                   { scroll: false },
                 );
               }}
-              className="mb-0.5 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13.5px]"
+              className="mb-0.5 flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[14px]"
               style={{
-                background: channelId === ch.id ? 'rgba(255,255,255,0.08)' : 'transparent',
+                background: channelId === ch.id ? '#e9edef' : 'transparent',
                 color: channelId === ch.id ? '#fff' : '#b7c2d0',
               }}
             >
               <Hash size={14} />
               <span className="min-w-0 flex-1 truncate">{ch.name}</span>
               {ch.unread > 0 ? (
-                <span className="rounded-full bg-white px-1.5 text-[10px] font-bold text-black">{ch.unread}</span>
+                <span className="rounded-full bg-[#25d366] px-1.5 text-[10px] font-bold text-white">{ch.unread}</span>
               ) : null}
             </button>
           ))}
@@ -664,13 +683,13 @@ export default function ClassRoomsClient({
               type="button"
               onClick={() => setChannelOpen(true)}
               className="mt-2 flex w-full items-center gap-2 border px-2 py-1.5 text-left text-[12.5px] font-semibold"
-              style={{ borderColor: 'rgba(255,255,255,0.2)', color: '#e8edf3' }}
+              style={{ borderColor: '#d1d7db', color: '#111b21' }}
             >
               <Plus size={13} /> New channel
             </button>
           ) : null}
         </div>
-        <div className="border-t p-3 text-[12px]" style={{ borderColor: 'rgba(255,255,255,0.08)', color: '#8b97a8' }}>
+        <div className="border-t p-3 text-[12px]" style={{ borderColor: '#e9edef', color: '#667781' }}>
           {staffHere
             ? 'You are staff. You can read and message here without an invite, and pause or delete the group.'
             : owner
@@ -681,30 +700,29 @@ export default function ClassRoomsClient({
         </div>
       </aside>
 
-      <section className={`${mobilePane === 'chat' ? 'flex' : 'hidden'} min-w-0 flex-1 flex-col md:flex`} style={{ background: '#f7f9fc' }}>
-        <header className="flex items-center gap-3 border-b px-4 py-3" style={{ borderColor: 'var(--line)', background: '#fff' }}>
-          <button type="button" className="md:hidden" onClick={() => setMobilePane('channels')}>
-            <X size={16} />
+      <section className={`${mobilePane === 'chat' ? 'flex' : 'hidden'} min-w-0 flex-1 flex-col md:flex`} style={WA_WALLPAPER}>
+        <header className="flex items-center gap-3 px-3 py-2.5" style={{ background: '#f0f2f5', borderBottom: '1px solid #e9edef' }}>
+          <button type="button" className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-black/5 md:hidden" onClick={() => setMobilePane('channels')} aria-label="Back">
+            <ChevronLeft size={20} />
           </button>
-          <Hash size={16} />
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold">{activeChannel?.name || 'channel'}</p>
-            {activeChannel?.topic ? (
-              <p className="truncate text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-                {activeChannel.topic}
-              </p>
-            ) : null}
-          </div>
-          <span className="hidden text-[12px] sm:inline" style={{ color: 'var(--ink-soft)' }}>
-            {members.length} members
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#00a884] text-[14px] font-bold text-white">
+            {initials(groupMeta?.title || 'G')}
           </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[15.5px] font-semibold text-[#111b21]">
+              {groupMeta?.title || 'Group'}
+              {activeChannel ? <span className="font-normal text-[#667781]"> · #{activeChannel.name}</span> : null}
+            </p>
+            <p className="truncate text-[12.5px] text-[#667781]">
+              {members.length} members{activeChannel?.topic ? ` · ${activeChannel.topic}` : ''}
+            </p>
+          </div>
         </header>
         {groupId && (staffHere || banned || groupMeta?.rules) ? (
           <div
-            className="border-b px-4 py-2 text-[12.5px] leading-relaxed"
+            className="px-4 py-2 text-center text-[12.5px] leading-relaxed"
             style={{
-              borderColor: 'var(--line)',
-              background: banned ? 'rgba(185,28,28,0.08)' : 'rgba(0,179,105,0.08)',
+              background: banned ? '#fde8e8' : '#fff5c4',
             }}
           >
             {banned ? (
@@ -734,79 +752,97 @@ export default function ClassRoomsClient({
               <Users size={28} style={{ color: 'var(--ink-soft)' }} />
               <p className="mt-3 font-display text-[24px]">Class rooms</p>
               <p className="mt-1 max-w-[420px] text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-                Chat like a class Discord: channels for talk, notes, and ideas. Class heads create the room and add
+                Chat with your class: channels for talk, notes, and ideas. Class heads create the room and add
                 course mates.
               </p>
             </div>
           ) : messages.length === 0 ? (
-            <div className="py-10 text-center">
-              <p className="font-display text-[22px]">#{activeChannel?.name || 'general'}</p>
-              <p className="mt-1 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
+            <div className="mx-auto my-10 max-w-sm rounded-xl bg-[#fff5c4] px-4 py-3 text-center">
+              <p className="text-[14px] font-semibold text-[#54656f]">#{activeChannel?.name || 'general'}</p>
+              <p className="mt-1 text-[13px] text-[#54656f]">
                 {activeChannel?.topic || 'This is the start of the channel. Share notes, ideas, and questions.'}
               </p>
             </div>
           ) : (
             grouped.map((row, i) =>
               row.type === 'day' ? (
-                <p key={`d-${row.label}-${i}`} className="my-4 text-center text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--ink-soft)' }}>
-                  {row.label}
+                <p key={`d-${row.label}-${i}`} className="my-3 flex justify-center">
+                  <span className="rounded-lg bg-white/90 px-3 py-1 text-[11.5px] font-medium text-[#54656f] shadow-[0_1px_0.5px_rgba(11,20,26,0.13)]">
+                    {row.label}
+                  </span>
                 </p>
               ) : (
-                <article key={row.msg.id} className={`group relative flex gap-2.5 ${row.showName ? 'mt-3' : 'mt-0.5'}`}>
-                  <div className="w-8 shrink-0">
-                    {row.showName ? (
-                      <PersonAvatar
-                        name={row.msg.senderName}
-                        src={row.msg.senderAvatar || members.find((m) => m.userId === row.msg.senderId)?.avatar}
-                        size={32}
-                      />
+                <article
+                  key={row.msg.id}
+                  className={`group relative flex ${row.showName ? 'mt-2.5' : 'mt-0.5'} ${row.msg.senderId === userId ? 'justify-end' : 'justify-start'}`}
+                >
+                  {row.msg.senderId !== userId ? (
+                    <div className="mr-1.5 w-8 shrink-0 self-end">
+                      {row.showName ? (
+                        <PersonAvatar
+                          name={row.msg.senderName}
+                          src={row.msg.senderAvatar || members.find((m) => m.userId === row.msg.senderId)?.avatar}
+                          size={32}
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
+                  <div
+                    className={`relative max-w-[82%] px-2.5 pb-1.5 pt-1.5 shadow-[0_1px_0.5px_rgba(11,20,26,0.13)] sm:max-w-[68%] ${
+                      row.msg.senderId === userId
+                        ? `bg-[#d9fdd3] ${row.showName ? 'rounded-[10px] rounded-tr-none' : 'rounded-[10px]'}`
+                        : `bg-white ${row.showName ? 'rounded-[10px] rounded-tl-none' : 'rounded-[10px]'}`
+                    }`}
+                  >
+                    {row.showName && row.msg.senderId !== userId ? (
+                      <p className="mb-0.5 text-[12.5px] font-semibold leading-tight" style={{ color: nameColor(row.msg.senderId) }}>
+                        {row.msg.senderName}
+                      </p>
                     ) : null}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                  {row.showName ? (
-                    <div className="flex items-baseline gap-2">
-                      <span className="font-semibold">{row.msg.senderName}</span>
-                      <span className="text-[11px]" style={{ color: 'var(--ink-soft)' }}>
-                        {timeLabel(row.msg.createdAt)}
+                    {row.msg.attachments?.length ? (
+                      <div className="mb-1 flex flex-col gap-1.5">
+                        {row.msg.attachments.map((a) =>
+                          a.kind === 'image' || isImageName(a.name, a.url) ? (
+                            <a key={a.url} href={a.url} target="_blank" rel="noreferrer">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={a.url} alt={a.name} className="max-h-60 w-full max-w-[280px] rounded-lg object-cover" />
+                            </a>
+                          ) : (
+                            <a
+                              key={a.url}
+                              href={a.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-2 rounded-lg bg-black/[0.05] px-3 py-2 text-[13px]"
+                            >
+                              <FileText size={16} className="shrink-0" /> <span className="truncate">{a.name}</span>
+                            </a>
+                          ),
+                        )}
+                      </div>
+                    ) : null}
+                    <div className="flex flex-wrap items-end justify-end gap-x-2">
+                      {row.msg.body ? (
+                        <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-[14.2px] leading-[1.35] text-[#111b21]">
+                          {row.msg.body}
+                        </p>
+                      ) : null}
+                      <span className="ml-auto translate-y-[2px] select-none text-[10.5px] leading-none text-[#667781]">
+                        {new Date(row.msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
-                  ) : null}
-                  {row.msg.body ? <p className="whitespace-pre-wrap text-[14.5px] leading-relaxed">{row.msg.body}</p> : null}
-                  {row.msg.attachments?.length ? (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {row.msg.attachments.map((a) =>
-                        a.kind === 'image' || isImageName(a.name, a.url) ? (
-                          <a key={a.url} href={a.url} target="_blank" rel="noreferrer">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={a.url} alt={a.name} className="max-h-56 max-w-[260px] border object-cover" style={{ borderColor: 'var(--line)' }} />
-                          </a>
-                        ) : (
-                          <a
-                            key={a.url}
-                            href={a.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-2 border px-3 py-2 text-[13px]"
-                            style={{ borderColor: 'var(--line)', background: '#fff' }}
-                          >
-                            <FileText size={14} /> {a.name}
-                          </a>
-                        ),
-                      )}
-                    </div>
-                  ) : null}
-                  {row.msg.senderId === userId || owner || staffHere ? (
-                    <button
-                      type="button"
-                      className="absolute right-0 top-0 hidden text-[11px] group-hover:block"
-                      style={{ color: '#b91c1c' }}
-                      onClick={() => post({ action: 'delete_message', messageId: row.msg.id }, `del-${row.msg.id}`).then((ok) => {
-                        if (ok) setMessages((m) => m.filter((x) => x.id !== row.msg.id));
-                      })}
-                    >
-                      Delete
-                    </button>
-                  ) : null}
+                    {row.msg.senderId === userId || owner || staffHere ? (
+                      <button
+                        type="button"
+                        className="absolute -top-2 right-1 hidden rounded-full bg-white px-2 py-0.5 text-[10.5px] font-semibold shadow group-hover:block"
+                        style={{ color: '#b91c1c' }}
+                        onClick={() => post({ action: 'delete_message', messageId: row.msg.id }, `del-${row.msg.id}`).then((ok) => {
+                          if (ok) setMessages((m) => m.filter((x) => x.id !== row.msg.id));
+                        })}
+                      >
+                        Delete
+                      </button>
+                    ) : null}
                   </div>
                 </article>
               ),
@@ -822,11 +858,11 @@ export default function ClassRoomsClient({
         ) : null}
 
         {channelId && canPost ? (
-          <form onSubmit={send} className="border-t p-3" style={{ borderColor: 'var(--line)', background: '#fff' }}>
+          <form onSubmit={send} className="px-3 py-2.5" style={{ background: '#f0f2f5' }}>
             {pendingFiles.length ? (
               <div className="mb-2 flex flex-wrap gap-2">
                 {pendingFiles.map((f) => (
-                  <span key={f.url} className="inline-flex items-center gap-1 border px-2 py-1 text-[12px]" style={{ borderColor: 'var(--line)' }}>
+                  <span key={f.url} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[12px]">
                     {f.name}
                     <button type="button" onClick={() => setPendingFiles((all) => all.filter((x) => x.url !== f.url))}>
                       <X size={12} />
@@ -849,8 +885,7 @@ export default function ClassRoomsClient({
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="flex h-10 w-10 items-center justify-center border"
-                style={{ borderColor: 'var(--line)' }}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#54656f] hover:bg-black/5"
                 title="Share a note, photo, or file"
               >
                 {busy === 'upload' ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}
@@ -866,24 +901,22 @@ export default function ClassRoomsClient({
                 }}
                 placeholder={activeChannel ? `Message #${activeChannel.name}` : 'Message'}
                 rows={1}
-                className="max-h-32 min-h-[40px] flex-1 resize-none border px-3 py-2 text-[14px]"
-                style={{ borderColor: 'var(--line)', background: 'transparent' }}
+                className="max-h-32 min-h-[44px] flex-1 resize-none rounded-3xl border-0 bg-white px-4 py-3 text-[14.5px] outline-none"
+                style={{ boxShadow: '0 1px 1px rgba(11,20,26,0.08)' }}
               />
               <button
                 type="submit"
                 disabled={busy === 'send' || (!body.trim() && !pendingFiles.length)}
-                className="flex h-10 items-center gap-1 px-3 text-[13px] font-semibold text-white disabled:opacity-50"
-                style={{ background: '#00B369' }}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white disabled:opacity-50"
+                style={{ background: '#00a884' }}
+                aria-label="Send"
               >
-                <Send size={14} />
+                <Send size={18} />
               </button>
             </div>
-            <p className="mt-1 text-[11px]" style={{ color: 'var(--ink-soft)' }}>
-              Enter to send · Shift+Enter for a new line · @firstName to ping someone
-            </p>
           </form>
         ) : channelId ? (
-          <p className="border-t px-4 py-3 text-[13px]" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
+          <p className="px-4 py-3 text-center text-[13px] text-[#54656f]" style={{ background: '#f0f2f5' }}>
             {banned
               ? 'This group is paused by staff. You can still read the conversation.'
               : 'Only the class advocate and staff can post in this group.'}
@@ -891,7 +924,7 @@ export default function ClassRoomsClient({
         ) : null}
       </section>
 
-      <aside className="hidden w-[220px] shrink-0 flex-col border-l lg:flex" style={{ borderColor: 'var(--line)', background: '#fff' }}>
+      <aside className="hidden w-[240px] shrink-0 flex-col border-l lg:flex" style={{ borderColor: '#e9edef', background: '#fff' }}>
         <div className="flex items-center justify-between border-b px-3 py-3" style={{ borderColor: 'var(--line)' }}>
           <p className="text-[12px] font-semibold uppercase tracking-wide">Members — {members.length}</p>
           {owner || canInvite ? (
