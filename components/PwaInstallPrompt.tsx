@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Download, Share, PlusSquare, X, Smartphone } from 'lucide-react';
+import { ArrowRight, Check, Download, Share, PlusSquare, X, Smartphone } from 'lucide-react';
 import { readCampusPwaBrand, type CampusPwaBrandInfo } from '@/components/CampusPwaBrand';
 
 const STORAGE_KEY = 'intellex_pwa_install_prompt';
@@ -144,83 +144,71 @@ export default function PwaInstallPrompt() {
     : '/pwa/icon-192.png';
   const accent = brand?.accent || '#00B369';
 
+  const points = brand
+    ? [`Open ${appName} from your home screen`, 'Your campus branding, one tap away']
+    : ['Open your courses in one tap', 'Class reminders right on your phone'];
+
   return (
     <aside
-      className="fixed inset-x-0 bottom-0 z-[80] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5"
+      className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-3 z-[80] w-[min(360px,calc(100vw-96px))] sm:left-5 sm:w-[360px]"
       aria-label={`Install ${appName}`}
     >
-      <div
-        className="mx-auto max-w-[760px] overflow-hidden rounded-[24px] border shadow-[0_18px_60px_-24px_rgba(12,17,22,0.4)] backdrop-blur-xl"
-        style={{
-          background: `linear-gradient(110deg, ${accent}14 0%, rgba(255,255,255,0.97) 42%)`,
-          borderColor: 'var(--line)',
-          color: 'var(--ink)',
-        }}
-      >
-        <div className="flex items-center gap-3 p-3.5 sm:gap-4 sm:px-5 sm:py-4">
-          <span
-            className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-[15px] border bg-[#0C1116]"
-            style={{ borderColor: 'var(--line)' }}
+      <div className="overflow-hidden rounded-[24px] bg-white shadow-[0_24px_60px_-24px_rgba(18,50,79,0.45)] ring-1 ring-black/5">
+        <div className="relative p-4 pr-11">
+          <button
+            type="button"
+            onClick={dismiss}
+            aria-label="Dismiss app install banner"
+            className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full text-[var(--ink-soft)] transition hover:bg-black/5"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={iconSrc} alt="" width={48} height={48} className="h-12 w-12 object-cover" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: accent }}>
-              Take learning with you
-            </p>
-            <h2 id="pwa-install-title" className="display mt-0.5 text-[16px] leading-tight sm:text-[18px]">
-              Get {appName} on your device
+            <X size={16} />
+          </button>
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#0C1116]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={iconSrc} alt="" width={44} height={44} className="h-11 w-11 object-cover" />
+            </span>
+            <h2 id="pwa-install-title" className="text-[16px] font-bold leading-tight text-[var(--navy)]">
+              Get the {appName} app
             </h2>
-            <p className="mt-1 hidden text-[13px] leading-relaxed sm:block" style={{ color: 'var(--ink-soft)' }}>
-              {brand
-                ? `Open ${appName} from your home screen with your campus branding.`
-                : 'Launch your courses and dashboard from your home screen.'}
-            </p>
           </div>
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-            <button
-              type="button"
-              onClick={canNativeInstall ? install : () => setShowInstallHelp((value) => !value)}
-              disabled={installing}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full px-3.5 text-[12px] font-semibold text-white transition hover:brightness-95 disabled:opacity-70 sm:px-5 sm:text-[13px]"
-              style={{ background: accent }}
-            >
-              {canNativeInstall ? <Download size={15} /> : ios ? <PlusSquare size={15} /> : <Smartphone size={15} />}
-              <span className="hidden sm:inline">
-                {canNativeInstall ? (installing ? 'Installing…' : 'Install app') : 'How to install'}
-              </span>
-              <span className="sm:hidden">{canNativeInstall ? (installing ? 'Installing…' : 'Install') : 'How-to'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={dismiss}
-              aria-label="Dismiss app install banner"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition hover:bg-black/5"
-              style={{ color: 'var(--ink-soft)' }}
-            >
-              <X size={17} />
-            </button>
-          </div>
-        </div>
-        {showInstallHelp && !canNativeInstall ? (
-          <div
-            className="border-t px-4 py-3 text-[13px] leading-relaxed sm:px-5"
-            style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}
-          >
-            {ios ? (
-              <p>
-                Open this page in Safari, tap <Share size={14} className="inline align-[-2px]" /> Share, choose{' '}
-                <span className="font-semibold" style={{ color: 'var(--ink)' }}>
-                  Add to Home Screen <PlusSquare size={14} className="inline align-[-2px]" />
+          <ul className="mt-3 flex flex-col gap-1.5">
+            {points.map((point) => (
+              <li key={point} className="flex items-center gap-2 text-[13.5px] text-[var(--navy)]/80">
+                <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full" style={{ background: `${accent}22`, color: accent }}>
+                  <Check size={11} strokeWidth={3} />
                 </span>
-                , then tap Add.
-              </p>
-            ) : (
-              <p>Open your browser menu and choose Install app or Add to Home Screen.</p>
-            )}
-          </div>
-        ) : null}
+                {point}
+              </li>
+            ))}
+          </ul>
+          {showInstallHelp && !canNativeInstall ? (
+            <div className="mt-3 rounded-2xl bg-[#f6f7f9] p-3 text-[12.5px] leading-relaxed text-[var(--navy)]/80">
+              {ios ? (
+                <p>
+                  In Safari, tap <Share size={13} className="inline align-[-2px]" /> Share, then{' '}
+                  <span className="font-semibold text-[var(--navy)]">
+                    Add to Home Screen <PlusSquare size={13} className="inline align-[-2px]" />
+                  </span>
+                  .
+                </p>
+              ) : (
+                <p>Open your browser menu and choose Install app or Add to Home Screen.</p>
+              )}
+            </div>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          onClick={canNativeInstall ? install : () => setShowInstallHelp((value) => !value)}
+          disabled={installing}
+          className="flex w-full items-center justify-center gap-2 px-4 py-3.5 text-[14.5px] font-semibold text-white transition hover:brightness-95 disabled:opacity-70"
+          style={{ background: accent }}
+        >
+          {canNativeInstall ? <Download size={16} /> : ios ? <PlusSquare size={16} /> : <Smartphone size={16} />}
+          {canNativeInstall ? (installing ? 'Installing…' : 'Download app') : showInstallHelp ? 'Got it' : 'How to install'}
+          {!installing ? <ArrowRight size={16} /> : null}
+        </button>
       </div>
     </aside>
   );

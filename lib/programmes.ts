@@ -153,3 +153,39 @@ export const PROGRAMME_FAQ = [
     a: 'Message us on WhatsApp or through the contact form. We will ask about your goals and current level and recommend a starting point.',
   },
 ] as const;
+
+const SEARCH_STOPWORDS = new Set(['and', 'the', 'for', 'with', 'learn', 'learning', 'course', 'courses', 'de', 'la', 'le', 'les', 'et', 'des', 'du', 'en']);
+
+function normalizeSearch(text: string) {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9+#.]+/g, ' ')
+    .trim();
+}
+
+/**
+ * Rank programmes for a free-text query (English or French).
+ * `translate` maps English copy to the visitor's language so French queries match too.
+ */
+export function searchProgrammes(query: string, translate: (text: string) => string = (t) => t): Programme[] {
+  const tokens = normalizeSearch(query)
+    .split(' ')
+    .filter((t) => t.length > 1 && !SEARCH_STOPWORDS.has(t));
+  if (!tokens.length) return [];
+  return PROGRAMMES.map((p, order) => {
+    const fields = [p.title, p.shortTitle, p.description, p.categoryLabel, ...p.technologies, ...p.highlights];
+    const hay = ` ${normalizeSearch([...fields, ...fields.map(translate)].join(' '))} `;
+    const title = normalizeSearch(`${p.title} ${translate(p.title)}`);
+    let score = 0;
+    for (const t of tokens) {
+      if (hay.includes(` ${t}`)) score += title.includes(t) ? 3 : 1;
+    }
+    return { p, score, order };
+  })
+    .filter((r) => r.score > 0)
+    // Ties follow the catalogue's own order (flagship programmes first).
+    .sort((a, b) => b.score - a.score || a.order - b.order)
+    .map((r) => r.p);
+}

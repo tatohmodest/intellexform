@@ -831,7 +831,7 @@ export default function DashboardShell({
     : undefined;
 
   return (
-    <div className="site min-h-screen bg-paper" style={themeStyle}>
+    <div className="site dash min-h-screen bg-paper" style={themeStyle}>
       <aside
         className="fixed inset-y-0 left-0 z-30 hidden h-dvh max-h-dvh w-[240px] flex-col overflow-hidden px-4 py-6 lg:flex"
         style={{ background: inCampus ? `${accent}08` : 'var(--paper)' }}

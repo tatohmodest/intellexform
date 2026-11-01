@@ -4,7 +4,6 @@ import { ArrowLeft, Building2, Compass, Mail, MessageCircle } from 'lucide-react
 import TopNav from '@/components/landing/TopNav';
 import Footer from '@/components/landing/Footer';
 import ContactWizard from '@/components/landing/ContactWizard';
-import BrandLogo from '@/components/BrandLogo';
 import {
   PLATFORM_CONTACT,
   integrationWhatsappLink,
@@ -20,89 +19,87 @@ export const metadata = {
 
 export default function ContactPage() {
   return (
-    <>
+    <div className="site">
       <TopNav />
-      <section className="py-16">
-        <div className="wrap grid gap-14 lg:grid-cols-[0.9fr_1.1fr]">
-          <div>
-            <Link href="/" className="mb-6 inline-flex items-center gap-2 text-sm" style={{ color: 'var(--ink-soft)' }}>
-              <ArrowLeft size={15} /> Back to home
-            </Link>
-            <BrandLogo href="/" height={32} className="mb-5" />
-            <div className="tab mb-4">Contact us</div>
-            <h1 className="mb-3.5 text-[26px] leading-[1.15] sm:text-[34px] sm:leading-[1.1]">
-              Chat with the InTelleX team
-            </h1>
-            <p className="text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-              Students who need orientation on which path to follow, organizations that want to know
-              how the platform and integration work, mentors, and campuses — tell us who you are. We
-              save your message and continue on WhatsApp or email.
-            </p>
-
-            <div className="mt-6 grid gap-3">
-              <a
-                href={orientationWhatsappLink()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex gap-3 border p-3.5 transition-colors hover:border-[var(--ink)]"
-                style={{ borderColor: 'var(--line)' }}
+      <section className="px-3 pt-3 sm:px-5 sm:pt-4">
+        <div className="relative mx-auto max-w-[1360px] overflow-hidden rounded-[32px] bg-[#e3e6da]">
+          {/* Faint vertical lines, as in the step-form reference */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              backgroundImage: 'linear-gradient(90deg, rgba(18,50,79,0.06) 1px, transparent 1px)',
+              backgroundSize: '25% 100%',
+            }}
+          />
+          <div className="relative grid items-center gap-12 px-5 py-12 sm:px-10 sm:py-16 lg:grid-cols-[0.85fr_1.15fr] lg:px-16">
+            <div>
+              <Link
+                href="/"
+                className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3.5 py-1.5 text-[13px] font-semibold text-[var(--navy)] hover:bg-white"
               >
-                <Compass size={18} className="mt-0.5 shrink-0" style={{ color: 'var(--green-deep)' }} />
-                <span>
-                  <span className="block text-[14px] font-semibold">Student orientation</span>
-                  <span className="text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
-                    WhatsApp us for help choosing a path
-                  </span>
-                </span>
-              </a>
-              <a
-                href={integrationWhatsappLink()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex gap-3 border p-3.5 transition-colors hover:border-[var(--ink)]"
-                style={{ borderColor: 'var(--line)' }}
-              >
-                <Building2 size={18} className="mt-0.5 shrink-0" style={{ color: 'var(--ink)' }} />
-                <span>
-                  <span className="block text-[14px] font-semibold">Organizations</span>
-                  <span className="text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
-                    Platform walkthrough & how integration works
-                  </span>
-                </span>
-              </a>
-            </div>
+                <ArrowLeft size={14} /> Back to home
+              </Link>
+              <h1 className="mt-6 text-[36px] font-extrabold leading-[1.08] text-[var(--navy)] sm:text-[48px]">
+                Chat with the InTelleX team
+              </h1>
+              <p className="mt-4 max-w-[460px] text-[16px] leading-relaxed text-[var(--navy)]/75">
+                Learners choosing a path, institutions exploring the platform, mentors and campuses. Tell us
+                who you are and we will continue on WhatsApp or email.
+              </p>
 
-            <ul className="mt-6 space-y-2 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
-              <li className="flex items-center gap-2">
-                <MessageCircle size={14} style={{ color: 'var(--green-deep)' }} />
-                WhatsApp {PLATFORM_CONTACT.phoneDisplay}
-              </li>
-              <li className="flex items-center gap-2">
-                <Mail size={14} style={{ color: 'var(--green-deep)' }} />
-                <a href={platformMailto()} className="font-semibold" style={{ color: 'var(--ink)' }}>
-                  {PLATFORM_CONTACT.email}
+              <div className="mt-7 grid gap-3 sm:max-w-[420px]">
+                <a
+                  href={orientationWhatsappLink()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3.5 rounded-2xl bg-white p-4 transition-transform hover:-translate-y-0.5"
+                >
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--pastel-mint)] text-[var(--green-deep)]">
+                    <Compass size={19} />
+                  </span>
+                  <span>
+                    <span className="block text-[15px] font-bold text-[var(--navy)]">Student orientation</span>
+                    <span className="text-[13px] text-[var(--ink-soft)]">WhatsApp us for help choosing a path</span>
+                  </span>
                 </a>
-              </li>
-            </ul>
-            <p className="mt-4 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-              Prefer the form? Fill it on the right — or use the{' '}
-              <span className="font-semibold" style={{ color: 'var(--ink)' }}>Chat with us</span>{' '}
-              button anywhere on the site.
-            </p>
+                <a
+                  href={integrationWhatsappLink()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3.5 rounded-2xl bg-white p-4 transition-transform hover:-translate-y-0.5"
+                >
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--pastel-sky)] text-[var(--navy)]">
+                    <Building2 size={19} />
+                  </span>
+                  <span>
+                    <span className="block text-[15px] font-bold text-[var(--navy)]">Organizations</span>
+                    <span className="text-[13px] text-[var(--ink-soft)]">Platform walkthrough & how integration works</span>
+                  </span>
+                </a>
+              </div>
+
+              <ul className="mt-6 space-y-2 text-[14px] text-[var(--navy)]/75">
+                <li className="flex items-center gap-2">
+                  <MessageCircle size={15} className="text-[var(--green-deep)]" />
+                  WhatsApp {PLATFORM_CONTACT.phoneDisplay}
+                </li>
+                <li className="flex items-center gap-2">
+                  <Mail size={15} className="text-[var(--green-deep)]" />
+                  <a href={platformMailto()} className="font-semibold text-[var(--navy)]">
+                    {PLATFORM_CONTACT.email}
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <Suspense fallback={<div className="mx-auto min-h-[520px] w-full max-w-[560px] animate-pulse rounded-[32px] bg-white/60" />}>
+              <ContactWizard />
+            </Suspense>
           </div>
-          <Suspense
-            fallback={
-              <div
-                className="min-h-[480px] animate-pulse rounded-[22px] border"
-                style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}
-              />
-            }
-          >
-            <ContactWizard />
-          </Suspense>
         </div>
       </section>
+      <div className="h-16" />
       <Footer />
-    </>
+    </div>
   );
 }
