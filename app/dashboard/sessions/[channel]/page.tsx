@@ -30,7 +30,7 @@ export default async function SessionRoomPage({
     }
 
     return (
-      <div className="mx-auto max-w-[1100px]">
+      <div className="mx-auto max-w-[1320px]">
         {isHost && classSession.status === 'live' ? (
           <EndClassButton
             sessionId={classSession.id}

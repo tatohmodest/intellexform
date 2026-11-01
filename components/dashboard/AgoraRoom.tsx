@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Loader2,
@@ -18,7 +18,6 @@ import {
   LayoutGrid,
   MessageSquare,
   Send,
-  X,
 } from 'lucide-react';
 import type {
   IAgoraRTCClient,
@@ -47,7 +46,6 @@ type ChatMsg = { id: string; name: string; text: string; at: number };
 type FloatReaction = { id: string; emoji: string; name: string; left: number };
 
 const STRIP_VISIBLE = 8;
-const GRID_VISIBLE = 6;
 const REACTIONS = ['👍', '👏', '❤️', '🔥', '😂', '🎉'] as const;
 
 type Signal =
@@ -101,7 +99,7 @@ export default function AgoraRoom({
   const [elapsed, setElapsed] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [spotlight, setSpotlight] = useState<Spotlight>(null);
-  const [chatOpen, setChatOpen] = useState(false);
+  const [showAllPeople, setShowAllPeople] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [chat, setChat] = useState<ChatMsg[]>([]);
   const [reactions, setReactions] = useState<FloatReaction[]>([]);
@@ -117,7 +115,7 @@ export default function AgoraRoom({
   const screenVideoRef = useRef<HTMLVideoElement | null>(null);
   const screenPreviewCloneRef = useRef<MediaStreamTrack | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
-  const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const chatListRef = useRef<HTMLDivElement | null>(null);
   const remoteRefs = useRef<Map<string | number, HTMLDivElement>>(new Map());
   const remoteUsersRef = useRef<Map<string | number, IAgoraRTCRemoteUser>>(new Map());
   const remoteSharingRef = useRef<Set<string>>(new Set());
@@ -199,12 +197,13 @@ export default function AgoraRoom({
       ...prev.slice(-80),
       { id: `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, name, text: clean, at: Date.now() },
     ]);
-    setChatOpen(true);
   }, []);
 
+  // Keep the newest message in view without scrolling the whole page.
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chat, chatOpen]);
+    const list = chatListRef.current;
+    if (list) list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' });
+  }, [chat]);
 
   useEffect(() => {
     if (phase !== 'live') return;
@@ -665,162 +664,138 @@ export default function AgoraRoom({
 
   const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
   const secs = String(elapsed % 60).padStart(2, '0');
-  const focused = spotlight != null;
-  const stripBudget = STRIP_VISIBLE;
   const someoneElseSharing = remotes.some((r) => r.sharing);
+  const peopleCount = remotes.length + 1;
 
-  const stripRemotes = useMemo(() => {
-    const list =
-      spotlight?.kind === 'remote'
-        ? remotes.filter((r) => String(r.uid) !== String(spotlight.uid))
-        : remotes;
-    // Prefer screen-sharers first in the strip.
+  // What fills the big stage: the tile someone picked (or the screen being shared),
+  // else the first other person in the room, else you.
+  const picked: Spotlight =
+    spotlight?.kind === 'screen' && !sharing
+      ? null
+      : spotlight?.kind === 'remote' && !remotes.some((r) => String(r.uid) === String(spotlight.uid))
+        ? null
+        : spotlight;
+  const stage: Exclude<Spotlight, null> =
+    picked ?? (remotes[0] ? { kind: 'remote', uid: remotes[0].uid } : { kind: 'local' });
+  const stageRemote =
+    stage.kind === 'remote' ? remotes.find((r) => String(r.uid) === String(stage.uid)) ?? null : null;
+
+  const strip = (() => {
+    const list = stageRemote ? remotes.filter((r) => r !== stageRemote) : remotes;
     const ordered = [...list].sort((a, b) => Number(b.sharing) - Number(a.sharing));
-    const reserveScreen = sharing && spotlight?.kind !== 'screen' ? 1 : 0;
-    const reserveLocal = spotlight?.kind !== 'local' ? 1 : 0;
-    const used = reserveScreen + reserveLocal;
-    const needOverflow = ordered.length + used > stripBudget;
-    const slots = Math.max(0, stripBudget - used - (needOverflow ? 1 : 0));
-    return {
-      visible: ordered.slice(0, slots),
-      hidden: Math.max(0, ordered.length - slots),
-    };
-  }, [remotes, spotlight, sharing, stripBudget]);
+    const used = (sharing && stage.kind !== 'screen' ? 1 : 0) + (stage.kind !== 'local' ? 1 : 0);
+    const needOverflow = ordered.length + used > STRIP_VISIBLE;
+    const slots = Math.max(0, STRIP_VISIBLE - used - (needOverflow ? 1 : 0));
+    return { visible: ordered.slice(0, slots), hidden: Math.max(0, ordered.length - slots) };
+  })();
 
-  const gridRemotes = useMemo(() => {
-    const ordered = [...remotes].sort((a, b) => Number(b.sharing) - Number(a.sharing));
-    const needOverflow = 1 + ordered.length > GRID_VISIBLE;
-    const slots = Math.max(0, GRID_VISIBLE - 1 - (needOverflow ? 1 : 0));
-    return {
-      visible: ordered.slice(0, slots),
-      hidden: Math.max(0, ordered.length - slots),
-    };
-  }, [remotes]);
+  const stageSpeaking =
+    stage.kind === 'remote' ? Boolean(speakingMap[String(stage.uid)]) : localSpeaking && micOn;
+  const stageName =
+    stage.kind === 'remote'
+      ? stageRemote?.name || `Participant ${String(stage.uid).slice(-4)}`
+      : `${displayName} (you)`;
 
-  const tileShell = (opts: {
-    key?: string;
-    active?: boolean;
-    speaking?: boolean;
-    onClick?: () => void;
-    children: ReactNode;
-    strip?: boolean;
+  const remoteName = (r: RemoteTile) => r.name || `Participant ${String(r.uid).slice(-4)}`;
+
+  const avatar = (name: string, size: number, tone: 'green' | 'sky' = 'green') => (
+    <span
+      className="flex shrink-0 items-center justify-center rounded-full font-semibold text-white"
+      style={{
+        width: size,
+        height: size,
+        fontSize: Math.round(size * 0.38),
+        background: tone === 'green' ? 'var(--green)' : 'var(--sky)',
+      }}
+    >
+      {initials(name) || '?'}
+    </span>
+  );
+
+  /** Small participant tile for the strip under the stage. */
+  const tile = (opts: {
+    key: string;
     label: string;
+    speaking?: boolean;
+    badge?: ReactNode;
+    onClick: () => void;
+    children: ReactNode;
   }) => (
     <button
       key={opts.key}
       type="button"
       onClick={opts.onClick}
-      className="group relative overflow-hidden rounded-xl text-left transition-[transform,box-shadow] hover:scale-[1.02] focus:outline-none"
+      title={`Show ${opts.label} on the main stage`}
+      className="group relative aspect-[4/3] w-[148px] shrink-0 overflow-hidden rounded-2xl text-left transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sky)] sm:w-[172px]"
       style={{
-        background: '#151c23',
-        aspectRatio: '16 / 9',
-        minWidth: opts.strip ? 140 : undefined,
-        width: opts.strip ? 160 : undefined,
-        flex: opts.strip ? '0 0 auto' : undefined,
-        boxShadow: opts.speaking
-          ? '0 0 0 3px #00b369, 0 0 20px rgba(0,179,105,0.7)'
-          : opts.active
-            ? '0 0 0 2px #00b369'
-            : undefined,
-        cursor: opts.onClick ? 'pointer' : 'default',
+        background: 'var(--navy)',
+        boxShadow: opts.speaking ? '0 0 0 3px var(--green)' : '0 1px 2px rgba(12,17,22,0.08)',
       }}
-      title={opts.onClick ? `Click to focus: ${opts.label}` : opts.label}
     >
-      {opts.speaking ? (
-        <span
-          className="pointer-events-none absolute left-2 top-2 z-10 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-white"
-          style={{ background: '#00b369' }}
-        >
-          Speaking
-        </span>
-      ) : null}
       {opts.children}
+      <span className="pointer-events-none absolute inset-x-2 bottom-2 flex items-center gap-1.5 truncate rounded-full bg-black/40 px-2 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
+        <span className="truncate">{opts.label}</span>
+      </span>
+      {opts.badge ? <span className="pointer-events-none absolute right-2 top-2">{opts.badge}</span> : null}
     </button>
   );
 
-  const renderLocal = (strip: boolean, isActive: boolean) =>
-    tileShell({
+  const cameraOff = (name: string, big = false) => (
+    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/75">
+      {avatar(name, big ? 84 : 44)}
+      <span className={big ? 'text-[13px]' : 'text-[11px]'}>Camera off</span>
+    </div>
+  );
+
+  const localTile = () =>
+    tile({
       key: 'local',
-      strip,
-      active: isActive,
-      speaking: localSpeaking && micOn,
       label: `${displayName} (you)`,
-      onClick: () => focusTile({ kind: 'local' }),
-      children: (
-        <>
-          <div
-            ref={attachLocalVideo}
-            className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover"
-          />
-          {(phase === 'connecting' || !camOn) && (
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-white/70">
-              {phase === 'connecting' ? (
-                <>
-                  <Loader2 size={22} className="animate-spin" />
-                  <span className="text-[12px]">Joining…</span>
-                </>
-              ) : (
-                <>
-                  <span
-                    className="flex h-12 w-12 items-center justify-center rounded-full text-[16px] font-bold text-white"
-                    style={{ background: 'linear-gradient(135deg, #00b369, #1f5fa8)' }}
-                  >
-                    {initials(displayName)}
-                  </span>
-                  <span className="text-[11px]">Camera off</span>
-                </>
-              )}
-            </div>
-          )}
-          <span className="pointer-events-none absolute bottom-1.5 left-2 rounded bg-black/55 px-1.5 py-0.5 text-[10.5px] font-medium text-white">
-            {displayName} (you)
-          </span>
-          {!micOn && (
-            <span className="pointer-events-none absolute bottom-1.5 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/55 text-white">
-              <MicOff size={12} />
-            </span>
-          )}
-        </>
-      ),
-    });
-
-  const renderScreen = (strip: boolean, isActive: boolean) =>
-    tileShell({
-      key: 'screen',
-      strip,
-      active: isActive,
       speaking: localSpeaking && micOn,
-      label: 'Shared screen',
-      onClick: () => focusTile({ kind: 'screen' }),
+      onClick: () => focusTile({ kind: 'local' }),
+      badge: !micOn ? (
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#e5484d] text-white">
+          <MicOff size={12} />
+        </span>
+      ) : null,
       children: (
         <>
-          <video
-            ref={attachScreenVideo}
-            autoPlay
-            playsInline
-            muted
-            className="h-full w-full bg-black object-contain"
-          />
-          <span className="pointer-events-none absolute bottom-1.5 left-2 rounded bg-black/55 px-1.5 py-0.5 text-[10.5px] font-medium text-white">
-            Your screen
-          </span>
-          <span className="pointer-events-none absolute right-2 top-2 rounded bg-[var(--green)] px-1.5 py-0.5 text-[9px] font-semibold text-white">
-            Sharing
-          </span>
+          <div ref={attachLocalVideo} className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover" />
+          {phase === 'connecting' ? (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-white/75">
+              <Loader2 size={20} className="animate-spin" />
+            </div>
+          ) : !camOn ? (
+            cameraOff(displayName)
+          ) : null}
         </>
       ),
     });
 
-  const renderRemote = (r: RemoteTile, strip: boolean, isActive: boolean) =>
-    tileShell({
+  const screenTile = () =>
+    tile({
+      key: 'screen',
+      label: 'Your screen',
+      onClick: () => focusTile({ kind: 'screen' }),
+      badge: (
+        <span className="rounded-full bg-[var(--green)] px-2 py-0.5 text-[10px] font-semibold text-white">Sharing</span>
+      ),
+      children: (
+        <video ref={attachScreenVideo} autoPlay playsInline muted className="h-full w-full bg-black object-contain" />
+      ),
+    });
+
+  const remoteTile = (r: RemoteTile) =>
+    tile({
       key: `remote-${r.uid}`,
-      strip,
-      active: isActive || Boolean(r.sharing),
+      label: r.sharing ? `${remoteName(r)} · screen` : remoteName(r),
       speaking: Boolean(speakingMap[String(r.uid)]),
-      label: r.sharing
-        ? `${r.name || 'Participant'} screen`
-        : r.name || `Participant ${String(r.uid).slice(-4)}`,
       onClick: () => focusTile({ kind: 'remote', uid: r.uid }),
+      badge: r.sharing ? (
+        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--sky)] px-2 py-0.5 text-[10px] font-semibold text-white">
+          <MonitorUp size={10} /> Screen
+        </span>
+      ) : null,
       children: (
         <>
           <div
@@ -829,125 +804,86 @@ export default function AgoraRoom({
               r.sharing ? '[&_video]:object-contain' : '[&_video]:object-cover'
             }`}
           />
-          {!r.hasVideo && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-white/60">
-              <span
-                className="flex h-12 w-12 items-center justify-center rounded-full text-white"
-                style={{ background: '#37474f' }}
-              >
-                <Users size={18} />
-              </span>
-            </div>
-          )}
-          <span className="pointer-events-none absolute bottom-1.5 left-2 rounded bg-black/55 px-1.5 py-0.5 text-[10.5px] font-medium text-white">
-            {r.name || `Participant ${String(r.uid).slice(-4)}`}
-          </span>
-          {r.sharing ? (
-            <span className="pointer-events-none absolute right-2 top-2 inline-flex items-center gap-1 rounded bg-[#b91c1c] px-1.5 py-0.5 text-[9px] font-semibold text-white">
-              <MonitorUp size={10} /> Screen
-            </span>
-          ) : null}
+          {!r.hasVideo ? cameraOff(remoteName(r)) : null}
         </>
       ),
     });
 
-  const overflowTile = (count: number, strip: boolean) =>
-    count > 0 ? (
-      <div
-        key="overflow"
-        className="relative flex items-center justify-center overflow-hidden rounded-xl border border-dashed border-white/20"
-        style={{
-          background: '#1a222b',
-          aspectRatio: '16 / 9',
-          minWidth: strip ? 140 : undefined,
-          width: strip ? 160 : undefined,
-          flex: strip ? '0 0 auto' : undefined,
-          color: 'rgba(255,255,255,0.85)',
-        }}
-      >
-        <div className="text-center">
-          <div className="font-display text-[28px] leading-none">+{count}</div>
-          <div className="mt-1 text-[11px] text-white/55">others</div>
-        </div>
-      </div>
-    ) : null;
-
   const stageContent = (() => {
-    if (!spotlight) return null;
-    if (spotlight.kind === 'screen' && sharing) {
+    if (stage.kind === 'screen') {
       return (
-        <div className="relative h-full w-full">
-          <video
-            ref={attachScreenVideo}
-            autoPlay
-            playsInline
-            muted
-            className="absolute inset-0 h-full w-full bg-black object-contain"
-          />
-          <span className="pointer-events-none absolute bottom-2.5 left-3 z-10 rounded-md bg-black/55 px-2 py-1 text-[11.5px] font-medium text-white">
-            Your screen · sharing
-          </span>
-          <span className="pointer-events-none absolute right-3 top-3 z-10 rounded-md bg-[var(--green)] px-2 py-1 text-[11px] font-semibold text-white">
-            You are presenting
-          </span>
-        </div>
+        <video
+          ref={attachScreenVideo}
+          autoPlay
+          playsInline
+          muted
+          className="absolute inset-0 h-full w-full bg-black object-contain"
+        />
       );
     }
-    if (spotlight.kind === 'local') {
+    if (stage.kind === 'local') {
       return (
-        <div className="relative h-full w-full" style={{ background: '#151c23' }}>
+        <>
           <div
             ref={attachLocalVideo}
-            className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover"
+            className="absolute inset-0 [&_video]:h-full [&_video]:w-full [&_video]:object-cover"
           />
-          {!camOn && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/70">
-              <span
-                className="flex h-20 w-20 items-center justify-center rounded-full text-[28px] font-bold text-white"
-                style={{ background: 'linear-gradient(135deg, #00b369, #1f5fa8)' }}
-              >
-                {initials(displayName)}
-              </span>
-              <span>Camera off</span>
+          {phase === 'connecting' ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/75">
+              <Loader2 size={28} className="animate-spin" />
+              <span className="text-[13px]">Joining the class…</span>
             </div>
-          )}
-          <span className="absolute bottom-2.5 left-3 rounded-md bg-black/55 px-2 py-1 text-[11.5px] font-medium text-white">
-            {displayName} (you)
-          </span>
-        </div>
-      );
-    }
-    if (spotlight.kind === 'remote') {
-      const r = remotes.find((x) => String(x.uid) === String(spotlight.uid));
-      if (!r) return null;
-      const isShare = Boolean(r.sharing);
-      return (
-        <div className="relative h-full w-full" style={{ background: '#0a0e12' }}>
-          <div
-            ref={(el) => bindRemote(r.uid, el, isShare ? 'contain' : 'cover')}
-            className={`h-full w-full [&_video]:h-full [&_video]:w-full ${
-              isShare ? '[&_video]:object-contain' : '[&_video]:object-cover'
-            }`}
-          />
-          {!r.hasVideo && (
-            <div className="absolute inset-0 flex items-center justify-center text-white/60">
-              <Users size={40} />
-            </div>
-          )}
-          <span className="absolute bottom-2.5 left-3 rounded-md bg-black/55 px-2 py-1 text-[11.5px] font-medium text-white">
-            {r.name || `Participant ${String(r.uid).slice(-4)}`}
-            {isShare ? ' · screen share' : ' · focused'}
-          </span>
-          {isShare ? (
-            <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-md bg-[#b91c1c] px-2 py-1 text-[11px] font-semibold text-white">
-              <MonitorUp size={12} /> Viewing their screen
-            </span>
+          ) : !camOn ? (
+            cameraOff(displayName, true)
           ) : null}
-        </div>
+        </>
       );
     }
-    return null;
+    if (!stageRemote) return null;
+    const isShare = Boolean(stageRemote.sharing);
+    return (
+      <>
+        <div
+          ref={(el) => bindRemote(stageRemote.uid, el, isShare ? 'contain' : 'cover')}
+          className={`absolute inset-0 [&_video]:h-full [&_video]:w-full ${
+            isShare ? '[&_video]:object-contain' : '[&_video]:object-cover'
+          }`}
+        />
+        {!stageRemote.hasVideo ? cameraOff(remoteName(stageRemote), true) : null}
+      </>
+    );
   })();
+
+  const railButton = (opts: {
+    label: string;
+    onClick: () => void;
+    icon: ReactNode;
+    tone?: 'glass' | 'off' | 'on' | 'end';
+  }) => {
+    const tone = opts.tone ?? 'glass';
+    const style =
+      tone === 'end'
+        ? { background: '#e5484d', color: '#fff' }
+        : tone === 'off'
+          ? { background: '#fff', color: '#e5484d' }
+          : tone === 'on'
+            ? { background: 'var(--green)', color: '#fff' }
+            : { background: 'rgba(255,255,255,0.18)', color: '#fff' };
+    return (
+      <button
+        type="button"
+        onClick={opts.onClick}
+        aria-label={opts.label}
+        title={opts.label}
+        className={`flex items-center justify-center rounded-full backdrop-blur-md transition hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-white ${
+          tone === 'end' ? 'h-12 w-12 shadow-lg' : 'h-11 w-11 border border-white/25'
+        }`}
+        style={style}
+      >
+        {opts.icon}
+      </button>
+    );
+  };
 
   if (phase === 'error') {
     return (
@@ -972,11 +908,21 @@ export default function AgoraRoom({
     );
   }
 
-  const gridCols =
-    1 + gridRemotes.visible.length + (gridRemotes.hidden > 0 ? 1 : 0) <= 1 ? '1fr' : '1fr 1fr';
+  const people = [
+    { key: 'local', name: `${displayName} (you)`, video: camOn, speaking: localSpeaking && micOn, micOff: !micOn },
+    ...remotes.map((r) => ({
+      key: String(r.uid),
+      name: remoteName(r),
+      video: r.hasVideo,
+      speaking: Boolean(speakingMap[String(r.uid)]),
+      micOff: false,
+    })),
+  ];
+  const PEOPLE_PREVIEW = 5;
+  const shownPeople = showAllPeople ? people : people.slice(0, PEOPLE_PREVIEW);
 
   return (
-    <div className="mx-auto max-w-[1200px]">
+    <div className="mx-auto max-w-[1320px]">
       <style>{`
         @keyframes floatReact {
           0% { opacity: 0; transform: translateY(16px) scale(0.8); }
@@ -985,150 +931,149 @@ export default function AgoraRoom({
         }
       `}</style>
 
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-[22px] leading-tight">{title}</h1>
-          <div className="flex flex-wrap items-center gap-3 text-[12.5px]" style={{ color: 'var(--ink-soft)' }}>
-            <span className="flex items-center gap-1.5">
+      {/* Header: title and room facts as chips */}
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="font-display text-[22px] leading-tight sm:text-[26px]">{title}</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] font-semibold">
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1"
+              style={
+                phase === 'live'
+                  ? { background: '#fde8e8', color: '#c92a2f' }
+                  : { background: 'var(--paper-dim)', color: 'var(--ink-soft)' }
+              }
+            >
               <span
-                className="inline-block h-2 w-2 rounded-full"
-                style={{ background: phase === 'live' ? '#e5484d' : 'var(--line)' }}
+                className={`inline-block h-2 w-2 rounded-full ${phase === 'live' ? 'animate-pulse' : ''}`}
+                style={{ background: phase === 'live' ? '#e5484d' : 'var(--ink-soft)' }}
               />
-              {phase === 'live' ? 'LIVE' : 'Connecting…'}
+              {phase === 'live' ? 'Live' : 'Connecting…'}
             </span>
-            <span className="mono">
-              {mins}:{secs}
-            </span>
-            <span className="flex items-center gap-1">
-              <Users size={12} /> {remotes.length + 1} in room
+            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1" style={{ background: 'var(--pastel-sky)', color: 'var(--blue-ink)' }}>
+              <Users size={13} /> {peopleCount} in class
             </span>
             {sharing || someoneElseSharing ? (
-              <span className="flex items-center gap-1 font-semibold" style={{ color: 'var(--green-deep)' }}>
-                <MonitorUp size={12} /> {sharing ? 'You are sharing' : 'Someone is sharing'}
+              <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1" style={{ background: 'var(--pastel-mint)', color: 'var(--green-deep)' }}>
+                <MonitorUp size={13} /> {sharing ? 'You are presenting' : 'Screen shared'}
               </span>
+            ) : null}
+            {picked ? (
+              <button
+                type="button"
+                onClick={showAll}
+                className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1"
+                style={{ borderColor: 'var(--line)', color: 'var(--ink)', background: 'var(--paper)' }}
+              >
+                <LayoutGrid size={13} /> Reset view
+              </button>
             ) : null}
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {focused &&
-          !(
-            (sharing && spotlight?.kind === 'screen') ||
-            (spotlight?.kind === 'remote' &&
-              remotes.some((r) => r.sharing && String(r.uid) === String(spotlight.uid)))
-          ) ? (
-            <button
-              type="button"
-              onClick={showAll}
-              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold"
-              style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
-            >
-              <LayoutGrid size={14} />
-              {sharing || someoneElseSharing ? 'Back to screen' : 'Show all'}
-            </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => setChatOpen((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold"
-            style={{
-              borderColor: chatOpen ? 'var(--green)' : 'var(--line)',
-              color: chatOpen ? 'var(--green-deep)' : 'var(--ink)',
-            }}
-          >
-            <MessageSquare size={14} />
-            Comments{chat.length ? ` (${chat.length})` : ''}
-          </button>
-          <button
-            type="button"
-            onClick={toggleFullscreen}
-            className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold"
-            style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
-          >
-            {isFullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
-            {isFullscreen ? 'Exit' : 'Fullscreen'}
-          </button>
-        </div>
       </div>
 
-      <div className={`grid items-start gap-3 ${chatOpen ? 'lg:grid-cols-[1fr_300px]' : ''}`}>
-        <div
-          ref={stageRef}
-          className="relative flex min-w-0 flex-col rounded-3xl p-3"
-          style={{
-            background: '#0C1116',
-            minHeight: isFullscreen ? '100vh' : undefined,
-          }}
-        >
-          {/* Floating reactions */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-24 top-3 z-20 overflow-hidden">
-            {reactions.map((r) => (
-              <div
-                key={r.id}
-                className="absolute bottom-0 flex flex-col items-center"
-                style={{
-                  left: `${r.left}%`,
-                  animation: 'floatReact 2.6s ease-out forwards',
-                }}
-              >
-                <span className="text-[28px] drop-shadow">{r.emoji}</span>
-                <span className="rounded bg-black/50 px-1.5 text-[10px] text-white/80">{r.name}</span>
-              </div>
-            ))}
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        {/* Stage + participant strip */}
+        <div className="min-w-0">
+          <div
+            ref={stageRef}
+            className="relative overflow-hidden rounded-[28px]"
+            style={{
+              background: 'var(--navy)',
+              height: isFullscreen ? '100vh' : 'clamp(300px, 56vw, 560px)',
+              boxShadow: stageSpeaking ? '0 0 0 3px var(--green)' : '0 10px 30px rgba(18,50,79,0.14)',
+              transition: 'box-shadow 200ms',
+            }}
+          >
+            {stageContent}
+
+            {/* Floating reactions */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-20 top-3 z-20 overflow-hidden">
+              {reactions.map((r) => (
+                <div
+                  key={r.id}
+                  className="absolute bottom-0 flex flex-col items-center"
+                  style={{ left: `${r.left}%`, animation: 'floatReact 2.6s ease-out forwards' }}
+                >
+                  <span className="text-[28px] drop-shadow">{r.emoji}</span>
+                  <span className="rounded bg-black/50 px-1.5 text-[10px] text-white/80">{r.name}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Who is on stage */}
+            <div className="absolute left-3 top-3 z-20 flex max-w-[60%] items-center gap-2 rounded-full bg-black/35 py-1 pl-1 pr-3 text-[12.5px] font-medium text-white backdrop-blur-md">
+              {avatar(stage.kind === 'screen' ? displayName : stageName, 26, 'sky')}
+              <span className="truncate">{stage.kind === 'screen' ? 'Your screen' : stageName}</span>
+              {stageSpeaking ? <Mic size={13} className="shrink-0 text-[#7ee2b0]" /> : null}
+            </div>
+
+            {/* Live timer */}
+            <div className="absolute right-3 top-3 z-20 flex items-center gap-2 rounded-full bg-black/35 px-3 py-1.5 text-[12px] font-semibold text-white backdrop-blur-md">
+              <span className={`h-2 w-2 rounded-full ${phase === 'live' ? 'animate-pulse bg-[#e5484d]' : 'bg-white/50'}`} />
+              <span className="mono tabular-nums">{mins}:{secs}</span>
+            </div>
+
+            {/* Controls: a vertical rail on the right, a bottom bar on phones */}
+            <div className="absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 sm:bottom-auto sm:left-auto sm:right-3 sm:top-1/2 sm:-translate-y-1/2 sm:translate-x-0 sm:flex-col">
+              {railButton({
+                label: micOn ? 'Mute microphone' : 'Unmute microphone',
+                onClick: () => void toggleMic(),
+                icon: micOn ? <Mic size={18} /> : <MicOff size={18} />,
+                tone: micOn ? 'glass' : 'off',
+              })}
+              {railButton({
+                label: camOn ? 'Turn camera off' : 'Turn camera on',
+                onClick: () => void toggleCam(),
+                icon: camOn ? <Video size={18} /> : <VideoOff size={18} />,
+                tone: camOn ? 'glass' : 'off',
+              })}
+              {railButton({
+                label: 'Leave class',
+                onClick: () => void handleLeave(),
+                icon: <PhoneOff size={19} />,
+                tone: 'end',
+              })}
+              {railButton({
+                label: sharing ? 'Stop sharing your screen' : 'Share your screen',
+                onClick: () => void toggleShare(),
+                icon: sharing ? <MonitorUp size={18} /> : <ScreenShare size={18} />,
+                tone: sharing ? 'on' : 'glass',
+              })}
+              <span className="hidden sm:contents">
+                {railButton({
+                  label: isFullscreen ? 'Exit full screen' : 'Full screen',
+                  onClick: () => void toggleFullscreen(),
+                  icon: isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />,
+                })}
+              </span>
+            </div>
+
+            {/* Reactions */}
+            <div className="absolute bottom-3 left-3 z-20 hidden items-center gap-1 rounded-full bg-black/35 p-1 backdrop-blur-md sm:flex">
+              {REACTIONS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => void sendReaction(emoji)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-[16px] transition hover:scale-110 hover:bg-white/15"
+                  title={`React ${emoji}`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {focused ? (
-            <div className="flex flex-col gap-3">
-              <div
-                className="relative w-full overflow-hidden rounded-2xl transition-shadow duration-200"
-                style={{
-                  background: '#0a0e12',
-                  height: isFullscreen ? 'calc(100vh - 260px)' : 420,
-                  boxShadow:
-                    (spotlight?.kind === 'local' || spotlight?.kind === 'screen') &&
-                    localSpeaking &&
-                    micOn
-                      ? '0 0 0 3px #00b369, 0 0 28px rgba(0,179,105,0.55)'
-                      : spotlight?.kind === 'remote' &&
-                          speakingMap[String(spotlight.uid)]
-                        ? '0 0 0 3px #00b369, 0 0 28px rgba(0,179,105,0.55)'
-                        : undefined,
-                }}
-              >
-                {stageContent}
-              </div>
-              <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
-                {sharing && spotlight?.kind !== 'screen' ? renderScreen(true, false) : null}
-                {spotlight?.kind !== 'local' ? renderLocal(true, false) : null}
-                {stripRemotes.visible.map((r) => renderRemote(r, true, false))}
-                {overflowTile(stripRemotes.hidden, true)}
-              </div>
-            </div>
-          ) : (
-            <div
-              className="grid flex-1 gap-3"
-              style={{ gridTemplateColumns: gridCols, alignContent: 'center' }}
-            >
-              {renderLocal(false, false)}
-              {gridRemotes.visible.map((r) => renderRemote(r, false, false))}
-              {overflowTile(gridRemotes.hidden, false)}
-              {remotes.length === 0 && phase === 'live' ? (
-                <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/15 text-white/50">
-                  <Users size={26} />
-                  <span className="text-[13.5px]">Waiting for others to join…</span>
-                </div>
-              ) : null}
-            </div>
-          )}
-
-          {/* Reactions + controls */}
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+          {/* Reactions on phones sit under the stage */}
+          <div className="mt-3 flex justify-center gap-1 sm:hidden">
             {REACTIONS.map((emoji) => (
               <button
                 key={emoji}
                 type="button"
                 onClick={() => void sendReaction(emoji)}
-                className="flex h-9 w-9 items-center justify-center rounded-full text-[18px] transition hover:scale-110"
-                style={{ background: 'rgba(255,255,255,0.08)' }}
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[17px]"
+                style={{ background: 'var(--paper-dim)' }}
                 title={`React ${emoji}`}
               >
                 {emoji}
@@ -1136,141 +1081,111 @@ export default function AgoraRoom({
             ))}
           </div>
 
-          <div
-            className="mt-3 flex flex-wrap items-center justify-center gap-3"
-            style={isFullscreen ? { paddingBottom: 12 } : undefined}
-          >
-            <button
-              type="button"
-              onClick={toggleMic}
-              className="flex h-12 w-12 items-center justify-center rounded-full border transition-colors"
-              style={
-                micOn
-                  ? {
-                      borderColor: 'rgba(255,255,255,0.18)',
-                      background: 'rgba(255,255,255,0.08)',
-                      color: '#fff',
-                    }
-                  : { borderColor: 'transparent', background: '#e5484d', color: '#fff' }
-              }
-            >
-              {micOn ? <Mic size={18} /> : <MicOff size={18} />}
-            </button>
-            <button
-              type="button"
-              onClick={toggleCam}
-              className="flex h-12 w-12 items-center justify-center rounded-full border transition-colors"
-              style={
-                camOn
-                  ? {
-                      borderColor: 'rgba(255,255,255,0.18)',
-                      background: 'rgba(255,255,255,0.08)',
-                      color: '#fff',
-                    }
-                  : { borderColor: 'transparent', background: '#e5484d', color: '#fff' }
-              }
-            >
-              {camOn ? <Video size={18} /> : <VideoOff size={18} />}
-            </button>
-            <button
-              type="button"
-              onClick={toggleShare}
-              className="flex h-12 w-12 items-center justify-center rounded-full border transition-colors"
-              style={
-                sharing
-                  ? { borderColor: 'transparent', background: 'var(--green)', color: '#fff' }
-                  : {
-                      borderColor: 'rgba(255,255,255,0.18)',
-                      background: 'rgba(255,255,255,0.08)',
-                      color: '#fff',
-                    }
-              }
-            >
-              {sharing ? <MonitorUp size={18} /> : <ScreenShare size={18} />}
-            </button>
-            <button
-              type="button"
-              onClick={() => setChatOpen((v) => !v)}
-              className="flex h-12 w-12 items-center justify-center rounded-full border transition-colors"
-              style={{
-                borderColor: 'rgba(255,255,255,0.18)',
-                background: chatOpen ? 'var(--green)' : 'rgba(255,255,255,0.08)',
-                color: '#fff',
-              }}
-            >
-              <MessageSquare size={18} />
-            </button>
-            <button
-              type="button"
-              onClick={toggleFullscreen}
-              className="flex h-12 w-12 items-center justify-center rounded-full border transition-colors"
-              style={{
-                borderColor: 'rgba(255,255,255,0.18)',
-                background: 'rgba(255,255,255,0.08)',
-                color: '#fff',
-              }}
-            >
-              {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
-            </button>
-            <button
-              type="button"
-              onClick={handleLeave}
-              className="btn !px-7 !py-3 text-[14px] text-white"
-              style={{ background: '#e5484d' }}
-            >
-              <PhoneOff size={16} /> Leave
-            </button>
+          {/* Everyone else */}
+          <div className="no-scrollbar mt-3 flex gap-3 overflow-x-auto pb-1">
+            {sharing && stage.kind !== 'screen' ? screenTile() : null}
+            {stage.kind !== 'local' ? localTile() : null}
+            {strip.visible.map((r) => remoteTile(r))}
+            {strip.hidden > 0 ? (
+              <div
+                className="flex aspect-[4/3] w-[148px] shrink-0 flex-col items-center justify-center rounded-2xl sm:w-[172px]"
+                style={{ background: 'var(--pastel-sky)', color: 'var(--blue-ink)' }}
+              >
+                <span className="font-display text-[26px] leading-none">{strip.hidden}+</span>
+                <span className="mt-1 text-[11px]">more in class</span>
+              </div>
+            ) : null}
+            {remotes.length === 0 && phase === 'live' ? (
+              <div
+                className="flex aspect-[4/3] w-[172px] shrink-0 flex-col items-center justify-center gap-1.5 rounded-2xl border border-dashed text-center text-[12px]"
+                style={{ borderColor: 'rgba(12,17,22,0.15)', color: 'var(--ink-soft)' }}
+              >
+                <Users size={20} />
+                Waiting for others to join…
+              </div>
+            ) : null}
           </div>
         </div>
 
-        {chatOpen ? (
-          <aside
-            className="flex h-[70vh] min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl border lg:h-[min(78vh,760px)]"
-            style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}
-          >
-            <div
-              className="flex items-center justify-between border-b px-4 py-3"
-              style={{ borderColor: 'var(--line)' }}
-            >
-              <div>
-                <p className="font-display text-[16px]">Comments</p>
-                <p className="text-[11px]" style={{ color: 'var(--ink-soft)' }}>
-                  Live chat for this session
-                </p>
-              </div>
+        {/* Side panel: participants and live chat */}
+        <div className="flex min-w-0 flex-col gap-4">
+          <section className="overflow-hidden rounded-3xl border" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
+            <header className="flex items-center gap-2 px-4 py-3 text-[13.5px] font-semibold" style={{ background: 'var(--pastel-sky)', color: 'var(--blue-ink)' }}>
+              <Users size={15} /> Participants {peopleCount}
+            </header>
+            <ul className="space-y-1.5 p-2.5">
+              {shownPeople.map((p) => (
+                <li
+                  key={p.key}
+                  className="flex items-center gap-2.5 rounded-2xl px-2.5 py-2"
+                  style={{ background: p.speaking ? 'var(--pastel-mint)' : 'var(--paper-dim)' }}
+                >
+                  {avatar(p.name, 30, p.key === 'local' ? 'green' : 'sky')}
+                  <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{p.name}</span>
+                  <span className="flex items-center gap-1.5" style={{ color: 'var(--ink-soft)' }}>
+                    {p.video ? <Video size={15} /> : <VideoOff size={15} />}
+                    {p.micOff ? (
+                      <MicOff size={15} className="text-[#e5484d]" />
+                    ) : p.speaking ? (
+                      <Mic size={15} className="text-[var(--green-deep)]" />
+                    ) : null}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {people.length > PEOPLE_PREVIEW ? (
               <button
                 type="button"
-                onClick={() => setChatOpen(false)}
-                className="rounded-full p-1.5"
-                style={{ color: 'var(--ink-soft)' }}
+                onClick={() => setShowAllPeople((v) => !v)}
+                className="mx-auto mb-3 flex items-center gap-1 rounded-full border px-3 py-1 text-[11.5px] font-semibold"
+                style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}
               >
-                <X size={16} />
+                {showAllPeople ? 'Show less' : `See ${people.length - PEOPLE_PREVIEW} more`}
               </button>
-            </div>
-            <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
+            ) : null}
+          </section>
+
+          <section
+            className="flex h-[440px] min-h-0 flex-col overflow-hidden rounded-3xl border lg:h-[min(52vh,520px)]"
+            style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}
+          >
+            <header className="flex items-center gap-2 px-4 py-3 text-[13.5px] font-semibold" style={{ background: 'var(--pastel-mint)', color: 'var(--green-deep)' }}>
+              <MessageSquare size={15} /> Live chat
+            </header>
+            <div ref={chatListRef} className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
               {chat.length === 0 ? (
-                <p className="py-8 text-center text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                  No comments yet. Say hi or drop a question.
+                <p className="py-10 text-center text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+                  No messages yet. Say hi or ask a question.
                 </p>
               ) : (
-                chat.map((m) => (
-                  <div key={m.id} className="text-[13px]">
-                    <div className="flex items-baseline gap-2">
-                      <span className="font-semibold">{m.name}</span>
-                      <span className="font-mono text-[10px]" style={{ color: 'var(--ink-soft)' }}>
-                        {new Date(m.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                chat.map((m) => {
+                  const mine = m.name === displayName;
+                  const time = new Date(m.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  return (
+                    <div key={m.id} className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
+                      <p
+                        className={`max-w-[88%] rounded-2xl px-3 py-2 text-[13px] leading-relaxed [overflow-wrap:anywhere] ${
+                          mine ? 'rounded-br-md text-white' : 'rounded-bl-md border'
+                        }`}
+                        style={
+                          mine
+                            ? { background: 'var(--sky)' }
+                            : { background: 'var(--paper-dim)', borderColor: 'var(--line)', color: 'var(--ink)' }
+                        }
+                      >
+                        {m.text}
+                      </p>
+                      <span className="mt-1 flex items-center gap-1.5 px-1 text-[11px]" style={{ color: 'var(--ink-soft)' }}>
+                        {mine ? null : <span className="font-semibold" style={{ color: 'var(--ink)' }}>{m.name}</span>}
+                        <span className="mono">{time}</span>
                       </span>
                     </div>
-                    <p className="mt-0.5 leading-relaxed [overflow-wrap:anywhere]" style={{ color: 'var(--ink)' }}>
-                      {m.text}
-                    </p>
-                  </div>
-                ))
+                  );
+                })
               )}
-              <div ref={chatEndRef} />
             </div>
             <form
-              className="flex gap-2 border-t p-3"
+              className="flex items-center gap-2 border-t p-2.5"
               style={{ borderColor: 'var(--line)' }}
               onSubmit={(e) => {
                 e.preventDefault();
@@ -1280,21 +1195,23 @@ export default function AgoraRoom({
               <input
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Write a comment…"
+                placeholder="Type a message…"
                 maxLength={280}
+                aria-label="Chat message"
                 className="form-input min-w-0 flex-1 !rounded-full !py-2 text-[13px]"
               />
               <button
                 type="submit"
                 disabled={!chatInput.trim()}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white disabled:opacity-40"
-                style={{ background: 'var(--green)' }}
+                aria-label="Send message"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white disabled:opacity-40"
+                style={{ background: 'var(--sky)' }}
               >
                 <Send size={15} />
               </button>
             </form>
-          </aside>
-        ) : null}
+          </section>
+        </div>
       </div>
     </div>
   );
