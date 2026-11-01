@@ -15,7 +15,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-[760px] overflow-x-hidden">
-      <PageHeader title="Settings" />
+      <PageHeader tone="sky" title="Settings" />
 
       <div
         className="mb-10 flex flex-wrap items-center gap-4 border-b pb-8"

@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/auth/getUser';
-import { isAdminEmail } from '@/lib/adminAuth';
+import { isVerifiedAdminSession } from '@/lib/adminAuth';
 import VideoLibrary from '@/components/dashboard/VideoLibrary';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,10 +12,13 @@ export default function VideosPage() {
 
   return (
     <div className="mx-auto max-w-[1100px]">
-      <div className="mb-8">
-        <h1 className="font-display text-[26px] leading-[1.1] tracking-tight sm:text-[32px]">Video Tutorials</h1>
-      </div>
-      <VideoLibrary isAdmin={isAdminEmail(session.email)} />
+      <PageHeader
+        art="/way_selfpaced.webp"
+        tone="peach"
+        title="Video Hall"
+        description="Hand-picked video tutorials to watch alongside your courses."
+      />
+      <VideoLibrary isAdmin={isVerifiedAdminSession(session)} />
     </div>
   );
 }

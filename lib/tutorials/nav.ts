@@ -34,6 +34,7 @@ export const PROGRAMMES_NAV = [
   { href: '/programmes?category=software', label: 'Software Development', desc: 'Web, backend and mobile' },
   { href: '/programmes?category=data', label: 'Data & AI', desc: 'Analysis and visualisation' },
   { href: '/programmes?category=security', label: 'Cybersecurity', desc: 'Fundamentals and CEH prep' },
+  { href: '/programmes?category=marketing', label: 'Digital Marketing', desc: 'Social media, SEO, content and ads' },
   { href: '/programmes?category=foundations', label: 'Foundations', desc: 'Short starter programmes' },
   { href: '/#how-it-works', label: 'How enrolment works', desc: 'Choose, enrol, pay, learn' },
 ] as const;

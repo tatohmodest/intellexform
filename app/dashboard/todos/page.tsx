@@ -80,7 +80,7 @@ export default async function StudentTodosPage() {
 
   return (
     <div className="mx-auto max-w-[920px] space-y-10">
-      <PageHeader
+      <PageHeader art="/eco_learning.webp" tone="mint"
         title="Tasks"
         actions={
           <Link href="/dashboard/calendar" className="chip">

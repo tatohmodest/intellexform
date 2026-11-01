@@ -15,7 +15,7 @@ export default async function MessagesPage({
 
   return (
     <div className="mx-auto max-w-[1100px]">
-      <PageHeader
+      <PageHeader art="/mentor_session.webp" tone="sky"
         title="Messages"
       />
       <MessagesInbox userId={session.uid} />

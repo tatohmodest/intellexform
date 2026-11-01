@@ -4,6 +4,7 @@ import { Download, FileText } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getLearner } from '@/lib/learn/repo';
 import { listPublishedNotesForStudent, studentOwnsNote } from '@/lib/learn/notes';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,10 +44,13 @@ export default async function StudentNotesPage({
   );
 
   return (
-    <div className="mx-auto max-w-[900px]">
-      <div className="mb-8">
-        <h1 className="font-display text-[26px] leading-[1.1] tracking-tight sm:text-[32px]">My notes</h1>
-      </div>
+    <div className="mx-auto max-w-[1180px]">
+      <PageHeader
+        art="/eco_resources.webp"
+        tone="butter"
+        title="My notes"
+        description="Class notes from your instructors, all in one place."
+      />
 
       {withAccess.length === 0 ? (
         <div

@@ -7,6 +7,7 @@ export const CATEGORY_TINT: Record<ProgrammeCategory, string> = {
   software: '#dcedfa',
   data: '#fff2c6',
   security: '#ebe7fa',
+  marketing: '#ffe6d9',
   foundations: '#e2f4e9',
 };
 

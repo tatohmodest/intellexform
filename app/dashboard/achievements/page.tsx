@@ -20,6 +20,7 @@ import { getBookings, getEnrollments, getLearner, getProgress } from '@/lib/lear
 import { getCatalogTrack } from '@/lib/learn/catalog';
 import { getInstructorTeachingStats } from '@/lib/learn/xp';
 import TrackLogo from '@/components/TrackLogo';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -144,10 +145,13 @@ export default async function AchievementsPage() {
   const earnedCount = badges.filter((b) => b.earned).length;
 
   return (
-    <div className="mx-auto max-w-[1000px]">
-      <div className="mb-8">
-        <h1 className="font-display text-[26px] leading-[1.1] tracking-tight sm:text-[32px]">Achievements</h1>
-      </div>
+    <div className="mx-auto max-w-[1180px]">
+      <PageHeader
+        art="/eco_junior.webp"
+        tone="butter"
+        title="Your progress"
+        description="Levels, streaks and badges you earn as you learn. Every lesson counts."
+      />
 
       {/* Level card */}
       <div

@@ -52,7 +52,7 @@ export default async function SubscriptionPage() {
 
   return (
     <div className="mx-auto max-w-[980px]">
-      <PageHeader
+      <PageHeader art="/eco_cert.webp" tone="butter"
         title="Subscription"
       />
 

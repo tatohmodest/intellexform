@@ -28,6 +28,7 @@ import GetNoteButton from '@/components/dashboard/GetNoteButton';
 import BookRequestButton from '@/components/dashboard/BookRequestButton';
 import NewBookButton from '@/components/dashboard/NewBookButton';
 import { getStaffPost } from '@/lib/staff/store';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,62 +68,70 @@ export default async function LibraryPage() {
   );
   const ownedNoteIds = new Set(noteOwnership.filter((x) => x.owned).map((x) => x.id));
 
-  return (
-    <div className="mx-auto max-w-[1100px]">
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-[26px] leading-[1.1] tracking-tight sm:text-[32px]">Library</h1>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/dashboard/library/learn"
-            className="flex items-center gap-1.5 rounded-full border px-4 py-2 text-[12.5px] font-semibold"
-            style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
-          >
-            <Sparkles size={13} /> Book tutor
-          </Link>
-          {canUpload ? <NewBookButton /> : null}
-          <Link
-            href={canUpload ? '/dashboard/mentor' : '/dashboard/mentor'}
-            className="flex items-center gap-1.5 rounded-full border px-4 py-2 text-[12.5px] font-semibold"
-            style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}
-          >
-            <Feather size={13} />
-            {canUpload ? 'Your books' : 'Become a mentor to publish'}
-          </Link>
-        </div>
+  const bookCover = (b: (typeof books)[number], size: 'shelf' | 'card') =>
+    b.coverImageUrl ? (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={b.coverImageUrl}
+        alt={b.title}
+        className={`aspect-[3/4] w-full rounded-2xl object-cover shadow-[0_14px_30px_-18px_rgba(18,50,79,0.55)] ${
+          size === 'shelf' ? 'transition-transform group-hover:-translate-y-1.5' : ''
+        }`}
+      />
+    ) : (
+      <div
+        className={`flex aspect-[3/4] w-full flex-col items-center justify-center rounded-2xl p-3 text-center shadow-[0_14px_30px_-18px_rgba(18,50,79,0.4)] ${
+          size === 'shelf' ? 'transition-transform group-hover:-translate-y-1.5' : ''
+        }`}
+        style={{ background: `${b.coverColor || '#00b369'}26`, color: 'var(--navy)' }}
+      >
+        <span className="text-[26px] font-extrabold">{(b.title || 'B').charAt(0).toUpperCase()}</span>
+        {size === 'shelf' ? <span className="mt-2 line-clamp-3 text-[12px] font-semibold leading-snug">{b.title}</span> : null}
       </div>
+    );
+
+  return (
+    <div className="mx-auto max-w-[1180px]">
+      <PageHeader
+        art="/eco_books.webp"
+        tone="butter"
+        title="Library"
+        description="Books and class notes from your instructors, plus an AI tutor that turns any book into guided lessons."
+        actions={
+          <>
+            <Link href="/dashboard/library/learn" className="btn bg-white !px-4 !py-2.5 text-[14px] text-[var(--navy)] hover:bg-white/80">
+              <Sparkles size={15} /> Book tutor
+            </Link>
+            {canUpload ? <NewBookButton /> : null}
+            <Link href="/dashboard/mentor" className="btn bg-white/60 !px-4 !py-2.5 text-[14px] text-[var(--navy)] hover:bg-white">
+              <Feather size={15} /> {canUpload ? 'Your books' : 'Publish as an instructor'}
+            </Link>
+          </>
+        }
+      />
 
       {!isMember ? (
-        <div
-          className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border p-5"
-          style={{
-            borderColor: 'rgba(0,179,105,0.35)',
-            background: 'rgba(0,179,105,0.07)',
-          }}
-        >
-          <div className="flex gap-3">
-            <Sparkles size={20} style={{ color: 'var(--green-deep)', marginTop: 2 }} />
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-white p-5">
+          <div className="flex items-center gap-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--pastel-mint)] text-[var(--green-deep)]">
+              <Award size={20} />
+            </span>
             <div>
-              <div className="text-[15px] font-semibold" style={{ color: 'var(--green-deep)' }}>
+              <div className="text-[15.5px] font-bold text-[var(--navy)]">
                 InTelleX Student · {STUDENT_MONTHLY_XAF.toLocaleString('en-US')} XAF/month
               </div>
-              <p className="mt-0.5 max-w-xl text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
-                Unlock 1,000+ courses with certifications, Intermediate→Pro free tracks, and every
-                priced library book included.
+              <p className="mt-0.5 max-w-xl text-[13.5px] text-[var(--ink-soft)]">
+                Every priced library book included, plus certifications and Intermediate→Pro free tracks.
               </p>
             </div>
           </div>
-          <Link href="/membership" className="btn btn-g shrink-0">
-            <Award size={14} /> Become a student
+          <Link href="/membership" className="btn btn-primary shrink-0 !px-5">
+            Become a student
           </Link>
         </div>
       ) : (
-        <div
-          className="mb-8 rounded-2xl border px-5 py-4 text-[13.5px]"
-          style={{ borderColor: 'rgba(0,179,105,0.3)', background: 'rgba(0,179,105,0.06)', color: 'var(--green-deep)' }}
-        >
-          Active InTelleX Student membership - priced library books are free for you.
+        <div className="mb-8 flex items-center gap-3 rounded-3xl bg-[var(--pastel-mint)] px-5 py-4 text-[14px] font-medium text-[var(--navy)]">
+          <Award size={18} className="text-[var(--green-deep)]" /> Active InTelleX Student membership: priced library books are free for you.
         </div>
       )}
 
@@ -130,23 +139,53 @@ export default async function LibraryPage() {
         <BookTutorUpload />
       </section>
 
-      <section className="mb-10 rounded-2xl border p-5 sm:p-6" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
-        <div className="mb-4">
-          <h3 className="font-display text-[18px]">Need a title we don’t have?</h3>
-          <p className="mt-1 text-[13.5px]" style={{ color: 'var(--ink-soft)' }}>
-            Request books without cluttering the shelf. Students get 10 requests per month; everyone
-            else gets 2.
+      {myShelf.length > 0 && (
+        <section className="mb-10">
+          <h2 className="mb-4 text-[22px] font-bold text-[var(--navy)]">My shelf</h2>
+          <div className="no-scrollbar flex gap-4 overflow-x-auto rounded-3xl bg-white p-5 pb-6">
+            {myShelf.map((b) => (
+              <Link key={b.id} href={`/dashboard/library/${b.id}`} className="group w-[128px] shrink-0" title={b.title}>
+                {bookCover(b, 'shelf')}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {books.length === 0 && (
+        <section className="mb-10 grid items-center gap-6 overflow-hidden rounded-[28px] bg-white p-6 sm:p-8 md:grid-cols-[1fr_300px]">
+          <div>
+            <h2 className="text-[24px] font-bold text-[var(--navy)]">Real books are on their way</h2>
+            <p className="mt-2 max-w-[480px] text-[15px] leading-relaxed text-[var(--ink-soft)]">
+              We are curating the shelf with books our instructors actually teach from. Meanwhile, upload any book
+              you own to the AI tutor above, or request a title below.
+            </p>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/eco_books.webp" alt="" className="hidden w-full rounded-2xl md:block" />
+        </section>
+      )}
+
+      <section className="mb-10 grid gap-5 rounded-[28px] bg-[var(--pastel-lilac)] p-6 sm:p-8 lg:grid-cols-[1fr_1.1fr]">
+        <div>
+          <h3 className="text-[22px] font-bold text-[var(--navy)]">Need a title we don’t have?</h3>
+          <p className="mt-2 text-[14.5px] leading-relaxed text-[var(--navy)]/70">
+            Request books without cluttering the shelf. Students get 10 requests per month; everyone else gets 2.
           </p>
+          <div className="mt-5">
+            <BookRequestButton initialQuota={quota} />
+          </div>
         </div>
-        <BookRequestButton initialQuota={quota} />
         {myRequests.length > 0 && (
-          <div className="mt-5 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
-            <div className="mb-2 text-[13px] font-semibold">Your recent requests</div>
-            <ul className="space-y-2 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+          <div className="rounded-3xl bg-white/80 p-5">
+            <div className="mb-3 text-[14px] font-bold text-[var(--navy)]">Your recent requests</div>
+            <ul className="space-y-2.5 text-[13.5px]">
               {myRequests.slice(0, 5).map((r) => (
                 <li key={r.id} className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-medium" style={{ color: 'var(--ink)' }}>{r.title}</span>
-                  <span className="capitalize">{r.status}</span>
+                  <span className="font-medium text-[var(--navy)]">{r.title}</span>
+                  <span className="rounded-full bg-[var(--paper-dim)] px-2.5 py-0.5 text-[12px] font-semibold capitalize text-[var(--navy)]/75">
+                    {r.status}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -154,90 +193,35 @@ export default async function LibraryPage() {
         )}
       </section>
 
-      {myShelf.length > 0 && (
-        <section className="mb-10">
-          <h2 className="mb-4 font-display text-[21px]">My shelf</h2>
-          <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
-            {myShelf.map((b) => (
-              <Link
-                key={b.id}
-                href={`/dashboard/library/${b.id}`}
-                className="w-[132px] shrink-0"
-                title={b.title}
-              >
-                {b.coverImageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={b.coverImageUrl}
-                    alt={b.title}
-                    className="aspect-[3/4] w-full rounded-xl object-cover shadow-book transition-transform hover:-translate-y-1"
-                  />
-                ) : (
-                  <div
-                    className="flex aspect-[3/4] flex-col items-center justify-center rounded-xl p-3 text-center text-white shadow-book transition-transform hover:-translate-y-1"
-                    style={{ background: `linear-gradient(160deg, ${b.coverColor}, ${b.coverColor}cc)` }}
-                  >
-                    <span className="font-display text-[28px] font-semibold">
-                      {(b.title || 'B').charAt(0).toUpperCase()}
-                    </span>
-                    <span className="mt-2 line-clamp-3 font-display text-[12px] leading-snug">{b.title}</span>
-                  </div>
-                )}
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
       {libraryNotes.length > 0 && (
         <section className="mb-10">
           <div className="mb-4 flex items-center gap-2.5">
-            <FileText size={16} style={{ color: 'var(--green-deep)' }} />
-            <h2 className="font-display text-[21px]">Class notes</h2>
+            <FileText size={17} className="text-[var(--green-deep)]" />
+            <h2 className="text-[22px] font-bold text-[var(--navy)]">Class notes</h2>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {libraryNotes.map((n) => {
               const owned = ownedNoteIds.has(n.id);
               return (
-                <div
-                  key={n.id}
-                  className="flex gap-4 rounded-2xl border p-4 transition-shadow hover:shadow-card"
-                  style={{ borderColor: 'var(--line)' }}
-                >
+                <div key={n.id} className="flex gap-4 rounded-3xl bg-white p-4 transition-shadow hover:shadow-[0_18px_40px_-26px_rgba(18,50,79,0.5)]">
                   <Link href={`/dashboard/notes/${n.id}`} className="shrink-0">
-                    <div
-                      className="flex h-[92px] w-[72px] flex-col items-center justify-center rounded-lg text-white"
-                      style={{ background: 'linear-gradient(160deg, #0f766e, #14b8a6)' }}
-                    >
-                      <FileText size={22} />
+                    <div className="flex h-[92px] w-[72px] items-center justify-center rounded-2xl bg-[var(--pastel-mint)] text-[var(--green-deep)]">
+                      <FileText size={24} />
                     </div>
                   </Link>
                   <div className="flex min-w-0 flex-1 flex-col">
                     <Link href={`/dashboard/notes/${n.id}`}>
-                      <div className="line-clamp-2 text-[14.5px] font-semibold leading-snug">{n.title}</div>
+                      <div className="line-clamp-2 text-[15px] font-bold leading-snug text-[var(--navy)]">{n.title}</div>
                     </Link>
-                    <div className="mt-0.5 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-                      by {n.authorName}
-                    </div>
-                    <p
-                      className="mt-1.5 line-clamp-2 text-[12.5px] leading-relaxed"
-                      style={{ color: 'var(--ink-soft)' }}
-                    >
+                    <div className="mt-0.5 text-[12.5px] text-[var(--ink-soft)]">by {n.authorName}</div>
+                    <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-[var(--ink-soft)]">
                       {n.body || 'Class notes from your instructor.'}
                     </p>
                     <div className="mt-auto flex items-center justify-between pt-2">
-                      <span
-                        className="text-[13px] font-bold"
-                        style={{ color: n.priceXAF > 0 ? 'var(--ink)' : 'var(--green-deep)' }}
-                      >
+                      <span className="text-[13.5px] font-bold" style={{ color: n.priceXAF > 0 ? 'var(--navy)' : 'var(--green-deep)' }}>
                         {n.priceXAF > 0 ? `${n.priceXAF.toLocaleString()} XAF` : 'Free'}
                       </span>
-                      <GetNoteButton
-                        noteId={n.id}
-                        priceXAF={n.priceXAF}
-                        owned={owned}
-                        compact
-                      />
+                      <GetNoteButton noteId={n.id} priceXAF={n.priceXAF} owned={owned} compact />
                     </div>
                   </div>
                 </div>
@@ -250,75 +234,36 @@ export default async function LibraryPage() {
       {categories.map((cat) => (
         <section key={cat} className="mb-10">
           <div className="mb-4 flex items-center gap-2.5">
-            <Layers size={16} style={{ color: 'var(--green-deep)' }} />
-            <h2 className="font-display text-[21px]">{cat}</h2>
+            <Layers size={17} className="text-[var(--green-deep)]" />
+            <h2 className="text-[22px] font-bold text-[var(--navy)]">{cat}</h2>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {books
               .filter((b) => b.category === cat)
               .map((b) => {
-                const owned =
-                  purchased.has(b.id) ||
-                  b.priceXAF === 0 ||
-                  b.authorId === session.uid ||
-                  isMember;
+                const owned = purchased.has(b.id) || b.priceXAF === 0 || b.authorId === session.uid || isMember;
                 return (
-                  <div
-                    key={b.id}
-                    className="flex gap-4 rounded-2xl border p-4 transition-shadow hover:shadow-card"
-                    style={{ borderColor: 'var(--line)' }}
-                  >
-                    <Link href={`/dashboard/library/${b.id}`} className="shrink-0">
-                      {b.coverImageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={b.coverImageUrl}
-                          alt={b.title}
-                          className="aspect-[3/4] w-[92px] rounded-lg object-cover"
-                        />
-                      ) : (
-                        <div
-                          className="flex aspect-[3/4] w-[92px] flex-col items-center justify-center rounded-lg p-2 text-center text-white"
-                          style={{ background: `linear-gradient(160deg, ${b.coverColor}, ${b.coverColor}cc)` }}
-                        >
-                          <span className="font-display text-[22px] font-semibold">
-                            {(b.title || 'B').charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                      )}
+                  <div key={b.id} className="flex gap-4 rounded-3xl bg-white p-4 transition-shadow hover:shadow-[0_18px_40px_-26px_rgba(18,50,79,0.5)]">
+                    <Link href={`/dashboard/library/${b.id}`} className="w-[92px] shrink-0">
+                      {bookCover(b, 'card')}
                     </Link>
                     <div className="flex min-w-0 flex-1 flex-col">
                       <Link href={`/dashboard/library/${b.id}`}>
-                        <div className="line-clamp-2 text-[14.5px] font-semibold leading-snug">{b.title}</div>
+                        <div className="line-clamp-2 text-[15px] font-bold leading-snug text-[var(--navy)]">{b.title}</div>
                       </Link>
-                      <div className="mt-0.5 text-[12px]" style={{ color: 'var(--ink-soft)' }}>
+                      <div className="mt-0.5 text-[12.5px] text-[var(--ink-soft)]">
                         by {b.authorName}
-                        {b.downloadUrl
-                          ? ' · File / Drive'
-                          : ` · ${b.chapters.length} chapter${b.chapters.length === 1 ? '' : 's'}`}
+                        {b.downloadUrl ? ' · File / Drive' : ` · ${b.chapters.length} chapter${b.chapters.length === 1 ? '' : 's'}`}
                       </div>
-                      <p className="mt-1.5 line-clamp-2 text-[12.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                        {b.subtitle || b.description}
-                      </p>
+                      <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-[var(--ink-soft)]">{b.subtitle || b.description}</p>
                       <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-                        <span className="text-[13px] font-bold" style={{ color: b.priceXAF > 0 && !isMember ? 'var(--ink)' : 'var(--green-deep)' }}>
-                          {b.priceXAF > 0
-                            ? isMember
-                              ? 'Included'
-                              : `${b.priceXAF.toLocaleString()} XAF`
-                            : 'Free'}
+                        <span className="text-[13.5px] font-bold" style={{ color: b.priceXAF > 0 && !isMember ? 'var(--navy)' : 'var(--green-deep)' }}>
+                          {b.priceXAF > 0 ? (isMember ? 'Included' : `${b.priceXAF.toLocaleString()} XAF`) : 'Free'}
                         </span>
                         {owned ? (
                           <StartBookTutorButton bookId={b.id} compact />
                         ) : (
-                          <GetBookButton
-                            bookId={b.id}
-                            priceXAF={b.priceXAF}
-                            owned={owned}
-                            isMember={isMember}
-                            downloadUrl={b.downloadUrl}
-                            compact
-                          />
+                          <GetBookButton bookId={b.id} priceXAF={b.priceXAF} owned={owned} isMember={isMember} downloadUrl={b.downloadUrl} compact />
                         )}
                       </div>
                     </div>

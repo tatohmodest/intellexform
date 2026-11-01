@@ -40,9 +40,10 @@ export default async function CommunityPage({
   const feed = tab === 'public' ? publicPosts : tab === 'institution' ? institutionPosts : official;
 
   return (
-    <div className="mx-auto max-w-[800px]">
-      <PageHeader
+    <div className="mx-auto max-w-[1180px]">
+      <PageHeader art="/mentor_session.webp" tone="peach"
         title="Community"
+        description="News from your school, your classes and the InTelleX community."
         actions={
           <Link href="/dashboard/announcements" className="chip">
             <Megaphone size={14} /> Announcements
@@ -63,16 +64,14 @@ export default async function CommunityPage({
       </PageHeader>
 
       {isStudent && tab === 'class' ? (
-        <section className="mb-8 card p-5">
-          <h2 className="font-display text-[22px]">Class rooms</h2>
-          <p className="mt-1 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-            Channels for chat, notes, and ideas. Class advocates create the room and add course mates.
-          </p>
-          <Link
-            href="/dashboard/study-groups"
-            className="mt-3 inline-block px-4 py-2 text-[13px] font-semibold text-white"
-            style={{ background: '#00B369' }}
-          >
+        <section className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-[var(--pastel-lilac)] p-6">
+          <div>
+            <h2 className="text-[20px] font-bold text-[var(--navy)]">Class rooms</h2>
+            <p className="mt-1 text-[14px] text-[var(--navy)]/70">
+              Channels for chat, notes, and ideas. Class advocates create the room and add course mates.
+            </p>
+          </div>
+          <Link href="/dashboard/study-groups" className="btn btn-dark !px-5">
             Open groups
           </Link>
         </section>
@@ -81,19 +80,18 @@ export default async function CommunityPage({
       {showOfficial || showPublic ? (
         <section className="mb-10">
           <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
-            <h2 className="font-display text-[20px]">
+            <h2 className="text-[20px] font-bold text-[var(--navy)]">
               {tab === 'public' ? 'Public announcements' : tab === 'institution' ? 'Institution announcements' : 'Official announcements'}
             </h2>
             <Link
               href="/dashboard/announcements"
-              className="inline-flex items-center border px-3 py-1.5 text-[12.5px] font-semibold"
-              style={{ borderColor: 'var(--line)', color: 'var(--green-deep)' }}
+              className="inline-flex items-center rounded-xl bg-white px-3.5 py-2 text-[13px] font-semibold text-[var(--green-deep)]"
             >
               All announcements
             </Link>
           </div>
           {feed.length === 0 ? (
-            <p className="border border-dashed p-6 text-[14px]" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
+            <p className="rounded-3xl bg-white p-6 text-[14px] text-[var(--ink-soft)]">
               No posts in this feed yet. Authorized staff publish from Announcements.
             </p>
           ) : (
@@ -109,21 +107,21 @@ export default async function CommunityPage({
       ) : null}
 
       {showPublic ? (
-        <section className="grid gap-3 sm:grid-cols-2">
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { title: 'Groups', href: '/dashboard/study-groups', body: 'Class rooms — chat, notes, ideas', Icon: Users },
             { title: 'Opportunities', href: '/dashboard/opportunities', body: 'Jobs, internships, and calls', Icon: Sparkles },
             { title: 'Messages', href: '/dashboard/messages', body: 'Direct conversations', Icon: MessageSquare },
             { title: 'Notes', href: '/dashboard/notes', body: 'Educational resources', Icon: FileText },
           ].map(({ title, href, body, Icon }) => (
-            <Link key={href} href={href} className="card p-4">
-              <p className="flex items-center gap-2 font-semibold">
-                <Icon size={16} />
-                {title}
-              </p>
-              <p className="mt-1 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                {body}
-              </p>
+            <Link key={href} href={href} className="group flex flex-col gap-6 rounded-3xl bg-white p-5 transition-transform hover:-translate-y-1">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--pastel-mint)] text-[var(--green-deep)]">
+                <Icon size={18} />
+              </span>
+              <span>
+                <span className="block font-bold text-[var(--navy)]">{title}</span>
+                <span className="mt-1 block text-[13px] text-[var(--ink-soft)]">{body}</span>
+              </span>
             </Link>
           ))}
         </section>

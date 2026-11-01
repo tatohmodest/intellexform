@@ -36,7 +36,7 @@ export default async function AssignmentsIndexPage({
 
   return (
     <div className="mx-auto w-full max-w-[920px] overflow-x-hidden">
-      <PageHeader title="Assignments" />
+      <PageHeader art="/eco_learning.webp" tone="butter" title="Assignments" />
 
       <nav
         className="-mx-1 mb-5 flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mb-6"

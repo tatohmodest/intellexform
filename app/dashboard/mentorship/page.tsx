@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Users } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth/getUser';
 import { getBookings } from '@/lib/learn/repo';
 import { getAllMentors } from '@/lib/learn/ecosystem';
@@ -30,8 +29,9 @@ export default async function MentorshipPage() {
 
   return (
     <div className="mx-auto max-w-[1080px] overflow-x-hidden">
-      <PageHeader
-        title="Mentorship"
+      <PageHeader art="/hero_mentor.webp" tone="mint"
+        title="Instructors"
+        description="Learn one-on-one with approved InTelleX instructors. Book a session, join the room, grow faster."
         actions={
           <>
             <Link href="/dashboard/mentor" className="chip">
@@ -42,20 +42,18 @@ export default async function MentorshipPage() {
       />
 
       {mentors.length === 0 ? (
-        <div className="border border-dashed px-6 py-16 text-center" style={{ borderColor: 'var(--line)' }}>
-          <Users size={28} className="mx-auto mb-4" style={{ color: 'var(--ink-soft)' }} />
-          <h2 className="font-display text-[22px]">No instructors listed yet</h2>
-          <p className="mx-auto mt-2 max-w-md text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-            Live mentor profiles appear here once instructors are approved. Apply to teach from
-            Instructor studio, or ask Platform Admin to approve mentor applications.
-          </p>
-          <Link
-            href="/dashboard/mentor"
-            className="mt-6 inline-flex px-5 py-2.5 text-[13.5px] font-semibold text-white"
-            style={{ background: 'var(--green)' }}
-          >
-            Open instructor studio
-          </Link>
+        <div className="grid items-center gap-6 overflow-hidden rounded-[28px] bg-white p-6 sm:p-10 md:grid-cols-[1fr_320px]">
+          <div>
+            <h2 className="text-[24px] font-bold text-[var(--navy)]">Instructors are on their way</h2>
+            <p className="mt-2 max-w-md text-[15px] leading-relaxed text-[var(--ink-soft)]">
+              Instructor profiles appear here once they are approved. You can apply to teach from the instructor studio.
+            </p>
+            <Link href="/dashboard/mentor" className="btn btn-primary mt-6 !px-5">
+              Open instructor studio
+            </Link>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/hero_mentor.webp" alt="" className="hidden w-full rounded-2xl md:block" />
         </div>
       ) : (
         <MentorDirectory mentors={mentors} bookings={bookingViews} />

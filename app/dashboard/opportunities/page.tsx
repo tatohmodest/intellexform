@@ -14,7 +14,7 @@ export default async function OpportunitiesPage() {
 
   return (
     <div className="mx-auto max-w-[920px]">
-      <PageHeader
+      <PageHeader art="/eco_intern.webp" tone="mint"
         title="Opportunities"
         actions={
           <>

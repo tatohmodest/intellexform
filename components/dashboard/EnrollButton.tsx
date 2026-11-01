@@ -41,7 +41,7 @@ export default function EnrollButton({
   }
 
   const cls = editorial
-    ? 'inline-flex w-full items-center justify-center gap-1.5 px-4 py-2.5 text-[13px] font-semibold text-white disabled:opacity-60'
+    ? 'inline-flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white transition-colors hover:brightness-95 disabled:opacity-60'
     : compact
       ? 'btn btn-primary !px-4 !py-2 text-[12.5px]'
       : 'btn btn-primary w-full !py-3 text-[14px] sm:w-auto';

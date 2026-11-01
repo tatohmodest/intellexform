@@ -14,6 +14,7 @@ const COLUMNS: { title: string; links: { href: string; label: string; external?:
       { href: '/programmes?category=software', label: 'Software Development' },
       { href: '/programmes?category=data', label: 'Data & AI' },
       { href: '/programmes?category=security', label: 'Cybersecurity' },
+      { href: '/programmes?category=marketing', label: 'Digital Marketing' },
       { href: '/programmes?category=foundations', label: 'Foundations' },
       { href: '/#how-it-works', label: 'How enrolment works' },
     ],

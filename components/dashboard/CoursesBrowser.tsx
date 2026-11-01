@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import MyCourseCardView from '@/components/dashboard/MyCourseCardView';
 import type { MyCourseCard, MyCourseSection } from '@/lib/learn/myCourses';
 
@@ -37,53 +37,35 @@ export default function CoursesBrowser({
 
   return (
     <div>
-      <div
-        className="mb-8 flex flex-col gap-6 border-b pb-8 sm:flex-row sm:items-end sm:justify-between"
-        style={{ borderColor: 'var(--line)' }}
-      >
-        <div className="max-w-[520px]">
-          <p
-            className="font-mono text-[11px] uppercase tracking-[0.18em]"
-            style={{ color: 'var(--ink-soft)' }}
-          >
-            Enrolled first · suggestions below
-          </p>
-          <p className="mt-2 text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-            Your active courses up top. Scroll down for instructor courses and suggested tracks.
-            Free tracks: beginner is open; Intermediate to Pro need a certification plan.
-          </p>
-        </div>
-        <div
-          className="flex flex-wrap gap-2 font-mono text-[11px] uppercase tracking-[0.12em]"
-          style={{ color: 'var(--ink-soft)' }}
-        >
-          <span>{inProgress} in progress</span>
-          <span style={{ color: 'var(--line)' }}>·</span>
-          <span>{total} courses</span>
+      <div className="mb-8 flex flex-col gap-3 rounded-3xl bg-white p-3 sm:flex-row sm:items-center">
+        <label className="flex min-w-0 flex-1 items-center gap-2.5 rounded-2xl bg-[var(--paper-dim)] px-4 py-3">
+          <Search size={17} className="shrink-0 text-[var(--ink-soft)]" />
+          <span className="sr-only">Search courses</span>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by course, tag, or skill…"
+            className="min-w-0 flex-1 bg-transparent text-[15px] text-[var(--navy)] outline-none placeholder:text-[var(--ink-soft)]"
+          />
+        </label>
+        <div className="flex shrink-0 gap-2 px-1">
+          <span className="rounded-xl bg-[var(--pastel-mint)] px-3.5 py-2 text-[13px] font-semibold text-[var(--navy)]">
+            {inProgress} in progress
+          </span>
+          <span className="rounded-xl bg-[var(--pastel-sky)] px-3.5 py-2 text-[13px] font-semibold text-[var(--navy)]">
+            {total} courses
+          </span>
         </div>
       </div>
-
-      <label className="mb-10 block max-w-md">
-        <span className="sr-only">Search courses</span>
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by course, tag, or skill…"
-          className="form-input w-full !rounded-none border-0 border-b !px-0 !py-3 text-[16px] !shadow-none"
-          style={{ borderColor: 'var(--line)', background: 'transparent' }}
-        />
-      </label>
 
       {filteredSections.map((section) => (
         <CourseSectionRow key={section.id} section={section} />
       ))}
 
       {filteredSections.length === 0 && (
-        <div className="border-t py-16 text-center" style={{ borderColor: 'var(--line)' }}>
-          <p className="font-display text-[22px]">No courses match</p>
-          <p className="mt-2 text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-            Try another search.
-          </p>
+        <div className="rounded-3xl bg-white py-14 text-center">
+          <p className="text-[20px] font-bold text-[var(--navy)]">No courses match</p>
+          <p className="mt-2 text-[14px] text-[var(--ink-soft)]">Try another search.</p>
         </div>
       )}
     </div>
@@ -109,13 +91,13 @@ function CourseSectionRow({ section }: { section: MyCourseSection }) {
           <div className="flex flex-wrap items-center gap-2">
             {section.live && (
               <span
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-wide text-white"
+                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white"
                 style={{ background: 'var(--green)' }}
               >
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> Live
               </span>
             )}
-            <h2 className="font-display text-[19px] leading-tight sm:text-[24px]">
+            <h2 className="text-[19px] font-bold leading-tight text-[var(--navy)] sm:text-[22px]">
               {section.title}
             </h2>
           </div>
@@ -143,8 +125,7 @@ function CourseSectionRow({ section }: { section: MyCourseSection }) {
               type="button"
               onClick={() => scroll(-1)}
               aria-label="Scroll left"
-              className="flex h-9 w-9 items-center justify-center border transition-colors hover:bg-[var(--paper-dim)]"
-              style={{ borderColor: 'var(--line)' }}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[var(--navy)] shadow-[0_4px_14px_-10px_rgba(18,50,79,0.5)] transition-colors hover:bg-[var(--pastel-mint)]"
             >
               <ChevronLeft size={18} />
             </button>
@@ -152,8 +133,7 @@ function CourseSectionRow({ section }: { section: MyCourseSection }) {
               type="button"
               onClick={() => scroll(1)}
               aria-label="Scroll right"
-              className="flex h-9 w-9 items-center justify-center border transition-colors hover:bg-[var(--paper-dim)]"
-              style={{ borderColor: 'var(--line)' }}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[var(--navy)] shadow-[0_4px_14px_-10px_rgba(18,50,79,0.5)] transition-colors hover:bg-[var(--pastel-mint)]"
             >
               <ChevronRight size={18} />
             </button>

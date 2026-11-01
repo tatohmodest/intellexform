@@ -25,7 +25,7 @@ export default async function DashboardAnnouncementsPage() {
 
   return (
     <div className="mx-auto max-w-[800px]">
-      <PageHeader title="Announcements" />
+      <PageHeader art="/join_cta.webp" tone="sky" title="Announcements" />
 
       <section className="mb-10">
         <h2 className="mb-3 font-display text-[19px]">Public</h2>

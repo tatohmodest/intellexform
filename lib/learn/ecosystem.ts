@@ -105,7 +105,7 @@ export async function ensureLearnCollections() {
   ]).catch(() => {});
   const { ensureUniqueLearnerEmails } = await import('@/lib/learn/repo');
   await ensureUniqueLearnerEmails().catch(() => {});
-  await seedBooks(db);
+  await removePlaceholderBooks(db);
   await seedIntellexInstitution(db);
   ensured = true;
 }
@@ -2338,100 +2338,13 @@ async function seedIntellexInstitution(db: Awaited<ReturnType<typeof getDb>>) {
   }
 }
 
-const SEED_BOOKS: Array<
-  Pick<BookDoc, 'title' | 'subtitle' | 'description' | 'category' | 'coverColor' | 'coverEmoji' | 'chapters'>
-> = [
-  {
-    title: 'The Intellex Web Developer Handbook',
-    subtitle: 'From your first HTML tag to a deployed product',
-    description:
-      'A practical companion to the Intellex web tracks - how the pieces fit together, how to structure projects, and how to think like a working developer.',
-    category: 'Programming',
-    coverColor: '#00b369',
-    coverEmoji: 'G',
-    chapters: [
-      {
-        title: 'How the web actually works',
-        content:
-          'Every website you visit is a conversation between two computers.\n\nYour browser (the client) asks a server for a page. The server answers with **HTML** (structure), **CSS** (style) and **JavaScript** (behaviour). Everything else - frameworks, databases, APIs - exists to make that conversation richer.\n\nKey ideas:\n- A URL is an address, DNS is the phonebook that resolves it.\n- HTTP is the language of the request/response cycle.\n- The browser builds a DOM from HTML and paints it to the screen.\n\n```text\nBrowser ──request──▶ Server\nBrowser ◀─response── Server (HTML + CSS + JS)\n```\n\nWhen you understand this loop, every technology you learn afterwards has a place to live in your mental model.',
-      },
-      {
-        title: 'Structuring your first real project',
-        content:
-          'Beginners write files. Developers design folders.\n\nA simple, scalable structure:\n\n```text\nmy-app/\n├── index.html\n├── css/\n│   └── styles.css\n├── js/\n│   └── main.js\n└── assets/\n    └── images/\n```\n\nRules that keep projects healthy:\n- One responsibility per file.\n- Name things for what they do, not what they are.\n- Commit early and often with git.\n\nAs your projects grow, this discipline is what separates a portfolio that impresses from one that scares reviewers away.',
-      },
-      {
-        title: 'From localhost to the internet',
-        content:
-          'A project that only runs on your laptop is a rehearsal, not a performance.\n\nThe modern deployment path:\n1. Push your code to GitHub.\n2. Connect the repository to a host (Vercel, Netlify, or a VPS).\n3. Every push becomes a live deployment.\n\nThings to check before you ship:\n- Images are compressed.\n- The site works on a phone.\n- Links, forms and titles are correct.\n\nShip small, ship often. Deployed beats perfect.',
-      },
-    ],
-  },
-  {
-    title: 'Python Cheatsheet Collection',
-    subtitle: 'Syntax, patterns and standard-library gems on tap',
-    description:
-      'The fastest reference for the Intellex Python track: core syntax, data structures, comprehensions, file handling and the patterns you will use every single day.',
-    category: 'Programming',
-    coverColor: '#3572A5',
-    coverEmoji: 'P',
-    chapters: [
-      {
-        title: 'Core syntax at a glance',
-        content:
-          'Variables, types and control flow - the 20% of Python you use 80% of the time.\n\n```python\nname = "Ada"            # str\nage = 36                 # int\nskills = ["ml", "math"] # list\nprofile = {"name": name, "age": age}  # dict\n\nif age >= 18:\n    print(f"{name} is an adult")\n\nfor skill in skills:\n    print(skill.upper())\n```\n\nRemember: indentation *is* syntax in Python. Four spaces, always.',
-      },
-      {
-        title: 'Comprehensions and slicing',
-        content:
-          'Pythonic code is compact without being cryptic.\n\n```python\nnums = [1, 2, 3, 4, 5, 6]\n\nevens = [n for n in nums if n % 2 == 0]      # [2, 4, 6]\nsquares = {n: n * n for n in nums}            # dict comprehension\nfirst_three = nums[:3]                        # [1, 2, 3]\nreversed_all = nums[::-1]                     # [6, 5, 4, 3, 2, 1]\n```\n\nIf a comprehension needs more than one condition and one transform, use a regular loop - readability wins.',
-      },
-      {
-        title: 'Files, errors and the standard library',
-        content:
-          'The patterns you will reach for daily:\n\n```python\nfrom pathlib import Path\nimport json\n\n# Read and write files safely\ndata = json.loads(Path("config.json").read_text())\n\ntry:\n    value = data["missing_key"]\nexcept KeyError:\n    value = "default"\n\nPath("output.txt").write_text("done\\n")\n```\n\nExplore `collections`, `itertools`, and `datetime` before installing a package - the standard library probably already solves it.',
-      },
-    ],
-  },
-  {
-    title: 'The Career Switch Playbook',
-    subtitle: 'A field guide for breaking into tech from anywhere',
-    description:
-      'How to go from learning to earning: building proof of skill, positioning yourself, finding your first clients or job, and growing once you are in.',
-    category: 'Career',
-    coverColor: '#7c3aed',
-    coverEmoji: 'R',
-    chapters: [
-      {
-        title: 'Proof beats promises',
-        content:
-          'Nobody hires potential they cannot see.\n\nYour portfolio is your proof. Three focused projects beat thirty tutorials:\n1. **A clone** - proves you can execute (rebuild a real product screen).\n2. **A tool** - proves you can think (solve a problem you actually have).\n3. **A collaboration** - proves you can work with others (contribute or pair up).\n\nEach project needs: a live link, a clear README, and a short write-up of decisions you made. That write-up is what interviewers actually read.',
-      },
-      {
-        title: 'Positioning and the first opportunity',
-        content:
-          'The market does not reward the most skilled - it rewards the most legible.\n\nMake yourself easy to say yes to:\n- One sentence bio: "I build X for Y using Z."\n- A LinkedIn/GitHub that matches that sentence.\n- Evidence pinned at the top.\n\nFirst opportunities rarely come from job boards. They come from:\n- People who watched you learn in public.\n- Small businesses near you with real problems.\n- Communities where you consistently helped others.\n\nDo work worth talking about, then talk about it.',
-      },
-    ],
-  },
-];
-
-async function seedBooks(db: Awaited<ReturnType<typeof getDb>>) {
-  const count = await db.collection('books').countDocuments();
-  if (count > 0) return;
-  const now = new Date();
-  await db.collection('books').insertMany(
-    SEED_BOOKS.map((b) => ({
-      ...b,
-      authorId: 'system',
-      authorName: 'Intellex Library',
-      coverImageUrl: null,
-      downloadUrl: null,
-      priceXAF: 0,
-      published: true,
-      sales: 0,
-      createdAt: now,
-      updatedAt: now,
-    })),
-  );
+/**
+ * Older builds seeded placeholder books (authorId "system", "Intellex Library").
+ * The library should only show real uploads, so remove those rows if present.
+ */
+async function removePlaceholderBooks(db: Awaited<ReturnType<typeof getDb>>) {
+  await db
+    .collection('books')
+    .deleteMany({ authorId: 'system', authorName: 'Intellex Library' })
+    .catch(() => {});
 }

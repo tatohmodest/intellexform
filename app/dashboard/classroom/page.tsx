@@ -34,7 +34,7 @@ export default async function ClassroomPage() {
         </Link>
       </div>
 
-      <PageHeader
+      <PageHeader art="/way_live.webp" tone="lilac"
         title="My classroom"
       />
 

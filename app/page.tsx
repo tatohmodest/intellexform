@@ -38,7 +38,7 @@ export const dynamic = 'force-dynamic';
 
 const FLAGSHIP_ID = 'fullstack';
 /** Programme order: one strong pick per discipline first, then the rest. */
-const INDEX_IDS = ['data-analysis', 'cybersecurity', 'mern', 'flutter-mobile-design', 'cybersecurity-ceh', 'django'];
+const INDEX_IDS = ['data-analysis', 'cybersecurity', 'digital-marketing', 'mern', 'flutter-mobile-design', 'cybersecurity-ceh'];
 const PULL_QUOTE_ID = 'cm7n7nfvn000221m8b3bashfo';
 
 /** Pastel surface + illustration for each way we teach. */

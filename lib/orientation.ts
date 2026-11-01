@@ -75,6 +75,14 @@ const TOPICS: Topic[] = [
     },
   },
   {
+    keys: ['marketing', 'social media', 'réseaux sociaux', 'seo', 'ads', 'publicité', 'content', 'contenu', 'brand', 'marque', 'community manager', 'e-commerce'],
+    ids: ['digital-marketing'],
+    why: {
+      en: 'Every business needs customers online, so people who can run social media, SEO and ads that bring real results are always in demand, including as freelancers.',
+      fr: 'Chaque entreprise a besoin de clients en ligne : les personnes capables de gérer réseaux sociaux, SEO et publicités avec de vrais résultats sont toujours recherchées, y compris en freelance.',
+    },
+  },
+  {
     keys: ['python', 'django', 'automation', 'automatisation'],
     ids: ['python', 'django'],
     why: {

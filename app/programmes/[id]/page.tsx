@@ -37,6 +37,7 @@ const CATEGORY_ILLUSTRATION: Record<ProgrammeCategory, string> = {
   software: '/hero_illustration.webp',
   data: '/eco_learning.webp',
   security: '/join_cta.webp',
+  marketing: '/hero_career.webp',
   foundations: '/way_selfpaced.webp',
 };
 

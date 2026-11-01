@@ -16,7 +16,7 @@ export default async function PortfolioPage() {
 
   return (
     <div className="mx-auto max-w-[920px]">
-      <PageHeader
+      <PageHeader art="/hero_career.webp" tone="peach"
         title={p.name}
         description={p.bio || null}
         actions={

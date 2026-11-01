@@ -272,6 +272,38 @@ export const PROGRAMS: Program[] = [
     accentColor: '#DC2626',
     logoUrl: '/icons/kali.png',
   },
+  {
+    id: 'digital-marketing',
+    title: 'Digital Marketing',
+    shortTitle: 'Digital Marketing',
+    type: 'full',
+    emoji: '',
+    duration: '3 months',
+    level: 'Beginner → Intermediate',
+    priceXAF: 150000,
+    monthlyXAF: 55000,
+    registrationFee: 5000,
+    description:
+      'Learn to grow brands online. Plan campaigns, create content that converts, and run social media, SEO, email and paid ads with real results to show.',
+    technologies: [
+      'Marketing strategy & funnels',
+      'Social media marketing',
+      'Content & copywriting',
+      'SEO',
+      'Email marketing',
+      'Paid ads (Meta & Google)',
+      'Analytics & reporting',
+      'Freelancing & client work',
+    ],
+    highlights: [
+      'Plan and run real campaigns from brief to report',
+      'Grow brands on social media, search and email',
+      'Build a marketing portfolio with real case studies',
+      'Find clients and work as a freelancer',
+    ],
+    accentColor: '#f59e0b',
+    logoUrl: '/tech/marketing.svg',
+  },
 
   // ── PARTIAL / MODULE PROGRAMS ───────────────────────────────────
   {

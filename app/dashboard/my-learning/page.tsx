@@ -32,7 +32,7 @@ export default async function MyLearningPage({
 
   return (
     <div className="mx-auto max-w-[1080px]">
-      <PageHeader
+      <PageHeader art="/way_selfpaced.webp" tone="mint"
         title="My Learning"
         actions={
           <>

@@ -626,5 +626,21 @@ export const FR_SITE: Record<string, string> = {
   'Installing…': 'Installation…',
   'Open your browser menu and choose Install app or Add to Home Screen.':
     'Ouvrez le menu du navigateur et choisissez Installer l’application ou Ajouter à l’écran d’accueil.',
+  // ── Digital Marketing programme ─────────────────────────────────────
+  'Social media, SEO, content and ads.': 'Réseaux sociaux, SEO, contenu et publicité.',
+  'Social media, SEO, content and ads': 'Réseaux sociaux, SEO, contenu et publicité',
+  'Learn to grow brands online. Plan campaigns, create content that converts, and run social media, SEO, email and paid ads with real results to show.':
+    'Apprenez à faire grandir des marques en ligne. Planifiez des campagnes, créez du contenu qui convertit et gérez réseaux sociaux, SEO, e-mailing et publicité payante avec de vrais résultats à montrer.',
+  'Marketing strategy & funnels': 'Stratégie marketing et tunnels de conversion',
+  'Social media marketing': 'Marketing sur les réseaux sociaux',
+  'Content & copywriting': 'Contenu et rédaction',
+  'Email marketing': 'E-mail marketing',
+  'Paid ads (Meta & Google)': 'Publicité payante (Meta et Google)',
+  'Analytics & reporting': 'Analyse et reporting',
+  'Freelancing & client work': 'Freelance et travail avec des clients',
+  'Plan and run real campaigns from brief to report': 'Planifier et mener de vraies campagnes, du brief au rapport',
+  'Grow brands on social media, search and email': 'Faire grandir des marques sur les réseaux sociaux, la recherche et l’e-mail',
+  'Build a marketing portfolio with real case studies': 'Constituer un portfolio marketing avec de vrais cas pratiques',
+  'Find clients and work as a freelancer': 'Trouver des clients et travailler en freelance',
   // @@END@@
 };

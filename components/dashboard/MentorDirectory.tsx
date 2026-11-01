@@ -108,41 +108,37 @@ export default function MentorDirectory({
       {/* My sessions */}
       {upcoming.length > 0 && (
         <section className="mb-10">
-          <h2 className="mb-4 font-display text-[21px]">My upcoming sessions</h2>
-          <div className="space-y-3">
-            {upcoming.map((b) => {
+          <h2 className="mb-4 text-[22px] font-bold text-[var(--navy)]">My upcoming sessions</h2>
+          <div className="grid gap-3 md:grid-cols-2">
+            {upcoming.map((b, i) => {
               const when = new Date(b.scheduledAt);
               const joinable = when.getTime() - Date.now() < 15 * 60 * 1000;
               return (
                 <div
                   key={b.id}
-                  className="flex flex-wrap items-center gap-4 rounded-2xl border p-4"
-                  style={{ borderColor: 'var(--line)' }}
+                  className="flex flex-wrap items-center gap-4 rounded-3xl p-4"
+                  style={{ background: ['var(--pastel-mint)', 'var(--pastel-sky)', 'var(--pastel-butter)', 'var(--pastel-lilac)'][i % 4] }}
                 >
-                  <span
-                    className="flex h-11 w-11 items-center justify-center rounded-xl"
-                    style={{ background: 'rgba(0,179,105,0.1)', color: 'var(--green-deep)' }}
-                  >
-                    <CalendarClock size={19} />
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[var(--green-deep)]">
+                    <CalendarClock size={20} />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-[14.5px] font-semibold">{b.topic}</div>
-                    <div className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
+                    <div className="truncate text-[15px] font-bold text-[var(--navy)]">{b.topic}</div>
+                    <div className="text-[13px] text-[var(--navy)]/70">
                       with {b.mentorName} · {fmtSlot(when)} · {b.durationMinutes} min
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Link
                       href={`/dashboard/sessions/${b.channel}`}
-                      className="btn btn-primary !px-5 !py-2.5 text-[13px]"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--navy)] px-4 py-2.5 text-[13px] font-semibold text-white"
                       title={joinable ? 'Join now' : 'Room opens 15 minutes before start'}
                     >
                       <Video size={15} /> Join room
                     </Link>
                     <button
                       onClick={() => cancel(b.id)}
-                      className="flex h-9 w-9 items-center justify-center rounded-full border"
-                      style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}
+                      className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/70 text-[var(--navy)]/70 hover:bg-white"
                       title="Cancel session"
                     >
                       <XCircle size={16} />
@@ -155,87 +151,70 @@ export default function MentorDirectory({
         </section>
       )}
 
-      {/* Instructor directory - editorial rows */}
+      {/* Instructor directory */}
       <section>
-        <div className="mb-4 border-b pb-3" style={{ borderColor: 'var(--line)' }}>
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
-            Directory
-          </p>
-          <h2 className="font-display text-[22px]">Meet your instructors</h2>
+        <div className="mb-5">
+          <div className="text-[13px] font-semibold text-[var(--green-deep)]">Directory</div>
+          <h2 className="mt-1 text-[24px] font-bold text-[var(--navy)]">Meet your instructors</h2>
         </div>
-        <ul className="divide-y" style={{ borderColor: 'var(--line)' }}>
-          {mentors.map((m, index) => (
-            <li key={m.id} className="group">
-              <div className="grid gap-5 py-8 sm:grid-cols-[88px_1fr_auto] sm:items-center sm:gap-8">
-                <Link
-                  href={`/dashboard/mentorship/${m.id}`}
-                  className="relative flex h-[88px] w-[88px] items-end overflow-hidden"
-                  style={{
-                    background: `linear-gradient(145deg, ${m.accent} 0%, ${m.accent}88 45%, #0C1116 100%)`,
-                  }}
-                >
-                  {m.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={m.avatarUrl}
-                      alt={m.name}
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span className="relative z-[1] p-3 font-display text-[28px] leading-none text-white/95">
-                      {m.initials}
-                    </span>
-                  )}
-                  {m.introVideoUrl && (
-                    <span
-                      className="absolute bottom-1 right-1 z-[2] flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white"
-                      title="Has an intro video"
-                    >
-                      <Video size={12} />
-                    </span>
-                  )}
-                  <span className="absolute right-2 top-2 font-mono text-[10px] text-white/55">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                </Link>
-                <div className="min-w-0">
-                  <Link
-                    href={`/dashboard/mentorship/${m.id}`}
-                    className="font-display text-[22px] leading-tight transition-opacity group-hover:opacity-80 sm:text-[26px]"
+        <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {mentors.map((m) => (
+            <li key={m.id} className="group flex flex-col rounded-3xl bg-white p-3 transition-shadow hover:shadow-[0_18px_40px_-26px_rgba(18,50,79,0.5)]">
+              <Link
+                href={`/dashboard/mentorship/${m.id}`}
+                className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl"
+                style={{ background: `${m.accent || '#00b369'}22` }}
+              >
+                {m.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={m.avatarUrl}
+                    alt={m.name}
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                  />
+                ) : (
+                  <span
+                    className="flex h-20 w-20 items-center justify-center rounded-3xl bg-white text-[28px] font-extrabold shadow-[0_12px_28px_-16px_rgba(18,50,79,0.5)]"
+                    style={{ color: m.accent || 'var(--navy)' }}
                   >
-                    {m.name}
-                  </Link>
-                  <p className="mt-1 max-w-[540px] text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                    {m.title}
-                  </p>
-                  {m.instructorBadge && (
-                    <p
-                      className="mt-2 inline-flex font-mono text-[10px] uppercase tracking-[0.14em]"
-                      style={{ color: 'var(--green-deep)' }}
-                    >
-                      {m.instructorBadge}
-                    </p>
-                  )}
-                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: 'var(--ink-soft)' }}>
-                    <span className="inline-flex items-center gap-1">
-                      <Star size={11} /> {m.rating}
-                    </span>
-                    <span>{m.sessionsCompleted} sessions</span>
-                    <span>{m.priceXAF.toLocaleString()} XAF / {m.sessionMinutes} min</span>
-                  </div>
+                    {m.initials}
+                  </span>
+                )}
+                {m.introVideoUrl && (
+                  <span className="absolute bottom-2.5 right-2.5 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11.5px] font-semibold text-[var(--navy)]">
+                    <Video size={12} /> Intro video
+                  </span>
+                )}
+              </Link>
+              <div className="flex flex-1 flex-col px-1.5 pb-1.5 pt-4">
+                <Link href={`/dashboard/mentorship/${m.id}`} className="text-[18px] font-bold leading-tight text-[var(--navy)] hover:text-[var(--green-deep)]">
+                  {m.name}
+                </Link>
+                <p className="mt-1 line-clamp-2 text-[14px] leading-relaxed text-[var(--ink-soft)]">{m.title}</p>
+                {m.instructorBadge && (
+                  <span className="mt-2.5 inline-flex w-fit items-center gap-1 rounded-full bg-[var(--pastel-mint)] px-2.5 py-1 text-[12px] font-semibold text-[var(--green-deep)]">
+                    {m.instructorBadge}
+                  </span>
+                )}
+                <div className="mt-3 flex flex-wrap gap-1.5 text-[12px] text-[var(--navy)]/75">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[var(--paper-dim)] px-2.5 py-1">
+                    <Star size={12} className="text-[#f5a524]" /> {m.rating}
+                  </span>
+                  <span className="rounded-full bg-[var(--paper-dim)] px-2.5 py-1">{m.sessionsCompleted} sessions</span>
+                  <span className="rounded-full bg-[var(--paper-dim)] px-2.5 py-1">
+                    {m.priceXAF.toLocaleString()} XAF / {m.sessionMinutes} min
+                  </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-3 sm:flex-col sm:items-stretch lg:flex-row">
+                <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
                   <Link
                     href={`/dashboard/mentorship/${m.id}`}
-                    className="inline-flex items-center justify-center gap-1.5 border px-4 py-2.5 text-[13px] font-semibold"
-                    style={{ borderColor: 'var(--ink)', color: 'var(--ink)' }}
+                    className="inline-flex items-center justify-center rounded-xl bg-[var(--paper-dim)] px-3 py-2.5 text-[13px] font-semibold text-[var(--navy)] hover:bg-[var(--pastel-sky)]"
                   >
                     View profile
                   </Link>
                   <button
                     type="button"
-                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-[13px] font-semibold text-white"
-                    style={{ background: m.accent || 'var(--ink)' }}
+                    className="inline-flex items-center justify-center rounded-xl bg-[var(--green)] px-3 py-2.5 text-[13px] font-semibold text-white hover:bg-[var(--green-deep)]"
                     onClick={() => {
                       setBooking(m);
                       setSlotIdx(0);

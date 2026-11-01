@@ -1,5 +1,6 @@
 'use client';
 
+import PageHeader from '@/components/dashboard/PageHeader';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -439,93 +440,82 @@ export default function ClassRoomsClient({
 
   if (!groupId) {
     return (
-      <div className="mx-auto max-w-[720px] py-4">
-        <header className="mb-6 border-b pb-6" style={{ borderColor: 'var(--line)' }}>
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em]" style={{ color: 'var(--ink-soft)' }}>
-            Community · Groups
-          </p>
-          <h1 className="mt-2 font-display text-[36px] leading-[0.95] tracking-tight sm:text-[44px]">
-            Your
-            <br />
-            groups
-          </h1>
-          <p className="mt-3 max-w-[440px] text-[15px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-            {isStaff
-              ? 'Staff can open any class group without an invite, read and message inside, and pause or delete a room. Group settings stay as the class advocate set them.'
-              : 'See the class groups you belong to, then open one to chat. The room does not open until you choose a group. Staff monitor conversations by default.'}
-          </p>
-          {classHead ? (
-            <button
-              type="button"
-              onClick={() => setCreateOpen(true)}
-              className="mt-5 inline-flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-semibold text-white"
-              style={{ background: '#00B369' }}
-            >
-              <Plus size={15} /> New group
-            </button>
-          ) : (
-            <p className="mt-4 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-              Instructors assign class advocates, who can create groups for a course.
-            </p>
-          )}
-        </header>
+      <div className="mx-auto max-w-[1180px]">
+        <PageHeader
+          art="/way_live.webp"
+          tone="lilac"
+          title="Your groups"
+          description={
+            isStaff
+              ? 'Staff can open any class group without an invite, read and message inside, and pause or delete a room.'
+              : 'Learn together with your course mates. Open a group to chat, share and ask questions.'
+          }
+          actions={
+            classHead ? (
+              <button
+                type="button"
+                onClick={() => setCreateOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--navy)] px-4 py-2.5 text-[14px] font-semibold text-white"
+              >
+                <Plus size={15} /> New group
+              </button>
+            ) : (
+              <p className="text-[13.5px] text-[var(--navy)]/65">Class advocates can create groups for a course.</p>
+            )
+          }
+        />
 
-        {error ? (
-          <p className="mb-4 text-[13px]" style={{ color: '#b91c1c' }}>
-            {error}
-          </p>
-        ) : null}
+        {error ? <p className="mb-4 text-[13px] text-[#b91c1c]">{error}</p> : null}
 
         {groups.length === 0 ? (
-          <div className="border border-dashed px-6 py-14 text-center" style={{ borderColor: 'var(--line)' }}>
-            <Users size={26} className="mx-auto mb-4" style={{ color: 'var(--green-deep)' }} />
-            <h2 className="font-display text-[22px]">You’re not in any group</h2>
-            <p className="mx-auto mt-2 max-w-md text-[14px]" style={{ color: 'var(--ink-soft)' }}>
-              {isStaff
-                ? 'When class advocates create course groups, they appear here so you can monitor them without being invited.'
-                : 'When a class advocate adds you to a course group, it will show up here. Open a group to enter the chat. Staff can enter any group without an invite.'}
-            </p>
+          <div className="grid items-center gap-6 overflow-hidden rounded-[28px] bg-white p-6 sm:p-10 md:grid-cols-[1fr_300px]">
+            <div>
+              <h2 className="text-[24px] font-bold text-[var(--navy)]">You’re not in any group yet</h2>
+              <p className="mt-2 max-w-md text-[15px] leading-relaxed text-[var(--ink-soft)]">
+                {isStaff
+                  ? 'When class advocates create course groups, they appear here so you can monitor them without being invited.'
+                  : 'When a class advocate adds you to a course group, it will show up here. Then open it to start chatting.'}
+              </p>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/way_live.webp" alt="" className="hidden w-full rounded-2xl md:block" />
           </div>
         ) : (
-          <ul className="space-y-3">
-            {groups.map((g) => (
+          <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {groups.map((g, i) => (
               <li key={g.id}>
                 <button
                   type="button"
                   onClick={() => enterGroup(g.id)}
-                  className="flex w-full items-center gap-3 card p-4 text-left"
+                  className="group flex h-full w-full flex-col rounded-3xl p-5 text-left transition-transform hover:-translate-y-1"
+                  style={{ background: ['var(--pastel-lilac)', 'var(--pastel-mint)', 'var(--pastel-sky)', 'var(--pastel-butter)', '#ffe6d9'][i % 5] }}
                 >
-                  <span
-                    className="flex h-11 w-11 shrink-0 items-center justify-center text-[13px] font-bold text-white"
-                    style={{ background: 'var(--ink)' }}
-                  >
-                    {initials(g.title)}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold">
-                      {g.title}
-                      {g.banned ? ' · paused' : ''}
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[15px] font-extrabold text-[var(--navy)]">
+                      {initials(g.title)}
                     </span>
-                    <span className="mt-0.5 block text-[13px]" style={{ color: 'var(--ink-soft)' }}>
-                      {g.courseTitle || 'Course group'}
-                      {' · '}
-                      {g.memberCount} member{g.memberCount === 1 ? '' : 's'}
-                      {g.lastPreview ? ` · ${g.lastPreview}` : ''}
-                    </span>
-                  </span>
-                  {g.unread > 0 ? (
-                    <span
-                      className="shrink-0 px-2 py-0.5 text-[11px] font-bold text-white"
-                      style={{ background: '#00B369' }}
-                    >
-                      {g.unread > 9 ? '9+' : g.unread}
+                    {g.unread > 0 ? (
+                      <span className="rounded-full bg-[var(--green)] px-2.5 py-0.5 text-[12px] font-bold text-white">
+                        {g.unread > 9 ? '9+' : g.unread} new
+                      </span>
+                    ) : g.banned ? (
+                      <span className="rounded-full bg-white/70 px-2.5 py-0.5 text-[12px] font-semibold text-[var(--navy)]">Paused</span>
+                    ) : null}
+                  </div>
+                  <span className="mt-4 block text-[17px] font-bold leading-snug text-[var(--navy)]">{g.title}</span>
+                  <span className="mt-1 block text-[13.5px] text-[var(--navy)]/70">{g.courseTitle || 'Course group'}</span>
+                  {g.lastPreview ? (
+                    <span className="mt-3 line-clamp-2 block rounded-2xl rounded-tl-md bg-white/70 px-3.5 py-2.5 text-[13px] text-[var(--navy)]/80">
+                      {g.lastPreview}
                     </span>
                   ) : null}
-                  <span
-                    className="inline-flex shrink-0 items-center gap-1 border px-3 py-1.5 text-[12.5px] font-semibold"
-                    style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
-                  >
-                    Open <ChevronRight size={14} />
+                  <span className="mt-auto flex items-center justify-between pt-4 text-[13px] font-semibold text-[var(--navy)]">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Users size={14} /> {g.memberCount} member{g.memberCount === 1 ? '' : 's'}
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-xl bg-white px-3 py-1.5 transition-colors group-hover:bg-[var(--navy)] group-hover:text-white">
+                      Open <ChevronRight size={14} />
+                    </span>
                   </span>
                 </button>
               </li>

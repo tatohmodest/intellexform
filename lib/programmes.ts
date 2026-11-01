@@ -7,7 +7,7 @@ import type { Program } from '@/lib/types';
  * this layer adds the grouping and delivery details the public pages need.
  */
 
-export type ProgrammeCategory = 'software' | 'data' | 'security' | 'foundations';
+export type ProgrammeCategory = 'software' | 'data' | 'security' | 'marketing' | 'foundations';
 
 export const PROGRAMME_CATEGORIES: { id: ProgrammeCategory; label: string; blurb: string }[] = [
   {
@@ -17,6 +17,7 @@ export const PROGRAMME_CATEGORIES: { id: ProgrammeCategory; label: string; blurb
   },
   { id: 'data', label: 'Data & AI', blurb: 'Analysis, visualisation and statistics.' },
   { id: 'security', label: 'Cybersecurity', blurb: 'Defensive security and certification prep.' },
+  { id: 'marketing', label: 'Digital Marketing', blurb: 'Social media, SEO, content and ads.' },
   {
     id: 'foundations',
     label: 'Foundations',
@@ -28,6 +29,7 @@ const CATEGORY_BY_ID: Record<string, ProgrammeCategory> = {
   'data-analysis': 'data',
   cybersecurity: 'security',
   'cybersecurity-ceh': 'security',
+  'digital-marketing': 'marketing',
 };
 
 /** How every programme is delivered: live group classes + mentorship + self-paced materials. */

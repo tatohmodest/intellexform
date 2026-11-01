@@ -33,7 +33,7 @@ export default async function StudentFeesPage() {
   return (
     <StudentGate userId={session.uid}>
     <div className="mx-auto max-w-[720px]">
-      <PageHeader
+      <PageHeader art="/hero_career.webp" tone="mint"
         title="School fees"
         description={`Student ID ${finance.studentCode || '—'}`}
       />

@@ -831,10 +831,10 @@ export default function DashboardShell({
     : undefined;
 
   return (
-    <div className="site dash min-h-screen bg-paper" style={themeStyle}>
+    <div className="site dash min-h-screen bg-[#fbfaf7]" style={themeStyle}>
       <aside
         className="fixed inset-y-0 left-0 z-30 hidden h-dvh max-h-dvh w-[240px] flex-col overflow-hidden px-4 py-6 lg:flex"
-        style={{ background: inCampus ? `${accent}08` : 'var(--paper)' }}
+        style={{ background: inCampus ? `${accent}08` : '#fbfaf7' }}
       >
         {sidebarInner}
       </aside>
@@ -856,7 +856,7 @@ export default function DashboardShell({
 
       <header
         className="sticky top-0 z-20 flex h-[64px] items-center gap-3 px-4 backdrop-blur lg:pl-[264px] lg:pr-8"
-        style={{ background: inCampus ? `${accent}0d` : 'rgba(255,255,255,0.92)' }}
+        style={{ background: inCampus ? `${accent}0d` : 'rgba(251,250,247,0.92)' }}
       >
         <button
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--paper-dim)] lg:hidden"
@@ -931,7 +931,7 @@ export default function DashboardShell({
       <PushAlertsBanner accent={accent} />
 
       <main className="px-2 pb-28 pt-2 sm:px-4 lg:pb-6 lg:pl-[252px] lg:pr-6">
-        <div className="min-h-[calc(100dvh-90px)] rounded-[28px] bg-[#f4f6f9] px-3 pb-10 pt-5 sm:px-6 sm:pt-7 lg:px-8">
+        <div className="min-h-[calc(100dvh-90px)] rounded-[28px] bg-[#f2f1ec] px-3 pb-10 pt-5 sm:px-6 sm:pt-7 lg:px-8">
           <OngoingClassBanner accent={accent} />
           <CampusReturnBanner accent={accent} />
           {children}

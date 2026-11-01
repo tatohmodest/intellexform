@@ -29,7 +29,7 @@ export default async function AcademicOverviewPage() {
   return (
     <StudentGate userId={session.uid}>
     <div className="mx-auto max-w-[920px]">
-      <PageHeader
+      <PageHeader art="/eco_cert.webp" tone="lilac"
         title="Academic"
         actions={
           <>
