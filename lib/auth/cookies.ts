@@ -114,8 +114,21 @@ function hex(bytes: ArrayBuffer): string {
 }
 
 /**
+ * A value is only usable as a signing secret if it is long and not a placeholder.
+ * `vercel env pull` writes sensitive variables as the literal text "[SENSITIVE]";
+ * signing with that (or any short, public string) would let anyone forge a session.
+ */
+export function isUsableSecret(value: string | undefined | null): value is string {
+  const v = String(value ?? '').trim();
+  if (v.length < 24) return false;
+  if (/^\[.*\]$/.test(v) || /^<.*>$/.test(v)) return false;
+  if (/change[-_ ]?me|your[-_ ]?secret|placeholder/i.test(v)) return false;
+  return true;
+}
+
+/**
  * Resolve the HMAC signing secret for learner sessions: SESSION_SECRET, then other
- * dedicated server secrets. Returns '' when none is set - never a hard-coded or
+ * dedicated server secrets. Returns '' when none is usable - never a hard-coded or
  * guessable value, or anyone could forge a session.
  */
 export function resolveSessionSecret(): string {
@@ -126,7 +139,7 @@ export function resolveSessionSecret(): string {
     process.env.ADMIN_SECRET,
   ];
   for (const c of candidates) {
-    if (typeof c === 'string' && c.trim()) return c.trim();
+    if (isUsableSecret(c)) return c.trim();
   }
   return '';
 }

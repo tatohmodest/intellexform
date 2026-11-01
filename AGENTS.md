@@ -15,8 +15,10 @@ The public `/register` wizard (`components/landing/JoinWizard.tsx`) submits to `
   ```
   DATABASE_URL="postgresql://..."
   DIRECT_URL="postgresql://..."
-  ADMIN_SECRET="dev-local-admin-secret-change-me"
+  ADMIN_SECRET="<output of: openssl rand -hex 32>"
+  SESSION_SECRET="<output of: openssl rand -hex 32>"
   ```
+- Signing secrets (`SESSION_SECRET`, `ADMIN_SECRET`) must be at least 24 characters and not a placeholder. `lib/auth/cookies.ts` ignores values like `[SENSITIVE]` (what `vercel env pull` writes for sensitive variables) or anything containing `change-me`, because a public signing secret lets anyone forge a session.
 
 ### Admin login
 Open `/admin`. Authorized emails (default: `modestwilton@gmail.com`, `tatohmodest@gmail.com`, plus optional `ADMIN_EMAILS`) can:

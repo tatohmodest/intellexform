@@ -19,11 +19,11 @@ const OTP_TTL_MS = 10 * 60 * 1000;
 const OTP_RESEND_MS = 60 * 1000;
 const OTP_MAX_ATTEMPTS = 5;
 
-import { cookieValues, resolveSessionSecret } from '@/lib/auth/cookies';
+import { cookieValues, isUsableSecret, resolveSessionSecret } from '@/lib/auth/cookies';
 
 function getSecret(): string {
   const s = (process.env.ADMIN_SECRET || '').trim();
-  if (s) return s;
+  if (isUsableSecret(s)) return s;
   const session = resolveSessionSecret();
   if (!session) throw new Error('ADMIN_SECRET environment variable is not set');
   return `admin:${session}`;
