@@ -1,3 +1,4 @@
+import { getProgrammeModules } from '@/lib/programmeCurricula';
 import { getCatalogTrack } from '@/lib/learn/catalog';
 import { getTutorial } from '@/lib/tutorials';
 import { courseDurationHours, deliveryModeLabel, type TeacherCourseView } from '@/lib/learn/courseTypes';
@@ -95,9 +96,9 @@ export function buildProgrammeCurriculum(id: string): CurriculumDoc | null {
   if (!p) return null;
   const facts: CurriculumDoc['facts'] = [
     { label: 'Duration', value: p.duration },
-    { label: 'Level', value: p.level },
+    { label: 'Level', value: p.level.replace(/\s*→\s*/g, ' to ') },
     { label: 'Format', value: p.short ? 'Live + self-paced' : 'Live + mentorship' },
-    { label: 'Tools & topics', value: String(p.technologies.length) },
+    { label: 'Modules', value: String(getProgrammeModules(p.id, p.technologies, p.duration).length) },
     { label: 'Tuition', value: priceLabel(p.priceXAF) },
   ];
   return {
@@ -109,14 +110,15 @@ export function buildProgrammeCurriculum(id: string): CurriculumDoc | null {
     facts,
     outcomes: p.highlights,
     requirements: [p.prerequisites, ...p.equipment],
-    modules: [
-      {
-        title: 'Tools and topics you will cover',
-        summary: `${p.format}. Taught in cohorts with hands-on projects.`,
-        badge: p.level,
-        items: p.technologies.map((t) => ({ title: t })),
-      },
-    ],
+    modules: getProgrammeModules(p.id, p.technologies, p.duration).map((m) => ({
+      title: m.title,
+      summary: m.summary,
+      badge: m.weeks,
+      items: [
+        ...m.topics.map((t) => ({ title: t.title, note: t.detail })),
+        ...(m.project ? [{ title: `Project: ${m.project}` }] : []),
+      ],
+    })),
     lessons: [],
     generatedAt: today(),
   };

@@ -27,6 +27,7 @@ export const PROGRAMME_CATEGORIES: { id: ProgrammeCategory; label: string; blurb
 
 const CATEGORY_BY_ID: Record<string, ProgrammeCategory> = {
   'data-analysis': 'data',
+  'data-science': 'data',
   cybersecurity: 'security',
   'cybersecurity-ceh': 'security',
   'digital-marketing': 'marketing',

@@ -6,6 +6,7 @@ import {
   ArrowRight,
   BadgeCheck,
   Check,
+  ChevronDown,
   Clock,
   Download,
   Gauge,
@@ -14,6 +15,7 @@ import {
   Sparkles,
   Video,
 } from 'lucide-react';
+import { getProgrammeModules } from '@/lib/programmeCurricula';
 import TopNav from '@/components/landing/TopNav';
 import Footer from '@/components/landing/Footer';
 import AdvisorDock from '@/components/landing/AdvisorDock';
@@ -162,7 +164,7 @@ export default function ProgrammePage({ params }: { params: { id: string } }) {
                 <div className="flex flex-wrap items-end justify-between gap-3">
                   <div>
                     <h2 className="text-[28px] font-bold text-[var(--navy)] sm:text-[34px]">Curriculum</h2>
-                    <p className="mt-2 text-[15px] text-[var(--ink-soft)]">The tools and topics this programme covers.</p>
+                    <p className="mt-2 text-[15px] text-[var(--ink-soft)]">Tap a module to see exactly what you will learn and build.</p>
                   </div>
                   <a
                     href={`/api/programmes/${p.id}/curriculum`}
@@ -172,16 +174,50 @@ export default function ProgrammePage({ params }: { params: { id: string } }) {
                     <Download size={15} /> Download curriculum (PDF)
                   </a>
                 </div>
-                <ol className="mt-6 grid gap-2.5 sm:grid-cols-2">
-                  {p.technologies.map((t, i) => (
-                    <li key={t} className="flex items-center gap-4 rounded-2xl bg-[var(--paper-dim)] px-4 py-3.5">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-[13px] font-bold text-[var(--green-deep)]">
-                        {i + 1}
-                      </span>
-                      <span className="text-[15.5px] font-semibold text-[var(--navy)]">{t}</span>
-                    </li>
+                <div className="mt-6 space-y-3">
+                  {getProgrammeModules(p.id, p.technologies, p.duration).map((m, i) => (
+                    <details
+                      key={m.title}
+                      className="group rounded-2xl bg-[var(--paper-dim)] open:bg-white open:shadow-[0_8px_30px_rgba(15,23,42,0.08)] open:ring-1 open:ring-black/5"
+                      open={i === 0}
+                    >
+                      <summary className="flex cursor-pointer list-none items-center gap-4 px-4 py-4 [&::-webkit-details-marker]:hidden">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[14px] font-bold text-[var(--green-deep)] group-open:bg-[var(--green)] group-open:text-white">
+                          {i + 1}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[16.5px] font-bold text-[var(--navy)]">{m.title}</span>
+                          <span className="block text-[13px] text-[var(--ink-soft)]">
+                            {m.weeks} · {m.topics.length} topics
+                          </span>
+                        </span>
+                        <ChevronDown size={18} className="shrink-0 text-[var(--navy)]/50 transition-transform group-open:rotate-180" />
+                      </summary>
+                      <div className="px-4 pb-5 sm:pl-[72px]">
+                        <p className="text-[14.5px] leading-relaxed text-[var(--navy)]/75">{m.summary}</p>
+                        <ul className="mt-4 space-y-3">
+                          {m.topics.map((t) => (
+                            <li key={t.title} className="flex gap-3">
+                              <span className="mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[var(--green)] text-white">
+                                <Check size={10} strokeWidth={3} />
+                              </span>
+                              <span>
+                                <span className="block text-[14.5px] font-semibold text-[var(--navy)]">{t.title}</span>
+                                <span className="block text-[13.5px] leading-relaxed text-[var(--navy)]/65">{t.detail}</span>
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                        {m.project ? (
+                          <p className="mt-4 rounded-xl bg-[var(--green)]/10 px-4 py-3 text-[13.5px] text-[var(--navy)]">
+                            <span className="font-bold">Project: </span>
+                            {m.project}
+                          </p>
+                        ) : null}
+                      </div>
+                    </details>
                   ))}
-                </ol>
+                </div>
               </div>
 
               <div>
