@@ -71,6 +71,8 @@ export default function MessagesInbox({
   const [body, setBody] = useState('');
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [threadLoading, setThreadLoading] = useState(Boolean(initialThreadId));
+  const [threadError, setThreadError] = useState(false);
   const [query, setQuery] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
@@ -83,8 +85,28 @@ export default function MessagesInbox({
 
   const loadThread = useCallback(
     async (id: string, quiet = false) => {
-      const res = await fetch(`/api/learn/messages?threadId=${encodeURIComponent(id)}`, { cache: 'no-store' });
-      const data = await res.json();
+      if (!quiet) {
+        setThreadLoading(true);
+        setThreadError(false);
+        setMessages([]);
+        setActiveId(id);
+      }
+      let res: Response;
+      let data: { messages?: Message[]; thread?: Thread | null };
+      try {
+        res = await fetch(`/api/learn/messages?threadId=${encodeURIComponent(id)}`, { cache: 'no-store' });
+        data = await res.json();
+      } catch (err) {
+        if (!quiet) {
+          setThreadError(true);
+          setThreadLoading(false);
+        }
+        throw err;
+      }
+      if (!quiet) {
+        setThreadLoading(false);
+        if (!res.ok) setThreadError(true);
+      }
       if (res.ok) {
         setMessages((prev) => {
           const next: Message[] = data.messages || [];
@@ -103,6 +125,7 @@ export default function MessagesInbox({
       .then(() => {
         if (initialThreadId) return loadThread(initialThreadId);
       })
+      .catch(() => undefined)
       .finally(() => setLoading(false));
   }, [loadThreads, loadThread, initialThreadId]);
 
@@ -283,7 +306,24 @@ export default function MessagesInbox({
                 stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
               }}
             >
-              {rows.map((r, i) =>
+              {threadLoading ? (
+                <div className="flex h-full flex-col items-center justify-center gap-2 text-[13px] text-[#54656f]">
+                  <Loader2 size={26} className="animate-spin text-[#00a884]" />
+                  Loading messages…
+                </div>
+              ) : threadError ? (
+                <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-[13px] text-[#54656f]">
+                  Couldn&apos;t load this chat.
+                  <button
+                    type="button"
+                    onClick={() => void loadThread(activeId as string).catch(() => undefined)}
+                    className="rounded-full bg-[#00a884] px-4 py-1.5 font-semibold text-white"
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : null}
+              {threadLoading || threadError ? null : rows.map((r, i) =>
                 r.type === 'day' ? (
                   <p key={`d-${i}`} className="my-3 flex justify-center">
                     <span className="rounded-lg bg-white/90 px-3 py-1 text-[11.5px] font-medium text-[#54656f] shadow-[0_1px_0.5px_rgba(11,20,26,0.13)]">
