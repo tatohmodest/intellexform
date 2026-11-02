@@ -61,7 +61,8 @@ export async function getStudentMembership(userId: string): Promise<StudentMembe
       year: String(rec?.year || '') || null,
       campusSlug: String(rec?.campusSlug || '') || null,
       cohort: String(rec?.cohort || learner?.preferences?.academicCohort || '') || null,
-      classHead: Boolean(rec?.classHead) && isStudent,
+      // An instructor-assigned advocate keeps the role even before official student status.
+      classHead: Boolean(rec?.classHead),
     };
   } catch {
     return emptyMembership();

@@ -79,12 +79,21 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
       const body = isSignup
         ? { name: name.trim(), email: cleanEmail, password, next, campus: campus || undefined }
         : { email: cleanEmail, password, next, campus: campus || undefined };
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(30_000),
-      });
+      const send = () =>
+        fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(isSignup ? 30_000 : 20_000),
+        });
+      let res: Response;
+      try {
+        res = await send();
+      } catch (err) {
+        // Sign-in is safe to repeat; a cold server often answers on the second try.
+        if (isSignup || !timedOut(err)) throw err;
+        res = await send();
+      }
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
         email?: string;

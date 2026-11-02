@@ -36,7 +36,7 @@ import {
 import { PERSONAL_CONTEXT } from '@/lib/learn/identity';
 import { withTimeout } from '@/lib/withTimeout';
 
-const PRISMA_MS = 3_500;
+const PRISMA_MS = 2_500;
 
 export const AUTH_LINK = {
   verifyTtlMs: 24 * 60 * 60 * 1000,
@@ -155,11 +155,19 @@ async function pendingCol() {
   return db.collection('auth_pending_signups');
 }
 
+let credentialsMaintenanceStarted = false;
+
 async function credentialsCol() {
   const db = await getDb();
-  await db.collection('auth_credentials').createIndex({ email: 1 }, { unique: true }).catch(() => {});
-  await db.collection('auth_credentials').createIndex({ userId: 1 }).catch(() => {});
-  await ensureUniqueLearnerEmails().catch(() => {});
+  // Index + dedupe maintenance runs once per instance in the background so sign-in never waits on it.
+  if (!credentialsMaintenanceStarted) {
+    credentialsMaintenanceStarted = true;
+    void (async () => {
+      await db.collection('auth_credentials').createIndex({ email: 1 }, { unique: true }).catch(() => {});
+      await db.collection('auth_credentials').createIndex({ userId: 1 }).catch(() => {});
+      await ensureUniqueLearnerEmails().catch(() => {});
+    })();
+  }
   return db.collection('auth_credentials');
 }
 
@@ -407,10 +415,10 @@ export async function upsertLearnerLocal(opts: {
   try {
     const db = await getDb();
     const col = db.collection('learners');
-    await col.createIndex({ lbId: 1 }, { unique: true }).catch(() => {});
-    await ensureUniqueLearnerEmails().catch(() => {});
+    // Index/dedupe maintenance scans every learner; never make a sign-in wait for it.
+    void col.createIndex({ lbId: 1 }, { unique: true }).catch(() => {});
+    void ensureUniqueLearnerEmails().catch(() => {});
     const email = opts.email.trim().toLowerCase();
-    await reconcileDuplicateLearnersForEmail(email).catch(() => {});
     const existing = await findLearnerByEmail(email);
     if (existing && existing.lbId !== opts.id) {
       await col.updateOne(
@@ -689,14 +697,16 @@ async function buildSessionForAccount(
   const email = normalizeEmail(rawEmail);
   const now = new Date();
   const verifiedAt = account.emailVerified ?? null;
-  const keptId = await reconcileDuplicateLearnersForEmail(email).catch(() => null);
-  const prismaUser = await syncPrismaUser({
-    email,
-    name: account.name,
-    passwordHash: account.passwordHash,
-    emailVerified: verifiedAt,
-    touchLogin: true,
-  });
+  const [keptId, prismaUser] = await Promise.all([
+    reconcileDuplicateLearnersForEmail(email).catch(() => null),
+    syncPrismaUser({
+      email,
+      name: account.name,
+      passwordHash: account.passwordHash,
+      emailVerified: verifiedAt,
+      touchLogin: true,
+    }),
+  ]);
   const userId = keptId || account.userId || prismaUser?.id || newLocalUserId();
   const learner = await upsertLearnerLocal({
     id: userId,

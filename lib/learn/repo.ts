@@ -194,6 +194,10 @@ export async function findLearnerByEmail(email: string): Promise<LearnerDoc | nu
   if (!normalized.includes('@')) return null;
   try {
     const db = await getDb();
+    const exact = await db
+      .collection('learners')
+      .findOne({ email: normalized }, { projection: { _id: 0, passwordHash: 0 } });
+    if (exact) return exact as unknown as LearnerDoc;
     const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const doc = await db.collection('learners').findOne(
       { email: { $regex: `^${escaped}$`, $options: 'i' } },
@@ -283,6 +287,14 @@ export async function reconcileDuplicateLearnersForEmail(email: string): Promise
   const db = await getDb();
   const col = db.collection('learners');
   const creds = db.collection('auth_credentials');
+  const [exactDocs, exactCred] = await Promise.all([
+    col.find({ email: normalized }, { projection: { lbId: 1 } }).toArray(),
+    creds.findOne({ email: normalized }),
+  ]);
+  if (exactDocs.length === 1 && exactDocs[0].lbId) {
+    const only = String(exactDocs[0].lbId);
+    if (!exactCred?.userId || String(exactCred.userId) === only) return only;
+  }
   const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const docs = await col
     .find(

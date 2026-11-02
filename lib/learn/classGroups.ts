@@ -7,6 +7,7 @@ import { ObjectId } from '@/lib/db/documentStore';
 import { getDb } from '@/lib/repo';
 import { getLearner } from '@/lib/learn/repo';
 import { isClassHead, isOfficialStudent } from '@/lib/learn/studentAccess';
+import { getRoles } from '@/lib/learn/ecosystem';
 import { createNotification, createNotificationsForUsers } from '@/lib/learn/notifications';
 
 export class ClassGroupError extends Error {
@@ -159,9 +160,36 @@ async function requireMember(userId: string, groupId: string) {
   };
 }
 
+/** Courses this person teaches (author or assigned instructor). */
+async function listTaughtCourses(userId: string): Promise<StudentCourseOption[]> {
+  try {
+    const db = await getDb();
+    const docs = await db
+      .collection('teacher_courses')
+      .find({ $or: [{ authorId: userId }, { instructorId: userId }] })
+      .project({ title: 1 })
+      .sort({ updatedAt: -1 })
+      .limit(60)
+      .toArray();
+    return docs.map((d) => ({ id: String(d._id), title: String(d.title || 'Course') }));
+  } catch {
+    return [];
+  }
+}
+
+/** Class heads and teachers may create groups. */
+async function canCreateGroups(userId: string): Promise<boolean> {
+  if (await isClassHead(userId)) return true;
+  const [roles, taught] = await Promise.all([
+    getRoles(userId).catch(() => [] as string[]),
+    listTaughtCourses(userId),
+  ]);
+  return roles.includes('mentor') || roles.includes('admin') || taught.length > 0;
+}
+
 export async function listStudentCourses(userId: string): Promise<StudentCourseOption[]> {
   const db = await getDb();
-  const [live, catalog] = await Promise.all([
+  const [live, catalog, taught] = await Promise.all([
     db
       .collection('course_enrollments')
       .find({ studentId: userId })
@@ -178,9 +206,14 @@ export async function listStudentCourses(userId: string): Promise<StudentCourseO
       .limit(40)
       .toArray()
       .catch(() => []),
+    listTaughtCourses(userId),
   ]);
   const out: StudentCourseOption[] = [];
   const seen = new Set<string>();
+  for (const c of taught) {
+    seen.add(c.id);
+    out.push(c);
+  }
   for (const e of live) {
     const id = String(e.courseId || '');
     if (!id || seen.has(id)) continue;
@@ -271,7 +304,7 @@ export async function listGroupsForUser(userId: string): Promise<{
   groups: ClassGroupView[];
 }> {
   const [classHead, courses, db, staff] = await Promise.all([
-    isClassHead(userId),
+    canCreateGroups(userId),
     listStudentCourses(userId),
     dbReady(),
     isStaffMonitor(userId),
@@ -428,8 +461,8 @@ export async function createGroup(
     membersCanPost?: boolean;
   },
 ) {
-  if (!(await isClassHead(actor.userId))) {
-    throw new ClassGroupError('Only class heads can create groups.', 403);
+  if (!(await canCreateGroups(actor.userId))) {
+    throw new ClassGroupError('Only class heads and teachers can create groups.', 403);
   }
   const title = opts.title.trim().slice(0, 80);
   if (title.length < 2) throw new ClassGroupError('Give the group a name.');
@@ -496,7 +529,7 @@ export async function addMembers(
 ) {
   const { db, group, memberIds, isOwner, flags } = await requireMember(actor.userId, opts.groupId);
   const canAdd = isOwner || (flags.membersCanInvite && memberIds.includes(actor.userId));
-  if (!canAdd) throw new ClassGroupError('Only the class head can add classmates.', 403);
+  if (!canAdd) throw new ClassGroupError('Only the class head or teacher can add people.', 403);
   const courseId = String(group.courseId || '');
   const mates = await listCourseMates(actor.userId, courseId, memberIds);
   const allowed = new Set(mates.map((m) => m.userId));

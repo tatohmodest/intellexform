@@ -4,6 +4,7 @@ import { resolveAuthNext } from '@/lib/auth/resolveAuthNext';
 import { writeSessionCookie } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 /**
  * GET /api/auth/login — legacy OAuth entry. Redirect to the credentials form.
