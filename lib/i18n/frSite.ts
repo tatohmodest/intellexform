@@ -68,6 +68,8 @@ export const FR_SITE: Record<string, string> = {
   'An instructor guiding a student through a lesson': 'Un formateur accompagnant un apprenant pendant une leçon',
   'InTelleX student ·': 'Étudiant InTelleX ·',
   'How it works': 'Comment ça marche',
+  'Why InTelleX': 'Pourquoi InTelleX',
+  Pricing: 'Tarifs',
   'From first message to finished project.': 'Du premier message au projet terminé.',
   'You always know what you are investing in and what happens next. Pay in full or spread it monthly with MTN MoMo, Orange Money or card.':
     'Vous savez toujours dans quoi vous investissez et ce qui suit. Payez en une fois ou étalez mensuellement via MTN MoMo, Orange Money ou carte.',

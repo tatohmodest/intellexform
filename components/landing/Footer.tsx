@@ -16,7 +16,8 @@ const COLUMNS: { title: string; links: { href: string; label: string; external?:
       { href: '/programmes?category=security', label: 'Cybersecurity' },
       { href: '/programmes?category=marketing', label: 'Digital Marketing' },
       { href: '/programmes?category=foundations', label: 'Foundations' },
-      { href: '/#how-it-works', label: 'How enrolment works' },
+      { href: '/why-intellex', label: 'Why InTelleX' },
+      { href: '/pricing', label: 'Pricing' },
     ],
   },
   {

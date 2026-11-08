@@ -36,7 +36,7 @@ export const PROGRAMMES_NAV = [
   { href: '/programmes?category=security', label: 'Cybersecurity', desc: 'Fundamentals and CEH prep' },
   { href: '/programmes?category=marketing', label: 'Digital Marketing', desc: 'Social media, SEO, content and ads' },
   { href: '/programmes?category=foundations', label: 'Foundations', desc: 'Short starter programmes' },
-  { href: '/#how-it-works', label: 'How enrolment works', desc: 'Choose, enrol, pay, learn' },
+  { href: '/pricing', label: 'Pricing', desc: 'What each level of support includes' },
 ] as const;
 
 export const LEARN_NAV = [
@@ -45,7 +45,7 @@ export const LEARN_NAV = [
   { href: '/books', label: 'Books', desc: 'AI-guided book learning' },
   { href: '/certifications', label: 'Certificates', desc: 'Certification tracks' },
   { href: '/resources', label: 'Free resources', desc: 'Guides and checklists' },
-  { href: '/membership', label: 'Library membership', desc: '1,999 XAF/mo · library & AI Tutor' },
+  { href: '/membership', label: 'Library membership', desc: '1,999 XAF/mo · self-paced library & AI tutor' },
 ] as const;
 
 export const EXPLORE_NAV = [

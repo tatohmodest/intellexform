@@ -21,7 +21,7 @@ export const STUDENT_MEMBERSHIP = {
   monthlyXAF: CERT_MONTHLY_XAF,
   yearlyXAF: CERT_YEARLY_XAF,
   currency: 'XAF',
-  tagline: 'One plan. Learn, certify, and read the whole library.',
+  tagline: 'Learn on your own: the whole library, tutorials, books and the AI tutor in one plan.',
 } as const;
 
 export type StudentBenefit = {
@@ -52,15 +52,21 @@ export const STUDENT_BENEFITS: StudentBenefit[] = [
     desc: 'Ask for titles you need — students get up to 10 requests per month (guests get 2). Admins review and publish to the library.',
   },
   {
-    title: 'AI tutor & live learning',
-    desc: 'Study with InTelleX AI, join live classes, and use mentorship tools in your dashboard.',
+    title: 'AI tutor, any hour',
+    desc: 'Ask InTelleX AI about any lesson, any time. It explains and quizzes you; it does not replace an instructor.',
   },
   {
     title: 'Class notes & learning tools',
-    desc: 'Access the student dashboard, progress tracking, achievements, and campus features.',
+    desc: 'Your dashboard, progress tracking and achievements, so you can see how far you have come.',
   },
   {
     title: 'Certificates you can show',
-    desc: 'Finish coursework and claim certificates employers and campuses recognise.',
+    desc: 'Finish a course and claim its certificate of completion.',
   },
+];
+
+/** Membership is self-paced. Live teaching belongs to programmes - see docs/REPOSITIONING.md. */
+export const STUDENT_NOT_INCLUDED: StudentBenefit[] = [
+  { title: 'Live classes', desc: 'Scheduled classes with an instructor and a cohort come with programmes.' },
+  { title: 'Mentorship and reviews', desc: 'An instructor checking your projects and telling you what to fix is part of a programme.' },
 ];

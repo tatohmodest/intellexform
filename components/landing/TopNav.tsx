@@ -51,8 +51,8 @@ const NAV_GROUPS: NavGroup[] = [
 ];
 
 const FLAT_LINKS = [
-  { href: '/#instructors', label: 'Instructors' },
-  { href: '/#how-it-works', label: 'How it works' },
+  { href: '/why-intellex', label: 'Why InTelleX' },
+  { href: '/pricing', label: 'Pricing' },
 ];
 
 export default function TopNav() {

@@ -56,6 +56,8 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
   }[] = [
     { path: '/', priority: 1, changeFrequency: 'daily' },
     { path: '/programmes', priority: 0.98, changeFrequency: 'weekly' },
+    { path: '/why-intellex', priority: 0.9, changeFrequency: 'monthly' },
+    { path: '/pricing', priority: 0.9, changeFrequency: 'monthly' },
     { path: '/about', priority: 0.95, changeFrequency: 'monthly' },
     { path: '/membership', priority: 0.95, changeFrequency: 'weekly' },
     { path: '/register/student', priority: 0.85, changeFrequency: 'monthly' },

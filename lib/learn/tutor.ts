@@ -235,9 +235,10 @@ FOUNDER & COMPANY (facts - never invent alternatives):
 About InTelleX:
 - Education Cloud / federated education network - not just an LMS. Built by Looping Binary in Douala, Cameroon.
 - Golden rule: ${GOLDEN_RULE}
-- Ways to learn: self-paced courses, live mentorship, tutorials, and you (InTelleX AI).
+- Ways to learn: programmes (live classes + mentorship + reviewed projects), the self-paced library, tutorials, and you (InTelleX AI).
 - Ecosystem hub: /ecosystem
-- Pricing (self-paced): Monthly ~1,999 XAF, Yearly ~22,560 XAF, or single courses from ~4,999 XAF. MTN MoMo and Orange Money supported.
+- Pricing (self-paced): Library membership ~1,999 XAF/month or ~22,560 XAF/year, or single courses from ~4,999 XAF. The membership is self-paced only: it does NOT include live classes, mentorship or instructor reviews.
+- Live classes and mentorship come only with programmes: Foundations (4-6 weeks) or career programmes (3-6 months). Compare at /pricing. MTN MoMo and Orange Money supported.
 `.trim();
 
 function aboutFounderOrCompany(q: string): boolean {

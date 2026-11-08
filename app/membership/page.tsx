@@ -7,6 +7,7 @@ import {
   BookMarked,
   Check,
   GraduationCap,
+  Minus,
   Sparkles,
 } from 'lucide-react';
 import TopNav from '@/components/landing/TopNav';
@@ -17,6 +18,7 @@ import { hasActiveCertSubscription } from '@/lib/learn/certSubscription';
 import {
   STUDENT_BENEFITS,
   STUDENT_MEMBERSHIP,
+  STUDENT_NOT_INCLUDED,
   STUDENT_MONTHLY_XAF,
   STUDENT_YEARLY_XAF,
 } from '@/lib/learn/studentMembership';
@@ -25,9 +27,9 @@ import { buildShareMetadata } from '@/lib/seo/share';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = buildShareMetadata({
-  title: 'Become an InTelleX Student · 1,999 XAF/month',
+  title: 'Library membership · 1,999 XAF/month',
   description:
-    'Register as an InTelleX Student for 1,999 XAF/month. Unlock 1,000+ courses with certifications, free Intermediate→Pro tracks, and the digital library.',
+    'Learn on your own for 1,999 XAF/month: the self-paced course library, Intermediate→Pro tracks, the digital library and the AI tutor.',
   path: '/membership',
   image: '/way_selfpaced.webp',
   imageAlt: 'InTelleX Student membership Cameroon',
@@ -61,17 +63,21 @@ export default async function MembershipPage() {
       >
         <div className="wrap max-w-[980px]">
           <div className="tab mb-3 inline-flex items-center gap-1.5">
-            <GraduationCap size={11} /> InTelleX Student
+            <GraduationCap size={11} /> Library membership
           </div>
           <h1 className="max-w-[820px] font-display text-[30px] leading-[1.12] sm:text-[44px]">
-            Register as an InTelleX Student
+            Learn on your own, for less than 2,000 XAF a month
           </h1>
           <p className="mt-4 max-w-[640px] text-[15.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
             {STUDENT_MEMBERSHIP.tagline} Monthly membership is{' '}
             <strong style={{ color: 'var(--ink)' }}>
               {STUDENT_MONTHLY_XAF.toLocaleString('en-US')} XAF
             </strong>
-            . Get certifications, 1,000+ courses, and free library access.
+            . Self-paced only: live classes and mentorship come with{' '}
+            <Link href="/programmes" className="font-semibold underline-offset-4 hover:underline" style={{ color: 'var(--green-deep)' }}>
+              programmes
+            </Link>
+            .
           </p>
           <div className="mt-8 flex flex-wrap items-end gap-6">
             <div>
@@ -99,10 +105,10 @@ export default async function MembershipPage() {
       <section className="py-14" style={{ background: 'var(--paper-dim)' }}>
         <div className="wrap max-w-[980px]">
           <div className="mb-2 flex items-center gap-2 text-[13px] font-semibold" style={{ color: 'var(--green-deep)' }}>
-            <Sparkles size={15} /> Everything included
+            <Sparkles size={15} /> What you get
           </div>
           <h2 className="mb-8 font-display text-[26px] sm:text-[30px]">
-            Benefits of being an InTelleX Student
+            What your membership includes
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {STUDENT_BENEFITS.map((b) => (
@@ -125,6 +131,25 @@ export default async function MembershipPage() {
                 </div>
               </div>
             ))}
+          </div>
+
+          <div className="mt-6 grid gap-4 rounded-2xl border p-5 sm:grid-cols-[1fr_auto] sm:items-center" style={{ borderColor: 'var(--line)', background: 'var(--paper)' }}>
+            <div>
+              <div className="text-[15px] font-semibold">Not included: someone checking your work</div>
+              <ul className="mt-3 space-y-2">
+                {STUDENT_NOT_INCLUDED.map((b) => (
+                  <li key={b.title} className="flex gap-2.5 text-[13.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                    <Minus size={15} className="mt-0.5 shrink-0" />
+                    <span>
+                      <strong style={{ color: 'var(--ink)' }}>{b.title}.</strong> {b.desc}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <Link href="/pricing" className="btn btn-ghost whitespace-nowrap">
+              Compare with programmes <ArrowRight size={15} />
+            </Link>
           </div>
         </div>
       </section>
