@@ -36,8 +36,7 @@ export default function VerifyEmailResult({
       <div className="mt-8 space-y-3">
         <Link
           href={ok ? loginHref : '/login'}
-          className="flex w-full items-center justify-center gap-2 rounded-full px-6 py-4 text-[15px] font-semibold text-white"
-          style={{ background: '#0C1116' }}
+          className="btn btn-green w-full !py-3.5 text-[15px]"
         >
           {ok ? 'Sign in' : 'Go to sign in'}
           <ArrowRight size={16} className="opacity-70" />

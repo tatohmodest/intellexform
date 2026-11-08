@@ -37,7 +37,7 @@ export default function CampusSiteShell({
   const accent = brand.accent || '#00B369';
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--paper)', color: 'var(--ink)' }}>
+    <div className="site campus-airy min-h-screen" style={{ background: '#fff', color: 'var(--ink)', ['--line' as string]: '#e7e9ec' }}>
       <CampusPwaBrand
         brand={{
           slug: brand.slug,
@@ -65,7 +65,7 @@ export default function CampusSiteShell({
               />
             ) : (
               <span
-                className="flex h-9 w-9 items-center justify-center font-display text-[16px] font-bold text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-lg font-display text-[16px] font-bold text-white"
                 style={{ background: accent }}
               >
                 {brand.platformName.charAt(0)}
@@ -99,7 +99,7 @@ export default function CampusSiteShell({
             {active !== 'signup' && (
               <Link
                 href={brand.enrollmentOpen ? brand.signupHref : brand.loginHref}
-                className="px-3.5 py-2 text-[13px] font-semibold text-white"
+                className="rounded-[10px] px-3.5 py-2 text-[13px] font-medium text-white"
                 style={{ background: accent }}
               >
                 {brand.enrollmentOpen ? 'Join' : 'Sign in'}
@@ -139,7 +139,7 @@ export default function CampusSiteShell({
               </Link>
               <Link
                 href={brand.enrollmentOpen ? brand.signupHref : brand.loginHref}
-                className="mt-1 inline-flex justify-center px-4 py-2.5 text-[14px] font-semibold text-white"
+                className="mt-1 inline-flex justify-center rounded-[10px] px-4 py-2.5 text-[14px] font-medium text-white"
                 style={{ background: accent }}
                 onClick={() => setOpen(false)}
               >
@@ -154,7 +154,7 @@ export default function CampusSiteShell({
 
       <footer
         className="border-t px-5 py-10 sm:px-8"
-        style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}
+        style={{ borderColor: 'var(--line)', background: '#fafbfa' }}
       >
         <div className="mx-auto flex max-w-[1100px] flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -164,7 +164,7 @@ export default function CampusSiteShell({
                 <img src={brand.logoUrl} alt="" className="h-8 w-8 object-contain" />
               ) : (
                 <span
-                  className="flex h-8 w-8 items-center justify-center text-[13px] font-bold text-white"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-[13px] font-bold text-white"
                   style={{ background: accent }}
                 >
                   {brand.platformName.charAt(0)}

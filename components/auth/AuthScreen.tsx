@@ -299,8 +299,7 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
           </div>
           <Link
             href={loginHref}
-            className="flex w-full items-center justify-center gap-2 rounded-full px-6 py-4 text-[15px] font-semibold text-white"
-            style={{ background: '#0C1116' }}
+            className="btn btn-green w-full !py-3.5 text-[15px]"
           >
             Continue to sign in
             <ArrowRight size={16} className="opacity-70" />

@@ -2,8 +2,9 @@
 
 import { ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { Video, Bot, BookOpen, ShieldCheck, Flame } from 'lucide-react';
+import { Check, ShieldCheck } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
+import { LaptopReview } from '@/components/landing/LineArt';
 import { useT } from '@/components/i18n/I18nRoot';
 
 export default function AuthChrome({
@@ -23,75 +24,58 @@ export default function AuthChrome({
 }) {
   const t = useT();
   return (
-    <div className="flex min-h-screen">
-      <div
-        className="relative hidden w-[46%] flex-col justify-between overflow-hidden p-12 lg:flex"
-        style={{
-          background:
-            'radial-gradient(1200px 600px at -10% -10%, rgba(0,179,105,0.35), transparent 60%), radial-gradient(900px 500px at 110% 110%, rgba(74,144,226,0.3), transparent 60%), #0C1116',
-        }}
-      >
-        <div className="flex items-center gap-2.5">
-          <BrandLogo href="/" height={30} className="brightness-0 invert" />
-          <span className="mono rounded-full border border-white/20 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.14em] text-white/70">
-            {t('Learning')}
-          </span>
+    <div className="site airy flex min-h-screen">
+      <div className="relative hidden w-[46%] flex-col justify-between overflow-hidden border-r border-[#e7e9ec] bg-[#fafbfa] p-12 lg:flex">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-70"
+          style={{ backgroundImage: 'radial-gradient(#e7e9ec 1px, transparent 1px)', backgroundSize: '18px 18px' }}
+        />
+        <div className="relative">
+          <BrandLogo href="/" height={30} />
         </div>
 
-        <div>
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="font-display text-[40px] leading-[1.15] text-white"
-          >
-            {t('Learn like the world is')}
-            <span className="italic" style={{ color: '#1ED77E' }}>
-              {' '}
-              {t('watching you win.')}
-            </span>
-          </motion.h1>
-          <p className="mt-4 max-w-md text-[15.5px] leading-relaxed text-white/70">
+        <div className="relative">
+          <h1 className="text-[40px] leading-[1.05]">
+            {campus ? t('One account for your campus.') : t('Tutorials show you how.')}{' '}
+            {!campus && <span className="text-[var(--green-deep)]">{t('We make sure you can.')}</span>}
+          </h1>
+          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-[#4b5563]">
             {campus
               ? t('One InTelleX account. After you sign in, you will continue into your campus dashboard when you have access.')
-              : t('Self-paced courses with real curricula, live mentorship, and an AI tutor. Create your account once — then join any campus that invites you.')}
+              : t('Programmes taught live by InTelleX instructors, a self-paced library and an AI tutor, all in one account.')}
           </p>
 
           {!campus && (
-            <div className="mt-8 space-y-3.5">
+            <ul className="mt-7 space-y-3">
               {[
-                { icon: <BookOpen size={16} />, text: t('17 course tracks · 500+ hands-on lessons') },
-                { icon: <Video size={16} />, text: t('1-on-1 mentorship & live classes (HD video)') },
-                { icon: <Bot size={16} />, text: t('AI tutor that knows InTelleX + your catalogue') },
-                { icon: <Flame size={16} />, text: t('Streaks, XP and certificates that keep you going') },
-              ].map((f, i) => (
-                <motion.div
-                  key={f.text}
-                  initial={{ opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.15 + i * 0.08 }}
-                  className="flex items-center gap-3 text-[14px] text-white/85"
-                >
-                  <span
-                    className="flex h-8 w-8 items-center justify-center rounded-full"
-                    style={{ background: 'rgba(30,215,126,0.14)', color: '#1ED77E' }}
-                  >
-                    {f.icon}
-                  </span>
-                  {f.text}
-                </motion.div>
+                t('Live classes with an InTelleX instructor'),
+                t('Projects reviewed by a person, not a quiz'),
+                t('An AI tutor for questions between classes'),
+                t('A certificate when you complete a programme'),
+              ].map((text) => (
+                <li key={text} className="flex items-center gap-2.5 text-[14px]">
+                  <Check size={16} strokeWidth={2.5} className="shrink-0 text-[var(--green-deep)]" />
+                  {text}
+                </li>
               ))}
-            </div>
+            </ul>
           )}
+
+          <div className="relative mt-8 max-w-[420px]">
+            <LaptopReview className="w-full" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/doodles/laying.svg" alt="" className="pointer-events-none absolute left-[30%] top-[-6%] w-[44%] select-none" />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 text-[12.5px] text-white/50">
+        <div className="relative flex items-center gap-2 text-[12.5px] text-[#4b5563]">
           <ShieldCheck size={14} />
           {t('Verify your email with a link, then sign in with your password.')}
         </div>
       </div>
 
-      <div className="flex flex-1 items-center justify-center bg-paper px-6 py-12">
+      <div className="flex flex-1 items-center justify-center bg-white px-6 py-12">
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
@@ -102,9 +86,9 @@ export default function AuthChrome({
             <BrandLogo href="/" height={28} />
           </div>
 
-          <div className="tab mb-4 inline-flex items-center gap-1.5">{t(tab)}</div>
-          <h2 className="font-display text-[30px] leading-tight">{t(title)}</h2>
-          <p className="mt-2 text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
+          <div className="eyebrow mb-4">{t(tab)}</div>
+          <h2 className="text-[32px] leading-tight">{t(title)}</h2>
+          <p className="mt-2 text-[14.5px] text-[#4b5563]">
             {typeof subtitle === 'string' ? t(subtitle) : subtitle}
           </p>
           {children}
@@ -158,8 +142,7 @@ export function AuthSubmit({
     <button
       type="submit"
       disabled={busy}
-      className="mt-2 flex w-full items-center justify-center gap-2 rounded-full px-6 py-4 text-[15px] font-semibold text-white transition-transform hover:-translate-y-0.5 disabled:opacity-60"
-      style={{ background: '#0C1116' }}
+      className="btn btn-green mt-2 w-full !py-3.5 text-[15px] disabled:opacity-60"
     >
       {busy ? busyLabel : label}
     </button>

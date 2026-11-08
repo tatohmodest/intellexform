@@ -116,11 +116,11 @@ export default function AdminShell({
   );
 
   return (
-    <div className="min-h-screen flex" style={{ background: 'var(--paper)' }}>
+    <div className="site dash min-h-screen flex bg-white">
       {/* Desktop Sidebar (Always Visible) */}
       <aside
         className="hidden md:flex md:w-64 shrink-0 flex-col border-r sticky top-0 h-screen"
-        style={{ borderColor: 'var(--line)', background: 'rgba(251,248,240,0.95)' }}
+        style={{ borderColor: '#e7e9ec', background: '#ffffff' }}
       >
         {sidebarContent}
       </aside>
@@ -147,7 +147,7 @@ export default function AdminShell({
         {/* Mobile Header Bar with Hamburger */}
         <header
           className="md:hidden sticky top-0 z-20 flex items-center justify-between border-b px-4 py-3"
-          style={{ borderColor: 'var(--line)', background: 'rgba(251,248,240,0.95)' }}
+          style={{ borderColor: '#e7e9ec', background: 'rgba(255,255,255,0.92)' }}
         >
           <div className="flex items-center gap-3">
             <button
@@ -171,9 +171,9 @@ export default function AdminShell({
           </button>
         </header>
 
-        <main className="mx-auto w-full max-w-[1280px] px-4 py-8 sm:px-6">
+        <main className="mx-auto w-full max-w-[1280px] bg-[#fafbfa] px-4 py-8 sm:px-6">
           {title ? (
-            <h1 className="mb-6 font-display text-[28px] leading-tight">{title}</h1>
+            <h1 className="mb-6 text-[30px] leading-tight">{title}</h1>
           ) : null}
           {children}
         </main>

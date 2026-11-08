@@ -51,14 +51,7 @@ export default function CampusLanding({
 
   return (
     <>
-      <section
-        className="relative overflow-hidden text-white"
-        style={{
-          background: useCover
-            ? undefined
-            : `linear-gradient(125deg, ${accent} 0%, #0C1116 72%)`,
-        }}
-      >
+      <section className={useCover ? 'relative overflow-hidden text-white' : 'px-3 pt-3 sm:px-5'}>
         {useCover ? (
           <div className="absolute inset-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -69,28 +62,43 @@ export default function CampusLanding({
             />
           </div>
         ) : null}
-        <div className="relative mx-auto max-w-[1100px] px-5 py-16 sm:px-8 sm:py-24">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-white/55">
+        <div
+          className={
+            useCover
+              ? 'relative mx-auto max-w-[1100px] px-5 py-16 sm:px-8 sm:py-24'
+              : 'relative mx-auto max-w-[1100px] overflow-hidden rounded-[24px] border border-[#e7e9ec] px-6 py-16 sm:px-12 sm:py-20'
+          }
+          style={useCover ? undefined : { background: `${accent}0d` }}
+        >
+          {!useCover ? (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 opacity-70"
+              style={{ backgroundImage: 'radial-gradient(#e7e9ec 1px, transparent 1px)', backgroundSize: '18px 18px' }}
+            />
+          ) : null}
+          <p className={`relative inline-flex items-center gap-2 text-[13.5px] font-medium ${useCover ? 'text-white/70' : 'text-[#4b5563]'}`}>
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: useCover ? '#fff' : accent }} />
             Digital campus
           </p>
-          <h1 className="mt-3 max-w-3xl font-display text-[44px] leading-[0.95] tracking-tight sm:text-[60px]">
-            {brand.platformName}
-          </h1>
-          <p className="mt-5 max-w-2xl text-[16px] leading-relaxed text-white/75 sm:text-[18px]">
+          <h1 className="relative mt-4 max-w-3xl text-[44px] leading-[1] sm:text-[60px]">{brand.platformName}</h1>
+          <p className={`relative mt-5 max-w-2xl text-[16px] leading-relaxed sm:text-[18px] ${useCover ? 'text-white/75' : 'text-[#4b5563]'}`}>
             {brand.tagline}
           </p>
-          <div className="mt-9 flex flex-wrap gap-3">
+          <div className="relative mt-9 flex flex-wrap gap-3">
             <Link
               href={ctaHref}
-              className="px-5 py-3 text-[13.5px] font-semibold text-[#0C1116]"
-              style={{ background: '#fff' }}
+              className="rounded-[10px] px-5 py-3 text-[14px] font-medium"
+              style={useCover ? { background: '#fff', color: '#0C1116' } : { background: accent, color: '#fff' }}
             >
               {config.ctaLabel || (brand.enrollmentOpen ? 'Join campus' : 'Enter LMS')}
             </Link>
             {config.showCourses ? (
               <a
                 href="#courses"
-                className="border border-white/30 px-5 py-3 text-[13.5px] font-semibold text-white"
+                className={`rounded-[10px] border px-5 py-3 text-[14px] font-medium ${
+                  useCover ? 'border-white/30 text-white' : 'border-[#e7e9ec] bg-white text-[#0C1116]'
+                }`}
               >
                 Browse courses
               </a>
@@ -103,7 +111,7 @@ export default function CampusLanding({
         <section id="about" className="mb-16 scroll-mt-24">
           <div className="flex items-center gap-2">
             <Sparkles size={18} style={{ color: accent }} />
-            <h2 className="font-display text-[30px]">About</h2>
+            <h2 className="text-[30px]">About</h2>
           </div>
           <p className="mt-4 max-w-3xl text-[15.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
             {config.about ||
@@ -130,7 +138,7 @@ export default function CampusLanding({
           <section id="programs" className="mb-16 scroll-mt-24">
             <div className="flex items-center gap-2">
               <Layers size={18} style={{ color: accent }} />
-              <h2 className="font-display text-[30px]">Learning structure</h2>
+              <h2 className="text-[30px]">Learning structure</h2>
             </div>
             <p className="mt-2 max-w-2xl text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
               How this campus organizes learning — configured during onboarding.
@@ -139,11 +147,11 @@ export default function CampusLanding({
               {brand.learningStructure.map((id) => (
                 <div
                   key={id}
-                  className="border px-4 py-4"
+                  className="rounded-[20px] border bg-white px-5 py-5"
                   style={{ borderColor: 'var(--line)' }}
                 >
                   <GraduationCap size={18} style={{ color: accent }} />
-                  <h3 className="mt-3 font-display text-[20px] leading-tight">
+                  <h3 className="mt-3 text-[20px] leading-tight">
                     {STRUCTURE_LABELS[id] || featureLabel(id)}
                   </h3>
                   <p className="mt-1.5 text-[13px]" style={{ color: 'var(--ink-soft)' }}>
@@ -159,7 +167,7 @@ export default function CampusLanding({
           <section id="courses" className="mb-16 scroll-mt-24">
             <div className="flex items-center gap-2">
               <BookOpen size={18} style={{ color: accent }} />
-              <h2 className="font-display text-[30px]">Courses</h2>
+              <h2 className="text-[30px]">Courses</h2>
             </div>
             {courses.length === 0 ? (
               <p className="mt-4 text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
@@ -171,10 +179,10 @@ export default function CampusLanding({
                 {courses.map((c) => (
                   <article
                     key={c.id}
-                    className="flex flex-col border p-4"
+                    className="flex flex-col rounded-[20px] border bg-white p-5"
                     style={{ borderColor: 'var(--line)' }}
                   >
-                    <h3 className="font-display text-[20px] leading-tight">{c.title}</h3>
+                    <h3 className="text-[20px] leading-tight">{c.title}</h3>
                     <p
                       className="mt-2 flex-1 line-clamp-3 text-[13px]"
                       style={{ color: 'var(--ink-soft)' }}
@@ -203,7 +211,7 @@ export default function CampusLanding({
           <section id="capabilities" className="mb-16 scroll-mt-24">
             <div className="flex items-center gap-2">
               <Users size={18} style={{ color: accent }} />
-              <h2 className="font-display text-[30px]">Campus platform</h2>
+              <h2 className="text-[30px]">Campus platform</h2>
             </div>
             <p className="mt-2 max-w-2xl text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
               Capabilities enabled for {brand.platformName} — collaboration, learning, and admin tools
@@ -213,7 +221,7 @@ export default function CampusLanding({
               {features.map((f) => (
                 <li
                   key={f}
-                  className="border px-2.5 py-1 text-[12px] font-semibold capitalize"
+                  className="rounded-full border px-3 py-1 text-[12px] font-medium capitalize"
                   style={{ borderColor: 'var(--line)' }}
                 >
                   {featureLabel(f)}
@@ -226,10 +234,10 @@ export default function CampusLanding({
         {config.showJoin ? (
           <section
             id="join"
-            className="mb-16 scroll-mt-24 border p-6 sm:p-8"
+            className="mb-16 scroll-mt-24 rounded-[20px] border p-6 sm:p-8"
             style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}
           >
-            <h2 className="font-display text-[28px]">Join {brand.platformName}</h2>
+            <h2 className="text-[28px]">Join {brand.platformName}</h2>
             <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
               {joinNote}
             </p>
@@ -240,7 +248,7 @@ export default function CampusLanding({
               {brand.studentRegistration === 'public' ? (
                 <Link
                   href={brand.signupHref}
-                  className="px-5 py-3 text-[13.5px] font-semibold text-white"
+                  className="rounded-[10px] px-5 py-3 text-[13.5px] font-semibold text-white"
                   style={{ background: accent }}
                 >
                   Create InTelleX account
@@ -250,8 +258,8 @@ export default function CampusLanding({
                 href={brand.loginHref}
                 className={
                   brand.studentRegistration === 'public'
-                    ? 'border px-5 py-3 text-[13.5px] font-semibold'
-                    : 'px-5 py-3 text-[13.5px] font-semibold text-white'
+                    ? 'border rounded-[10px] px-5 py-3 text-[13.5px] font-semibold'
+                    : 'rounded-[10px] px-5 py-3 text-[13.5px] font-semibold text-white'
                 }
                 style={
                   brand.studentRegistration === 'public'
@@ -267,7 +275,7 @@ export default function CampusLanding({
 
         {config.showContact ? (
           <section id="contact" className="mb-6 scroll-mt-24">
-            <h2 className="font-display text-[30px]">Contact</h2>
+            <h2 className="text-[30px]">Contact</h2>
             <p className="mt-3 max-w-2xl text-[14.5px]" style={{ color: 'var(--ink-soft)' }}>
               {config.contactBlurb ||
                 'Reach the campus team for enrollment, partnerships, or support.'}

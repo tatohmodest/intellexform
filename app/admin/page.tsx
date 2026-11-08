@@ -62,13 +62,13 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4" style={{ background: 'var(--paper)' }}>
+    <div className="site airy flex min-h-screen items-center justify-center bg-[#fafbfa] px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex justify-center">
             <BrandLogo href={null} height={48} variant="mark" />
           </div>
-          <h1 className="font-display text-2xl font-bold">Admin Access</h1>
+          <h1 className="text-[30px]">Admin Access</h1>
           <p className="mt-1 text-sm" style={{ color: 'var(--ink-soft)' }}>
             InTelleX · OTP for authorized emails
           </p>
@@ -77,8 +77,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         {step === 'email' ? (
           <form
             onSubmit={requestOtp}
-            className="space-y-5 border p-8"
-            style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}
+            className="line-card space-y-5 p-8"
           >
             <div className="space-y-1.5">
               <label className="flex items-center gap-2 text-sm font-medium">
@@ -90,7 +89,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@gmail.com"
                 autoFocus
-                className="form-input !rounded-none"
+                className="form-input"
                 required
               />
             </div>
@@ -99,7 +98,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
                 {error}
               </p>
             )}
-            <button type="submit" disabled={loading || !email} className="btn btn-primary w-full !rounded-none">
+            <button type="submit" disabled={loading || !email} className="btn btn-green w-full">
               {loading ? <RefreshCw size={15} className="animate-spin" /> : <Mail size={15} />}
               {loading ? 'Sending…' : 'Send one-time code'}
             </button>
@@ -113,8 +112,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         ) : (
           <form
             onSubmit={verifyOtp}
-            className="space-y-5 border p-8"
-            style={{ borderColor: 'var(--line)', background: 'var(--paper-dim)' }}
+            className="line-card space-y-5 p-8"
           >
             <div className="space-y-1.5">
               <label className="flex items-center gap-2 text-sm font-medium">
@@ -129,7 +127,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 placeholder="••••••"
                 autoFocus
-                className="form-input !rounded-none tracking-[0.35em] text-center text-lg font-semibold"
+                className="form-input tracking-[0.35em] text-center text-lg font-semibold"
                 required
               />
               {hint && (
@@ -146,14 +144,14 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
             <button
               type="submit"
               disabled={loading || code.length !== 6}
-              className="btn btn-primary w-full !rounded-none"
+              className="btn btn-green w-full"
             >
               {loading ? <RefreshCw size={15} className="animate-spin" /> : <ShieldCheck size={15} />}
               {loading ? 'Verifying…' : 'Enter console'}
             </button>
             <button
               type="button"
-              className="btn btn-ghost w-full !rounded-none"
+              className="btn btn-line w-full"
               onClick={() => {
                 setStep('email');
                 setCode('');
