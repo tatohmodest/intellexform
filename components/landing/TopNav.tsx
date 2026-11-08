@@ -106,7 +106,9 @@ export default function TopNav() {
       >
         <div className="mx-auto flex w-full max-w-[1360px] items-center justify-between gap-3 overflow-visible px-5 py-3 sm:gap-4 sm:px-8 sm:py-4">
           <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
-            <BrandLogo href="/" height={34} priority onClick={() => setOpen(false)} />
+            <span className="shrink-0">
+              <BrandLogo href="/" height={34} priority onClick={() => setOpen(false)} />
+            </span>
             <HeaderSearch />
           </div>
 
@@ -190,7 +192,7 @@ export default function TopNav() {
                 <Link
                   key={l.href}
                   href={l.href}
-                  className="rounded-lg px-3 py-2 text-sm opacity-75 transition-opacity hover:opacity-100"
+                  className="hidden rounded-lg px-3 py-2 text-sm opacity-75 transition-opacity hover:opacity-100 xl:inline-flex"
                 >
                   {t(l.label)}
                 </Link>
