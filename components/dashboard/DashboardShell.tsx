@@ -727,13 +727,13 @@ export default function DashboardShell({
       {!inCampus && (
         <Link
           href="/dashboard/tutor"
-          className="mb-3 mt-2 block shrink-0 overflow-hidden rounded-2xl bg-[var(--pastel-sky)] transition-transform hover:-translate-y-0.5"
+          className="mb-3 mt-2 block shrink-0 overflow-hidden rounded-2xl border border-[#e7e9ec] bg-white transition-colors hover:border-[rgba(0,179,105,0.5)]"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/way_selfpaced.webp" alt="" className="illo h-20 w-full object-cover object-top" />
+          <img src="/doodles/coffee.svg" alt="" className="mx-auto h-20 w-auto pt-2" />
           <div className="px-3.5 pb-3.5 pt-1">
-            <div className="text-[14px] font-bold text-[var(--navy)]">{t('Stuck on something?')}</div>
-            <div className="mt-0.5 text-[12px] text-[var(--navy)]/70">{t('Ask the AI Tutor any time.')}</div>
+            <div className="text-[14px] font-medium text-[var(--ink)]">{t('Stuck on something?')}</div>
+            <div className="mt-0.5 text-[12px] text-[#4b5563]">{t('Ask the AI Tutor any time.')}</div>
           </div>
         </Link>
       )}
@@ -784,20 +784,20 @@ export default function DashboardShell({
     : undefined;
 
   return (
-    <div className="site dash min-h-screen bg-[#fbfaf7]" style={themeStyle}>
+    <div className="site dash min-h-screen bg-white" style={themeStyle} data-campus={inCampus ? 'true' : undefined}>
       <aside
         className={`fixed inset-y-0 left-0 z-30 hidden h-dvh max-h-dvh w-[240px] flex-col overflow-hidden px-4 py-6 ${collapsed ? '' : 'lg:flex'}`}
-        style={{ background: inCampus ? `${accent}08` : '#fbfaf7' }}
+        style={{ background: inCampus ? `${accent}08` : '#ffffff' }}
       >
         {sidebarInner}
       </aside>
 
       <header
         className={`sticky top-0 z-20 flex h-[64px] items-center gap-3 px-4 backdrop-blur lg:pr-8 ${collapsed ? 'lg:pl-6' : 'lg:pl-[264px]'}`}
-        style={{ background: inCampus ? `${accent}0d` : 'rgba(251,250,247,0.92)' }}
+        style={{ background: inCampus ? `${accent}0d` : 'rgba(255,255,255,0.9)' }}
       >
         <button
-          className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--paper-dim)] lg:flex"
+          className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#e7e9ec] bg-white lg:flex"
           onClick={toggleSidebar}
           aria-label={t('Toggle navigation')}
           aria-pressed={collapsed}
@@ -870,7 +870,7 @@ export default function DashboardShell({
       <PushAlertsBanner accent={accent} />
 
       <main className={`px-2 pb-28 pt-2 sm:px-4 lg:pb-6 lg:pr-6 ${collapsed ? 'lg:pl-4' : 'lg:pl-[252px]'}`}>
-        <div className="min-h-[calc(100dvh-90px)] rounded-[28px] bg-[#f2f1ec] px-3 pb-10 pt-5 sm:px-6 sm:pt-7 lg:px-8">
+        <div className="min-h-[calc(100dvh-90px)] rounded-[24px] border border-[#e7e9ec] bg-[#fafbfa] px-3 pb-10 pt-5 sm:px-6 sm:pt-7 lg:px-8">
           <OngoingClassBanner accent={accent} />
           <CampusReturnBanner accent={accent} />
           {children}

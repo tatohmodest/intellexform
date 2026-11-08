@@ -229,7 +229,7 @@ export default function MobileBottomNav({
           role="dialog"
           aria-modal="true"
           aria-label={t('Menu')}
-          className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[86dvh] max-w-lg flex-col rounded-t-[28px] bg-[#fbfaf7] shadow-[0_-20px_60px_-20px_rgba(18,50,79,0.45)] lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[86dvh] max-w-lg flex-col rounded-t-[24px] border-t border-[#e7e9ec] bg-white shadow-[0_-20px_60px_-20px_rgba(18,50,79,0.45)] lg:hidden"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
           <div className="flex shrink-0 items-center justify-between px-5 pb-2 pt-4">

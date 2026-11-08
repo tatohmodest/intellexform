@@ -53,7 +53,7 @@ export default async function MentorshipPage() {
             </Link>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/hero_mentor.webp" alt="" className="hidden w-full rounded-2xl md:block" />
+          <img src="/doodles/loving.svg" alt="" className="mx-auto hidden h-48 w-auto md:block" />
         </div>
       ) : (
         <MentorDirectory mentors={mentors} bookings={bookingViews} />

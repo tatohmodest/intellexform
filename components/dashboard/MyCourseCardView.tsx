@@ -122,7 +122,7 @@ export default function MyCourseCardView({ course: c }: { course: MyCourseCard }
               <span className="font-bold text-[var(--green-deep)]">{Math.round(c.pct)}%</span>
             </div>
             <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-[var(--paper-dim)]">
-              <div className="h-full rounded-full bg-[var(--navy)]" style={{ width: `${Math.min(100, Math.max(c.pct, 2))}%` }} />
+              <div className="h-full rounded-full bg-[var(--green)]" style={{ width: `${Math.min(100, Math.max(c.pct, 2))}%` }} />
             </div>
           </div>
         )}

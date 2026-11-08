@@ -2,17 +2,38 @@ import type { ReactNode } from 'react';
 
 export type HeaderTone = 'sky' | 'mint' | 'butter' | 'lilac' | 'peach';
 
-const TONE_BG: Record<HeaderTone, string> = {
-  sky: 'var(--pastel-sky)',
-  mint: 'var(--pastel-mint)',
-  butter: 'var(--pastel-butter)',
-  lilac: 'var(--pastel-lilac)',
-  peach: '#ffe6d9',
+/**
+ * Pages still pass the old flat illustrations; each maps to the Open Doodles line drawing
+ * that replaced it, so the dashboard matches the public site without touching every page.
+ */
+const ART_DOODLE: Record<string, string> = {
+  '/eco_cert.webp': 'unboxing',
+  '/illustrations/launching.png': 'jumping',
+  '/join_cta.webp': 'selfie',
+  '/eco_learning.webp': 'sittingreading',
+  '/illustrations/multitasking.png': 'levitate',
+  '/way_live.webp': 'sitting',
+  '/mentor_session.webp': 'doggie',
+  '/hero_illustration.webp': 'sleek',
+  '/hero_career.webp': 'sprinting',
+  '/eco_books.webp': 'reading',
+  '/hero_mentor.webp': 'loving',
+  '/way_selfpaced.webp': 'readingside',
+  '/illustrations/reading.png': 'laying',
+  '/illustrations/studying.png': 'plant',
+  '/eco_intern.webp': 'float',
+  '/illustrations/teaching.png': 'coffee',
 };
 
+export function doodleFor(art: string) {
+  if (art.startsWith('/doodles/')) return art;
+  return `/doodles/${ART_DOODLE[art] || 'meditating'}.svg`;
+}
+
 /**
- * Shared dashboard page header: a calm pastel banner with title, one-line description,
- * actions and an optional flat illustration on the right (hidden on small screens).
+ * Shared dashboard page header: a white hairline banner with title, one-line description,
+ * actions and a line-art doodle on the right (hidden on small screens).
+ * `tone` is kept for existing callers; the airy system uses one surface everywhere.
  */
 export default function PageHeader({
   eyebrow,
@@ -21,36 +42,47 @@ export default function PageHeader({
   actions,
   children,
   art,
-  tone = 'sky',
 }: {
   eyebrow?: ReactNode;
   title: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
   children?: ReactNode;
-  /** Path to a flat illustration in /public (blends into the tone via multiply). */
+  /** Old illustration path or a /doodles/*.svg path; rendered as a line-art doodle. */
   art?: string;
   tone?: HeaderTone;
 }) {
   return (
-    <header
-      className="relative mb-6 overflow-hidden rounded-[28px] px-5 py-6 sm:mb-8 sm:px-8 sm:py-8"
-      style={{ background: TONE_BG[tone] }}
-    >
+    <header className="relative mb-6 overflow-hidden rounded-[20px] border border-[#e7e9ec] bg-white px-5 py-6 sm:mb-8 sm:px-8 sm:py-8">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 right-0 hidden w-[46%] opacity-70 md:block"
+        style={{
+          backgroundImage: 'radial-gradient(#e7e9ec 1px, transparent 1px)',
+          backgroundSize: '18px 18px',
+          maskImage: 'linear-gradient(to left, #000 40%, transparent)',
+          WebkitMaskImage: 'linear-gradient(to left, #000 40%, transparent)',
+        }}
+      />
       {art ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={art}
+          src={doodleFor(art)}
           alt=""
           aria-hidden
-          className="illo pointer-events-none absolute -bottom-3 right-2 hidden h-[118%] max-w-[44%] object-contain object-bottom md:block"
+          className="pointer-events-none absolute bottom-2 right-6 hidden h-[88%] max-h-[190px] max-w-[36%] select-none object-contain object-bottom md:block"
         />
       ) : null}
-      <div className={`relative flex flex-wrap items-end justify-between gap-4 ${art ? 'md:max-w-[58%]' : ''}`}>
+      <div className={`relative flex flex-wrap items-end justify-between gap-4 ${art ? 'md:max-w-[60%]' : ''}`}>
         <div className="min-w-0">
-          {eyebrow ? <div className="mb-2 text-[13px] font-semibold text-[var(--green-deep)]">{eyebrow}</div> : null}
-          <h1 className="font-display text-[26px] font-extrabold leading-[1.1] text-[var(--navy)] sm:text-[34px]">{title}</h1>
-          {description ? <p className="mt-2 max-w-[520px] text-[15px] leading-relaxed text-[var(--navy)]/70">{description}</p> : null}
+          {eyebrow ? (
+            <div className="mb-2 inline-flex items-center gap-2 text-[13px] font-medium text-[#4b5563]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--green)]" />
+              {eyebrow}
+            </div>
+          ) : null}
+          <h1 className="text-[26px] leading-[1.1] text-[var(--ink)] sm:text-[34px]">{title}</h1>
+          {description ? <p className="mt-2 max-w-[520px] text-[15px] leading-relaxed text-[#4b5563]">{description}</p> : null}
         </div>
         {actions ? <div className={`flex flex-wrap gap-2 ${art ? 'w-full' : ''}`}>{actions}</div> : null}
       </div>

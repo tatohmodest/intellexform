@@ -495,7 +495,7 @@ export default function ClassRoomsClient({
               </p>
             </div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/way_live.webp" alt="" className="hidden w-full rounded-2xl md:block" />
+            <img src="/doodles/sitting.svg" alt="" className="mx-auto hidden h-48 w-auto md:block" />
           </div>
         ) : (
           <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -505,7 +505,7 @@ export default function ClassRoomsClient({
                   type="button"
                   onClick={() => enterGroup(g.id)}
                   className="group flex h-full w-full flex-col rounded-3xl p-5 text-left transition-transform hover:-translate-y-1"
-                  style={{ background: ['var(--pastel-lilac)', 'var(--pastel-mint)', 'var(--pastel-sky)', 'var(--pastel-butter)', '#ffe6d9'][i % 5] }}
+                  style={{ background: ['var(--pastel-lilac)', 'var(--pastel-mint)', 'var(--pastel-sky)', 'var(--pastel-butter)', 'var(--pastel-sky)'][i % 5] }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[15px] font-extrabold text-[var(--navy)]">

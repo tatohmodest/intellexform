@@ -36,8 +36,8 @@ import { listNotifications } from '@/lib/learn/notifications';
 export const dynamic = 'force-dynamic';
 
 /** Rotating pastel surfaces, as in the reference dashboards. */
-const PASTELS = ['var(--pastel-sky)', 'var(--pastel-mint)', 'var(--pastel-butter)', 'var(--pastel-lilac)'];
-const DOTS = ['#7cc4f4', '#5fd39a', '#ffd25e', '#a99bf0'];
+const COURSE_DOODLES = ['readingside', 'sittingreading', 'reading', 'plant', 'laying', 'coffee'];
+const DOTS = ['#00b369', '#0C1116', '#9ca3af', '#5ce39a'];
 
 function firstName(name: string): string {
   return name.split(/\s+/)[0] || name;
@@ -72,10 +72,10 @@ export default async function DashboardOverview() {
   ]);
 
   const stats = [
-    { icon: Flame, label: 'Day streak', value: String(cc.stats.streak), bg: 'var(--pastel-butter)' },
-    { icon: Zap, label: 'XP earned', value: cc.stats.xp.toLocaleString(), bg: 'var(--pastel-mint)' },
-    { icon: Clock, label: 'This week', value: `${cc.stats.weeklyHours}h / ${cc.stats.weeklyGoalHours}h`, bg: 'var(--pastel-sky)' },
-    { icon: Trophy, label: 'Lessons done', value: String(cc.stats.lessonsDone), bg: 'var(--pastel-lilac)' },
+    { icon: Flame, label: 'Day streak', value: String(cc.stats.streak) },
+    { icon: Zap, label: 'XP earned', value: cc.stats.xp.toLocaleString() },
+    { icon: Clock, label: 'This week', value: `${cc.stats.weeklyHours}h / ${cc.stats.weeklyGoalHours}h` },
+    { icon: Trophy, label: 'Lessons done', value: String(cc.stats.lessonsDone) },
   ];
   const assignmentStats = [
     { label: 'Due today', value: cc.assignmentBuckets.due_today.length },
@@ -101,37 +101,41 @@ export default async function DashboardOverview() {
   return (
     <div className="mx-auto max-w-[1180px] overflow-x-hidden">
       {/* ── Welcome banner ────────────────────────────────────── */}
-      <section className="relative grid overflow-hidden rounded-[28px] bg-[var(--pastel-sky)] md:grid-cols-[1.3fr_1fr]">
+      <section className="relative grid overflow-hidden rounded-[20px] border border-[#e7e9ec] bg-white md:grid-cols-[1.3fr_1fr]">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 opacity-70 md:block"
+          style={{
+            backgroundImage: 'radial-gradient(#e7e9ec 1px, transparent 1px)',
+            backgroundSize: '18px 18px',
+            maskImage: 'linear-gradient(to left, #000 40%, transparent)',
+            WebkitMaskImage: 'linear-gradient(to left, #000 40%, transparent)',
+          }}
+        />
         <div className="relative z-10 p-6 sm:p-8">
-          <p className="text-[14px] font-medium text-[var(--navy)]/65">{greeting()}</p>
-          <h1 className="mt-1 text-[30px] font-extrabold leading-tight text-[var(--navy)] sm:text-[38px]">
-            Hi, {name} 👋
-          </h1>
-          <p className="mt-2 max-w-[440px] text-[15.5px] text-[var(--navy)]/75">
+          <p className="inline-flex items-center gap-2 text-[13.5px] font-medium text-[#4b5563]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--green)]" />
+            {greeting()}
+          </p>
+          <h1 className="mt-2 text-[32px] leading-tight sm:text-[42px]">Hi, {name}</h1>
+          <p className="mt-2 max-w-[440px] text-[15.5px] text-[#4b5563]">
             {subtitle || 'What would you like to learn today?'}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               href={cc.continueLearning[0]?.href || '/dashboard/courses'}
-              className="inline-flex items-center gap-2 rounded-xl bg-[var(--navy)] px-5 py-3 text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90"
+              className="btn btn-primary !px-5"
             >
               {cc.continueLearning.length ? 'Continue learning' : 'Get started'} <ArrowRight size={16} />
             </Link>
-            <Link
-              href="/programmes"
-              className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-[14.5px] font-semibold text-[var(--navy)] transition-colors hover:bg-white/80"
-            >
+            <Link href="/programmes" className="btn btn-ghost !px-5">
               Explore programmes
             </Link>
           </div>
         </div>
-        <div className="relative hidden md:block">
+        <div className="relative hidden items-end justify-center md:flex">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/way_selfpaced.webp"
-            alt=""
-            className="illo absolute bottom-0 right-0 h-[118%] max-w-none object-contain object-bottom"
-          />
+          <img src="/doodles/readingside.svg" alt="" className="relative h-[210px] w-auto select-none pb-3" />
         </div>
       </section>
 
@@ -141,7 +145,7 @@ export default async function DashboardOverview() {
           <Link
             key={q.href}
             href={q.href}
-            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-4 py-2 text-[13.5px] font-semibold text-[var(--navy)] shadow-[0_4px_14px_-10px_rgba(18,50,79,0.4)] transition-colors hover:bg-[var(--pastel-mint)]"
+            className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#e7e9ec] bg-white px-4 py-2 text-[13.5px] font-medium text-[var(--ink)] transition-colors hover:border-[rgba(0,179,105,0.5)]"
           >
             <q.icon size={15} /> {q.label}
           </Link>
@@ -151,13 +155,13 @@ export default async function DashboardOverview() {
       {/* Stats */}
       <section className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stats.map((s) => (
-          <div key={s.label} className="flex items-center gap-3.5 rounded-3xl p-4" style={{ background: s.bg }}>
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--navy)]">
-              <s.icon size={19} />
+          <div key={s.label} className="flex items-center gap-3.5 rounded-[20px] border border-[#e7e9ec] bg-white p-4">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#e7e9ec] bg-[#effaf4] text-[var(--green-deep)]">
+              <s.icon size={19} strokeWidth={1.75} />
             </span>
             <div className="min-w-0">
-              <p className="truncate font-display text-[20px] font-extrabold leading-none text-[var(--navy)]">{s.value}</p>
-              <p className="mt-1 truncate text-[12.5px] text-[var(--navy)]/65">{s.label}</p>
+              <p className="truncate text-[22px] font-medium leading-none tracking-[-0.03em]">{s.value}</p>
+              <p className="mt-1 truncate text-[12.5px] text-[#4b5563]">{s.label}</p>
             </div>
           </div>
         ))}
@@ -206,7 +210,7 @@ export default async function DashboardOverview() {
                   </div>
                 </div>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/eco_learning.webp" alt="" className="illo hidden h-full w-full object-cover sm:block" />
+                <img src="/doodles/sittingreading.svg" alt="" className="hidden h-40 w-auto justify-self-center sm:block" />
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -218,11 +222,9 @@ export default async function DashboardOverview() {
                       href={row.href}
                       className="group flex flex-col rounded-3xl bg-white p-4 transition-shadow hover:shadow-[0_18px_40px_-26px_rgba(18,50,79,0.55)]"
                     >
-                      <div
-                        className="relative flex h-28 items-center justify-center overflow-hidden rounded-2xl"
-                        style={{ background: PASTELS[i % PASTELS.length] }}
-                      >
-                        <BookOpen size={30} className="text-[var(--navy)]/60" />
+                      <div className="relative flex h-28 items-center justify-center overflow-hidden rounded-xl border border-[#e7e9ec] bg-[#fafbfa]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`/doodles/${COURSE_DOODLES[i % COURSE_DOODLES.length]}.svg`} alt="" className="h-24 w-auto select-none" />
                       </div>
                       <p className="mt-4 line-clamp-2 text-[15.5px] font-bold leading-snug text-[var(--navy)]">{row.course.title}</p>
                       <div className="mt-auto pt-4">
@@ -231,7 +233,7 @@ export default async function DashboardOverview() {
                           <span className="font-bold text-[var(--green-deep)]">{pct}%</span>
                         </div>
                         <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[var(--paper-dim)]">
-                          <div className="h-full rounded-full bg-[var(--navy)]" style={{ width: `${pct}%` }} />
+                          <div className="h-full rounded-full bg-[var(--green)]" style={{ width: `${pct}%` }} />
                         </div>
                         {row.nextTitle ? (
                           <p className="mt-3 truncate text-[12.5px] text-[var(--navy)]/70">
@@ -251,23 +253,24 @@ export default async function DashboardOverview() {
             <section>
               <SectionTitle title="Needs your attention" />
               <div className="grid gap-4 sm:grid-cols-2">
-                {cc.attention.map((a, i) => {
-                  const dark = a.severity === 'high' || i % 2 === 0;
+                {cc.attention.map((a) => {
+                  const urgent = a.severity === 'high';
                   return (
                     <Link
                       key={a.id}
                       href={a.href}
-                      className="group flex min-h-[150px] flex-col rounded-3xl p-5 transition-transform hover:-translate-y-0.5"
-                      style={dark ? { background: 'var(--navy)', color: '#fff' } : { background: 'var(--pastel-butter)', color: 'var(--navy)' }}
+                      className={`group flex min-h-[150px] flex-col rounded-[20px] border bg-white p-5 transition-colors ${
+                        urgent ? 'border-[#f3c3c4]' : 'border-[#e7e9ec] hover:border-[rgba(0,179,105,0.5)]'
+                      }`}
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <p className="text-[16px] font-bold leading-snug">{a.title}</p>
+                        <p className="text-[16px] font-medium leading-snug">{a.title}</p>
                         {a.severity === 'high' ? (
                           <span className="shrink-0 rounded-full bg-[#ff7a59] px-2.5 py-0.5 text-[11.5px] font-bold text-white">Urgent</span>
                         ) : null}
                       </div>
-                      <p className={`mt-1.5 line-clamp-2 text-[13.5px] ${dark ? 'text-white/70' : 'text-[var(--navy)]/70'}`}>{a.detail}</p>
-                      <span className="mt-auto inline-flex items-center gap-1.5 pt-4 text-[13.5px] font-semibold">
+                      <p className="mt-1.5 line-clamp-2 text-[13.5px] text-[#4b5563]">{a.detail}</p>
+                      <span className="mt-auto inline-flex items-center gap-1.5 pt-4 text-[13.5px] font-medium text-[var(--green-deep)]">
                         Open <ArrowUpRight size={15} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                       </span>
                     </Link>
@@ -281,19 +284,16 @@ export default async function DashboardOverview() {
             <section>
               <SectionTitle title={interests.length ? 'Recommended for you' : 'Explore'} href="/dashboard/courses" linkLabel="Courses" />
               <div className="grid gap-3 sm:grid-cols-2">
-                {cc.recommended.map((r, i) => (
+                {cc.recommended.map((r) => (
                   <Link
                     key={r.slug}
                     href={r.href}
-                    className="group flex items-center gap-3 rounded-2xl bg-white p-4 transition-colors hover:bg-[var(--pastel-mint)]"
+                    className="group flex items-center gap-3 rounded-2xl bg-white p-4 transition-colors hover:border-[rgba(0,179,105,0.5)]"
                   >
-                    <span
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[var(--navy)]"
-                      style={{ background: PASTELS[i % PASTELS.length] }}
-                    >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#e7e9ec] bg-[#effaf4] text-[var(--green-deep)]">
                       <BookOpen size={17} />
                     </span>
-                    <p className="min-w-0 flex-1 truncate font-semibold text-[var(--navy)]">{r.title}</p>
+                    <p className="min-w-0 flex-1 truncate font-medium">{r.title}</p>
                     <ArrowRight size={15} className="shrink-0 text-[var(--navy)] transition-transform group-hover:translate-x-0.5" />
                   </Link>
                 ))}
@@ -317,15 +317,12 @@ export default async function DashboardOverview() {
               </div>
             ) : (
               <ul className="space-y-3">
-                {cc.today.map((item, i) => (
+                {cc.today.map((item) => (
                   <li key={item.id}>
                     <Link
                       href={item.href}
-                      className="flex items-center gap-4 rounded-2xl py-3.5 pl-4 pr-3"
-                      style={{
-                        background: PASTELS[i % PASTELS.length],
-                        boxShadow: `inset 4px 0 0 ${item.urgency === 'now' ? '#e5484d' : 'var(--navy)'}`,
-                      }}
+                      className="flex items-center gap-4 rounded-2xl border border-[#e7e9ec] bg-white py-3.5 pl-4 pr-3"
+                      style={{ boxShadow: `inset 3px 0 0 ${item.urgency === 'now' ? '#e5484d' : 'var(--green)'}` }}
                     >
                       <div className="w-14 shrink-0 text-[14px] font-bold text-[var(--navy)]">{item.timeLabel}</div>
                       <div className="min-w-0 flex-1">
@@ -351,7 +348,7 @@ export default async function DashboardOverview() {
               {assignmentStats.map((a, i) => (
                 <div key={a.label} className="rounded-2xl bg-white p-4">
                   <p
-                    className="font-display text-[24px] font-extrabold leading-none"
+                    className="text-[26px] font-medium leading-none tracking-[-0.03em]"
                     style={{ color: a.alert && a.value > 0 ? '#e5484d' : 'var(--navy)' }}
                   >
                     {a.value}
@@ -415,14 +412,18 @@ export default async function DashboardOverview() {
           {/* Help card */}
           <Link
             href="/dashboard/tutor"
-            className="block overflow-hidden rounded-3xl bg-[var(--navy)] p-5 text-white transition-transform hover:-translate-y-0.5"
+            className="block overflow-hidden rounded-[20px] border border-[rgba(0,179,105,0.45)] bg-[#f3fbf7] p-5 transition-colors hover:border-[var(--green)]"
           >
-            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--pastel-butter)] text-[var(--navy)]">
-              <Sparkles size={19} />
-            </span>
-            <p className="mt-4 text-[17px] font-bold">Need a hand?</p>
-            <p className="mt-1 text-[13.5px] text-white/70">Ask the AI Tutor about any lesson, exercise or career question.</p>
-            <span className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-[13.5px] font-semibold text-[var(--navy)]">
+            <div className="flex items-start justify-between gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#e7e9ec] bg-white text-[var(--green-deep)]">
+                <Sparkles size={19} />
+              </span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/doodles/coffee.svg" alt="" className="h-20 w-auto select-none" />
+            </div>
+            <p className="mt-3 text-[17px] font-medium">Need a hand?</p>
+            <p className="mt-1 text-[13.5px] text-[#4b5563]">Ask the AI Tutor about any lesson, exercise or career question.</p>
+            <span className="btn btn-primary mt-4 !px-4 !py-2 text-[13.5px]">
               Open AI Tutor <ArrowRight size={14} />
             </span>
           </Link>
@@ -435,7 +436,7 @@ export default async function DashboardOverview() {
 function SectionTitle({ title, href, linkLabel }: { title: string; href?: string; linkLabel?: string }) {
   return (
     <div className="mb-4 flex items-center justify-between gap-3">
-      <h2 className="text-[20px] font-bold leading-tight text-[var(--navy)]">{title}</h2>
+      <h2 className="text-[21px] leading-tight">{title}</h2>
       {href ? (
         <Link href={href} className="inline-flex items-center gap-1 text-[13.5px] font-semibold text-[var(--green-deep)]">
           {linkLabel} <ArrowRight size={13} />
