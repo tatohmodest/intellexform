@@ -18,116 +18,130 @@ const PRINCIPLES = [
   {
     title: 'We sell competence, not content.',
     body: 'Content is everywhere. What is rare is someone who makes sure you can actually use it. Every part of a programme is built around you doing the work and getting told how to do it better.',
+    doodle: 'sittingreading',
   },
   {
     title: 'InTelleX is responsible for your teaching.',
     body: 'You do not browse tutors and hope. We select, approve and manage the instructors, and if something is not working, you tell InTelleX and we fix it.',
+    doodle: 'loving',
   },
   {
     title: 'We would rather be believed than impressive.',
     body: 'No guaranteed jobs, no invented numbers. We show you what happens week by week and the work our learners produce, and let you decide.',
+    doodle: 'meditating',
   },
 ];
 
+/** One doodle per benefit group, in BENEFIT_GROUPS order. */
+const GROUP_DOODLE: Record<string, string> = {
+  structure: 'readingside',
+  people: 'doggie',
+  proof: 'unboxing',
+  support: 'coffee',
+};
+
+function Doodle({ name, className = '' }: { name: string; className?: string }) {
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={`/doodles/${name}.svg`} alt="" className={`doodle ${className}`} loading="lazy" />;
+}
+
 export default function WhyIntellexPage() {
   return (
-    <div className="site">
+    <div className="site airy">
       <TopNav />
 
-      <section className="px-3 pt-3 sm:px-5 sm:pt-4">
-        <div className="relative mx-auto max-w-[1360px] overflow-hidden rounded-[32px] bg-[var(--pastel-butter)] px-6 py-16 sm:px-12 sm:py-24 lg:px-16">
-          <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-white/50" />
-          <div className="relative max-w-[820px]">
-            <div className="text-[13px] font-semibold text-[var(--green-deep)]">Why InTelleX</div>
-            <h1 className="mt-3 text-[42px] font-extrabold leading-[1.03] text-[var(--navy)] sm:text-[64px]">
-              The difference is a person paying attention.
-            </h1>
-            <p className="mt-6 max-w-[620px] text-[17px] leading-relaxed text-[var(--navy)]/75 sm:text-[18px]">
-              Most people who try to learn a skill online stop somewhere around week three. Not because the videos were
-              bad, but because nobody noticed they stopped. InTelleX is built so somebody always notices.
+      <section className="wrap !max-w-[1200px] pb-16 pt-12 sm:pt-20">
+        <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
+          <div>
+            <div className="eyebrow">Why InTelleX</div>
+            <h1 className="mt-5 text-[44px] leading-[1.02] sm:text-[64px]">The difference is a person paying attention.</h1>
+            <p className="mt-6 max-w-[520px] text-[16px] leading-relaxed text-[#4b5563]">
+              Most people who try to learn a skill online stop somewhere around week three. Not because the videos were bad,
+              but because nobody noticed they stopped. InTelleX is built so somebody always notices.
             </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/programmes" className="btn btn-green !px-6">
+                Find your programme <ArrowRight size={16} />
+              </Link>
+              <Link href="/pricing" className="btn btn-line !px-6">
+                Compare options
+              </Link>
+            </div>
+          </div>
+          <div className="line-card flex items-center justify-center p-8 sm:p-12">
+            <Doodle name="readingside" className="w-full max-w-[460px]" />
           </div>
         </div>
       </section>
 
       {/* Principles */}
-      <section className="py-20 sm:py-24">
-        <div className="wrap !max-w-[1280px]">
-          <div className="grid gap-4 lg:grid-cols-3">
-            {PRINCIPLES.map((p, i) => (
-              <div key={p.title} className="rounded-[28px] bg-[var(--paper-dim)] p-7 sm:p-8">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--green)] text-[15px] font-bold text-white">
-                  {i + 1}
-                </span>
-                <h2 className="mt-5 text-[22px] font-bold leading-snug text-[var(--navy)]">{p.title}</h2>
-                <p className="mt-3 text-[15px] leading-relaxed text-[var(--ink-soft)]">{p.body}</p>
-              </div>
-            ))}
-          </div>
+      <section className="wrap !max-w-[1200px] pb-24">
+        <div className="grid gap-4 lg:grid-cols-3">
+          {PRINCIPLES.map((p, i) => (
+            <div key={p.title} className="line-card flex flex-col p-7">
+              <span className="text-[14px] font-medium text-[var(--green-deep)]">0{i + 1}</span>
+              <h2 className="mt-3 text-[22px] leading-snug">{p.title}</h2>
+              <p className="mt-3 text-[14.5px] leading-relaxed text-[#4b5563]">{p.body}</p>
+              <Doodle name={p.doodle} className="mx-auto mt-auto h-40 w-auto pt-6" />
+            </div>
+          ))}
         </div>
       </section>
 
       {/* Comparison table */}
-      <section className="pb-20 sm:pb-28">
-        <div className="wrap !max-w-[1280px]">
-          <div className="max-w-[680px]">
-            <div className="text-[13px] font-semibold text-[var(--green-deep)]">Three ways to learn the same skill</div>
-            <h2 className="mt-2 text-[32px] font-bold leading-[1.1] text-[var(--navy)] sm:text-[44px]">Same topic. Very different outcome.</h2>
-          </div>
-          <div className="mt-10 overflow-x-auto rounded-[28px] bg-[var(--paper-dim)] p-2">
-            <table className="w-full min-w-[720px] border-separate border-spacing-0 text-left">
-              <thead>
-                <tr>
-                  <th className="p-4" />
-                  {COMPARE_COLUMNS.map((c, i) => (
-                    <th
-                      key={c}
-                      className={`p-4 text-[15px] font-bold ${i === 2 ? 'rounded-t-2xl bg-[var(--green)] text-white' : 'text-[var(--navy)]'}`}
+      <section className="wrap !max-w-[1200px] pb-24 sm:pb-32">
+        <div className="max-w-[640px]">
+          <div className="eyebrow">Three ways to learn the same skill</div>
+          <h2 className="mt-3 text-[34px] leading-[1.08] sm:text-[48px]">Same topic. Very different outcome.</h2>
+        </div>
+        <div className="line-card mt-10 overflow-x-auto p-2">
+          <table className="w-full min-w-[720px] border-separate border-spacing-0 text-left">
+            <thead>
+              <tr>
+                <th className="p-4" />
+                {COMPARE_COLUMNS.map((c, i) => (
+                  <th key={c} className={`p-4 text-[15px] font-medium ${i === 2 ? 'rounded-t-xl bg-[#f3fbf7] text-[var(--green-deep)]' : ''}`}>
+                    {c}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {COMPARE_ROWS.map((r, ri) => (
+                <tr key={r.label}>
+                  <th scope="row" className="border-t border-[#e7e9ec] p-4 text-[14px] font-medium">
+                    {r.label}
+                  </th>
+                  {r.values.map((v, i) => (
+                    <td
+                      key={i}
+                      className={`border-t border-[#e7e9ec] p-4 text-[14.5px] ${
+                        i === 2 ? `bg-[#f3fbf7] font-medium ${ri === COMPARE_ROWS.length - 1 ? 'rounded-b-xl' : ''}` : 'text-[#4b5563]'
+                      }`}
                     >
-                      {c}
-                    </th>
+                      {v}
+                    </td>
                   ))}
                 </tr>
-              </thead>
-              <tbody>
-                {COMPARE_ROWS.map((r, ri) => (
-                  <tr key={r.label}>
-                    <th scope="row" className="border-t border-black/5 p-4 text-[14px] font-semibold text-[var(--navy)]">
-                      {r.label}
-                    </th>
-                    {r.values.map((v, i) => (
-                      <td
-                        key={i}
-                        className={`border-t p-4 text-[14.5px] ${
-                          i === 2
-                            ? `border-white/20 bg-[var(--green)] font-semibold text-white ${ri === COMPARE_ROWS.length - 1 ? 'rounded-b-2xl' : ''}`
-                            : 'border-black/5 text-[var(--ink-soft)]'
-                        }`}
-                      >
-                        {v}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-4 text-[14px] text-[var(--ink-soft)]">
-            Free tutorials are genuinely useful. We publish{' '}
-            <Link href="/tutorials" className="font-semibold text-[var(--green-deep)] hover:underline">
-              free tutorials
-            </Link>{' '}
-            ourselves. They are a great place to start, and a hard place to finish.
-          </p>
+              ))}
+            </tbody>
+          </table>
         </div>
+        <p className="mt-4 text-[14px] text-[#4b5563]">
+          Free tutorials are genuinely useful. We publish{' '}
+          <Link href="/tutorials" className="font-medium text-[var(--green-deep)] hover:underline">
+            free tutorials
+          </Link>{' '}
+          ourselves. They are a great place to start, and a hard place to finish.
+        </p>
       </section>
 
       {/* Week by week */}
-      <section className="px-3 sm:px-5">
-        <div className="mx-auto max-w-[1360px] rounded-[32px] bg-[var(--pastel-mint)] px-5 py-16 sm:px-12 lg:px-16 lg:py-24">
-          <div className="max-w-[680px]">
-            <div className="text-[13px] font-semibold text-[var(--green-deep)]">How it works in practice</div>
-            <h2 className="mt-2 text-[32px] font-bold leading-[1.1] text-[var(--navy)] sm:text-[44px]">From first message to finished project.</h2>
+      <section className="border-y border-[#e7e9ec] bg-[#fafbfa] py-24 sm:py-32">
+        <div className="wrap !max-w-[1200px]">
+          <div className="max-w-[640px]">
+            <div className="eyebrow">How it works in practice</div>
+            <h2 className="mt-3 text-[34px] leading-[1.08] sm:text-[48px]">From first message to finished project.</h2>
           </div>
           <div className="mt-12">
             <ProgrammeJourney />
@@ -136,70 +150,69 @@ export default function WhyIntellexPage() {
       </section>
 
       {/* Benefits in detail */}
-      <section className="py-20 sm:py-28">
-        <div className="wrap !max-w-[1280px]">
-          <div className="max-w-[680px]">
-            <div className="text-[13px] font-semibold text-[var(--green-deep)]">What you get</div>
-            <h2 className="mt-2 text-[32px] font-bold leading-[1.1] text-[var(--navy)] sm:text-[44px]">Everything, in plain words.</h2>
-          </div>
-          <div className="mt-12 flex flex-col gap-4">
-            {BENEFIT_GROUPS.map((g) => (
-              <div key={g.id} className="grid gap-6 rounded-[28px] p-7 sm:p-9 lg:grid-cols-[300px_1fr]" style={{ background: g.bg }}>
+      <section className="wrap !max-w-[1200px] py-24 sm:py-32">
+        <div className="max-w-[640px]">
+          <div className="eyebrow">What you get</div>
+          <h2 className="mt-3 text-[34px] leading-[1.08] sm:text-[48px]">Everything, in plain words.</h2>
+        </div>
+        <div className="mt-12 grid gap-4 md:grid-cols-2">
+          {BENEFIT_GROUPS.map((g) => (
+            <div key={g.id} className="line-card flex flex-col p-7 sm:p-8">
+              <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="text-[26px] font-extrabold leading-tight text-[var(--navy)]">{g.title}</h3>
-                  <p className="mt-1 text-[15px] text-[var(--navy)]/65">{g.lead}</p>
+                  <h3 className="text-[24px]">{g.title}</h3>
+                  <p className="mt-1 text-[14.5px] text-[#4b5563]">{g.lead}</p>
                 </div>
-                <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {g.items.map((b) => (
-                    <li key={b.title} className="rounded-2xl bg-white/75 p-5">
-                      <div className="flex items-center gap-2 text-[16px] font-bold text-[var(--navy)]">
-                        <Check size={16} strokeWidth={3} className="shrink-0 text-[var(--green-deep)]" />
-                        {b.title}
-                      </div>
-                      <p className="mt-1.5 text-[14px] leading-relaxed text-[var(--navy)]/70">{b.body}</p>
-                    </li>
-                  ))}
-                </ul>
+                <Doodle name={GROUP_DOODLE[g.id]} className="h-24 w-auto shrink-0" />
               </div>
-            ))}
-          </div>
+              <ul className="mt-6 flex flex-col">
+                {g.items.map((b) => (
+                  <li key={b.title} className="border-t border-[#e7e9ec] py-4">
+                    <div className="flex items-center gap-2 text-[15.5px] font-medium">
+                      <Check size={16} strokeWidth={2.5} className="shrink-0 text-[var(--green-deep)]" />
+                      {b.title}
+                    </div>
+                    <p className="mt-1 pl-6 text-[14px] leading-relaxed text-[#4b5563]">{b.body}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* Not for */}
-      <section className="pb-20 sm:pb-28">
-        <div className="wrap !max-w-[1280px]">
-          <div className="rounded-[32px] bg-[var(--navy)] p-7 text-white sm:p-12">
-            <div className="text-[13px] font-semibold text-[var(--pastel-mint)]">Honestly</div>
-            <h2 className="mt-2 max-w-[640px] text-[32px] font-bold leading-[1.1] text-white sm:text-[42px]">InTelleX is not for you if…</h2>
-            <div className="mt-10 grid gap-4 md:grid-cols-3">
-              {NOT_FOR.map((n) => (
-                <div key={n.title} className="rounded-3xl bg-white/[0.07] p-6">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10">
-                    <X size={16} />
-                  </span>
-                  <h3 className="mt-4 text-[18px] font-bold text-white">{n.title}</h3>
-                  <p className="mt-2 text-[14.5px] leading-relaxed text-white/70">{n.body}</p>
-                </div>
-              ))}
+      <section className="wrap !max-w-[1200px] pb-24 sm:pb-32">
+        <div className="max-w-[640px]">
+          <div className="eyebrow">Honestly</div>
+          <h2 className="mt-3 text-[34px] leading-[1.08] sm:text-[48px]">InTelleX is not for you if…</h2>
+        </div>
+        <div className="mt-10 grid gap-4 md:grid-cols-3">
+          {NOT_FOR.map((n) => (
+            <div key={n.title} className="line-card p-6">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e7e9ec] bg-[#f6f7f8]">
+                <X size={16} />
+              </span>
+              <h3 className="mt-4 text-[18px]">{n.title}</h3>
+              <p className="mt-2 text-[14px] leading-relaxed text-[#4b5563]">{n.body}</p>
             </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      <section className="px-3 pb-6 sm:px-5">
-        <div className="mx-auto flex max-w-[1360px] flex-col items-start gap-6 rounded-[32px] bg-[var(--pastel-sky)] px-7 py-14 sm:px-14 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-[34px] font-extrabold leading-tight text-[var(--navy)] sm:text-[44px]">Still deciding? Good.</h2>
-            <p className="mt-2 max-w-[520px] text-[16px] text-[var(--navy)]/70">
-              Compare what each option includes, or tell us about your goal and we will recommend one.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/pricing" className="btn btn-dark !px-6">
-              Compare options <ArrowRight size={16} />
+      <section className="wrap !max-w-[1200px] pb-16">
+        <div className="line-card relative overflow-hidden px-6 py-16 text-center">
+          <Doodle name="plant" className="absolute -bottom-2 left-4 hidden w-[170px] lg:block" />
+          <Doodle name="float" className="absolute -right-2 bottom-2 hidden w-[230px] lg:block" />
+          <h2 className="text-[34px] leading-tight sm:text-[48px]">Still deciding? Good.</h2>
+          <p className="mx-auto mt-3 max-w-[480px] text-[15.5px] text-[#4b5563]">
+            Compare what each option includes, or tell us about your goal and we will recommend one.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Link href="/pricing" className="btn btn-line !px-6">
+              Compare options
             </Link>
-            <a href={orientationWhatsappLink()} target="_blank" rel="noopener noreferrer" className="btn btn-primary !px-6">
+            <a href={orientationWhatsappLink()} target="_blank" rel="noopener noreferrer" className="btn btn-green !px-6">
               <MessageCircle size={16} /> Ask us on WhatsApp
             </a>
           </div>
