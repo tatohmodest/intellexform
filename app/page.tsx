@@ -40,7 +40,6 @@ const TOOLS = [
   { name: 'MongoDB', src: DEVICON('mongodb') },
   { name: 'Flutter', src: DEVICON('flutter') },
   { name: 'Django', src: DEVICON('django', 'django-plain') },
-  { name: 'Pandas', src: DEVICON('pandas') },
   { name: 'Linux', src: DEVICON('linux') },
 ];
 
@@ -194,14 +193,19 @@ export default async function HomePage() {
           {[TILES_TOP, TILES_BOTTOM].map((row, r) => (
             <div key={r} className={`marquee gap-5 ${r ? 'marquee-rev' : ''}`}>
               {[...row, ...row].map((d, i) => (
-                <div key={`${d}-${i}`} className="line-card flex h-[200px] w-[230px] shrink-0 items-center justify-center !border-[rgba(0,179,105,0.35)] p-4">
-                  <Doodle name={d} className="max-h-full w-full object-contain" />
+                <div
+                  key={`${d}-${i}`}
+                  className={`line-card flex h-[230px] w-[240px] shrink-0 justify-center overflow-hidden !border-[rgba(0,179,105,0.35)] px-4 ${
+                    r ? 'items-end pb-0' : 'items-start pt-3'
+                  }`}
+                >
+                  <Doodle name={d} className="h-[150px] w-full object-contain" />
                 </div>
               ))}
             </div>
           ))}
         </div>
-        <div className="frost absolute inset-x-0 top-1/2 flex -translate-y-1/2 flex-col items-center px-5 py-12 text-center sm:py-14">
+        <div className="frost absolute inset-x-0 top-1/2 flex -translate-y-1/2 flex-col items-center px-5 py-10 text-center sm:py-12">
           <h2 className="max-w-[640px] text-[36px] leading-[1.05] sm:text-[52px]">Why pay us when YouTube is free?</h2>
           <p className="mt-4 max-w-[520px] text-[15.5px] leading-relaxed text-[#4b5563]">
             The information is free. What isn&apos;t free is a person who decides what you learn next, checks what you build and

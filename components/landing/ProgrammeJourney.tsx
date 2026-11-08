@@ -92,7 +92,7 @@ export default function ProgrammeJourney() {
           className="pointer-events-none absolute inset-0 opacity-60"
           style={{ backgroundImage: 'radial-gradient(#e7e9ec 1px, transparent 1px)', backgroundSize: '18px 18px' }}
         />
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={phase.id}
             initial={{ opacity: 0, y: 16, rotate: -1.5 }}
