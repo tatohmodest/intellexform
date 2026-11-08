@@ -1,7 +1,6 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { motion } from 'framer-motion';
 import { Check, ShieldCheck } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 import { LaptopReview } from '@/components/landing/LineArt';
@@ -76,12 +75,7 @@ export default function AuthChrome({
       </div>
 
       <div className="flex flex-1 items-center justify-center bg-white px-6 py-12">
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="w-full max-w-[420px]"
-        >
+        <div className="w-full max-w-[420px]">
           <div className="mb-10 lg:hidden">
             <BrandLogo href="/" height={28} />
           </div>
@@ -93,7 +87,7 @@ export default function AuthChrome({
           </p>
           {children}
           {footer}
-        </motion.div>
+        </div>
       </div>
     </div>
   );
