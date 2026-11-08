@@ -21,7 +21,7 @@ import { databaseModeFromDeployment, deploymentFromDatabaseMode, isValidDatabase
 import { getDb } from '@/lib/repo';
 import { slugify } from '@/lib/learn/ecosystem';
 import { platformCnameTarget } from '@/lib/learn/institutionDomains';
-import { syncMongoLearnersToPrisma } from '@/lib/db/identity';
+import { syncMongoLearnersInBackground } from '@/lib/db/identity';
 import {
   getTenantDatabaseConfig,
   setTenantDatabaseStrategy,
@@ -148,10 +148,8 @@ async function mirrorInstitutionToMongo(inst: {
 
 export async function getPlatformOverview() {
   await ensurePlatformSchema().catch(() => {});
-  // Keep user counts aligned with live OAuth registrations in Mongo.
-  await syncMongoLearnersToPrisma(800).catch((err) =>
-    console.error('overview learner sync failed:', err),
-  );
+  // Keep user counts aligned with live OAuth registrations; runs in the background, throttled.
+  syncMongoLearnersInBackground(800);
 
   const [
     institutions,
@@ -1095,10 +1093,8 @@ export async function listPersonnel(opts?: {
   role?: string;
   take?: number;
 }) {
-  // Ensure Mongo OAuth registrations exist in Supabase before listing.
-  await syncMongoLearnersToPrisma(800).catch((err) =>
-    console.error('personnel learner sync failed:', err),
-  );
+  // Bring new OAuth registrations into the list; runs in the background, throttled.
+  syncMongoLearnersInBackground(800);
 
   const where: Prisma.UserWhereInput = {};
   if (opts?.banned === true) where.bannedAt = { not: null };

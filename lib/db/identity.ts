@@ -87,6 +87,27 @@ export async function upsertPrismaUserFromOAuth(profile: LBProfile) {
  * Backfill Prisma Users from Mongo `learners` so existing registrations
  * appear in Platform Admin. Safe to call on each personnel list (batched).
  */
+let lastLearnerSyncAt = 0;
+let learnerSyncInFlight: Promise<number> | null = null;
+
+/**
+ * Admin pages call this on every load. The full sync is up to `limit` sequential upserts,
+ * which pushed requests past the proxy timeout, so run it in the background at most once
+ * per `minIntervalMs` and never twice at the same time. Counts may lag by that interval.
+ */
+export function syncMongoLearnersInBackground(limit = 500, minIntervalMs = 10 * 60 * 1000): void {
+  if (learnerSyncInFlight || Date.now() - lastLearnerSyncAt < minIntervalMs) return;
+  lastLearnerSyncAt = Date.now();
+  learnerSyncInFlight = syncMongoLearnersToPrisma(limit)
+    .catch((err) => {
+      console.error('background learner sync failed:', err);
+      return 0;
+    })
+    .finally(() => {
+      learnerSyncInFlight = null;
+    });
+}
+
 export async function syncMongoLearnersToPrisma(limit = 500): Promise<number> {
   let synced = 0;
   try {
