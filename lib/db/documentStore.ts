@@ -446,6 +446,12 @@ function compilePartialFilter(filter: Filter): string {
 
 class DocumentCollection {
   private static indexes = new Map<string, Array<{ name: string; key: Record<string, number>; unique: boolean; sparse: boolean }>>();
+  /**
+   * Indexes already ensured by this process. Callers run createIndex on hot request paths;
+   * without this, every request issued CREATE INDEX, which takes a SHARE lock on app_documents
+   * and queued up until the connection pool was exhausted.
+   */
+  private static ensuredIndexes = new Map<string, Promise<void>>();
 
   constructor(private readonly name: string) {}
 
@@ -590,12 +596,28 @@ class DocumentCollection {
     if (options.unique) filters.push(...expressions.map((expr) => `${expr} IS NOT NULL AND ${expr} <> 'null'::jsonb`));
     if (options.partialFilterExpression) filters.push(compilePartialFilter(options.partialFilterExpression));
     const where = options.unique || options.partialFilterExpression ? ` WHERE ${filters.join(' AND ')}` : '';
-    await prisma.$executeRawUnsafe(
-      `CREATE ${uniqueness}INDEX IF NOT EXISTS "${indexName}" ON app_documents (collection, ${expressions.join(', ')})${where}`,
-    );
-    const metadata = DocumentCollection.indexes.get(this.name) || [];
-    metadata.push({ name: indexName, key: keys, unique: Boolean(options.unique), sparse: Boolean(options.sparse) });
-    DocumentCollection.indexes.set(this.name, metadata);
+    let ensured = DocumentCollection.ensuredIndexes.get(indexName);
+    if (!ensured) {
+      ensured = (async () => {
+        // Catalogue lookup takes no table lock; only build the index when it is really missing.
+        const existing = await prisma.$queryRawUnsafe<unknown[]>(
+          `SELECT 1 FROM pg_class WHERE relkind = 'i' AND relname = $1 LIMIT 1`,
+          indexName,
+        );
+        if (!existing.length) {
+          await prisma.$executeRawUnsafe(
+            `CREATE ${uniqueness}INDEX IF NOT EXISTS "${indexName}" ON app_documents (collection, ${expressions.join(', ')})${where}`,
+          );
+        }
+        const metadata = DocumentCollection.indexes.get(this.name) || [];
+        metadata.push({ name: indexName, key: keys, unique: Boolean(options.unique), sparse: Boolean(options.sparse) });
+        DocumentCollection.indexes.set(this.name, metadata);
+      })();
+      DocumentCollection.ensuredIndexes.set(indexName, ensured);
+      // A failed attempt (e.g. a transient timeout) may be retried by the next caller.
+      ensured.catch(() => DocumentCollection.ensuredIndexes.delete(indexName));
+    }
+    await ensured;
     return indexName;
   }
 
@@ -607,6 +629,7 @@ class DocumentCollection {
     if (!/^[a-zA-Z0-9_]+$/.test(name)) throw new Error('Invalid index name');
     const indexName = name.startsWith('app_docs_') ? name : `app_docs_${name}`;
     await prisma.$executeRawUnsafe(`DROP INDEX IF EXISTS "${indexName}"`);
+    DocumentCollection.ensuredIndexes.delete(indexName);
     DocumentCollection.indexes.set(this.name, (DocumentCollection.indexes.get(this.name) || []).filter((index) => index.name !== indexName));
     return { acknowledged: true };
   }
