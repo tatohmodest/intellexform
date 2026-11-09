@@ -64,7 +64,7 @@ function RichText({ text }: { text: string }) {
           return (
             <pre
               key={i}
-              className="mono my-3 overflow-x-auto p-4 text-[12.5px] leading-relaxed"
+              className="mono my-3 overflow-x-auto rounded-xl p-4 text-[12.5px] leading-relaxed"
               style={{ background: '#0C1116', color: '#d7e2ec' }}
             >
               <HighlightedCode code={code} language={language} />
@@ -110,8 +110,8 @@ function renderInlineTokens(line: string) {
       return (
         <code
           key={ti}
-          className="mono px-1.5 py-0.5 text-[12.5px]"
-          style={{ background: 'rgba(47, 111, 173, 0.10)', color: '#1f5fa8' }}
+          className="mono rounded px-1.5 py-0.5 text-[12.5px]"
+          style={{ background: '#f3fbf7', color: 'var(--green-deep)' }}
         >
           {tok.slice(1, -1)}
         </code>
@@ -264,7 +264,7 @@ export default function TutorChat() {
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p
-                className="font-mono text-[10.5px] uppercase tracking-[0.16em]"
+                className="text-[13px] font-medium"
                 style={{ color: 'var(--ink-soft)' }}
               >
                 InTelleX AI · session
@@ -277,7 +277,7 @@ export default function TutorChat() {
                 setMessages([]);
                 setInput('');
               }}
-              className="shrink-0 px-3 py-2 text-[12.5px] font-semibold transition-colors hover:bg-[var(--paper-dim)]"
+              className="shrink-0 rounded-[10px] border border-[#e7e9ec] bg-white px-3 py-2 text-[12.5px] font-medium transition-colors hover:bg-[#f6f7f8]"
               style={{ color: 'var(--ink-soft)' }}
             >
               New chat
@@ -310,19 +310,15 @@ export default function TutorChat() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.05 + i * 0.04, duration: 0.3 }}
                     onClick={() => send(s.prompt)}
-                    className="group flex h-full min-w-0 flex-col rounded-3xl p-4 text-left transition-transform hover:-translate-y-0.5"
-                    style={{ background: ['var(--pastel-sky)', 'var(--pastel-mint)', 'var(--pastel-butter)', 'var(--pastel-lilac)'][i % 4] }}
+                    className="group flex h-full min-w-0 flex-col rounded-[20px] border border-[#e7e9ec] bg-white p-4 text-left transition-colors hover:border-[rgba(0,179,105,0.5)] hover:bg-[#f3fbf7]"
                   >
                     <span
-                      className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-full"
-                      style={{
-                        background: 'rgba(255,255,255,0.75)',
-                        color: 'var(--ink)',
-                      }}
+                      className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#e7e9ec]"
+                      style={{ background: '#f3fbf7', color: 'var(--green-deep)' }}
                     >
                       <Icon size={16} />
                     </span>
-                    <span className="font-display text-[16px] font-semibold leading-snug sm:text-[17px]">
+                    <span className="font-display text-[16px] font-medium leading-snug sm:text-[17px]">
                       {s.label}
                     </span>
                     <span
@@ -332,7 +328,7 @@ export default function TutorChat() {
                       {s.prompt}
                     </span>
                     <span
-                      className="mt-3 text-[12px] font-semibold uppercase tracking-[0.1em]"
+                      className="mt-3 text-[13px] font-medium"
                       style={{ color: 'var(--green-deep)' }}
                     >
                       Ask this →
@@ -355,8 +351,8 @@ export default function TutorChat() {
                   {m.role === 'user' ? (
                     <div className="flex justify-end">
                       <div
-                        className="max-w-[88%] rounded-3xl rounded-br-md px-4 py-3 text-[14.5px] leading-relaxed text-white sm:max-w-[75%]"
-                        style={{ background: 'var(--navy, #12324f)' }}
+                        className="max-w-[88%] rounded-[20px] rounded-br-md border border-[rgba(0,179,105,0.45)] px-4 py-3 text-[14.5px] leading-relaxed sm:max-w-[75%]"
+                        style={{ background: '#f3fbf7', color: 'var(--ink)' }}
                       >
                         {m.content}
                       </div>
@@ -364,14 +360,14 @@ export default function TutorChat() {
                   ) : (
                     <div className="flex gap-3">
                       <span
-                        className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-                        style={{ background: 'var(--pastel-lilac)', color: 'var(--ink)' }}
+                        className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#3fd283]"
+                        style={{ background: '#5ce39a', color: 'var(--ink)' }}
                       >
                         <Bot size={15} />
                       </span>
-                      <div className="min-w-0 flex-1 rounded-3xl rounded-tl-md bg-white px-4 py-3 shadow-[0_10px_30px_-24px_rgba(18,50,79,0.5)]">
+                      <div className="min-w-0 flex-1 rounded-[20px] rounded-tl-md border border-[#e7e9ec] bg-white px-4 py-3">
                         <p
-                          className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.14em]"
+                          className="mb-1.5 text-[12px] font-medium"
                           style={{ color: 'var(--ink-soft)' }}
                         >
                           InTelleX AI
@@ -418,12 +414,12 @@ export default function TutorChat() {
               e.preventDefault();
               send();
             }}
-            className="flex items-end gap-2 bg-[var(--paper)] px-1 py-1"
+            className="flex items-end gap-2 rounded-[18px] border border-[#e7e9ec] bg-white p-1.5"
             style={{
-              boxShadow: '0 16px 48px rgba(12, 17, 22, 0.14)',
+              boxShadow: '0 20px 50px -30px rgba(12, 17, 22, 0.35)',
             }}
           >
-            <label className="min-w-0 flex-1 bg-[var(--paper-dim)] px-4 py-3">
+            <label className="min-w-0 flex-1 rounded-xl bg-[#f6f7f8] px-4 py-3">
               <span className="sr-only">Ask InTelleX AI</span>
               <textarea
                 ref={textareaRef}
@@ -450,8 +446,7 @@ export default function TutorChat() {
             <button
               type="submit"
               disabled={!canSend}
-              className="mb-0 flex h-12 w-12 shrink-0 items-center justify-center text-white transition-opacity disabled:opacity-30"
-              style={{ background: canSend ? 'var(--green)' : 'var(--ink-soft)' }}
+              className="btn-primary mb-0 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border transition-opacity disabled:opacity-35"
               aria-label="Send"
             >
               {busy ? (
@@ -462,7 +457,7 @@ export default function TutorChat() {
             </button>
           </form>
           <p
-            className="mt-2 text-center font-mono text-[10px] uppercase tracking-[0.12em]"
+            className="mt-2 text-center text-[11.5px]"
             style={{ color: 'var(--ink-soft)' }}
           >
             Enter to send · Shift+Enter for a new line

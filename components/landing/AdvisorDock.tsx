@@ -180,25 +180,32 @@ export default function AdvisorDock() {
         role="dialog"
         aria-label="InTelleX AI advisor"
         aria-hidden={!open}
-        className={`fixed inset-x-3 bottom-3 top-16 z-[95] flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_40px_100px_-30px_rgba(12,17,22,0.55)] ring-1 ring-black/5 transition-all duration-300 sm:inset-x-auto sm:bottom-[156px] sm:right-5 sm:top-auto sm:h-[600px] sm:max-h-[calc(100vh-240px)] sm:w-[400px] ${
+        className={`fixed inset-x-3 bottom-3 top-16 z-[95] flex flex-col overflow-hidden rounded-[20px] border border-[#e7e9ec] bg-white shadow-[0_40px_100px_-40px_rgba(12,17,22,0.45)] transition-all duration-300 sm:inset-x-auto sm:bottom-[156px] sm:right-5 sm:top-auto sm:h-[600px] sm:max-h-[calc(100vh-240px)] sm:w-[400px] ${
           open ? 'pointer-events-auto translate-y-0 opacity-100' : 'pointer-events-none translate-y-4 opacity-0'
         }`}
       >
-        <div className="relative overflow-hidden bg-[#dcedfa] px-5 pb-5 pt-4 text-[#12324f]">
+        <div className="relative overflow-hidden border-b border-[#e7e9ec] bg-white px-5 pb-4 pt-4 text-[var(--ink)]">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-70"
+            style={{ backgroundImage: 'radial-gradient(#e7e9ec 1px, transparent 1px)', backgroundSize: '16px 16px' }}
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/doodles/coffee.svg" alt="" className="pointer-events-none absolute -bottom-3 right-14 h-[72px] w-auto select-none" />
           <div className="relative flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--green)] text-white">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#3fd283] bg-[#5ce39a] text-[var(--ink)]">
                 <Sparkles size={18} />
               </span>
               <div>
-                <div className="font-display text-[18px] leading-tight">AI career advisor</div>
-                <div className="text-[12px] text-[#12324f]/65">Ask about skills, careers and programmes</div>
+                <div className="text-[18px] font-medium leading-tight tracking-[-0.02em]">AI career advisor</div>
+                <div className="text-[12px] text-[#4b5563]">Ask about skills, careers and programmes</div>
               </div>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/70 hover:bg-white"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#e7e9ec] bg-white hover:bg-[#f6f7f8]"
               aria-label="Close advisor"
             >
               <X size={16} />
@@ -209,7 +216,7 @@ export default function AdvisorDock() {
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 text-[14.5px] leading-relaxed">
           {messages.length === 0 ? (
             <div>
-              <div className="rounded-2xl rounded-tl-md bg-[var(--paper-dim)] p-4">
+              <div className="rounded-2xl rounded-tl-md border border-[#e7e9ec] bg-[#f6f7f8] p-4">
                 Hi! I can help you pick the right skill and programme for your goals. Ask me anything, or try
                 one of these:
               </div>
@@ -219,7 +226,7 @@ export default function AdvisorDock() {
                     key={s}
                     type="button"
                     onClick={() => send(t(s))}
-                    className="rounded-xl bg-[var(--sky-soft)] px-4 py-2.5 text-left text-[14px] font-medium text-[var(--sky-deep)] transition-colors hover:bg-[var(--sky)] hover:text-white"
+                    className="rounded-xl border border-[#e7e9ec] bg-white px-4 py-2.5 text-left text-[14px] font-medium text-[var(--ink)] transition-colors hover:border-[rgba(0,179,105,0.5)] hover:bg-[#f3fbf7]"
                   >
                     {s}
                   </button>
@@ -230,11 +237,11 @@ export default function AdvisorDock() {
             <div className="flex flex-col gap-3">
               {messages.map((m, i) =>
                 m.role === 'user' ? (
-                  <div key={i} data-no-i18n className="ml-auto max-w-[85%] rounded-2xl rounded-tr-md bg-[var(--green)] px-4 py-2.5 text-white">
+                  <div key={i} data-no-i18n className="ml-auto max-w-[85%] rounded-2xl rounded-tr-md border border-[#3fd283] bg-[#5ce39a] px-4 py-2.5 text-[var(--ink)]">
                     {m.content}
                   </div>
                 ) : (
-                  <div key={i} data-no-i18n className="max-w-[92%] rounded-2xl rounded-tl-md bg-[var(--paper-dim)] px-4 py-3">
+                  <div key={i} data-no-i18n className="max-w-[92%] rounded-2xl rounded-tl-md border border-[#e7e9ec] bg-[#f6f7f8] px-4 py-3">
                     {m.content ? (
                       <Markdown text={m.content} />
                     ) : (
@@ -252,7 +259,7 @@ export default function AdvisorDock() {
         </div>
 
         <form
-          className="flex items-end gap-2 border-t border-black/5 p-3"
+          className="flex items-end gap-2 border-t border-[#e7e9ec] p-3"
           onSubmit={(e) => {
             e.preventDefault();
             void send(input);
@@ -271,12 +278,12 @@ export default function AdvisorDock() {
             rows={1}
             maxLength={2000}
             placeholder={t('Ask about skills, careers, courses...')}
-            className="max-h-28 min-h-[44px] flex-1 resize-none rounded-xl bg-[var(--paper-dim)] px-4 py-3 text-[14.5px] outline-none placeholder:text-[var(--ink-soft)] focus:ring-2 focus:ring-[var(--sky)]/40"
+            className="max-h-28 min-h-[44px] flex-1 resize-none rounded-xl border border-[#e7e9ec] bg-white px-4 py-3 text-[14.5px] outline-none placeholder:text-[#9ca3af] focus:border-[rgba(0,179,105,0.6)]"
           />
           <button
             type="submit"
             disabled={busy || !input.trim()}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--green)] text-white transition-opacity disabled:opacity-40"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#3fd283] bg-[#5ce39a] text-[var(--ink)] shadow-[inset_0_-3px_0_rgba(0,120,70,0.18)] transition-opacity disabled:opacity-40"
             aria-label="Send"
           >
             <ArrowUp size={18} />
@@ -296,14 +303,14 @@ export default function AdvisorDock() {
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          className="group flex items-center gap-3 rounded-2xl bg-white p-3.5 text-[#12324f] shadow-[0_18px_40px_-16px_rgba(18,50,79,0.45)] ring-1 ring-black/5 transition-transform hover:-translate-y-0.5 sm:py-3 sm:pl-3.5 sm:pr-5"
+          className="group flex items-center gap-3 rounded-2xl border border-[#e7e9ec] bg-white p-3.5 text-[var(--ink)] shadow-[0_18px_40px_-22px_rgba(12,17,22,0.45)] transition-colors hover:border-[rgba(0,179,105,0.5)] sm:py-3 sm:pl-3.5 sm:pr-5"
         >
-          <span className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--green)]">
+          <span className="relative flex h-8 w-8 items-center justify-center rounded-xl border border-[#3fd283] bg-[#5ce39a]">
             {open ? <X size={16} /> : <Sparkles size={16} />}
           </span>
           <span className="hidden text-left leading-tight sm:block">
-            <span className="block text-[11px] uppercase tracking-[0.12em] text-[#12324f]/60">Not sure what to learn?</span>
-            <span className="block text-[14.5px] font-semibold">Chat with AI</span>
+            <span className="block text-[12px] text-[#4b5563]">Not sure what to learn?</span>
+            <span className="block text-[14.5px] font-medium">Chat with AI</span>
           </span>
         </button>
         <a
@@ -311,12 +318,12 @@ export default function AdvisorDock() {
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`Chat with InTelleX on WhatsApp, ${PLATFORM_CONTACT.phoneDisplay}`}
-          className="wa-pulse flex items-center gap-3 rounded-2xl bg-[var(--green)] p-3.5 text-white shadow-[0_18px_40px_-16px_rgba(0,120,70,0.8)] transition-colors hover:bg-[var(--green-deep)] sm:py-3 sm:pl-4 sm:pr-5"
+          className="wa-pulse flex items-center gap-3 rounded-2xl bg-[#00b369] p-3.5 text-white shadow-[0_18px_40px_-16px_rgba(0,120,70,0.8)] transition-colors hover:bg-[var(--green-deep)] sm:py-3 sm:pl-4 sm:pr-5"
         >
           <MessageCircle size={22} />
           <span className="hidden text-left leading-tight sm:block">
-            <span className="block text-[11px] uppercase tracking-[0.12em] text-white/75">WhatsApp us</span>
-            <span className="block text-[14.5px] font-semibold">{PLATFORM_CONTACT.phoneDisplay}</span>
+            <span className="block text-[12px] text-white/80">WhatsApp us</span>
+            <span className="block text-[14.5px] font-medium">{PLATFORM_CONTACT.phoneDisplay}</span>
           </span>
         </a>
       </div>
