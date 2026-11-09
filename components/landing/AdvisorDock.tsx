@@ -12,10 +12,10 @@ type Msg = { role: 'user' | 'assistant'; content: string };
 
 
 const STARTERS = [
-  'Which tech skills are in demand right now?',
+  "I'm confused about what to study. Help me choose.",
+  'Which tech skill could get me a good income?',
   "I'm a complete beginner. Where do I start?",
-  'What are high-income tech careers?',
-  'Is Full Stack Web Development worth it?',
+  "I can't pay everything at once. What are my options?",
 ];
 
 const LINK_CLASS =

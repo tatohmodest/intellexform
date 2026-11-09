@@ -69,6 +69,9 @@ export const FR_SITE: Record<string, string> = {
   'InTelleX student ·': 'Étudiant InTelleX ·',
   'How it works': 'Comment ça marche',
   'Why InTelleX': 'Pourquoi InTelleX',
+  "I'm confused about what to study. Help me choose.": 'Je ne sais pas quoi étudier. Aidez-moi à choisir.',
+  'Which tech skill could get me a good income?': 'Quelle compétence tech peut me rapporter un bon revenu ?',
+  "I can't pay everything at once. What are my options?": 'Je ne peux pas tout payer d’un coup. Quelles sont mes options ?',
   Pricing: 'Tarifs',
   'From first message to finished project.': 'Du premier message au projet terminé.',
   'You always know what you are investing in and what happens next. Pay in full or spread it monthly with MTN MoMo, Orange Money or card.':
