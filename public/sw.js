@@ -1,5 +1,7 @@
 /* InTelleX PWA service worker - installable shell + Web Push alerts. */
-const CACHE = 'intellex-shell-v3';
+// v4: v3 could store failed responses (e.g. a chunk 404 during a deploy) and keep serving
+// them, which left browsers stuck on "Application error". Bumping the name clears v3.
+const CACHE = 'intellex-shell-v4';
 const PRECACHE = ['/', '/manifest.webmanifest', '/pwa/icon-192.png', '/pwa/icon-512.png'];
 
 self.addEventListener('install', (event) => {
@@ -145,8 +147,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((cache) => cache.put(request, copy)).catch(() => undefined);
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((cache) => cache.put(request, copy)).catch(() => undefined);
+          }
           return res;
         })
         .catch(() => caches.match(request).then((cached) => cached || caches.match('/'))),
@@ -165,8 +169,11 @@ self.addEventListener('fetch', (event) => {
         (cached) =>
           cached ||
           fetch(request).then((res) => {
-            const copy = res.clone();
-            caches.open(CACHE).then((cache) => cache.put(request, copy)).catch(() => undefined);
+            // Only keep good responses; a failed chunk must be retried, never replayed.
+            if (res.ok) {
+              const copy = res.clone();
+              caches.open(CACHE).then((cache) => cache.put(request, copy)).catch(() => undefined);
+            }
             return res;
           }),
       ),

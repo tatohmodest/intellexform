@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Play } from 'lucide-react';
 
 /**
@@ -10,26 +10,37 @@ import { Play } from 'lucide-react';
 function Player({ src, poster, className, label }: { src: string; poster: string; className: string; label: string }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [started, setStarted] = useState(false);
+  // Until the page is interactive, show the browser's own controls so the video can play
+  // even if the script never loads; the custom play button only appears once it has.
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
 
   return (
     <div className={`relative overflow-hidden rounded-[20px] border border-[#e7e9ec] bg-white ${className}`}>
       <video
         ref={ref}
-        src={src}
         poster={poster}
         preload="none"
         playsInline
-        controls={started}
+        controls={!ready || started}
         className="block h-full w-full object-cover"
         onPlay={() => setStarted(true)}
-      />
-      {!started && (
+      >
+        <source src={src} type="video/mp4" />
+      </video>
+      {ready && !started && (
         <button
           type="button"
           aria-label={label}
           onClick={() => {
+            const video = ref.current;
+            if (!video) return;
             setStarted(true);
-            void ref.current?.play();
+            video.play().catch(() => {
+              // Some browsers refuse play() before data loads; load and retry once.
+              video.load();
+              void video.play().catch(() => undefined);
+            });
           }}
           className="group absolute inset-0 flex items-center justify-center bg-white/10"
         >
