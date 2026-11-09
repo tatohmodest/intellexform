@@ -14,7 +14,7 @@ import { getRequestLocale } from '@/lib/i18n/server';
 const SITE = getSiteUrl();
 const TITLE = 'InTelleX Cameroon - Online learning & professional training';
 const DESCRIPTION =
-  'InTelleX Cameroon: professional training, online learning, coding courses, live mentorship and AI tutoring. Built in Douala by Looping Binary - serving Yaounde, Bamenda, Buea, Bafoussam and every region.';
+  'Tutorials show you how. We make sure you can. Live programmes in software, data, cybersecurity and digital marketing, with real projects reviewed by an InTelleX instructor. Built in Douala by Looping Binary, for learners across Cameroon.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
@@ -75,10 +75,10 @@ export const metadata: Metadata = {
     url: SITE,
     images: [
       {
-        url: absoluteUrl('/way_selfpaced.webp'),
+        url: absoluteUrl('/og-image.jpg'),
         width: 1200,
         height: 630,
-        alt: 'InTelleX courses - tech education in Douala, Cameroon',
+        alt: 'InTelleX - Tutorials show you how. We make sure you can.',
       },
     ],
   },
@@ -86,7 +86,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: TITLE,
     description: DESCRIPTION,
-    images: [absoluteUrl('/way_selfpaced.webp')],
+    images: [absoluteUrl('/og-image.jpg')],
   },
   other: cameroonGeoMeta(),
 };

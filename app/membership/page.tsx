@@ -31,7 +31,7 @@ export const metadata: Metadata = buildShareMetadata({
   description:
     'Learn on your own for 1,999 XAF/month: the self-paced course library, Intermediate→Pro tracks, the digital library and the AI tutor.',
   path: '/membership',
-  image: '/way_selfpaced.webp',
+  image: '/og-image.jpg',
   imageAlt: 'InTelleX Student membership Cameroon',
   keywords: [
     'InTelleX Student',
@@ -56,10 +56,7 @@ export default async function MembershipPage() {
       <TopNav />
       <section
         className="relative overflow-hidden py-14 sm:py-20"
-        style={{
-          background:
-            'radial-gradient(900px 420px at 8% -10%, rgba(0,179,105,0.16), transparent 55%), radial-gradient(700px 380px at 100% 0%, rgba(74,144,226,0.12), transparent 50%), var(--paper)',
-        }}
+        style={{ background: '#fff', backgroundImage: 'radial-gradient(#e7e9ec 1px, transparent 1px)', backgroundSize: '18px 18px' }}
       >
         <div className="wrap max-w-[980px]">
           <div className="tab mb-3 inline-flex items-center gap-1.5">

@@ -6,7 +6,7 @@ import { SITE_GEO, SITE_KEYWORDS } from '@/lib/seo/keywords';
 /** Public production origin - always used for share / Open Graph links. */
 export { CANONICAL_SITE_URL };
 
-const DEFAULT_SHARE_IMAGE = '/way_selfpaced.webp';
+const DEFAULT_SHARE_IMAGE = '/og-image.jpg';
 
 function normalizeOrigin(raw: string): string {
   const trimmed = String(raw || '')

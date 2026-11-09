@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     description:
       'Meet Tatoh Modest Wilton, Founder & CEO of Looping Binary - the Cameroon company that builds InTelleX. Based in Douala, serving learners nationwide.',
     path: '/about',
-    image: '/way_selfpaced.webp',
+    image: '/og-image.jpg',
     imageAlt: 'About InTelleX and Looping Binary - Douala, Cameroon',
     keywords: [
       'Tatoh Modest Wilton',
@@ -50,10 +50,7 @@ export default function AboutPage() {
 
       <section
         className="relative overflow-hidden py-16 sm:py-20"
-        style={{
-          background:
-            'radial-gradient(900px 420px at 10% -10%, rgba(0,179,105,0.16), transparent 55%), radial-gradient(700px 380px at 95% 0%, rgba(74,144,226,0.12), transparent 50%), var(--paper)',
-        }}
+        style={{ background: '#fff', backgroundImage: 'radial-gradient(#e7e9ec 1px, transparent 1px)', backgroundSize: '18px 18px' }}
       >
         <div className="wrap max-w-[880px]">
           <Link
@@ -161,29 +158,24 @@ export default function AboutPage() {
           </div>
 
           <div
-            className="rounded-[28px] border p-7 sm:p-9"
-            style={{
-              borderColor: 'var(--line)',
-              background:
-                'linear-gradient(165deg, #0C1116 0%, #132019 55%, #0C1116 100%)',
-              color: 'rgba(251,248,240,0.88)',
-            }}
+            className="rounded-[20px] border p-7 sm:p-9"
+            style={{ borderColor: 'rgba(0,179,105,0.45)', background: '#f3fbf7', color: 'var(--ink)' }}
           >
-            <div className="mono text-[11px] uppercase tracking-[0.16em] text-white/50">
+            <div className="text-[13px] font-medium text-[var(--green-deep)]">
               Founder letter
             </div>
-            <p className="mt-4 font-display text-[22px] leading-snug text-white sm:text-[26px]">
+            <p className="mt-4 font-display text-[22px] leading-snug text-[var(--ink)] sm:text-[26px]">
               &ldquo;We build InTelleX so Cameroonian learners - from Douala to Bamenda, Buea to Yaounde -
               can finish skills that pay.&rdquo;
             </p>
-            <p className="mt-6 text-[14px] leading-relaxed text-white/70">
+            <p className="mt-6 text-[14px] leading-relaxed text-[#4b5563]">
               Looping Binary exists to close the gap between studying and shipping. InTelleX is how
               we put courses, mentors, AI tutoring, and campus tooling in one place - so
               institutions and individuals stop juggling five tools and start completing real work.
             </p>
-            <div className="mt-8 border-t border-white/15 pt-5">
-              <div className="font-display text-[18px] text-white">{FOUNDER.name}</div>
-              <div className="mt-1 text-[12.5px] text-white/55">
+            <div className="mt-8 border-t border-[#e7e9ec] pt-5">
+              <div className="font-display text-[18px] text-[var(--ink)]">{FOUNDER.name}</div>
+              <div className="mt-1 text-[12.5px] text-[#4b5563]">
                 {FOUNDER.role}, {FOUNDER.company} · Builder of {FOUNDER.product}
               </div>
             </div>
@@ -224,12 +216,11 @@ export default function AboutPage() {
 
       <section className="pb-16">
         <div
-          className="wrap flex flex-wrap items-center justify-between gap-4 rounded-[24px] px-6 py-7 sm:px-8"
-          style={{ background: 'var(--ink)', color: 'rgba(251,248,240,0.85)' }}
+          className="wrap flex flex-wrap items-center justify-between gap-4 rounded-[20px] border border-[#e7e9ec] bg-[#fafbfa] px-6 py-7 sm:px-8"
         >
           <div>
-            <div className="font-display text-[22px] text-white">Ready to learn or partner?</div>
-            <p className="mt-1 text-[13.5px] text-white/65">
+            <div className="font-display text-[24px]">Ready to learn or partner?</div>
+            <p className="mt-1 text-[13.5px] text-[#4b5563]">
               Students start free tutorials. Institutions talk to the platform team.
             </p>
           </div>
@@ -237,10 +228,10 @@ export default function AboutPage() {
             <Link href="/signup" className="btn btn-g">
               Join InTelleX
             </Link>
-            <Link href="/enterprise" className="btn btn-ghost" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.25)' }}>
+            <Link href="/enterprise" className="btn btn-ghost">
               For institutions
             </Link>
-            <a href={absoluteUrl('/sitemap.xml')} className="btn btn-ghost" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.25)' }}>
+            <a href={absoluteUrl('/sitemap.xml')} className="btn btn-ghost">
               Sitemap
             </a>
           </div>

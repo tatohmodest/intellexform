@@ -48,22 +48,24 @@ export default function EnterprisePage() {
       <TopNav />
 
       <section
-        className="relative overflow-hidden border-b text-white"
+        className="relative overflow-hidden border-b"
         style={{
           borderColor: 'var(--line)',
-          background: 'linear-gradient(120deg, #00b369 0%, #0C1116 68%)',
+          background: '#fff',
+          backgroundImage: 'radial-gradient(#e7e9ec 1px, transparent 1px)',
+          backgroundSize: '18px 18px',
         }}
       >
         <div className="wrap relative py-14 sm:py-20">
-          <BrandLogo href="/" height={34} className="mb-8 brightness-0 invert" />
+          <BrandLogo href="/" height={34} className="mb-8" />
           <Reveal className="max-w-[720px]">
-            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-white/55">
+            <p className="text-[13.5px] font-medium text-[#4b5563]">
               Enterprise · Institutions · Companies
             </p>
             <h1 className="mt-3 font-display text-[34px] leading-[0.95] tracking-tight sm:text-[48px]">
               Your digital campus on InTelleX
             </h1>
-            <p className="mt-4 max-w-xl text-[16px] leading-relaxed text-white/75">
+            <p className="mt-4 max-w-xl text-[16px] leading-relaxed text-[#4b5563]">
               Schools, academies, and companies get a branded campus - students, teachers, courses,
               exams, AI, and library - provisioned by the Platform Team. Never self-serve chaos.
             </p>
@@ -71,13 +73,13 @@ export default function EnterprisePage() {
               <Link
                 href="/contact?type=institution"
                 className="inline-flex items-center gap-2 px-5 py-3 text-[13.5px] font-semibold"
-                style={{ background: '#fff', color: 'var(--ink)' }}
+                style={{ background: '#5ce39a', color: 'var(--ink)', borderRadius: 10 }}
               >
                 Talk to Platform Team <ArrowRight size={14} />
               </Link>
               <a
                 href="#pricing"
-                className="inline-flex items-center gap-2 border border-white/35 px-5 py-3 text-[13.5px] font-semibold text-white"
+                className="inline-flex items-center gap-2 border border-[#e7e9ec] bg-white text-[var(--ink)] px-5 py-3 text-[13.5px] font-semibold text-[var(--ink)]"
               >
                 See plans & pricing
               </a>
@@ -195,7 +197,7 @@ export default function EnterprisePage() {
                     boxShadow: featured ? '0 0 0 1px var(--green-deep)' : undefined,
                   }}
                 >
-                  <p className="font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: 'var(--green-deep)' }}>
+                  <p className="text-[12.5px] font-medium" style={{ color: 'var(--green-deep)' }}>
                     {id}
                   </p>
                   <h3 className="mt-1 font-display text-[20px]">{p.name}</h3>
@@ -237,14 +239,14 @@ export default function EnterprisePage() {
         </div>
       </section>
 
-      <section id="partner" className="border-t py-14 sm:py-16" style={{ borderColor: 'var(--line)', background: 'var(--ink)', color: 'var(--paper)' }}>
+      <section id="partner" className="border-t py-14 sm:py-16" style={{ borderColor: 'var(--line)', background: '#fafbfa', color: 'var(--ink)' }}>
         <div className="wrap flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-xl">
-            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-white/50">
+            <p className="text-[13px] font-medium text-[var(--green-deep)]">
               Platform Team
             </p>
             <h2 className="mt-2 font-display text-[28px] leading-tight">Onboard your institution</h2>
-            <p className="mt-3 text-[14.5px] text-white/70">
+            <p className="mt-3 text-[14.5px] text-[#4b5563]">
               We send an email-bound onboarding link with your plan. You fill campus details and
               choose allowed capabilities - we provision. Contact:{' '}
               {PLATFORM_CONTACT.email}
@@ -253,14 +255,14 @@ export default function EnterprisePage() {
           <div className="flex flex-wrap gap-3">
             <Link
               href="/contact?type=institution"
-              className="inline-flex items-center gap-2 px-5 py-3 text-[13.5px] font-semibold"
-              style={{ background: 'var(--green)', color: '#fff' }}
+              className="inline-flex items-center gap-2 rounded-[10px] px-5 py-3 text-[13.5px] font-semibold"
+              style={{ background: '#5ce39a', color: 'var(--ink)' }}
             >
               Contact form
             </Link>
             <a
               href={institutionMailto()}
-              className="inline-flex items-center gap-2 border border-white/30 px-5 py-3 text-[13.5px] font-semibold"
+              className="inline-flex items-center gap-2 rounded-[10px] border border-[#e7e9ec] bg-white px-5 py-3 text-[13.5px] font-semibold"
             >
               <Mail size={15} /> Email
             </a>
@@ -268,7 +270,7 @@ export default function EnterprisePage() {
               href={institutionWhatsappLink()}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 border border-white/30 px-5 py-3 text-[13.5px] font-semibold"
+              className="inline-flex items-center gap-2 rounded-[10px] border border-[#e7e9ec] bg-white px-5 py-3 text-[13.5px] font-semibold"
             >
               <MessageCircle size={15} /> WhatsApp
             </a>

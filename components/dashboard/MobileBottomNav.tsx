@@ -248,7 +248,7 @@ export default function MobileBottomNav({
             {groups.map((group) => (
               <section key={group.label} className="mb-4">
                 <h3
-                  className="mono mb-2 px-1 text-[10px] uppercase tracking-[0.16em]"
+                  className="mb-2 px-1 text-[12px] font-medium"
                   style={{ color: 'var(--ink-soft)' }}
                 >
                   {t(group.label)}

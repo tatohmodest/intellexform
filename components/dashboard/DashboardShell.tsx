@@ -110,7 +110,7 @@ function NavLinks({
   const mentorActive =
     pathname.startsWith('/dashboard/mentor') &&
     !pathname.startsWith('/dashboard/mentorship');
-  const activeBg = `${accent}1f`;
+  const activeBg = `${accent}12`;
   const activeColor = 'var(--navy)';
   const currentTab = searchParams.get('tab');
 
@@ -135,10 +135,10 @@ function NavLinks({
               key={item.id}
               href={item.href}
               onClick={onNavigate}
-              className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
+              className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors hover:bg-[#f6f7f8]"
               style={
                 active
-                  ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
+                  ? { background: activeBg, color: activeColor, boxShadow: `inset 0 0 0 1px ${accent}55`, fontWeight: 500 }
                   : { color: 'var(--ink-soft)' }
               }
             >
@@ -150,7 +150,7 @@ function NavLinks({
         <Link
           href="/dashboard"
           onClick={onNavigate}
-          className="mt-2 flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
+          className="mt-2 flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors hover:bg-[#f6f7f8]"
           style={{ color: 'var(--ink-soft)' }}
         >
           <Home size={17} />
@@ -160,10 +160,10 @@ function NavLinks({
           <Link
             href="/dashboard/staff"
             onClick={onNavigate}
-            className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
+            className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors hover:bg-[#f6f7f8]"
             style={
               pathname.startsWith('/dashboard/staff')
-                ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
+                ? { background: activeBg, color: activeColor, boxShadow: `inset 0 0 0 1px ${accent}55`, fontWeight: 500 }
                 : { color: 'var(--ink-soft)' }
             }
           >
@@ -181,7 +181,7 @@ function NavLinks({
         <div key={group.label} className={group.label === 'Home' ? '' : 'mt-3'}>
           {group.label !== 'Home' ? (
             <div
-              className="mono mb-1.5 px-3.5 text-[10px] uppercase tracking-[0.16em]"
+              className="mb-1.5 px-3.5 text-[12px] font-medium"
               style={{ color: 'var(--ink-soft)' }}
             >
               {t(group.label)}
@@ -203,7 +203,7 @@ function NavLinks({
                 className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
                 style={
                   active
-                    ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
+                    ? { background: activeBg, color: activeColor, boxShadow: `inset 0 0 0 1px ${accent}55`, fontWeight: 500 }
                     : { color: 'var(--ink-soft)' }
                 }
               >
@@ -217,7 +217,7 @@ function NavLinks({
       ))}
 
       <div className="mt-4 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
-        <div className="mono mb-1.5 px-3.5 text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
+        <div className="mb-1.5 px-3.5 text-[12px] font-medium" style={{ color: 'var(--ink-soft)' }}>
           {isMentor ? t('Teaching') : t('Teach')}
         </div>
         <Link
@@ -244,7 +244,7 @@ function NavLinks({
               className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
               style={
                 pathname.startsWith('/dashboard/teach/courses')
-                  ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
+                  ? { background: activeBg, color: activeColor, boxShadow: `inset 0 0 0 1px ${accent}55`, fontWeight: 500 }
                   : { color: 'var(--ink-soft)' }
               }
             >
@@ -260,7 +260,7 @@ function NavLinks({
               className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
               style={
                 pathname.startsWith('/dashboard/students')
-                  ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
+                  ? { background: activeBg, color: activeColor, boxShadow: `inset 0 0 0 1px ${accent}55`, fontWeight: 500 }
                   : { color: 'var(--ink-soft)' }
               }
             >
@@ -276,7 +276,7 @@ function NavLinks({
               className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
               style={
                 pathname.startsWith('/dashboard/classroom')
-                  ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
+                  ? { background: activeBg, color: activeColor, boxShadow: `inset 0 0 0 1px ${accent}55`, fontWeight: 500 }
                   : { color: 'var(--ink-soft)' }
               }
             >
@@ -292,7 +292,7 @@ function NavLinks({
               className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
               style={
                 pathname.startsWith('/dashboard/teach/grading')
-                  ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
+                  ? { background: activeBg, color: activeColor, boxShadow: `inset 0 0 0 1px ${accent}55`, fontWeight: 500 }
                   : { color: 'var(--ink-soft)' }
               }
             >
@@ -308,7 +308,7 @@ function NavLinks({
               className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
               style={
                 pathname.startsWith('/dashboard/teach/monitoring')
-                  ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
+                  ? { background: activeBg, color: activeColor, boxShadow: `inset 0 0 0 1px ${accent}55`, fontWeight: 500 }
                   : { color: 'var(--ink-soft)' }
               }
             >
@@ -324,7 +324,7 @@ function NavLinks({
               className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
               style={
                 pathname.startsWith('/dashboard/teach/assessments')
-                  ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
+                  ? { background: activeBg, color: activeColor, boxShadow: `inset 0 0 0 1px ${accent}55`, fontWeight: 500 }
                   : { color: 'var(--ink-soft)' }
               }
             >
@@ -340,7 +340,7 @@ function NavLinks({
               className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
               style={
                 pathname.startsWith('/dashboard/teach/notes')
-                  ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
+                  ? { background: activeBg, color: activeColor, boxShadow: `inset 0 0 0 1px ${accent}55`, fontWeight: 500 }
                   : { color: 'var(--ink-soft)' }
               }
             >
@@ -356,7 +356,7 @@ function NavLinks({
 
       {staffPermissions?.includes('staff.access') ? (
         <div className="mt-4 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
-          <div className="mono mb-1.5 px-3.5 text-[10px] uppercase tracking-[0.16em]" style={{ color: 'var(--ink-soft)' }}>
+          <div className="mb-1.5 px-3.5 text-[12px] font-medium" style={{ color: 'var(--ink-soft)' }}>
             {t('Institution')}
           </div>
           {staffNavFor(staffPermissions || []).map((item) => {
@@ -371,7 +371,7 @@ function NavLinks({
                 className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors"
                 style={
                   active
-                    ? { background: activeBg, color: activeColor, boxShadow: `inset 3px 0 0 ${accent}`, fontWeight: 600 }
+                    ? { background: activeBg, color: activeColor, boxShadow: `inset 0 0 0 1px ${accent}55`, fontWeight: 500 }
                     : { color: 'var(--ink-soft)' }
                 }
               >
@@ -457,8 +457,8 @@ function ContextSwitcher({
         type="button"
         onClick={() => setOpen((v) => !v)}
         disabled={busy}
-        className="flex w-full items-center gap-2 rounded-2xl border px-3 py-2.5 text-left transition-colors"
-        style={{ borderColor: 'var(--line)' }}
+        className="flex w-full items-center gap-2 rounded-xl border bg-white px-3 py-2.5 text-left transition-colors hover:bg-[#f6f7f8]"
+        style={{ borderColor: '#e7e9ec' }}
       >
         <span
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[11px] font-bold text-white"
@@ -467,10 +467,10 @@ function ContextSwitcher({
           {active.kind === 'institution' ? 'U' : 'IX'}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="mono block text-[9.5px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
+          <span className="block text-[11.5px] font-medium" style={{ color: 'var(--ink-soft)' }}>
             {t('Workspace')}
           </span>
-          <span className="block truncate text-[13.5px] font-semibold">{t(label)}</span>
+          <span className="block truncate text-[13.5px] font-medium">{t(label)}</span>
         </span>
         <ChevronDown size={15} style={{ color: 'var(--ink-soft)' }} />
       </button>
@@ -662,7 +662,7 @@ export default function DashboardShell({
           style={{ borderColor: 'var(--line)', background: 'rgba(255,255,255,0.92)' }}
         >
           <BrandLogo href="/" height={30} variant="full" />
-          <span className="mono ml-2 rounded-full border px-2 py-0.5 text-[9.5px] uppercase tracking-[0.14em]" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
+          <span className="ml-2 rounded-full border px-2 py-0.5 text-[11px] font-medium" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
             Identity
           </span>
           <div className="ml-auto text-[13px] font-medium" style={{ color: 'var(--ink-soft)' }}>
@@ -692,7 +692,7 @@ export default function DashboardShell({
             </span>
             <div className="min-w-0">
               <div className="truncate text-[14px] font-semibold leading-tight">{campusBrand.name}</div>
-              <div className="mono text-[9px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
+              <div className="text-[11px] font-medium" style={{ color: 'var(--ink-soft)' }}>
                 {t('Powered by InTelleX')}
               </div>
             </div>
@@ -740,14 +740,14 @@ export default function DashboardShell({
 
       <div className="shrink-0 space-y-1 pt-1">
         {inCampus && (
-          <p className="mono px-3.5 pb-2 text-[9.5px] uppercase tracking-[0.14em]" style={{ color: 'var(--ink-soft)' }}>
+          <p className="px-3.5 pb-2 text-[11.5px] font-medium" style={{ color: 'var(--ink-soft)' }}>
             {t('Powered by InTelleX')}
           </p>
         )}
         {inCampus && campusBrand ? (
           <Link
             href={`/site/${campusBrand.slug}`}
-            className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
+            className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors hover:bg-[#f6f7f8]"
             style={{ color: 'var(--ink-soft)' }}
           >
             <Home size={17} />
@@ -756,7 +756,7 @@ export default function DashboardShell({
         ) : (
           <Link
             href="/"
-            className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium"
+            className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors hover:bg-[#f6f7f8]"
             style={{ color: 'var(--ink-soft)' }}
           >
             <Home size={17} />
@@ -786,7 +786,7 @@ export default function DashboardShell({
   return (
     <div className="site dash min-h-screen bg-white" style={themeStyle} data-campus={inCampus ? 'true' : undefined}>
       <aside
-        className={`fixed inset-y-0 left-0 z-30 hidden h-dvh max-h-dvh w-[240px] flex-col overflow-hidden px-4 py-6 ${collapsed ? '' : 'lg:flex'}`}
+        className={`fixed inset-y-0 left-0 z-30 hidden h-dvh max-h-dvh w-[240px] flex-col overflow-hidden border-r border-[#e7e9ec] px-4 py-6 ${collapsed ? '' : 'lg:flex'}`}
         style={{ background: inCampus ? `${accent}08` : '#ffffff' }}
       >
         {sidebarInner}

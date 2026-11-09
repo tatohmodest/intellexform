@@ -20,7 +20,7 @@ export function organizationJsonLd(): JsonLd {
       url: BRAND_LOGO_MARK,
       caption: 'InTelleX logo',
     },
-    image: absoluteUrl('/way_selfpaced.webp'),
+    image: absoluteUrl('/og-image.jpg'),
     description:
       'InTelleX is a learning operating system for self-paced courses, live mentorship, AI tutoring, and campus education - built in Cameroon by Looping Binary.',
     email: SITE_GEO.email,
@@ -156,7 +156,7 @@ export function courseJsonLd(opts: {
   priceXAF?: number | null;
 }): JsonLd {
   const site = getSiteUrl() || CANONICAL_SITE_URL;
-  const image = opts.image ? absoluteUrl(opts.image) : absoluteUrl('/way_selfpaced.webp');
+  const image = opts.image ? absoluteUrl(opts.image) : absoluteUrl('/og-image.jpg');
   return {
     '@context': 'https://schema.org',
     '@type': 'Course',

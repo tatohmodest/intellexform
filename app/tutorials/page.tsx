@@ -21,8 +21,9 @@ export default function TutorialsHubPage() {
         className="relative overflow-hidden border-b py-16 sm:py-20"
         style={{
           borderColor: 'var(--line)',
-          background:
-            'radial-gradient(ellipse 80% 60% at 10% 0%, rgba(0,179,105,0.12), transparent 55%), radial-gradient(ellipse 70% 50% at 90% 20%, rgba(74,144,226,0.14), transparent 50%), var(--paper-dim)',
+          background: '#fff',
+          backgroundImage: 'radial-gradient(#e7e9ec 1px, transparent 1px)',
+          backgroundSize: '18px 18px',
         }}
       >
         <div className="wrap relative">
@@ -103,52 +104,19 @@ export default function TutorialsHubPage() {
                       className="relative flex flex-col justify-between border-t p-7 sm:p-9 lg:border-l lg:border-t-0"
                       style={{
                         borderColor: 'var(--line)',
-                        background:
-                          course.slug === 'html'
-                            ? 'linear-gradient(160deg, #0C1116 0%, #3a2210 55%, #0C1116 100%)'
-                            : course.slug === 'css'
-                              ? 'linear-gradient(160deg, #0C1116 0%, #10284a 55%, #0C1116 100%)'
-                            : course.slug === 'nextjs'
-                            ? 'linear-gradient(160deg, #0C1116 0%, #10263d 55%, #0C1116 100%)'
-                            : course.slug === 'python'
-                              ? 'linear-gradient(160deg, #0C1116 0%, #2a2410 55%, #0C1116 100%)'
-                              : course.slug === 'django'
-                                ? 'linear-gradient(160deg, #0C1116 0%, #1a3324 55%, #0C1116 100%)'
-                                : course.slug === 'flask'
-                                  ? 'linear-gradient(160deg, #0C1116 0%, #2a1a14 55%, #0C1116 100%)'
-                                  : course.slug === 'postgresql'
-                                    ? 'linear-gradient(160deg, #0C1116 0%, #14263a 55%, #0C1116 100%)'
-                                    : course.slug === 'mongodb'
-                                      ? 'linear-gradient(160deg, #0C1116 0%, #16351f 55%, #0C1116 100%)'
-                                      : course.slug === 'flutter'
-                                        ? 'linear-gradient(160deg, #0C1116 0%, #0f2a3d 55%, #0C1116 100%)'
-                                        : course.slug === 'data-analysis'
-                                          ? 'linear-gradient(160deg, #0C1116 0%, #2a1830 55%, #0C1116 100%)'
-                                          : course.slug === 'digital-marketing'
-                                            ? 'linear-gradient(160deg, #0C1116 0%, #3a1f14 55%, #0C1116 100%)'
-                                            : course.slug === 'golang'
-                                              ? 'linear-gradient(160deg, #0C1116 0%, #0f2f35 55%, #0C1116 100%)'
-                                              : course.slug === 'docker'
-                                                ? 'linear-gradient(160deg, #0C1116 0%, #0d2a45 55%, #0C1116 100%)'
-                                                : course.slug === 'nodejs-express'
-                                                  ? 'linear-gradient(160deg, #0C1116 0%, #1a3320 55%, #0C1116 100%)'
-                                                  : course.slug === 'nestjs'
-                                                    ? 'linear-gradient(160deg, #0C1116 0%, #2a1630 55%, #0C1116 100%)'
-                                                    : course.slug === 'pygame'
-                                                      ? 'linear-gradient(160deg, #0C1116 0%, #1a2840 55%, #0C1116 100%)'
-                                                      : 'linear-gradient(160deg, #0C1116 0%, #163024 55%, #0C1116 100%)',
-                        color: 'var(--paper)',
+                        background: '#f3fbf7',
+                        color: 'var(--ink)',
                       }}
                     >
                       <div>
                         <div
-                          className="mb-3 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em]"
-                          style={{ color: 'rgba(251,248,240,0.55)' }}
+                          className="mb-3 inline-flex items-center gap-2 text-[13px] font-medium"
+                          style={{ color: 'var(--green-deep)' }}
                         >
                           <BookOpen size={14} /> Path overview
                         </div>
                         <p className="mb-5 font-display text-[22px] leading-snug">{course.tagline}</p>
-                        <ul className="space-y-2.5 text-[13.5px]" style={{ color: 'rgba(251,248,240,0.78)' }}>
+                        <ul className="space-y-2.5 text-[13.5px]" style={{ color: '#4b5563' }}>
                           {highlights.map((item) => (
                             <li key={item}>{item}</li>
                           ))}
@@ -159,40 +127,7 @@ export default function TutorialsHubPage() {
                           href={`/tutorials/${course.slug}/${firstSlug}`}
                           className="mt-8 inline-flex items-center gap-2 text-[14px] font-semibold"
                           style={{
-                            color:
-                              course.slug === 'html'
-                                ? '#ffb38a'
-                                : course.slug === 'css'
-                                  ? '#8fc0ff'
-                              : course.slug === 'nextjs'
-                                ? '#8fc0ff'
-                                : course.slug === 'python'
-                                  ? '#ffd666'
-                                  : course.slug === 'django'
-                                    ? '#8dffb5'
-                                    : course.slug === 'flask'
-                                      ? '#ffb38a'
-                                      : course.slug === 'postgresql'
-                                        ? '#9ecbff'
-                                        : course.slug === 'mongodb'
-                                          ? '#86efac'
-                                          : course.slug === 'flutter'
-                                            ? '#7dd3fc'
-                                            : course.slug === 'data-analysis'
-                                              ? '#e9b3ff'
-                                              : course.slug === 'digital-marketing'
-                                                ? '#ffc089'
-                                                : course.slug === 'golang'
-                                                  ? '#5dc9e0'
-                                                  : course.slug === 'docker'
-                                                    ? '#7eb6ff'
-                                                    : course.slug === 'nodejs-express'
-                                                      ? '#8dffb0'
-                                                      : course.slug === 'nestjs'
-                                                        ? '#f0abfc'
-                                                        : course.slug === 'pygame'
-                                                          ? '#9ecbff'
-                                                          : '#7dffc0',
+                            color: 'var(--green-deep)',
                           }}
                         >
                           Jump to lesson 1 <ArrowRight size={15} />
