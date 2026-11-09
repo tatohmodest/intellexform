@@ -7,6 +7,7 @@ import {
   Globe,
   MessageCircle,
   Minus,
+  Play,
   ShieldCheck,
   Smartphone,
   Sparkles,
@@ -23,6 +24,7 @@ import Testimonials from '@/components/landing/Testimonials';
 import AdvisorDock from '@/components/landing/AdvisorDock';
 import AskAdvisorButton from '@/components/landing/AskAdvisorButton';
 import ProgrammeJourney from '@/components/landing/ProgrammeJourney';
+import PromoVideo from '@/components/landing/PromoVideo';
 import { LaptopReview, ReviewNode } from '@/components/landing/LineArt';
 
 export const dynamic = 'force-dynamic';
@@ -143,6 +145,12 @@ export default async function HomePage() {
               <Link href="/why-intellex" className="btn btn-line !px-6">
                 Why learn with us
               </Link>
+              <a href="#watch" className="inline-flex items-center gap-2 px-2 text-[14.5px] font-medium text-[var(--ink)] hover:text-[var(--green-deep)]">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e7e9ec] bg-white">
+                  <Play size={13} className="ml-0.5" fill="currentColor" />
+                </span>
+                Watch the 40-second video
+              </a>
             </div>
 
             <div className="mt-10 flex max-w-[440px] divide-x divide-[#e7e9ec] border-b border-[#e7e9ec] pb-5">
@@ -184,6 +192,28 @@ export default async function HomePage() {
               {t.name}
             </span>
           ))}
+        </div>
+      </section>
+
+      {/* ── The story in 40 seconds ─────────────────────────── */}
+      <section id="watch" className="wrap !max-w-[1200px] scroll-mt-20 pb-6 pt-16 sm:pt-24">
+        <div className="grid items-center gap-10 lg:grid-cols-[0.8fr_1.6fr]">
+          <div>
+            <div className="eyebrow">Watch</div>
+            <h2 className="mt-3 text-[34px] leading-[1.08] sm:text-[48px]">InTelleX in 40 seconds.</h2>
+            <p className="mt-4 max-w-[380px] text-[16px] leading-relaxed text-[#4b5563]">
+              Why so many learners get stuck on week three, and what changes when someone is actually checking your work.
+            </p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link href="/programmes" className="btn btn-green !px-6">
+                Find your programme <ArrowRight size={16} />
+              </Link>
+              <a href={orientationWhatsappLink()} target="_blank" rel="noopener noreferrer" className="btn btn-line !px-6">
+                <MessageCircle size={16} /> Talk to us
+              </a>
+            </div>
+          </div>
+          <PromoVideo />
         </div>
       </section>
 
