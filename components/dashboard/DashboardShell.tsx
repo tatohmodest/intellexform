@@ -793,7 +793,7 @@ export default function DashboardShell({
       </aside>
 
       <header
-        className={`sticky top-0 z-20 flex h-[64px] items-center gap-3 px-4 backdrop-blur lg:pr-8 ${collapsed ? 'lg:pl-6' : 'lg:pl-[264px]'}`}
+        className={`sticky top-0 z-20 flex h-[64px] items-center gap-3 border-b border-[#e7e9ec] px-4 backdrop-blur lg:pr-8 ${collapsed ? 'lg:pl-6' : 'lg:pl-[264px]'}`}
         style={{ background: inCampus ? `${accent}0d` : 'rgba(255,255,255,0.9)' }}
       >
         <button
@@ -825,20 +825,20 @@ export default function DashboardShell({
         <div className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-4">
           <NotificationBell accent={accent} />
           <div
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold"
-            style={{ background: 'rgba(255,122,0,0.1)', color: '#c2570a' }}
+            className="flex items-center gap-1.5 rounded-full border border-[#e7e9ec] bg-white px-3 py-1.5 text-[13px] font-medium"
+            style={{ color: 'var(--ink)' }}
             title={t('Learning streak')}
           >
-            <Flame size={14} />
+            <Flame size={14} className="text-[#e8590c]" />
             {user.streakCount}
             <span className="hidden sm:inline">{t(user.streakCount === 1 ? 'day' : 'days')}</span>
           </div>
           <div
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold"
-            style={{ background: `${accent}1a`, color: accent }}
+            className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium"
+            style={{ background: `${accent}12`, borderColor: `${accent}55`, color: 'var(--ink)' }}
             title={t('Experience points')}
           >
-            <Zap size={14} />
+            <Zap size={14} style={{ color: accent }} />
             {user.xp.toLocaleString()} XP
           </div>
           <Link
@@ -856,12 +856,12 @@ export default function DashboardShell({
             ) : (
               <span
                 className="flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold text-white"
-                style={{ background: `linear-gradient(135deg, ${accent}, #1f5fa8)` }}
+                style={{ background: accent }}
               >
                 {initials(user.name) || 'IX'}
               </span>
             )}
-            <span className="hidden max-w-[140px] truncate text-[13.5px] font-semibold md:block">
+            <span className="hidden max-w-[140px] truncate text-[13.5px] font-medium md:block">
               {user.name}
             </span>
           </Link>

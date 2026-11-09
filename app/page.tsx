@@ -149,7 +149,7 @@ export default async function HomePage() {
                 <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e7e9ec] bg-white">
                   <Play size={13} className="ml-0.5" fill="currentColor" />
                 </span>
-                Watch the 40-second video
+                Watch the video
               </a>
             </div>
 
@@ -200,9 +200,9 @@ export default async function HomePage() {
         <div className="grid items-center gap-10 lg:grid-cols-[0.8fr_1.6fr]">
           <div>
             <div className="eyebrow">Watch</div>
-            <h2 className="mt-3 text-[34px] leading-[1.08] sm:text-[48px]">InTelleX in 40 seconds.</h2>
+            <h2 className="mt-3 text-[34px] leading-[1.08] sm:text-[48px]">Stop learning the hard way.</h2>
             <p className="mt-4 max-w-[380px] text-[16px] leading-relaxed text-[#4b5563]">
-              Why so many learners get stuck on week three, and what changes when someone is actually checking your work.
+              Endless tutorials, no one to ask, no real progress. Here is what changes when you learn with InTelleX.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link href="/programmes" className="btn btn-green !px-6">

@@ -121,8 +121,8 @@ export default function NotificationBell({ accent = '#00b369' }: { accent?: stri
           setOpen((v) => !v);
           if (!open) load();
         }}
-        className="relative flex h-9 w-9 items-center justify-center rounded-full border"
-        style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+        className="relative flex h-9 w-9 items-center justify-center rounded-full border bg-white transition-colors hover:bg-[#f6f7f8]"
+        style={{ borderColor: '#e7e9ec', color: 'var(--ink)' }}
         aria-label={unread ? `${unread} unread notifications` : 'Notifications'}
         aria-expanded={open}
         title="Notifications"
@@ -155,8 +155,8 @@ export default function NotificationBell({ accent = '#00b369' }: { accent?: stri
           <div
             role="dialog"
             aria-label="Notifications"
-            className="fixed left-1/2 top-[68px] z-[70] w-[min(360px,calc(100vw-24px))] -translate-x-1/2 border bg-paper shadow-lg sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+8px)] sm:z-50 sm:w-[min(360px,calc(100vw-24px))] sm:translate-x-0"
-            style={{ borderColor: 'var(--line)' }}
+            className="fixed left-1/2 top-[68px] z-[70] w-[min(360px,calc(100vw-24px))] -translate-x-1/2 border bg-paper shadow-lg sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+8px)] sm:z-50 sm:w-[min(360px,calc(100vw-24px))] sm:translate-x-0 rounded-[16px] overflow-hidden"
+            style={{ borderColor: '#e7e9ec' }}
           >
             <div
               className="flex items-center justify-between border-b px-3 py-2.5"

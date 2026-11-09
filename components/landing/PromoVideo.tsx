@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Play } from 'lucide-react';
 
 /**
- * The 40-second promo. Nothing downloads until the visitor presses play (data is expensive
+ * "Stop learning the hard way", the 96-second promo. Nothing downloads until the visitor presses play (data is expensive
  * on mobile), and phones get the vertical cut while wider screens get 16:9.
  */
 function Player({ src, poster, className, label }: { src: string; poster: string; className: string; label: string }) {
@@ -48,7 +48,7 @@ function Player({ src, poster, className, label }: { src: string; poster: string
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white">
               <Play size={18} className="ml-0.5" fill="currentColor" />
             </span>
-            Watch · 40 sec
+            Watch · 1:36
           </span>
         </button>
       )}
@@ -60,14 +60,14 @@ export default function PromoVideo() {
   return (
     <>
       <Player
-        src="/video/intellex-promo-9x16.mp4"
-        poster="/video/poster-9x16.jpg"
+        src="/video/intellex-story-9x16.mp4"
+        poster="/video/story-poster-9x16.jpg"
         label="Play the InTelleX video"
         className="mx-auto aspect-[9/16] w-full max-w-[380px] md:hidden"
       />
       <Player
-        src="/video/intellex-promo-16x9.mp4"
-        poster="/video/poster-16x9.jpg"
+        src="/video/intellex-story-16x9.mp4"
+        poster="/video/story-poster-16x9.jpg"
         label="Play the InTelleX video"
         className="hidden aspect-video w-full md:block"
       />
