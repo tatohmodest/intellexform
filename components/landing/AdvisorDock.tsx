@@ -197,7 +197,7 @@ export default function AdvisorDock() {
               <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#3fd283] bg-[#5ce39a] text-[var(--ink)]">
                 <Sparkles size={18} />
               </span>
-              <div>
+              <div className="max-w-[190px]">
                 <div className="text-[18px] font-medium leading-tight tracking-[-0.02em]">AI career advisor</div>
                 <div className="text-[12px] text-[#4b5563]">Ask about skills, careers and programmes</div>
               </div>
