@@ -68,7 +68,12 @@ export default function ContactWizard() {
   const preset = normalizeType(params.get('type'));
   // Legacy enrolment links (/contact?programme=...) still arrive here pre-filled.
   const programme = getProgramme(params.get('programme') || '');
-  const programmeTopic = programme ? `Enrol: ${programme.title}` : '';
+  const courseName = params.get('course') || '';
+  const programmeTopic = programme
+    ? `Enrol: ${programme.title}`
+    : courseName
+      ? `Enrol: ${courseName}`
+      : '';
 
   const [step, setStep] = useState(preset ? 1 : 0);
   const [contactType, setContactType] = useState<ContactType>(preset || 'learner');
@@ -76,7 +81,7 @@ export default function ContactWizard() {
   const [whatsapp, setWhatsapp] = useState('');
   const [email, setEmail] = useState('');
   const [field, setField] = useState(programmeTopic);
-  const [plan, setPlan] = useState(programme ? 'Programme enrolment' : '');
+  const [plan, setPlan] = useState(programme || courseName ? 'Programme enrolment' : '');
   const [message, setMessage] = useState('');
   const [institutionName, setInstitutionName] = useState('');
   const [roleTitle, setRoleTitle] = useState('');

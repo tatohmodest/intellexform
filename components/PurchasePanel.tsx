@@ -1,116 +1,50 @@
 'use client';
 
 import Link from 'next/link';
-import { Award, Lock, Play, ShieldCheck } from 'lucide-react';
+import { ShieldCheck, UserPlus } from 'lucide-react';
 import { Course } from '@/lib/types';
 import { formatXAF } from '@/lib/format';
 import ShareCourseButton from '@/components/ShareCourseButton';
-import { isIntellexCourse } from '@/lib/googleDrive';
-import DirectPayForm from '@/components/payments/DirectPayForm';
 
 export default function PurchasePanel({
   course,
   shareUrl,
-  isSubscribed = false,
-  hasAccess = false,
-  user = null,
 }: {
   course: Course;
   shareUrl: string;
-  isSubscribed?: boolean;
-  hasAccess?: boolean;
-  user?: { uid: string; email?: string | null; name?: string | null } | null;
 }) {
   const discount =
     course.originalPrice > course.currentPrice && course.originalPrice > 0
       ? Math.round((1 - course.currentPrice / course.originalPrice) * 100)
       : 0;
 
-  const isIntellex = isIntellexCourse(course.courseOrigin);
-  const userUnlocked = hasAccess || (isIntellex && isSubscribed);
-
   return (
     <div className="rounded-[20px] border bg-paper p-6 shadow-card" style={{ borderColor: 'var(--line)' }}>
-      <div className="mb-2">
-        <span
-          className="inline-block rounded-full px-2.5 py-0.5 font-mono text-[10.5px] uppercase tracking-wide"
-          style={{
-            background: isIntellex ? 'rgba(0,179,105,0.12)' : 'rgba(234,179,8,0.15)',
-            color: isIntellex ? 'var(--green-deep)' : '#854d0e',
-          }}
-        >
-          {isIntellex ? 'Intellex Subscription Course' : 'Individual Purchase Only'}
-        </span>
-      </div>
-
       <div className="mb-1 flex items-baseline gap-2">
         <span className="font-display text-[32px] font-semibold">
-          {userUnlocked ? 'Purchased / Unlocked' : course.currentPrice > 0 ? formatXAF(course.currentPrice) : isIntellex ? 'Included in Subscription' : 'Paid Course'}
+          {course.currentPrice > 0 ? formatXAF(course.currentPrice) : 'Programme'}
         </span>
-        {discount > 0 && !userUnlocked && (
+        {discount > 0 && (
           <span className="font-mono text-sm line-through" style={{ color: 'var(--ink-soft)' }}>
             {course.originalPrice.toLocaleString('en-US')}
           </span>
         )}
       </div>
-      {discount > 0 && !userUnlocked && (
+      {discount > 0 && (
         <div className="mb-4 inline-block rounded-full px-2.5 py-1 font-mono text-[11px]" style={{ background: 'var(--amber-soft)', color: 'var(--blue-ink)' }}>
           {discount}% off
         </div>
       )}
 
-      {!isIntellex && !userUnlocked && (
-        <p className="mb-4 text-xs leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-          This course is not part of the subscription plan and must be bought individually.
-        </p>
-      )}
-
-      {userUnlocked ? (
-        <Link
-          href={`/dashboard/drive-player/${course.slug}`}
-          className="btn btn-primary w-full inline-flex items-center justify-center gap-2"
-        >
-          <Play size={18} /> Enter Course (Launch Player)
-        </Link>
-      ) : !user ? (
-        <div className="flex flex-col gap-2.5">
-          <Link
-            href={`/login?next=/courses/${course.slug}`}
-            className="btn btn-primary w-full inline-flex items-center justify-center gap-2"
-          >
-            <Lock size={17} /> Sign in to Buy ({formatXAF(course.currentPrice)})
-          </Link>
-          {isIntellex && (
-            <Link
-              href="/membership"
-              className="btn btn-g w-full inline-flex items-center justify-center gap-2 text-[13.5px]"
-            >
-              <Award size={15} /> Subscribe to Unlock All Intellex Courses
-            </Link>
-          )}
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2.5">
-          <DirectPayForm
-            amountXAF={course.currentPrice}
-            label="Pay with MoMo"
-            extraBody={{
-              courseSlug: course.slug,
-              userId: user?.uid,
-              fullName: user?.name || 'Student',
-              email: user?.email || '',
-            }}
-          />
-          {isIntellex && (
-            <Link
-              href="/membership"
-              className="btn btn-g w-full inline-flex items-center justify-center gap-2 text-[13.5px]"
-            >
-              <Award size={15} /> Subscribe to Unlock All Intellex Courses
-            </Link>
-          )}
-        </div>
-      )}
+      <Link
+        href={`/contact?type=learner&course=${encodeURIComponent(course.name)}`}
+        className="btn btn-primary w-full inline-flex items-center justify-center gap-2"
+      >
+        <UserPlus size={18} /> Register for this programme
+      </Link>
+      <p className="mt-3 text-xs leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+        Taught in live classes - no recorded videos. Register and our team will confirm your cohort.
+      </p>
 
       <ShareCourseButton
         url={shareUrl}

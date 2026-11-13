@@ -2,8 +2,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Star, Check, Clock, Globe, BadgeCheck, ArrowLeft } from 'lucide-react';
 import { getCourseBySlug } from '@/lib/repo';
-import { getSessionUser } from '@/lib/auth/getUser';
-import { hasActiveCertSubscription } from '@/lib/learn/certSubscription';
 import { formatXAF } from '@/lib/format';
 import { absoluteUrl, buildShareMetadata } from '@/lib/seo/share';
 import { breadcrumbJsonLd, courseJsonLd } from '@/lib/seo/schema';
@@ -39,24 +37,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   });
 }
 
-import { canAccessContent } from '@/lib/contentAccess';
-
 export default async function CourseDetailPage({ params }: { params: { slug: string } }) {
   const course = await getCourseBySlug(params.slug);
   if (!course) notFound();
-
-  const session = getSessionUser();
-  const isSubscribed = session ? await hasActiveCertSubscription(session.uid) : false;
-  const gate = session
-    ? await canAccessContent({
-        userId: session.uid,
-        kind: 'course',
-        slug: course.slug,
-        level: 'beginner',
-        courseOrigin: course.courseOrigin,
-      })
-    : { allowed: false };
-  const hasAccess = gate.allowed;
 
   const shareUrl = absoluteUrl(`/courses/${course.slug}`);
   const shareText =
@@ -191,9 +174,6 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
             <PurchasePanel
               course={course}
               shareUrl={shareUrl}
-              isSubscribed={isSubscribed}
-              hasAccess={hasAccess}
-              user={session ? { uid: session.uid, email: session.email, name: session.name } : null}
             />
           </div>
         </div>

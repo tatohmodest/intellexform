@@ -12,9 +12,9 @@ const EMPTY: Partial<AdminCourse> = {
   name: '', slug: '', type: 'Development', instructor: 'Intellex Mentors',
   currentPrice: 0, originalPrice: 0, courseImage: '', shortDescription: '',
   courseDetails: '', prerequisites: '', aboutInstructor: '', whatYouWillLearn: [],
-  courseDuration: '', language: 'English', courseOrigin: 'Intellex', articleType: 'Video',
+  courseDuration: '', language: 'English', courseOrigin: 'Intellex', articleType: 'Live classes',
   courseRating: 0, courseNumberOfVotes: 0, courseLink: '', featured: false, bestSeller: false,
-  certificateOfCompletion: true, accessOnMobileAndTV: true, downloadable: true,
+  certificateOfCompletion: true, accessOnMobileAndTV: false, downloadable: false,
 };
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -61,7 +61,7 @@ function Editor({ course, onClose, onSaved }: { course: Partial<AdminCourse>; on
     <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto p-4" style={{ background: 'rgba(19,32,25,0.6)' }} onClick={onClose}>
       <div className="my-8 w-full max-w-2xl rounded-[18px] border bg-paper p-6 shadow-book" style={{ borderColor: 'var(--line)' }} onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
-          <h3 className="font-display text-[22px]">{form._id ? 'Edit course' : 'Add course'}</h3>
+          <h3 className="font-display text-[22px]">{form._id ? 'Edit programme course' : 'Add programme course'}</h3>
           <button onClick={onClose} aria-label="Close" className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: 'var(--paper-dim)' }}><X size={18} /></button>
         </div>
 
@@ -72,7 +72,7 @@ function Editor({ course, onClose, onSaved }: { course: Partial<AdminCourse>; on
           </div>
 
           <ImageUploadField
-            label="Course image"
+            label="Programme image"
             kind="course_image"
             ownerId={form.slug || form._id || 'course'}
             value={form.courseImage ?? ''}
@@ -107,7 +107,7 @@ function Editor({ course, onClose, onSaved }: { course: Partial<AdminCourse>; on
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Rating"><input type="number" step="0.1" className={inputCls} value={form.courseRating ?? 0} onChange={(e) => set('courseRating', e.target.value)} /></Field>
             <Field label="No. of votes"><input type="number" className={inputCls} value={form.courseNumberOfVotes ?? 0} onChange={(e) => set('courseNumberOfVotes', e.target.value)} /></Field>
-            <Field label="Article type"><input className={inputCls} value={form.articleType ?? ''} onChange={(e) => set('articleType', e.target.value)} /></Field>
+            <Field label="Format"><input className={inputCls} value={form.articleType ?? ''} onChange={(e) => set('articleType', e.target.value)} /></Field>
           </div>
           <Field label="Course link (optional)"><input className={inputCls} value={form.courseLink ?? ''} onChange={(e) => set('courseLink', e.target.value)} /></Field>
 
